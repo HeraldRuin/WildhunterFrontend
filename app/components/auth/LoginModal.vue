@@ -132,7 +132,7 @@ function handleKeydown(event: KeyboardEvent) {
   width: 480px;
   min-width: min(100%, var(--wh-auth-modal-width));
   padding: 40px 36px 32px;
-  border-radius: var(--wh-radius-xl);
+  border-radius: var(--wh-radius);
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
 }

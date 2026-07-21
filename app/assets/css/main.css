@@ -12,6 +12,7 @@
 
   --wh-shadow: 0 12px 40px rgba(17, 24, 39, 0.12);
   --wh-radius: 12px;
+  --wh-radius-lg: 20px;
   --wh-container: 1240px;
   --wh-auth-modal-width: 440px;
 }

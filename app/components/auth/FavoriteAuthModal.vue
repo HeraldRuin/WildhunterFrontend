@@ -95,9 +95,10 @@ function handleRegister() {
 
 .favorite-auth-modal__card {
   position: relative;
-  width: min(100%, 440px);
+  width: var(--wh-auth-modal-width);
+  min-width: min(100%, var(--wh-auth-modal-width));
   padding: 40px 36px 32px;
-  border-radius: var(--wh-radius-xl);
+  border-radius: var(--wh-radius);
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
   text-align: center;
@@ -177,5 +178,11 @@ function handleRegister() {
 .favorite-auth-modal-leave-to .favorite-auth-modal__card {
   transform: translateY(12px) scale(0.98);
   opacity: 0;
+}
+
+@media (max-width: 480px) {
+  .favorite-auth-modal__card {
+    padding: 32px 24px 24px;
+  }
 }
 </style>
