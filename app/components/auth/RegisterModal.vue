@@ -418,50 +418,20 @@ watch(isOpen, (open) => {
                   :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'"
                   @click="togglePasswordVisibility"
                 >
-                  <svg
+                  <img
                     v-if="showPassword"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
+                    src="/icons/Group.png"
+                    alt=""
                     aria-hidden="true"
-                  >
-                    <path
-                      d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.75"
-                    />
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="3"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.75"
-                    />
-                  </svg>
-                  <svg
+                    class="register-modal__password-icon"
+                  />
+                  <img
                     v-else
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
+                    src="/icons/weui_eyes-off-filled.png"
+                    alt=""
                     aria-hidden="true"
-                  >
-                    <path
-                      d="M3 3l18 18"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.75"
-                      stroke-linecap="round"
-                    />
-                    <path
-                      d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a18.4 18.4 0 0 1-4.8 5.7M6.7 6.7C4.1 8.4 2 12 2 12s3.5 7 10 7c1.2 0 2.3-.2 3.3-.5"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.75"
-                      stroke-linecap="round"
-                    />
-                  </svg>
+                    class="register-modal__password-icon register-modal__password-icon--hidden"
+                  />
                 </button>
               </div>
             </div>
@@ -695,14 +665,28 @@ watch(isOpen, (open) => {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--wh-gray-400);
+  color: var(--wh-gray-900);
   cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease;
 }
 
 .register-modal__toggle-password:hover {
-  color: var(--wh-gray-600);
+  color: var(--wh-gray-700);
   background: var(--wh-gray-100);
+}
+
+.register-modal__password-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 22px;
+  height: 14px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.register-modal__password-icon--hidden {
+  width: 26px;
+  height: 26px;
 }
 
 .register-modal__select-wrap {
