@@ -53,12 +53,7 @@ export function useBodyScrollLock(isOpen: Ref<boolean>) {
 }
 
 export function useAuthModalsScrollLock() {
-  const { isOpen: isForgotPasswordOpen } = useForgotPasswordModal()
   const { isOpen: isFavoriteAuthOpen } = useFavoriteAuthModal()
 
-  const isAnyOpen = computed(
-    () => isForgotPasswordOpen.value || isFavoriteAuthOpen.value,
-  )
-
-  useBodyScrollLock(isAnyOpen)
+  useBodyScrollLock(isFavoriteAuthOpen)
 }
