@@ -15,11 +15,13 @@ function formatPrice(value: number) {
     <div class="offer-card__media">
       <img :src="item.image" :alt="item.title" loading="lazy">
       <button type="button" class="offer-card__favorite" aria-label="В избранное" @click.prevent>
-        <svg width="16" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
-            d="M12 20.25s-7.5-4.35-7.5-10.05c0-2.85 2.25-5.1 5.1-5.1 1.58 0 3.08.75 4.05 1.95.97-1.2 2.47-1.95 4.05-1.95 2.85 0 5.1 2.25 5.1 5.1 0 5.7-7.5 10.05-7.5 10.05z"
-            stroke="currentColor"
-            stroke-width="1.8"
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            fill="#ffffff"
+            stroke="#ffffff"
+            stroke-width="1.5"
+            stroke-linecap="round"
             stroke-linejoin="round"
           />
         </svg>
@@ -72,19 +74,19 @@ function formatPrice(value: number) {
   right: 14px;
   display: grid;
   place-items: center;
-  width: 16px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: none;
   background: transparent;
-  color: #ffffff;
   cursor: pointer;
 }
 
 .offer-card__favorite svg {
   display: block;
-  width: 16px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 35%));
 }
 
 .offer-card__rating {
