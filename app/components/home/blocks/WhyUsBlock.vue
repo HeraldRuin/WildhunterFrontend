@@ -119,6 +119,10 @@ const items = [
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .why-us__number {
+    font-size: 32px;
+  }
+
   .why-us__card {
     min-height: auto;
   }
@@ -134,6 +138,10 @@ const items = [
 @media (max-width: 640px) {
   .why-us__grid {
     grid-template-columns: 1fr;
+  }
+
+  .why-us__number {
+    font-size: 24px;
   }
 
   .why-us__placeholder {
