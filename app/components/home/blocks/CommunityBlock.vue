@@ -118,6 +118,7 @@ function handleSubmit() {
   font-weight: 400;
   line-height: 1.1;
   letter-spacing: -0.05em;
+  text-transform: uppercase;
   color: #ffffff;
 }
 
@@ -138,6 +139,7 @@ function handleSubmit() {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  width: min(100%, 360px);
 }
 
 .community-block__field {
@@ -157,16 +159,21 @@ function handleSubmit() {
 }
 
 .community-block__field input::placeholder {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .community-block__checkbox {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  font-size: 0.875rem;
-  line-height: 1.4;
   cursor: pointer;
+  color: rgba(255, 255, 255, 0.55);
+
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 120%;
+  letter-spacing: -0.05em;
 }
 
 .community-block__checkbox input {
@@ -174,14 +181,35 @@ function handleSubmit() {
   height: 16px;
   margin-top: 2px;
   flex-shrink: 0;
-  accent-color: var(--wh-orange-500);
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.community-block__checkbox input:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .community-block__submit {
   width: 100%;
   margin-top: 4px;
   padding-block: 14px;
-  font-size: 0.98rem;
+  font-family: Inter, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 100%;
+  letter-spacing: -0.05em;
 }
 
 .community-block__social {
@@ -198,10 +226,12 @@ function handleSubmit() {
   border-radius: 999px;
   background: var(--wh-orange-500);
   color: var(--wh-white);
+
   font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
@@ -219,6 +249,10 @@ function handleSubmit() {
     width: min(100%, 360px);
     min-height: auto;
     font-size: 32px;
+  }
+
+  .community-block__form {
+    width: min(100%, 280px);
   }
 
   .community-block__title-line:nth-child(2),
