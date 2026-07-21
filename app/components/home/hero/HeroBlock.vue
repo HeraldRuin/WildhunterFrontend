@@ -110,7 +110,7 @@ function handleSearch(payload: Record<string, string>) {
 @media (max-width: 640px) {
   .hero-block {
     height: auto;
-    min-height: 810px;
+    min-height: 870px;
   }
 
   .hero-block__inner {
