@@ -55,16 +55,11 @@ function scrollBy(direction: 'prev' | 'next') {
       <h2 class="best-locations__title">Лучшие локации</h2>
 
       <div class="best-locations__slider-wrap">
-        <button
-          type="button"
-          class="best-locations__arrow best-locations__arrow--prev"
-          aria-label="Предыдущие локации"
+        <CommonSliderArrow
+          direction="prev"
+          label="Предыдущие локации"
           @click="scrollBy('prev')"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
-        </button>
+        />
 
         <div ref="trackRef" class="best-locations__track">
           <HomeLocationCard
@@ -75,16 +70,11 @@ function scrollBy(direction: 'prev' | 'next') {
           />
         </div>
 
-        <button
-          type="button"
-          class="best-locations__arrow best-locations__arrow--next"
-          aria-label="Следующие локации"
+        <CommonSliderArrow
+          direction="next"
+          label="Следующие локации"
           @click="scrollBy('next')"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
-        </button>
+        />
       </div>
 
       <div class="best-locations__action">
@@ -121,7 +111,7 @@ function scrollBy(direction: 'prev' | 'next') {
 
 .best-locations__slider-wrap {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  grid-template-columns: 30px minmax(0, 1fr) 30px;
   align-items: center;
   gap: 16px;
   width: 100%;
@@ -147,27 +137,6 @@ function scrollBy(direction: 'prev' | 'next') {
   min-width: 0;
 }
 
-.best-locations__arrow {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 999px;
-  background: var(--wh-white);
-  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
-  color: var(--wh-gray-900);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.best-locations__arrow:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 28px rgba(17, 24, 39, 0.12);
-}
-
 .best-locations__action {
   display: flex;
   justify-content: center;
@@ -178,16 +147,6 @@ function scrollBy(direction: 'prev' | 'next') {
 }
 
 @media (max-width: 1024px) {
-  .best-locations__slider-wrap {
-    grid-template-columns: 40px minmax(0, 1fr) 40px;
-    gap: 12px;
-  }
-
-  .best-locations__arrow {
-    width: 40px;
-    height: 40px;
-  }
-
   .best-locations__track {
     grid-auto-columns: calc((100% - 20px) / 2);
   }
