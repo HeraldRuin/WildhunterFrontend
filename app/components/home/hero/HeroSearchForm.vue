@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SearchAnimal, SearchLocation } from '~/types/api'
+import { formatDisplayDate, parseDisplayDate, startOfDay } from '~/utils/date'
 
 withDefaults(defineProps<{
   layout?: 'inline' | 'split'
@@ -15,15 +16,18 @@ const { location: locationApi, animals: animalsApi } = useApi()
 
 const location = ref('')
 const animal = ref('')
-const dateRange = ref('04.02.26 - 05.02.26')
+const checkIn = ref<Date | null>(parseDisplayDate('04.02.26'))
+const checkOut = ref<Date | null>(parseDisplayDate('05.02.26'))
 const adultsCount = ref(1)
 const maxAdults = 100
 const isLocationOpen = ref(false)
 const isAnimalOpen = ref(false)
 const isGuestsOpen = ref(false)
+const isDatesOpen = ref(false)
 const locationFieldRef = ref<HTMLElement | null>(null)
 const animalFieldRef = ref<HTMLElement | null>(null)
 const guestsFieldRef = ref<HTMLElement | null>(null)
+const datesFieldRef = ref<HTMLElement | null>(null)
 
 const { data: locations, pending: locationsLoading } = useAsyncData<SearchLocation[]>(
   'search-locations',
@@ -78,14 +82,63 @@ function formatAdultsLabel(count: number) {
 
 const guestsLabel = computed(() => formatAdultsLabel(adultsCount.value))
 
+const dateRangeLabel = computed(() => {
+  if (!checkIn.value) {
+    return 'Выберите даты'
+  }
+
+  const startLabel = formatDisplayDate(checkIn.value)
+
+  if (!checkOut.value) {
+    return startLabel
+  }
+
+  return `${startLabel} - ${formatDisplayDate(checkOut.value)}`
+})
+
+const hasCustomDates = computed(() => {
+  if (!checkIn.value || !checkOut.value) {
+    return false
+  }
+
+  const defaultStart = parseDisplayDate('04.02.26')
+  const defaultEnd = parseDisplayDate('05.02.26')
+
+  if (!defaultStart || !defaultEnd) {
+    return true
+  }
+
+  return !(
+    startOfDay(checkIn.value).getTime() === startOfDay(defaultStart).getTime()
+    && startOfDay(checkOut.value).getTime() === startOfDay(defaultEnd).getTime()
+  )
+})
+
+function closeOtherDropdowns(except?: 'location' | 'animal' | 'guests' | 'dates') {
+  if (except !== 'location') {
+    isLocationOpen.value = false
+  }
+
+  if (except !== 'animal') {
+    isAnimalOpen.value = false
+  }
+
+  if (except !== 'guests') {
+    isGuestsOpen.value = false
+  }
+
+  if (except !== 'dates') {
+    isDatesOpen.value = false
+  }
+}
+
 function toggleLocationDropdown() {
   if (locationsLoading.value) {
     return
   }
 
   isLocationOpen.value = !isLocationOpen.value
-  isAnimalOpen.value = false
-  isGuestsOpen.value = false
+  closeOtherDropdowns(isLocationOpen.value ? 'location' : undefined)
 }
 
 function toggleAnimalDropdown() {
@@ -94,14 +147,17 @@ function toggleAnimalDropdown() {
   }
 
   isAnimalOpen.value = !isAnimalOpen.value
-  isLocationOpen.value = false
-  isGuestsOpen.value = false
+  closeOtherDropdowns(isAnimalOpen.value ? 'animal' : undefined)
 }
 
 function toggleGuestsDropdown() {
   isGuestsOpen.value = !isGuestsOpen.value
-  isLocationOpen.value = false
-  isAnimalOpen.value = false
+  closeOtherDropdowns(isGuestsOpen.value ? 'guests' : undefined)
+}
+
+function toggleDatesDropdown() {
+  isDatesOpen.value = !isDatesOpen.value
+  closeOtherDropdowns(isDatesOpen.value ? 'dates' : undefined)
 }
 
 function incrementAdults() {
@@ -138,6 +194,10 @@ function closeGuestsDropdown() {
   isGuestsOpen.value = false
 }
 
+function closeDatesDropdown() {
+  isDatesOpen.value = false
+}
+
 function handleDocumentClick(event: MouseEvent) {
   if (!locationFieldRef.value?.contains(event.target as Node)) {
     closeLocationDropdown()
@@ -149,6 +209,10 @@ function handleDocumentClick(event: MouseEvent) {
 
   if (!guestsFieldRef.value?.contains(event.target as Node)) {
     closeGuestsDropdown()
+  }
+
+  if (!datesFieldRef.value?.contains(event.target as Node)) {
+    closeDatesDropdown()
   }
 }
 
@@ -170,11 +234,20 @@ function clearGuests(event: MouseEvent) {
   isGuestsOpen.value = false
 }
 
+function clearDates(event: MouseEvent) {
+  event.stopPropagation()
+  checkIn.value = parseDisplayDate('04.02.26')
+  checkOut.value = parseDisplayDate('05.02.26')
+  isDatesOpen.value = false
+}
+
 function submitSearch() {
   emit('search', {
     location: location.value,
     animal: animal.value,
-    dates: dateRange.value,
+    dates: dateRangeLabel.value,
+    checkIn: checkIn.value ? formatDisplayDate(checkIn.value) : '',
+    checkOut: checkOut.value ? formatDisplayDate(checkOut.value) : '',
     guests: String(adultsCount.value),
   })
 }
@@ -283,15 +356,37 @@ onUnmounted(() => {
       </ul>
     </div>
 
-    <label class="hero-search__field hero-search__field--dates">
+    <div
+      ref="datesFieldRef"
+      class="hero-search__field hero-search__field--dates"
+    >
       <span class="hero-search__label">Заезд - Выезд</span>
-      <span class="hero-search__control">
-        <input v-model="dateRange" type="text" readonly>
-        <svg class="hero-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
-          <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      <button
+        type="button"
+        class="hero-search__control hero-search__dropdown-trigger"
+        @click="toggleDatesDropdown"
+      >
+        <span class="hero-search__dropdown-value">{{ dateRangeLabel }}</span>
+      </button>
+      <button
+        v-if="hasCustomDates"
+        type="button"
+        class="hero-search__clear"
+        aria-label="Сбросить даты"
+        @click="clearDates"
+      >
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
         </svg>
-      </span>
-    </label>
+      </button>
+      <svg v-else class="hero-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
+        <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+
+      <div v-if="isDatesOpen" class="hero-search__dropdown-panel hero-search__dropdown-panel--calendar">
+        <HomeHeroSearchDatePicker v-model:start="checkIn" v-model:end="checkOut" />
+      </div>
+    </div>
 
     <div
       ref="guestsFieldRef"
@@ -418,7 +513,8 @@ onUnmounted(() => {
 
 .hero-search__field--location,
 .hero-search__field--animals,
-.hero-search__field--guests {
+.hero-search__field--guests,
+.hero-search__field--dates {
   z-index: 2;
 }
 
@@ -529,6 +625,13 @@ onUnmounted(() => {
   border-radius: 14px;
   background: var(--wh-white);
   color: var(--wh-black-text);
+}
+
+.hero-search__dropdown-panel--calendar {
+  right: auto;
+  width: max-content;
+  max-width: min(640px, calc(100vw - 32px));
+  padding: 18px 20px;
 }
 
 .hero-search__guest-row {
