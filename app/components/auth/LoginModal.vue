@@ -178,9 +178,10 @@ function handleKeydown(event: KeyboardEvent) {
 
 .login-modal__input {
   width: 100%;
-  padding: 14px 16px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 10px;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
   background: var(--wh-white);
   color: var(--wh-gray-900);
   outline: none;
@@ -193,7 +194,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 .login-modal__input:focus {
   border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
+  box-shadow: 0 0 0 3px rgba(209, 101, 16, 0.15);
 }
 
 .login-modal__options {
@@ -215,11 +216,28 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .login-modal__checkbox {
+  flex-shrink: 0;
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: var(--wh-orange-500);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  background: var(--wh-white);
+  appearance: none;
   cursor: pointer;
+  position: relative;
+}
+
+.login-modal__checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--wh-black-text);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .login-modal__forgot {

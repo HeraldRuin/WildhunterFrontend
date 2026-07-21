@@ -17,6 +17,8 @@ const acceptTerms = ref(false)
 const roles = ref<Role[]>([])
 const rolesLoading = ref(false)
 const rolesError = ref('')
+const isRoleOpen = ref(false)
+const roleFieldRef = ref<HTMLElement | null>(null)
 const isSubmitting = ref(false)
 const submitError = ref('')
 const fieldErrors = ref<Record<string, string[]>>({})
@@ -89,6 +91,7 @@ function resetForm() {
   submitError.value = ''
   fieldErrors.value = {}
   isSubmitting.value = false
+  isRoleOpen.value = false
 }
 
 function extractPhoneDigits(value: string) {
@@ -139,6 +142,44 @@ const phone = computed({
     phoneDigits.value = extractPhoneDigits(value)
   },
 })
+
+const selectedRole = computed(() => roles.value.find((item) => item.code === role.value) ?? null)
+
+const roleLabel = computed(() => {
+  if (rolesLoading.value) {
+    return 'Загрузка ролей...'
+  }
+
+  if (selectedRole.value) {
+    return selectedRole.value.name
+  }
+
+  return 'Выберите роль'
+})
+
+function toggleRoleDropdown() {
+  if (rolesLoading.value || rolesError.value) {
+    return
+  }
+
+  isRoleOpen.value = !isRoleOpen.value
+}
+
+function selectRole(item: Role) {
+  role.value = item.code
+  clearFieldError('role')
+  isRoleOpen.value = false
+}
+
+function closeRoleDropdown() {
+  isRoleOpen.value = false
+}
+
+function handleDocumentClick(event: MouseEvent) {
+  if (!roleFieldRef.value?.contains(event.target as Node)) {
+    closeRoleDropdown()
+  }
+}
 
 function handlePhoneKeydown(event: KeyboardEvent) {
   if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -247,10 +288,16 @@ function switchToLogin() {
 watch(isOpen, (open) => {
   if (open) {
     loadRoles()
+    document.addEventListener('click', handleDocumentClick)
     return
   }
 
+  document.removeEventListener('click', handleDocumentClick)
   resetForm()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
 })
 </script>
 
@@ -327,26 +374,40 @@ watch(isOpen, (open) => {
               </div>
             </div>
 
-            <div class="register-modal__field">
-              <div class="register-modal__select-wrap">
-                <select
-                  v-model="role"
-                  class="register-modal__select"
-                  :class="{ 'register-modal__input--error': getFieldError('role') }"
-                  :disabled="rolesLoading || !!rolesError"
-                  @change="clearFieldError('role')"
-                >
-                  <option value="" disabled hidden>
-                    {{ rolesLoading ? 'Загрузка ролей...' : 'Выберите роль' }}
-                  </option>
-                  <option v-for="item in roles" :key="item.id" :value="item.code">
+            <div
+              ref="roleFieldRef"
+              class="register-modal__field register-modal__field--role"
+            >
+              <button
+                type="button"
+                class="register-modal__dropdown-trigger"
+                :class="{
+                  'register-modal__dropdown-trigger--placeholder': !selectedRole,
+                  'register-modal__dropdown-trigger--open': isRoleOpen,
+                  'register-modal__input--error': getFieldError('role'),
+                }"
+                :disabled="rolesLoading || !!rolesError"
+                @click="toggleRoleDropdown"
+              >
+                <span class="register-modal__dropdown-value">{{ roleLabel }}</span>
+              </button>
+              <svg class="register-modal__dropdown-chevron" width="12" height="8" viewBox="0 0 12 8" aria-hidden="true">
+                <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+
+              <ul v-if="isRoleOpen && roles.length" class="register-modal__dropdown-list">
+                <li v-for="item in roles" :key="item.id">
+                  <button
+                    type="button"
+                    class="register-modal__dropdown-option"
+                    :class="{ 'register-modal__dropdown-option--active': item.code === role }"
+                    @click="selectRole(item)"
+                  >
                     {{ item.name }}
-                  </option>
-                </select>
-                <svg class="register-modal__select-icon" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                  <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" />
-                </svg>
-              </div>
+                  </button>
+                </li>
+              </ul>
+
               <p v-if="getFieldError('role')" class="register-modal__field-error">
                 {{ getFieldError('role') }}
               </p>
@@ -595,16 +656,18 @@ watch(isOpen, (open) => {
 }
 
 .register-modal__input--error,
-.register-modal__input--error:focus {
+.register-modal__input--error:focus,
+.register-modal__dropdown-trigger.register-modal__input--error,
+.register-modal__dropdown-trigger.register-modal__input--error:focus-visible {
   border-color: #dc2626;
 }
 
-.register-modal__input,
-.register-modal__select {
+.register-modal__input {
   width: 100%;
-  padding: 14px 16px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 10px;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
   background: var(--wh-white);
   color: var(--wh-gray-900);
   outline: none;
@@ -615,10 +678,9 @@ watch(isOpen, (open) => {
   color: var(--wh-gray-400);
 }
 
-.register-modal__input:focus,
-.register-modal__select:focus {
+.register-modal__input:focus {
   border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
+  box-shadow: 0 0 0 3px rgba(209, 101, 16, 0.15);
 }
 
 .register-modal__password-wrap {
@@ -689,34 +751,117 @@ watch(isOpen, (open) => {
   height: 26px;
 }
 
-.register-modal__select-wrap {
+.register-modal__field--role {
   position: relative;
+  z-index: 3;
 }
 
-.register-modal__select {
-  appearance: none;
-  padding-right: 40px;
+.register-modal__dropdown-trigger {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 40px 12px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  background: var(--wh-white);
   color: var(--wh-gray-900);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.register-modal__select:invalid {
+.register-modal__dropdown-trigger--placeholder .register-modal__dropdown-value {
   color: var(--wh-gray-400);
 }
 
-.register-modal__select-icon {
-  position: absolute;
-  top: 50%;
-  right: 16px;
-  transform: translateY(-50%);
-  color: var(--wh-gray-400);
-  pointer-events: none;
+.register-modal__dropdown-trigger--open,
+.register-modal__dropdown-trigger:focus-visible {
+  border-color: var(--wh-orange-500);
+  box-shadow: 0 0 0 3px rgba(209, 101, 16, 0.15);
 }
 
-.register-modal__select:disabled {
+.register-modal__dropdown-trigger:disabled {
   cursor: not-allowed;
   background: var(--wh-gray-100);
   color: var(--wh-gray-400);
+}
+
+.register-modal__dropdown-value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.register-modal__dropdown-chevron {
+  position: absolute;
+  top: 24px;
+  right: 16px;
+  color: var(--wh-gray-900);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.register-modal__dropdown-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 6px 8px;
+  list-style: none;
+  border: 1px solid var(--wh-gray);
+  border-radius: 14px;
+  background: var(--wh-white);
+  color: var(--wh-black-text);
+  overflow: hidden;
+}
+
+.register-modal__dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--wh-black-text);
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.register-modal__dropdown-option::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.register-modal__dropdown-option:hover {
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+}
+
+.register-modal__dropdown-option--active::before {
+  background: var(--wh-orange-500);
+}
+
+.register-modal__dropdown-option--active:hover {
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+}
+
+.register-modal__dropdown-option--active:hover::before {
+  background: var(--wh-white);
 }
 
 .register-modal__error {
@@ -741,8 +886,24 @@ watch(isOpen, (open) => {
   width: 16px;
   height: 16px;
   margin-top: 2px;
-  accent-color: var(--wh-orange-500);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  background: var(--wh-white);
+  appearance: none;
   cursor: pointer;
+  position: relative;
+}
+
+.register-modal__checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--wh-black-text);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .register-modal__terms-link {

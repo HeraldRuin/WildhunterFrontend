@@ -139,9 +139,10 @@ function handleKeydown(event: KeyboardEvent) {
 
 .forgot-password-modal__input {
   width: 100%;
-  padding: 14px 16px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 10px;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
   background: var(--wh-white);
   color: var(--wh-gray-900);
   outline: none;
@@ -154,7 +155,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 .forgot-password-modal__input:focus {
   border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
+  box-shadow: 0 0 0 3px rgba(209, 101, 16, 0.15);
 }
 
 .forgot-password-modal__submit {
