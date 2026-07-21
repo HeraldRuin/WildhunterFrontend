@@ -58,45 +58,56 @@ const items = [
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--wh-gray-900);
+  color: var(--wh-black-text);
 }
 
 .why-us__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 16px;
   width: 100%;
 }
 
 .why-us__card {
-  min-height: 280px;
-  padding: 28px 28px 32px;
-  border-radius: 18px;
-  background: #5f7256;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border-radius: var(--wh-radius);
+  background: var(--wh-green);
   color: var(--wh-white);
 }
 
 .why-us__number {
   display: block;
   margin-bottom: 28px;
-  font-size: clamp(2rem, 3vw, 2.75rem);
-  line-height: 1;
-  font-weight: 700;
+  font-family: "UNCAGE", sans-serif;
+  font-size: 44px;
+  font-weight: 400;
+  line-height: 110%;
+  letter-spacing: -0.05em;
+  opacity: 0.5;
 }
 
 .why-us__card-title {
-  margin: 0 0 16px;
-  font-size: clamp(1.15rem, 1.6vw, 1.35rem);
-  line-height: 1.35;
-  font-weight: 700;
+  margin: 0;
+  min-height: calc(1.3em * 2);
+  font-family: Inter, sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
 }
 
 .why-us__card-text {
   margin: 0;
   max-width: 34ch;
   color: rgba(255, 255, 255, 0.88);
-  line-height: 1.55;
-  font-size: 0.98rem;
+  font-family: Inter, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 130%;
+  letter-spacing: -0.05em;
 }
 
 .why-us__placeholder {
