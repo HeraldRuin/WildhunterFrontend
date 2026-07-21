@@ -518,6 +518,21 @@ onUnmounted(() => {
   z-index: 2;
 }
 
+.hero-search__field--location {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.hero-search__field--animals,
+.hero-search__field--dates {
+  border-radius: 0;
+}
+
+.hero-search__field--guests {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
 .hero-search__label {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
@@ -820,23 +835,37 @@ onUnmounted(() => {
   .hero-search__field--location {
     grid-column: 1 / 6;
     grid-row: 1;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
   }
 
   .hero-search__field--animals {
     grid-column: 6 / 11;
     grid-row: 1;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: var(--wh-radius-lg);
+    border-bottom-right-radius: var(--wh-radius-lg);
   }
 
   .hero-search__field--dates {
     grid-column: 1 / 5;
     grid-row: 2;
     margin-top: 2px;
+    border-top-left-radius: var(--wh-radius-lg);
+    border-bottom-left-radius: var(--wh-radius-lg);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
   }
 
   .hero-search__field--guests {
     grid-column: 5 / 9;
     grid-row: 2;
     margin-top: 2px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: var(--wh-radius-lg);
+    border-bottom-right-radius: var(--wh-radius-lg);
   }
 
   .hero-search__submit,
@@ -872,24 +901,31 @@ onUnmounted(() => {
     grid-column: 1 / -1;
     grid-row: 1;
     margin-top: 0;
+    border-radius: var(--wh-radius-lg);
   }
 
   .hero-search__field--animals {
     grid-column: 1 / -1;
     grid-row: 2;
     margin-top: 0;
+    border-radius: var(--wh-radius-lg);
   }
 
   .hero-search__field--dates {
     grid-column: 1 / -1;
     grid-row: 3;
     margin-top: 0;
+    border-radius: var(--wh-radius-lg);
   }
 
   .hero-search__field--guests {
     grid-column: 1;
     grid-row: 4;
     margin-top: 0;
+    border-top-left-radius: var(--wh-radius-lg);
+    border-bottom-left-radius: var(--wh-radius-lg);
+    border-top-right-radius: var(--wh-radius-lg);
+    border-bottom-right-radius: var(--wh-radius-lg);
   }
 
   .hero-search__submit,
@@ -901,6 +937,7 @@ onUnmounted(() => {
     min-height: 72px;
     height: auto;
     margin-top: 0;
+    border-radius: var(--wh-radius-lg);
   }
 }
 </style>
