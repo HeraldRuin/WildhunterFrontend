@@ -1,18 +1,17 @@
 :root {
-  --wh-green-900: #1a2e24;
-  --wh-green-800: #243d31;
-  --wh-green-700: #2f4f3f;
-  --wh-green-600: #3d6b54;
+  --wh-green: #52714f;
+
+
   --wh-orange-500: #d16510;
   --wh-orange-600: #b8570e;
+
   --wh-orange-text: #a04d0d;
   --wh-white: #ffffff;
   --wh-gray: #DDDDDD;
   --wh-black-text: #1c211c;
+
   --wh-shadow: 0 12px 40px rgba(17, 24, 39, 0.12);
   --wh-radius: 12px;
-  --wh-radius-lg: 20px;
-  --wh-radius-xl: 28px;
   --wh-container: 1240px;
   --wh-auth-modal-width: 440px;
 }
