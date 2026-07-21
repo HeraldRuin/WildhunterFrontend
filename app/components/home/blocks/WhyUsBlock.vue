@@ -133,7 +133,6 @@ const items = [
 
   .why-us__placeholder {
     display: block;
-    min-height: 280px;
     border-radius: 18px;
     background: #dddddd;
   }
