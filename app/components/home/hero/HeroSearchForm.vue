@@ -16,11 +16,14 @@ const { location: locationApi, animals: animalsApi } = useApi()
 const location = ref('')
 const animal = ref('')
 const dateRange = ref('04.02.26 - 05.02.26')
-const guests = ref('1 взрослый')
+const adultsCount = ref(1)
+const maxAdults = 100
 const isLocationOpen = ref(false)
 const isAnimalOpen = ref(false)
+const isGuestsOpen = ref(false)
 const locationFieldRef = ref<HTMLElement | null>(null)
 const animalFieldRef = ref<HTMLElement | null>(null)
+const guestsFieldRef = ref<HTMLElement | null>(null)
 
 const { data: locations, pending: locationsLoading } = useAsyncData<SearchLocation[]>(
   'search-locations',
@@ -62,6 +65,19 @@ const animalLabel = computed(() => {
   return animalsLoading.value ? 'Загрузка...' : 'На кого будет охота?'
 })
 
+function formatAdultsLabel(count: number) {
+  const mod10 = count % 10
+  const mod100 = count % 100
+
+  if (mod10 === 1 && mod100 !== 11) {
+    return `${count} взрослый`
+  }
+
+  return `${count} взрослых`
+}
+
+const guestsLabel = computed(() => formatAdultsLabel(adultsCount.value))
+
 function toggleLocationDropdown() {
   if (locationsLoading.value) {
     return
@@ -69,6 +85,7 @@ function toggleLocationDropdown() {
 
   isLocationOpen.value = !isLocationOpen.value
   isAnimalOpen.value = false
+  isGuestsOpen.value = false
 }
 
 function toggleAnimalDropdown() {
@@ -78,6 +95,25 @@ function toggleAnimalDropdown() {
 
   isAnimalOpen.value = !isAnimalOpen.value
   isLocationOpen.value = false
+  isGuestsOpen.value = false
+}
+
+function toggleGuestsDropdown() {
+  isGuestsOpen.value = !isGuestsOpen.value
+  isLocationOpen.value = false
+  isAnimalOpen.value = false
+}
+
+function incrementAdults() {
+  if (adultsCount.value < maxAdults) {
+    adultsCount.value += 1
+  }
+}
+
+function decrementAdults() {
+  if (adultsCount.value > 1) {
+    adultsCount.value -= 1
+  }
 }
 
 function selectLocation(item: SearchLocation) {
@@ -98,6 +134,10 @@ function closeAnimalDropdown() {
   isAnimalOpen.value = false
 }
 
+function closeGuestsDropdown() {
+  isGuestsOpen.value = false
+}
+
 function handleDocumentClick(event: MouseEvent) {
   if (!locationFieldRef.value?.contains(event.target as Node)) {
     closeLocationDropdown()
@@ -105,6 +145,10 @@ function handleDocumentClick(event: MouseEvent) {
 
   if (!animalFieldRef.value?.contains(event.target as Node)) {
     closeAnimalDropdown()
+  }
+
+  if (!guestsFieldRef.value?.contains(event.target as Node)) {
+    closeGuestsDropdown()
   }
 }
 
@@ -120,12 +164,18 @@ function clearAnimal(event: MouseEvent) {
   isAnimalOpen.value = false
 }
 
+function clearGuests(event: MouseEvent) {
+  event.stopPropagation()
+  adultsCount.value = 1
+  isGuestsOpen.value = false
+}
+
 function submitSearch() {
   emit('search', {
     location: location.value,
     animal: animal.value,
     dates: dateRange.value,
-    guests: guests.value,
+    guests: String(adultsCount.value),
   })
 }
 
@@ -243,20 +293,60 @@ onUnmounted(() => {
       </span>
     </label>
 
-    <label class="hero-search__field hero-search__field--guests">
+    <div
+      ref="guestsFieldRef"
+      class="hero-search__field hero-search__field--guests"
+    >
       <span class="hero-search__label">Гости</span>
-      <span class="hero-search__control">
-        <select v-model="guests">
-          <option>1 взрослый</option>
-          <option>2 взрослых</option>
-          <option>3 взрослых</option>
-          <option>4+ гостей</option>
-        </select>
-        <svg class="hero-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
-          <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      <button
+        type="button"
+        class="hero-search__control hero-search__dropdown-trigger"
+        @click="toggleGuestsDropdown"
+      >
+        <span class="hero-search__dropdown-value">{{ guestsLabel }}</span>
+      </button>
+      <button
+        v-if="adultsCount > 1"
+        type="button"
+        class="hero-search__clear"
+        aria-label="Сбросить количество гостей"
+        @click="clearGuests"
+      >
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
         </svg>
-      </span>
-    </label>
+      </button>
+      <svg v-else class="hero-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
+        <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+
+      <div v-if="isGuestsOpen" class="hero-search__dropdown-panel">
+        <div class="hero-search__guest-row">
+          <span class="hero-search__guest-label">Взрослые</span>
+          <div class="hero-search__guest-stepper">
+            <button
+              type="button"
+              class="hero-search__guest-btn"
+              aria-label="Уменьшить количество взрослых"
+              :disabled="adultsCount <= 1"
+              @click="decrementAdults"
+            >
+              −
+            </button>
+            <span class="hero-search__guest-count">{{ adultsCount }}</span>
+            <button
+              type="button"
+              class="hero-search__guest-btn"
+              aria-label="Увеличить количество взрослых"
+              :disabled="adultsCount >= maxAdults"
+              @click="incrementAdults"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     </div>
 
     <button type="submit" class="hero-search__submit">
@@ -327,7 +417,8 @@ onUnmounted(() => {
 }
 
 .hero-search__field--location,
-.hero-search__field--animals {
+.hero-search__field--animals,
+.hero-search__field--guests {
   z-index: 2;
 }
 
@@ -425,6 +516,79 @@ onUnmounted(() => {
   background: var(--wh-white);
   color: var(--wh-black-text);
   overflow: hidden;
+}
+
+.hero-search__dropdown-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 14px 16px;
+  border: 1px solid var(--wh-gray);
+  border-radius: 14px;
+  background: var(--wh-white);
+  color: var(--wh-black-text);
+}
+
+.hero-search__guest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hero-search__guest-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
+}
+
+.hero-search__guest-stepper {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.hero-search__guest-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--wh-black-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.hero-search__guest-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.hero-search__guest-btn:not(:disabled):hover {
+  opacity: 0.6;
+}
+
+.hero-search__guest-count {
+  min-width: 12px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
+  text-align: center;
 }
 
 .hero-search__dropdown-option {
