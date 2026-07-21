@@ -28,6 +28,8 @@ const locationFieldRef = ref<HTMLElement | null>(null)
 const animalFieldRef = ref<HTMLElement | null>(null)
 const guestsFieldRef = ref<HTMLElement | null>(null)
 const datesFieldRef = ref<HTMLElement | null>(null)
+const hoveredLocationId = ref<string | null>(null)
+const hoveredAnimalId = ref<string | null>(null)
 
 const { data: locations, pending: locationsLoading } = useAsyncData<SearchLocation[]>(
   'search-locations',
@@ -182,12 +184,32 @@ function selectAnimal(item: SearchAnimal) {
   isAnimalOpen.value = false
 }
 
+function clearLocationHover() {
+  hoveredLocationId.value = null
+}
+
+function clearAnimalHover() {
+  hoveredAnimalId.value = null
+}
+
+function setLocationHoverFromEvent(event: MouseEvent) {
+  const option = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-location-id]')
+  hoveredLocationId.value = option?.dataset.locationId ?? null
+}
+
+function setAnimalHoverFromEvent(event: MouseEvent) {
+  const option = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-animal-id]')
+  hoveredAnimalId.value = option?.dataset.animalId ?? null
+}
+
 function closeLocationDropdown() {
   isLocationOpen.value = false
+  clearLocationHover()
 }
 
 function closeAnimalDropdown() {
   isAnimalOpen.value = false
+  clearAnimalHover()
 }
 
 function closeGuestsDropdown() {
@@ -271,6 +293,7 @@ onUnmounted(() => {
       <div
         ref="locationFieldRef"
         class="hero-search__field hero-search__field--location"
+        :class="{ 'hero-search__field--open': isLocationOpen }"
       >
       <span class="hero-search__label">Локация</span>
       <button
@@ -298,15 +321,27 @@ onUnmounted(() => {
         <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
 
-      <ul v-if="isLocationOpen && locations?.length" class="hero-search__dropdown-list">
+      <ul
+        v-if="isLocationOpen && locations?.length"
+        class="hero-search__dropdown-list"
+        role="listbox"
+        aria-label="Локация"
+        @mousemove="setLocationHoverFromEvent"
+        @mouseleave="clearLocationHover"
+      >
         <li v-for="item in locations" :key="item.id">
           <button
             type="button"
             class="hero-search__dropdown-option"
-            :class="{ 'hero-search__dropdown-option--active': String(item.id) === location }"
+            :data-location-id="item.id"
+            :class="{
+              'hero-search__dropdown-option--active': String(item.id) === location,
+              'hero-search__dropdown-option--hovered': hoveredLocationId === String(item.id),
+            }"
             @click="selectLocation(item)"
           >
-            {{ item.name }}
+            <span class="hero-search__dropdown-option-dot" aria-hidden="true" />
+            <span class="hero-search__dropdown-option-label">{{ item.name }}</span>
           </button>
         </li>
       </ul>
@@ -315,6 +350,7 @@ onUnmounted(() => {
     <div
       ref="animalFieldRef"
       class="hero-search__field hero-search__field--animals"
+      :class="{ 'hero-search__field--open': isAnimalOpen }"
     >
       <span class="hero-search__label">Животные</span>
       <button
@@ -342,15 +378,27 @@ onUnmounted(() => {
         <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
 
-      <ul v-if="isAnimalOpen && animals?.length" class="hero-search__dropdown-list">
+      <ul
+        v-if="isAnimalOpen && animals?.length"
+        class="hero-search__dropdown-list"
+        role="listbox"
+        aria-label="Животные"
+        @mousemove="setAnimalHoverFromEvent"
+        @mouseleave="clearAnimalHover"
+      >
         <li v-for="item in animals" :key="item.id">
           <button
             type="button"
             class="hero-search__dropdown-option"
-            :class="{ 'hero-search__dropdown-option--active': String(item.id) === animal }"
+            :data-animal-id="item.id"
+            :class="{
+              'hero-search__dropdown-option--active': String(item.id) === animal,
+              'hero-search__dropdown-option--hovered': hoveredAnimalId === String(item.id),
+            }"
             @click="selectAnimal(item)"
           >
-            {{ item.title }}
+            <span class="hero-search__dropdown-option-dot" aria-hidden="true" />
+            <span class="hero-search__dropdown-option-label">{{ item.title }}</span>
           </button>
         </li>
       </ul>
@@ -359,6 +407,7 @@ onUnmounted(() => {
     <div
       ref="datesFieldRef"
       class="hero-search__field hero-search__field--dates"
+      :class="{ 'hero-search__field--open': isDatesOpen }"
     >
       <span class="hero-search__label">Заезд - Выезд</span>
       <button
@@ -391,6 +440,7 @@ onUnmounted(() => {
     <div
       ref="guestsFieldRef"
       class="hero-search__field hero-search__field--guests"
+      :class="{ 'hero-search__field--open': isGuestsOpen }"
     >
       <span class="hero-search__label">Гости</span>
       <button
@@ -518,6 +568,14 @@ onUnmounted(() => {
   z-index: 2;
 }
 
+.hero-search__field--open {
+  z-index: 30;
+}
+
+.hero-search__field--open .hero-search__dropdown-list {
+  z-index: 50;
+}
+
 .hero-search__field--location {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
@@ -618,7 +676,7 @@ onUnmounted(() => {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  z-index: 20;
+  z-index: 50;
   margin: 0;
   padding: 6px 8px;
   list-style: none;
@@ -627,6 +685,7 @@ onUnmounted(() => {
   background: var(--wh-white);
   color: var(--wh-black-text);
   overflow: hidden;
+  pointer-events: auto;
 }
 
 .hero-search__dropdown-panel {
@@ -717,41 +776,45 @@ onUnmounted(() => {
   padding: 12px 14px;
   border: none;
   border-radius: 10px;
-  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
   color: var(--wh-black-text);
   font: inherit;
   font-size: 0.98rem;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.hero-search__dropdown-option::before {
-  content: '';
+.hero-search__dropdown-option-dot {
   flex-shrink: 0;
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: transparent;
+  background-color: transparent;
 }
 
-.hero-search__dropdown-option:hover {
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
+.hero-search__dropdown-option-label {
+  min-width: 0;
 }
 
-.hero-search__dropdown-option--active::before {
-  background: var(--wh-orange-500);
+.hero-search__dropdown-option:hover,
+.hero-search__dropdown-option--hovered,
+.hero-search__dropdown-option:focus-visible {
+  background-color: #e8883a;
+  color: #ffffff;
 }
 
-.hero-search__dropdown-option--active:hover {
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
+.hero-search__dropdown-option--active .hero-search__dropdown-option-dot {
+  background-color: #d16510;
 }
 
-.hero-search__dropdown-option--active:hover::before {
-  background: var(--wh-white);
+.hero-search__dropdown-option--active:hover .hero-search__dropdown-option-dot,
+.hero-search__dropdown-option--active.hero-search__dropdown-option--hovered .hero-search__dropdown-option-dot,
+.hero-search__dropdown-option--active:focus-visible .hero-search__dropdown-option-dot {
+  background-color: #ffffff;
 }
 
 .hero-search__chevron {
@@ -794,6 +857,8 @@ onUnmounted(() => {
 }
 
 .hero-search__submit {
+  position: relative;
+  z-index: 1;
   flex: 0 0 148px;
   height: 81px;
   border: none;

@@ -169,10 +169,23 @@ function selectRole(item: Role) {
   role.value = item.code
   clearFieldError('role')
   isRoleOpen.value = false
+  clearRoleHover()
+}
+
+const hoveredRoleCode = ref<string | null>(null)
+
+function clearRoleHover() {
+  hoveredRoleCode.value = null
+}
+
+function setRoleHoverFromEvent(event: MouseEvent) {
+  const option = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-role-code]')
+  hoveredRoleCode.value = option?.dataset.roleCode ?? null
 }
 
 function closeRoleDropdown() {
   isRoleOpen.value = false
+  clearRoleHover()
 }
 
 function handleDocumentClick(event: MouseEvent) {
@@ -395,15 +408,25 @@ onUnmounted(() => {
                 <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
 
-              <ul v-if="isRoleOpen && roles.length" class="register-modal__dropdown-list">
+              <ul
+                v-if="isRoleOpen && roles.length"
+                class="register-modal__dropdown-list"
+                @mousemove="setRoleHoverFromEvent"
+                @mouseleave="clearRoleHover"
+              >
                 <li v-for="item in roles" :key="item.id">
                   <button
                     type="button"
                     class="register-modal__dropdown-option"
-                    :class="{ 'register-modal__dropdown-option--active': item.code === role }"
+                    :data-role-code="item.code"
+                    :class="{
+                      'register-modal__dropdown-option--active': item.code === role,
+                      'register-modal__dropdown-option--hovered': hoveredRoleCode === item.code,
+                    }"
                     @click="selectRole(item)"
                   >
-                    {{ item.name }}
+                    <span class="register-modal__dropdown-option-dot" aria-hidden="true" />
+                    <span class="register-modal__dropdown-option-label">{{ item.name }}</span>
                   </button>
                 </li>
               </ul>
@@ -827,41 +850,45 @@ onUnmounted(() => {
   padding: 12px 14px;
   border: none;
   border-radius: 10px;
-  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
   color: var(--wh-black-text);
   font: inherit;
   font-size: 0.98rem;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.register-modal__dropdown-option::before {
-  content: '';
+.register-modal__dropdown-option-dot {
   flex-shrink: 0;
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: transparent;
+  background-color: transparent;
 }
 
-.register-modal__dropdown-option:hover {
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
+.register-modal__dropdown-option-label {
+  min-width: 0;
 }
 
-.register-modal__dropdown-option--active::before {
-  background: var(--wh-orange-500);
+.register-modal__dropdown-option:hover,
+.register-modal__dropdown-option--hovered,
+.register-modal__dropdown-option:focus-visible {
+  background-color: #e8883a;
+  color: #ffffff;
 }
 
-.register-modal__dropdown-option--active:hover {
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
+.register-modal__dropdown-option--active .register-modal__dropdown-option-dot {
+  background-color: #d16510;
 }
 
-.register-modal__dropdown-option--active:hover::before {
-  background: var(--wh-white);
+.register-modal__dropdown-option--active:hover .register-modal__dropdown-option-dot,
+.register-modal__dropdown-option--active.register-modal__dropdown-option--hovered .register-modal__dropdown-option-dot,
+.register-modal__dropdown-option--active:focus-visible .register-modal__dropdown-option-dot {
+  background-color: #ffffff;
 }
 
 .register-modal__error {
