@@ -1,0 +1,861 @@
+<script setup lang="ts">
+import type { Role } from '~/types/api'
+
+const { isOpen, close } = useRegisterModal()
+const { open: openLoginModal } = useLoginModal()
+const { roles: rolesApi, auth } = useApi()
+
+const firstName = ref('')
+const lastName = ref('')
+const role = ref('')
+const phoneDigits = ref('')
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
+const acceptTerms = ref(false)
+
+const roles = ref<Role[]>([])
+const rolesLoading = ref(false)
+const rolesError = ref('')
+const isSubmitting = ref(false)
+const submitError = ref('')
+const fieldErrors = ref<Record<string, string[]>>({})
+
+function getFieldError(field: string) {
+  return fieldErrors.value[field]?.[0]
+}
+
+function clearFieldError(field: string) {
+  if (!fieldErrors.value[field]) {
+    return
+  }
+
+  const nextErrors = { ...fieldErrors.value }
+  delete nextErrors[field]
+  fieldErrors.value = nextErrors
+  submitError.value = ''
+}
+
+function applyValidationErrors(data: unknown) {
+  if (!data || typeof data !== 'object') {
+    return false
+  }
+
+  const response = data as { message?: string, errors?: Record<string, string[]> }
+
+  if (response.errors) {
+    fieldErrors.value = response.errors
+    submitError.value = ''
+    return true
+  }
+
+  if (response.message) {
+    submitError.value = response.message
+  }
+
+  return false
+}
+
+async function loadRoles() {
+  rolesLoading.value = true
+  rolesError.value = ''
+
+  try {
+    const response = await rolesApi.getRoles()
+
+    if (response.success) {
+      roles.value = response.data
+      return
+    }
+
+    rolesError.value = response.message || 'Не удалось загрузить роли'
+  } catch {
+    rolesError.value = 'Не удалось загрузить роли'
+  } finally {
+    rolesLoading.value = false
+  }
+}
+
+function resetForm() {
+  firstName.value = ''
+  lastName.value = ''
+  role.value = ''
+  phoneDigits.value = ''
+  email.value = ''
+  password.value = ''
+  showPassword.value = false
+  acceptTerms.value = false
+  rolesError.value = ''
+  submitError.value = ''
+  fieldErrors.value = {}
+  isSubmitting.value = false
+}
+
+function extractPhoneDigits(value: string) {
+  let digits = value.replace(/\D/g, '')
+
+  if (digits.startsWith('7') || digits.startsWith('8')) {
+    digits = digits.slice(1)
+  }
+
+  return digits.slice(0, 10)
+}
+
+function formatPhone(digits: string) {
+  const normalized = extractPhoneDigits(digits)
+
+  if (!normalized.length) {
+    return ''
+  }
+
+  let formatted = '+7'
+
+  formatted += ` (${normalized.slice(0, 3)}`
+
+  if (normalized.length >= 3) {
+    formatted += ')'
+  }
+
+  if (normalized.length > 3) {
+    formatted += ` ${normalized.slice(3, 6)}`
+  }
+
+  if (normalized.length > 6) {
+    formatted += `-${normalized.slice(6, 8)}`
+  }
+
+  if (normalized.length > 8) {
+    formatted += `-${normalized.slice(8, 10)}`
+  }
+
+  return formatted
+}
+
+const phone = computed({
+  get() {
+    return formatPhone(phoneDigits.value)
+  },
+  set(value: string) {
+    phoneDigits.value = extractPhoneDigits(value)
+  },
+})
+
+function handlePhoneKeydown(event: KeyboardEvent) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return
+  }
+
+  const allowedKeys = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Escape',
+    'Enter',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+  ]
+
+  if (allowedKeys.includes(event.key)) {
+    return
+  }
+
+  if (!/^\d$/.test(event.key)) {
+    event.preventDefault()
+    return
+  }
+
+  if (phoneDigits.value.length >= 10) {
+    event.preventDefault()
+  }
+}
+
+function handlePhonePaste(event: ClipboardEvent) {
+  event.preventDefault()
+  phoneDigits.value = extractPhoneDigits(event.clipboardData?.getData('text') ?? '')
+}
+
+function generatePassword() {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*'
+  const length = 12
+  const randomValues = new Uint32Array(length)
+
+  crypto.getRandomValues(randomValues)
+  password.value = Array.from(randomValues, (value) => chars[value % chars.length]).join('')
+  showPassword.value = true
+}
+
+function togglePasswordVisibility() {
+  showPassword.value = !showPassword.value
+}
+
+async function handleSubmit() {
+  isSubmitting.value = true
+
+  try {
+    const response = await auth.register({
+      first_name: firstName.value.trim(),
+      last_name: lastName.value.trim(),
+      email: email.value.trim(),
+      password: password.value,
+      phone: phone.value,
+      role: role.value,
+      term: acceptTerms.value,
+    })
+
+    if (response.success) {
+      close()
+      return
+    }
+
+    if (!applyValidationErrors(response)) {
+      fieldErrors.value = {}
+      submitError.value = response.message || 'Не удалось зарегистрироваться'
+    }
+  } catch (error) {
+    const data = (error as { data?: unknown }).data
+
+    if (!applyValidationErrors(data)) {
+      fieldErrors.value = {}
+      submitError.value = 'Не удалось зарегистрироваться'
+    }
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+function handleBackdropClick(event: MouseEvent) {
+  if (event.target === event.currentTarget) {
+    close()
+  }
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    close()
+  }
+}
+
+function switchToLogin() {
+  close()
+  openLoginModal()
+}
+
+watch(isOpen, (open) => {
+  if (open) {
+    loadRoles()
+    return
+  }
+
+  resetForm()
+})
+</script>
+
+<template>
+  <Teleport to="body">
+    <Transition name="register-modal">
+      <div
+        v-if="isOpen"
+        class="register-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="register-modal-title"
+        @click="handleBackdropClick"
+        @keydown="handleKeydown"
+      >
+        <div class="register-modal__card">
+          <div
+            v-if="isSubmitting"
+            class="register-modal__loader"
+            aria-hidden="true"
+          >
+            <span class="register-modal__spinner" />
+          </div>
+
+          <button
+            type="button"
+            class="register-modal__close"
+            aria-label="Закрыть"
+            :disabled="isSubmitting"
+            @click="close"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+              <path
+                d="M5 5l10 10M15 5L5 15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+
+          <h2 id="register-modal-title" class="register-modal__title">Регистрация</h2>
+
+          <form class="register-modal__form" novalidate @submit.prevent="handleSubmit">
+            <div class="register-modal__row">
+              <div class="register-modal__field">
+                <input
+                  v-model="firstName"
+                  type="text"
+                  class="register-modal__input"
+                  :class="{ 'register-modal__input--error': getFieldError('first_name') }"
+                  placeholder="Имя"
+                  autocomplete="given-name"
+                  @input="clearFieldError('first_name')"
+                />
+                <p v-if="getFieldError('first_name')" class="register-modal__field-error">
+                  {{ getFieldError('first_name') }}
+                </p>
+              </div>
+              <div class="register-modal__field">
+                <input
+                  v-model="lastName"
+                  type="text"
+                  class="register-modal__input"
+                  :class="{ 'register-modal__input--error': getFieldError('last_name') }"
+                  placeholder="Фамилия"
+                  autocomplete="family-name"
+                  @input="clearFieldError('last_name')"
+                />
+                <p v-if="getFieldError('last_name')" class="register-modal__field-error">
+                  {{ getFieldError('last_name') }}
+                </p>
+              </div>
+            </div>
+
+            <div class="register-modal__field">
+              <div class="register-modal__select-wrap">
+                <select
+                  v-model="role"
+                  class="register-modal__select"
+                  :class="{ 'register-modal__input--error': getFieldError('role') }"
+                  :disabled="rolesLoading || !!rolesError"
+                  @change="clearFieldError('role')"
+                >
+                  <option value="" disabled hidden>
+                    {{ rolesLoading ? 'Загрузка ролей...' : 'Выберите роль' }}
+                  </option>
+                  <option v-for="item in roles" :key="item.id" :value="item.code">
+                    {{ item.name }}
+                  </option>
+                </select>
+                <svg class="register-modal__select-icon" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                  <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+              </div>
+              <p v-if="getFieldError('role')" class="register-modal__field-error">
+                {{ getFieldError('role') }}
+              </p>
+            </div>
+
+            <p v-if="rolesError" class="register-modal__error">
+              {{ rolesError }}
+            </p>
+
+            <div class="register-modal__field">
+              <input
+                v-model="phone"
+                type="tel"
+                class="register-modal__input"
+                :class="{ 'register-modal__input--error': getFieldError('phone') }"
+                placeholder="+7 (___) ___-__-__"
+                autocomplete="tel"
+                inputmode="numeric"
+                maxlength="18"
+                @input="clearFieldError('phone')"
+                @keydown="handlePhoneKeydown"
+                @paste="handlePhonePaste"
+              />
+              <p v-if="getFieldError('phone')" class="register-modal__field-error">
+                {{ getFieldError('phone') }}
+              </p>
+            </div>
+
+            <div class="register-modal__field">
+              <input
+                v-model="email"
+                type="text"
+                class="register-modal__input"
+                :class="{ 'register-modal__input--error': getFieldError('email') }"
+                placeholder="Адрес Email"
+                autocomplete="email"
+                inputmode="email"
+                @input="clearFieldError('email')"
+              />
+              <p v-if="getFieldError('email')" class="register-modal__field-error">
+                {{ getFieldError('email') }}
+              </p>
+            </div>
+
+            <div class="register-modal__field">
+              <div class="register-modal__password-wrap">
+                <input
+                  v-model="password"
+                  :type="showPassword ? 'text' : 'password'"
+                  class="register-modal__input register-modal__input--password"
+                  :class="{ 'register-modal__input--error': getFieldError('password') }"
+                  placeholder="Пароль"
+                  autocomplete="new-password"
+                  @input="clearFieldError('password')"
+                />
+
+              <div class="register-modal__password-actions">
+                <button
+                  type="button"
+                  class="register-modal__generate"
+                  @click="generatePassword"
+                >
+                  Сгенерировать
+                </button>
+
+                <button
+                  type="button"
+                  class="register-modal__toggle-password"
+                  :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'"
+                  @click="togglePasswordVisibility"
+                >
+                  <svg
+                    v-if="showPassword"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.75"
+                    />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.75"
+                    />
+                  </svg>
+                  <svg
+                    v-else
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M3 3l18 18"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.75"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a18.4 18.4 0 0 1-4.8 5.7M6.7 6.7C4.1 8.4 2 12 2 12s3.5 7 10 7c1.2 0 2.3-.2 3.3-.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.75"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+              <p v-if="getFieldError('password')" class="register-modal__field-error">
+                {{ getFieldError('password') }}
+              </p>
+            </div>
+
+            <label class="register-modal__terms">
+              <input
+                v-model="acceptTerms"
+                type="checkbox"
+                class="register-modal__checkbox"
+                @change="clearFieldError('term')"
+              />
+              <span>
+                Мною прочитаны и принимаются
+                <NuxtLink to="/terms" class="register-modal__terms-link" @click="close">
+                  Условия использования и Политика конфиденциальности
+                </NuxtLink>
+              </span>
+            </label>
+            <p v-if="getFieldError('term')" class="register-modal__field-error">
+              {{ getFieldError('term') }}
+            </p>
+
+            <p v-if="submitError" class="register-modal__error">
+              {{ submitError }}
+            </p>
+
+            <button type="submit" class="register-modal__submit" :disabled="isSubmitting">
+              Регистрация
+            </button>
+          </form>
+
+          <p class="register-modal__footer">
+            Уже есть аккаунт?
+            <button type="button" class="register-modal__login-link" @click="switchToLogin">
+              Вход
+            </button>
+          </p>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<style scoped>
+.register-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.register-modal__card {
+  position: relative;
+  width: 592px;
+  min-width: min(100%, var(--wh-auth-modal-width));
+  padding: 40px 36px 32px;
+  border-radius: var(--wh-radius-xl);
+  background: var(--wh-white);
+  box-shadow: var(--wh-shadow);
+}
+
+.register-modal__loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: transparent;
+  pointer-events: all;
+}
+
+.register-modal__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--wh-gray-200);
+  border-top-color: var(--wh-orange-500);
+  border-radius: 50%;
+  background: var(--wh-white);
+  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.12);
+  animation: register-modal-spin 0.75s linear infinite;
+}
+
+@keyframes register-modal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.register-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--wh-gray-400);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.register-modal__close:hover:not(:disabled) {
+  color: var(--wh-gray-900);
+  background: var(--wh-gray-100);
+}
+
+.register-modal__close:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.register-modal__title {
+  margin: 0 0 28px;
+  font-size: 1.75rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--wh-gray-900);
+}
+
+.register-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.register-modal__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.register-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.register-modal__field-error {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #dc2626;
+}
+
+.register-modal__input--error,
+.register-modal__input--error:focus {
+  border-color: #dc2626;
+}
+
+.register-modal__input,
+.register-modal__select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 10px;
+  background: var(--wh-white);
+  color: var(--wh-gray-900);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.register-modal__input::placeholder {
+  color: var(--wh-gray-400);
+}
+
+.register-modal__input:focus,
+.register-modal__select:focus {
+  border-color: var(--wh-orange-500);
+  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
+}
+
+.register-modal__password-wrap {
+  position: relative;
+}
+
+.register-modal__input--password {
+  padding-right: 168px;
+}
+
+.register-modal__password-actions {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transform: translateY(-50%);
+}
+
+.register-modal__generate {
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  color: var(--wh-orange-500);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.register-modal__generate:hover {
+  color: var(--wh-orange-600);
+}
+
+.register-modal__toggle-password {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--wh-gray-400);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.register-modal__toggle-password:hover {
+  color: var(--wh-gray-600);
+  background: var(--wh-gray-100);
+}
+
+.register-modal__select-wrap {
+  position: relative;
+}
+
+.register-modal__select {
+  appearance: none;
+  padding-right: 40px;
+  color: var(--wh-gray-900);
+  cursor: pointer;
+}
+
+.register-modal__select:invalid {
+  color: var(--wh-gray-400);
+}
+
+.register-modal__select-icon {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  color: var(--wh-gray-400);
+  pointer-events: none;
+}
+
+.register-modal__select:disabled {
+  cursor: not-allowed;
+  background: var(--wh-gray-100);
+  color: var(--wh-gray-400);
+}
+
+.register-modal__error {
+  margin: -4px 0 0;
+  font-size: 0.82rem;
+  color: #dc2626;
+}
+
+.register-modal__terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--wh-gray-900);
+  cursor: pointer;
+  user-select: none;
+}
+
+.register-modal__checkbox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--wh-orange-500);
+  cursor: pointer;
+}
+
+.register-modal__terms-link {
+  color: var(--wh-orange-500);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
+}
+
+.register-modal__terms-link:hover {
+  color: var(--wh-orange-600);
+}
+
+.register-modal__submit {
+  width: 100%;
+  margin-top: 4px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 999px;
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.register-modal__submit:hover {
+  background: var(--wh-orange-600);
+  transform: translateY(-1px);
+}
+
+.register-modal__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.register-modal__footer {
+  margin: 24px 0 0;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--wh-gray-900);
+}
+
+.register-modal__login-link {
+  margin-left: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: var(--wh-orange-500);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.register-modal__login-link:hover {
+  color: var(--wh-orange-600);
+}
+
+.register-modal-enter-active,
+.register-modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.register-modal-enter-active .register-modal__card,
+.register-modal-leave-active .register-modal__card {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.register-modal-enter-from,
+.register-modal-leave-to {
+  opacity: 0;
+}
+
+.register-modal-enter-from .register-modal__card,
+.register-modal-leave-to .register-modal__card {
+  transform: translateY(12px) scale(0.98);
+  opacity: 0;
+}
+
+@media (max-width: 480px) {
+  .register-modal__card {
+    padding: 32px 24px 24px;
+  }
+
+  .register-modal__row {
+    grid-template-columns: 1fr;
+  }
+
+  .register-modal__input--password {
+    padding-right: 148px;
+  }
+
+  .register-modal__generate {
+    font-size: 0.76rem;
+  }
+}
+</style>

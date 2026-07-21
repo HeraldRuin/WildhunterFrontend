@@ -1,0 +1,290 @@
+<script setup lang="ts">
+interface FaqItem {
+  id: number
+  question: string
+  answer: string
+}
+
+const items: FaqItem[] = [
+  {
+    id: 1,
+    question: 'Нужно ли проходить обучение, чтобы стать охотником?',
+    answer: 'Да, обучение является обязательным этапом для законной охоты в России. Чтобы получить охотничий билет, вам необходимо изучить и успешно сдать экзамен по правилам охоты, технике безопасности при обращении с оружием, основам биологии диких животных и правилам оказания первой помощи в полевых условиях.',
+  },
+  {
+    id: 2,
+    question: 'Как оформить бронирование?',
+    answer: 'Выберите охотхозяйство, укажите даты, количество гостей и необходимые услуги в форме поиска. После подтверждения заявки администратором базы вы сможете внести предоплату и получить подтверждение бронирования на платформе.',
+  },
+  {
+    id: 3,
+    question: 'Можно ли отменить бронь?',
+    answer: 'Да, отмена возможна в личном кабинете. Условия возврата предоплаты зависят от правил конкретного охотхозяйства и срока до начала охоты — они указаны при бронировании.',
+  },
+  {
+    id: 4,
+    question: 'Есть ли поддержка?',
+    answer: 'Да, служба поддержки Wild Hunter работает через раздел «Поддержка» на сайте. Мы поможем с бронированием, оплатой и любыми вопросами по использованию платформы.',
+  },
+  {
+    id: 5,
+    question: 'Как выбрать регион?',
+    answer: 'В форме поиска откройте поле «Локация» и выберите интересующий регион или охотхозяйство. Вы также можете фильтровать базы по видам дичи, сезону и доступным услугам.',
+  },
+]
+
+const openId = ref<number | null>(null)
+
+function toggleItem(id: number) {
+  openId.value = openId.value === id ? null : id
+}
+</script>
+
+<template>
+  <section class="faq-block">
+    <div class="container faq-block__inner">
+      <h2 class="faq-block__title">Часто задаваемые вопросы</h2>
+
+      <div class="faq-block__panel">
+        <div class="faq-block__list">
+          <div
+            v-for="item in items"
+            :key="item.id"
+            class="faq-block__item"
+            :class="{ 'faq-block__item--open': openId === item.id }"
+          >
+            <button
+              type="button"
+              class="faq-block__trigger"
+              :aria-expanded="openId === item.id"
+              @click="toggleItem(item.id)"
+            >
+              <span class="faq-block__number">{{ item.id }}</span>
+              <span class="faq-block__question">{{ item.question }}</span>
+              <span class="faq-block__icon" aria-hidden="true">
+                {{ openId === item.id ? '—' : '+' }}
+              </span>
+            </button>
+
+            <div v-show="openId === item.id" class="faq-block__answer">
+              <p>{{ item.answer }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-block__cta">
+          <h3 class="faq-block__cta-title">Остались вопросы?</h3>
+          <p class="faq-block__cta-text">
+            Напишите нам и мы проконсультируем<br>
+            вас и ответим на вопросы
+          </p>
+          <NuxtLink to="/support" class="btn btn--primary faq-block__cta-btn">
+            Поддержка
+          </NuxtLink>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.faq-block {
+  padding-block: 72px 88px;
+  background: var(--wh-white);
+}
+
+.faq-block__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.faq-block__title {
+  margin: 0;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--wh-gray-900);
+}
+
+.faq-block__panel {
+  border-top: 1px solid rgb(28 33 28 / 20%);
+  border-bottom: 1px solid rgb(28 33 28 / 20%);
+}
+
+.faq-block__list {
+  border-top: none;
+}
+
+.faq-block__item {
+  border-bottom: 1px solid rgb(28 33 28 / 20%);
+}
+
+.faq-block__trigger {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 22px 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.faq-block__number {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #5f7256;
+  color: var(--wh-white);
+  font-size: 0.875rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.faq-block__question {
+  font-size: clamp(1rem, 1.6vw, 1.125rem);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--wh-gray-900);
+}
+
+.faq-block__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+  font-weight: 400;
+  color: var(--wh-gray-900);
+}
+
+.faq-block__answer {
+  padding: 0 0 22px 44px;
+}
+
+.faq-block__answer p {
+  margin: 0;
+  max-width: 920px;
+  color: var(--wh-gray-500);
+  line-height: 1.6;
+  font-size: 0.98rem;
+}
+
+.faq-block__cta {
+  display: grid;
+  grid-template-columns: max-content 1fr auto max-content;
+  align-items: center;
+  column-gap: 20px;
+  width: 100%;
+  padding-block: 28px;
+}
+
+.faq-block__cta-title {
+  margin: 0;
+  grid-column: 1;
+  max-width: 592px;
+  font-family: 'UNCAGE', 'Manrope', system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: #1c211c;
+  white-space: nowrap;
+}
+
+.faq-block__cta-text {
+  margin: 0;
+  grid-column: 3;
+  width: min(100%, 385px);
+  text-align: left;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.05em;
+  color: rgb(0 0 0 / 80%);
+}
+
+.faq-block__cta-btn {
+  grid-column: 4;
+  flex: 0 0 auto;
+  min-width: 168px;
+  padding-inline: 36px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1024px) {
+  .faq-block__cta {
+    grid-template-columns: max-content minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: clamp(20px, 4vw, 64px);
+    row-gap: 16px;
+  }
+
+  .faq-block__cta-title {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+    white-space: normal;
+  }
+
+  .faq-block__cta-text {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    max-width: none;
+  }
+
+  .faq-block__cta-btn {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .faq-block__answer {
+    padding-left: 0;
+  }
+
+  .faq-block__cta {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 16px;
+  }
+
+  .faq-block__cta-title {
+    grid-column: auto;
+    grid-row: auto;
+    align-self: auto;
+  }
+
+  .faq-block__cta-title,
+  .faq-block__cta-text,
+  .faq-block__cta-btn {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .faq-block__cta-text {
+    text-align: left;
+  }
+
+  .faq-block__cta-btn {
+    width: auto;
+  }
+}
+</style>
