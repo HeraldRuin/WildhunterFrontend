@@ -8,6 +8,7 @@ import {
   useReviewsApi,
   useRolesApi,
   useSearchApi,
+  useServicesApi,
 } from '~/api'
 
 export function useApi() {
@@ -20,6 +21,7 @@ export function useApi() {
   const animals = useAnimalsApi()
   const roles = useRolesApi()
   const reviews = useReviewsApi()
+  const services = useServicesApi()
 
   return {
     ...client,
@@ -31,5 +33,6 @@ export function useApi() {
     animals,
     roles,
     reviews,
+    services,
   }
 }

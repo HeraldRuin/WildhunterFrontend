@@ -56,9 +56,10 @@ export function useAuthModalsScrollLock() {
   const { isOpen: isLoginOpen } = useLoginModal()
   const { isOpen: isRegisterOpen } = useRegisterModal()
   const { isOpen: isForgotPasswordOpen } = useForgotPasswordModal()
+  const { isOpen: isFavoriteAuthOpen } = useFavoriteAuthModal()
 
   const isAnyOpen = computed(
-    () => isLoginOpen.value || isRegisterOpen.value || isForgotPasswordOpen.value,
+    () => isLoginOpen.value || isRegisterOpen.value || isForgotPasswordOpen.value || isFavoriteAuthOpen.value,
   )
 
   useBodyScrollLock(isAnyOpen)

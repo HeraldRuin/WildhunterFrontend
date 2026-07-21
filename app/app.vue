@@ -11,5 +11,6 @@ useAuthModalsScrollLock()
     <AuthLoginModal />
     <AuthRegisterModal />
     <AuthForgotPasswordModal />
+    <AuthFavoriteAuthModal />
   </div>
 </template>

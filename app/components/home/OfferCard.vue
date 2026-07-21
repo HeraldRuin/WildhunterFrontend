@@ -1,12 +1,78 @@
 <script setup lang="ts">
 import type { OfferItem } from '~/types/api'
+import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
 
 defineProps<{
   item: OfferItem
 }>()
 
+const FAVORITE_TEST_SERVICE_ID = 27
+
+const { services } = useApi()
+const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
+
+const isFavoriteLoading = ref(false)
+const isFavorite = ref(false)
+
 function formatPrice(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value)
+}
+
+function getErrorMessage(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return ''
+  }
+
+  const fetchError = error as {
+    data?: { message?: string }
+    message?: string
+  }
+
+  return fetchError.data?.message || fetchError.message || ''
+}
+
+function shouldOpenRegistrationModal(error: unknown, message: string) {
+  const statusCode = (error as { statusCode?: number })?.statusCode
+
+  return statusCode === 401
+    || statusCode === 403
+    || message.includes('регистрацию')
+    || message === FAVORITE_REGISTRATION_MESSAGE
+}
+
+async function handleFavoriteClick(event: MouseEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+
+  if (isFavoriteLoading.value) {
+    return
+  }
+
+  isFavoriteLoading.value = true
+
+  try {
+    const response = await services.toggleFavorite(FAVORITE_TEST_SERVICE_ID)
+
+    if (response.success === false) {
+      const message = response.message || FAVORITE_REGISTRATION_MESSAGE
+
+      if (shouldOpenRegistrationModal(null, message)) {
+        openFavoriteAuthModal(message)
+      }
+
+      return
+    }
+
+    isFavorite.value = !isFavorite.value
+  } catch (error) {
+    const message = getErrorMessage(error)
+
+    if (shouldOpenRegistrationModal(error, message)) {
+      openFavoriteAuthModal(message || FAVORITE_REGISTRATION_MESSAGE)
+    }
+  } finally {
+    isFavoriteLoading.value = false
+  }
 }
 </script>
 
@@ -14,7 +80,15 @@ function formatPrice(value: number) {
   <NuxtLink :to="`/${item.object_model}/${item.id}`" class="offer-card">
     <div class="offer-card__media">
       <img :src="item.image" :alt="item.title" loading="lazy">
-      <button type="button" class="offer-card__favorite" aria-label="В избранное" @click.prevent>
+      <button
+        type="button"
+        class="offer-card__favorite"
+        :class="{ 'offer-card__favorite--active': isFavorite }"
+        :aria-label="isFavorite ? 'Убрать из избранного' : 'В избранное'"
+        :aria-pressed="isFavorite"
+        :disabled="isFavoriteLoading"
+        @click="handleFavoriteClick"
+      >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
@@ -72,6 +146,7 @@ function formatPrice(value: number) {
   position: absolute;
   top: 14px;
   right: 14px;
+  z-index: 2;
   display: grid;
   place-items: center;
   width: 24px;
@@ -80,6 +155,20 @@ function formatPrice(value: number) {
   border: none;
   background: transparent;
   cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.offer-card__favorite:hover:not(:disabled) {
+  transform: scale(1.08);
+}
+
+.offer-card__favorite:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.offer-card__favorite--active {
+  transform: scale(1.05);
 }
 
 .offer-card__favorite svg {
