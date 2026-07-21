@@ -123,6 +123,10 @@ const items = [
     font-size: 32px;
   }
 
+  .why-us__card-text {
+    font-size: 16px;
+  }
+
   .why-us__card {
     min-height: auto;
   }
@@ -142,6 +146,10 @@ const items = [
 
   .why-us__number {
     font-size: 24px;
+  }
+
+  .why-us__card-title {
+    font-size: 22px;
   }
 
   .why-us__placeholder {
