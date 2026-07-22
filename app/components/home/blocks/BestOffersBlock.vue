@@ -8,7 +8,10 @@ const props = defineProps<{
 const offers = computed(() => props.items ?? [])
 const trackRef = ref<HTMLElement | null>(null)
 
-const CARD_WIDTH = 288
+function getCardWidth(track: HTMLElement) {
+  const styles = getComputedStyle(track)
+  return Number.parseFloat(styles.getPropertyValue('--best-offers-card-width')) || 288
+}
 
 function getTrackGap(track: HTMLElement) {
   const styles = getComputedStyle(track)
@@ -18,7 +21,7 @@ function getTrackGap(track: HTMLElement) {
 function scrollBy(direction: 'prev' | 'next') {
   const track = trackRef.value
   if (!track) return
-  const offset = (CARD_WIDTH + getTrackGap(track)) * (direction === 'next' ? 1 : -1)
+  const offset = (getCardWidth(track) + getTrackGap(track)) * (direction === 'next' ? 1 : -1)
   track.scrollBy({ left: offset, behavior: 'smooth' })
 }
 </script>
@@ -94,9 +97,12 @@ function scrollBy(direction: 'prev' | 'next') {
 }
 
 .best-offers__track {
+  --best-offers-card-width: 288px;
+  --best-offers-card-height: 300px;
+
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 288px;
+  grid-auto-columns: var(--best-offers-card-width);
   gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -109,14 +115,14 @@ function scrollBy(direction: 'prev' | 'next') {
 }
 
 .best-offers__slide {
-  width: 288px;
+  width: var(--best-offers-card-width);
   flex-shrink: 0;
   scroll-snap-align: start;
 }
 
 .best-offers__slide :deep(.offer-card__media) {
   width: 100%;
-  height: 300px;
+  height: var(--best-offers-card-height);
   aspect-ratio: auto;
 }
 
@@ -139,7 +145,16 @@ function scrollBy(direction: 'prev' | 'next') {
   }
 
   .best-offers__track {
+    --best-offers-card-width: 360px;
+    --best-offers-card-height: 300px;
     gap: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .best-offers__track {
+    --best-offers-card-width: 345px;
+    --best-offers-card-height: 325px;
   }
 }
 </style>
