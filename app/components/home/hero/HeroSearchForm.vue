@@ -592,6 +592,10 @@ onUnmounted(() => {
   border-bottom-right-radius: 0;
 }
 
+.hero-search__field--animals .hero-search__dropdown-list {
+  border-radius: 0;
+}
+
 .hero-search__field--animals,
 .hero-search__field--dates {
   border-radius: 0;
@@ -600,6 +604,10 @@ onUnmounted(() => {
 .hero-search__field--guests {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+}
+
+.hero-search__field--guests .hero-search__dropdown-panel {
+  border-radius: 0 var(--wh-radius-lg) var(--wh-radius-lg) 0;
 }
 
 .hero-search__label {
@@ -692,7 +700,7 @@ onUnmounted(() => {
   padding: 6px 8px;
   list-style: none;
   border: 1px solid var(--wh-gray);
-  border-radius: 14px;
+  border-radius: 14px 0 0 14px;
   background: var(--wh-white);
   color: var(--wh-black-text);
   overflow: hidden;
@@ -717,6 +725,7 @@ onUnmounted(() => {
   width: max-content;
   max-width: min(640px, calc(100vw - 32px));
   padding: 18px 20px;
+  border-radius: 0;
 }
 
 .hero-search__guest-row {
@@ -924,6 +933,10 @@ onUnmounted(() => {
     border-bottom-right-radius: var(--wh-radius-lg);
   }
 
+  .hero-search__field--animals .hero-search__dropdown-list {
+    border-radius: 0 var(--wh-radius-lg) var(--wh-radius-lg) 0;
+  }
+
   .hero-search__field--dates {
     grid-column: 1 / 5;
     grid-row: 2;
@@ -934,6 +947,10 @@ onUnmounted(() => {
     border-bottom-right-radius: 0;
   }
 
+  .hero-search__field--dates .hero-search__dropdown-panel--calendar {
+    border-radius: var(--wh-radius-lg) 0 0 var(--wh-radius-lg);
+  }
+
   .hero-search__field--guests {
     grid-column: 5 / 9;
     grid-row: 2;
@@ -942,6 +959,10 @@ onUnmounted(() => {
     border-bottom-left-radius: 0;
     border-top-right-radius: var(--wh-radius-lg);
     border-bottom-right-radius: var(--wh-radius-lg);
+  }
+
+  .hero-search__field--guests .hero-search__dropdown-panel {
+    border-radius: 0 var(--wh-radius-lg) var(--wh-radius-lg) 0;
   }
 
   .hero-search__submit,
@@ -980,10 +1001,18 @@ onUnmounted(() => {
     border-radius: var(--wh-radius-lg);
   }
 
+  .hero-search__field--location .hero-search__dropdown-list {
+    border-radius: var(--wh-radius-lg);
+  }
+
   .hero-search__field--animals {
     grid-column: 1 / -1;
     grid-row: 2;
     margin-top: 0;
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hero-search__field--animals .hero-search__dropdown-list {
     border-radius: var(--wh-radius-lg);
   }
 
@@ -1002,6 +1031,10 @@ onUnmounted(() => {
     border-bottom-left-radius: var(--wh-radius-lg);
     border-top-right-radius: var(--wh-radius-lg);
     border-bottom-right-radius: var(--wh-radius-lg);
+  }
+
+  .hero-search__field--guests .hero-search__dropdown-panel {
+    border-radius: var(--wh-radius-lg);
   }
 
   .hero-search__submit,
