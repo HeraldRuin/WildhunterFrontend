@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { OfferItem } from '~/types/api'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
+import { formatReviewsCount } from '~/utils/pluralize'
 
 const props = defineProps<{
   item: OfferItem
@@ -99,7 +100,7 @@ async function handleFavoriteClick(event: MouseEvent) {
         </svg>
       </button>
       <div v-if="item.reviews > 0 || item.rating > 0" class="offer-card__rating">
-        <span v-if="item.reviews > 0" class="offer-card__reviews">{{ item.reviews }} отзыва</span>
+        <span v-if="item.reviews > 0" class="offer-card__reviews">{{ formatReviewsCount(item.reviews) }}</span>
         <template v-if="item.rating > 0">
           <span class="offer-card__star">★</span>
           <span class="offer-card__score">{{ item.rating.toFixed(1).replace('.', ',') }}</span>

@@ -7,6 +7,7 @@ import {
   normalizeHotelDetail,
   toRelatedOffers,
 } from '~/utils/hotel'
+import { formatReviewsCount } from '~/utils/pluralize'
 
 definePageMeta({
   layout: 'home',
@@ -147,7 +148,7 @@ function handleSearch(payload: Record<string, string>) {
 
               <div class="hotel-page__meta">
                 <div class="hotel-page__rating">
-                  <span class="hotel-page__reviews">{{ reviewsCount }} отзыва</span>
+                  <span class="hotel-page__reviews">{{ formatReviewsCount(reviewsCount) }}</span>
                   <span class="hotel-page__star">★</span>
                   <span class="hotel-page__score">{{ ratingValue }}</span>
                 </div>
