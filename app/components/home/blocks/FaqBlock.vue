@@ -35,6 +35,9 @@ const items: FaqItem[] = [
 
 const openId = ref<number | null>(null)
 
+const faqIconPlus = '/icons/Property%201=icon%20plus.png'
+const faqIconMinus = '/icons/line-md_plus.png'
+
 function toggleItem(id: number) {
   openId.value = openId.value === id ? null : id
 }
@@ -59,16 +62,25 @@ function toggleItem(id: number) {
               :aria-expanded="openId === item.id"
               @click="toggleItem(item.id)"
             >
-              <span class="faq-block__number">{{ item.id }}</span>
-              <span class="faq-block__question">{{ item.question }}</span>
-              <span class="faq-block__icon" aria-hidden="true">
-                {{ openId === item.id ? '—' : '+' }}
+              <span class="faq-block__question-block">
+                <span class="faq-block__number">{{ item.id }}</span>
+                <span class="faq-block__question">{{ item.question }}</span>
               </span>
+              <span
+                v-if="openId === item.id"
+                class="faq-block__answer"
+              >
+                {{ item.answer }}
+              </span>
+              <img
+                :src="openId === item.id ? faqIconMinus : faqIconPlus"
+                alt=""
+                width="40"
+                height="40"
+                class="faq-block__icon"
+                aria-hidden="true"
+              >
             </button>
-
-            <div v-show="openId === item.id" class="faq-block__answer">
-              <p>{{ item.answer }}</p>
-            </div>
           </div>
         </div>
 
@@ -124,9 +136,9 @@ function toggleItem(id: number) {
 
 .faq-block__trigger {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 16px;
+  grid-template-columns: 592px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: clamp(16px, 3vw, 48px);
   width: 100%;
   padding: 22px 0;
   border: none;
@@ -135,11 +147,24 @@ function toggleItem(id: number) {
   cursor: pointer;
 }
 
+.faq-block__item:not(.faq-block__item--open) .faq-block__trigger {
+  align-items: center;
+}
+
+.faq-block__question-block {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+  width: 592px;
+  max-width: 100%;
+}
+
 .faq-block__number {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
   background: #5f7256;
   color: var(--wh-white);
@@ -149,35 +174,31 @@ function toggleItem(id: number) {
 }
 
 .faq-block__question {
-  font-size: clamp(1rem, 1.6vw, 1.125rem);
-  font-weight: 700;
-  line-height: 1.4;
-  color: var(--wh-gray-900);
+  color: var(--wh-black-text);
+  font-family: "Inter", sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
 }
 
 .faq-block__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  grid-column: -1;
+  display: block;
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  font-size: 1.5rem;
-  line-height: 1;
-  font-weight: 400;
-  color: var(--wh-gray-900);
+  object-fit: contain;
 }
 
 .faq-block__answer {
-  padding: 0 0 22px 44px;
-}
-
-.faq-block__answer p {
   margin: 0;
-  max-width: 920px;
-  color: var(--wh-gray-500);
-  line-height: 1.6;
-  font-size: 0.98rem;
+  color: #000000;
+  line-height: 130%;
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.05em;
 }
 
 .faq-block__cta {
@@ -256,8 +277,29 @@ function toggleItem(id: number) {
 }
 
 @media (max-width: 768px) {
+  .faq-block__trigger {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .faq-block__question-block {
+    width: auto;
+    grid-column: 1;
+  }
+
+  .faq-block__item--open .faq-block__trigger {
+    grid-template-rows: auto auto;
+  }
+
   .faq-block__answer {
-    padding-left: 0;
+    grid-column: 1;
+    grid-row: 2;
+    padding-top: 12px;
+  }
+
+  .faq-block__icon {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .faq-block__cta {
