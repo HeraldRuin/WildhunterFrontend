@@ -137,22 +137,25 @@ const socials = [
 }
 
 .footer__title {
+  font-family: 'Inter', system-ui, sans-serif;
   margin: 0 0 6px;
-  font-size: 0.98rem;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
   line-height: 1.35;
-  color: var(--wh-gray-900);
+  color: var(--wh-black-text);
 }
 
 .footer__link {
-  font-size: 0.92rem;
-  line-height: 1.45;
-  color: var(--wh-gray-500);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 130%;
+  font-weight: 400;
+  color: var(--wh-black-text);
   transition: color 0.15s ease;
 }
 
 .footer__link:hover {
-  color: var(--wh-gray-900);
+  color: var(--wh-black-text);
 }
 
 .footer__column--social .footer__title {
@@ -188,7 +191,7 @@ const socials = [
 }
 
 .footer__bottom {
-  border-top: 1px solid var(--wh-gray-200);
+  //border-top: 1px solid var(--wh-black-text);
 }
 
 .footer__bottom-inner {
@@ -211,7 +214,7 @@ const socials = [
   font-weight: 400;
   line-height: 120%;
   letter-spacing: -0.05em;
-  color: #1c211c;
+  color: var(--wh-black-text);
   text-decoration: underline;
   text-decoration-color: #1c211c;
   text-underline-offset: 3px;
