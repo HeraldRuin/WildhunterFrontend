@@ -23,6 +23,7 @@ function scrollBy(direction: 'prev' | 'next') {
 
       <div class="best-locations__slider-wrap">
         <CommonSliderArrow
+          class="best-locations__arrow"
           direction="prev"
           label="Предыдущие локации"
           @click="scrollBy('prev')"
@@ -38,6 +39,7 @@ function scrollBy(direction: 'prev' | 'next') {
         </div>
 
         <CommonSliderArrow
+          class="best-locations__arrow"
           direction="next"
           label="Следующие локации"
           @click="scrollBy('next')"
@@ -114,6 +116,14 @@ function scrollBy(direction: 'prev' | 'next') {
 }
 
 @media (max-width: 1024px) {
+  .best-locations__slider-wrap {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .best-locations__arrow {
+    display: none;
+  }
+
   .best-locations__track {
     grid-auto-columns: calc((100% - 20px) / 2);
   }

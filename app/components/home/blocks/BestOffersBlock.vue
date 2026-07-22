@@ -26,6 +26,7 @@ function scrollBy(direction: 'prev' | 'next') {
 
       <div class="best-offers__slider-wrap">
         <CommonSliderArrow
+          class="best-offers__arrow"
           direction="prev"
           label="Предыдущие предложения"
           @click="scrollBy('prev')"
@@ -41,6 +42,7 @@ function scrollBy(direction: 'prev' | 'next') {
         </div>
 
         <CommonSliderArrow
+          class="best-offers__arrow"
           direction="next"
           label="Следующие предложения"
           @click="scrollBy('next')"
@@ -121,5 +123,15 @@ function scrollBy(direction: 'prev' | 'next') {
 
 .best-offers__button {
   min-width: 180px;
+}
+
+@media (max-width: 1024px) {
+  .best-offers__slider-wrap {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .best-offers__arrow {
+    display: none;
+  }
 }
 </style>
