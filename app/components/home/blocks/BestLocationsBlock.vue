@@ -8,10 +8,24 @@ const props = defineProps<{
 const locations = computed(() => props.items ?? [])
 const trackRef = ref<HTMLElement | null>(null)
 
+function getCardWidth(track: HTMLElement) {
+  const slide = track.querySelector('.best-locations__slide') as HTMLElement | null
+  return slide?.offsetWidth || 0
+}
+
+function getTrackGap(track: HTMLElement) {
+  const styles = getComputedStyle(track)
+  return Number.parseFloat(styles.columnGap || styles.gap) || 16
+}
+
 function scrollBy(direction: 'prev' | 'next') {
   const track = trackRef.value
   if (!track) return
-  const offset = track.clientWidth * 0.8 * (direction === 'next' ? 1 : -1)
+
+  const cardWidth = getCardWidth(track)
+  if (!cardWidth) return
+
+  const offset = (cardWidth + getTrackGap(track)) * (direction === 'next' ? 1 : -1)
   track.scrollBy({ left: offset, behavior: 'smooth' })
 }
 </script>
@@ -87,10 +101,13 @@ function scrollBy(direction: 'prev' | 'next') {
 }
 
 .best-locations__track {
+  --best-locations-card-width: 389px;
+  --best-locations-card-height: 389px;
+
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: calc((100% - 40px) / 3);
-  gap: 20px;
+  grid-auto-columns: var(--best-locations-card-width);
+  gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -102,8 +119,15 @@ function scrollBy(direction: 'prev' | 'next') {
 }
 
 .best-locations__slide {
+  width: var(--best-locations-card-width);
+  flex-shrink: 0;
   scroll-snap-align: start;
-  min-width: 0;
+}
+
+.best-locations__slide :deep(.location-card) {
+  width: 100%;
+  height: var(--best-locations-card-height);
+  aspect-ratio: auto;
 }
 
 .best-locations__action {
@@ -125,13 +149,39 @@ function scrollBy(direction: 'prev' | 'next') {
   }
 
   .best-locations__track {
-    grid-auto-columns: calc((100% - 20px) / 2);
+    --best-locations-card-width: 237px;
+    --best-locations-card-height: 237px;
+    gap: 8px;
+    grid-auto-columns: var(--best-locations-card-width);
+  }
+
+  .best-locations__slide {
+    width: var(--best-locations-card-width);
+    flex-shrink: 0;
+  }
+
+  .best-locations__slide :deep(.location-card) {
+    height: var(--best-locations-card-height);
+    aspect-ratio: auto;
   }
 }
 
 @media (max-width: 640px) {
   .best-locations__track {
-    grid-auto-columns: 100%;
+    --best-locations-card-width: 325px;
+    --best-locations-card-height: 345px;
+    gap: 10px;
+    grid-auto-columns: var(--best-locations-card-width);
+  }
+
+  .best-locations__slide {
+    width: var(--best-locations-card-width);
+    flex-shrink: 0;
+  }
+
+  .best-locations__slide :deep(.location-card) {
+    height: var(--best-locations-card-height);
+    aspect-ratio: auto;
   }
 }
 </style>
