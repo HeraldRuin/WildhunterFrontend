@@ -1,14 +1,14 @@
-let scrollY = 0
 let lockCount = 0
 
 function lockBodyScroll() {
   if (lockCount === 0) {
-    scrollY = window.scrollY
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.left = '0'
-    document.body.style.right = '0'
-    document.body.style.width = '100%'
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+    }
+
+    document.documentElement.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
   }
 
@@ -26,13 +26,9 @@ function unlockBodyScroll() {
     return
   }
 
-  document.body.style.position = ''
-  document.body.style.top = ''
-  document.body.style.left = ''
-  document.body.style.right = ''
-  document.body.style.width = ''
+  document.documentElement.style.overflow = ''
   document.body.style.overflow = ''
-  window.scrollTo(0, scrollY)
+  document.body.style.paddingRight = ''
 }
 
 export function useBodyScrollLock(isOpen: Ref<boolean>) {
