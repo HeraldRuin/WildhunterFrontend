@@ -10,7 +10,6 @@ const { data: reviewItems } = await useAsyncData('home-reviews', () =>
     type: 'hotel',
     order_by: 'created_at',
     order_direction: 'desc',
-    limit: 3,
   }),
 )
 

@@ -48,7 +48,6 @@ const { data: reviewItems } = await useAsyncData(
     try {
       const items = await reviewsApi.getReviewItems({
         type: 'hotel',
-        limit: 6,
       })
 
       if (items.length) {
