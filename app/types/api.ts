@@ -76,6 +76,14 @@ export interface LocationItem {
   content?: string
 }
 
+export interface LocationOffer {
+  id: number
+  name: string
+  slug: string
+  image_url: string
+  hotel_count: number
+}
+
 export interface SearchLocation {
   id: number
   name: string

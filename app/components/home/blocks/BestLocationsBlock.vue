@@ -5,40 +5,7 @@ const props = defineProps<{
   items?: LocationItem[]
 }>()
 
-const defaultItems: LocationItem[] = [
-  {
-    id: 1,
-    title: 'Тверская область',
-    bases_count: 3,
-    image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800',
-  },
-  {
-    id: 2,
-    title: 'Ярославская область',
-    bases_count: 3,
-    image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
-  },
-  {
-    id: 3,
-    title: 'Московская область',
-    bases_count: 3,
-    image: 'https://images.unsplash.com/photo-1511497584788-876760111969?w=800',
-  },
-  {
-    id: 4,
-    title: 'Вологодская область',
-    bases_count: 5,
-    image: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800',
-  },
-  {
-    id: 5,
-    title: 'Карелия',
-    bases_count: 8,
-    image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800',
-  },
-]
-
-const locations = computed(() => props.items?.length ? props.items : defaultItems)
+const locations = computed(() => props.items ?? [])
 const trackRef = ref<HTMLElement | null>(null)
 
 function scrollBy(direction: 'prev' | 'next') {
