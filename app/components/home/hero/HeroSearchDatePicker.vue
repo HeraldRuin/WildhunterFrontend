@@ -13,56 +13,14 @@ const end = defineModel<Date | null>('end', { default: null })
 
 const viewMonth = ref(startOfDay(start.value ?? new Date()))
 const weekdays = getWeekdayNames()
-const isCompact = ref(false)
 
-if (import.meta.client) {
-  isCompact.value = window.matchMedia('(max-width: 640px)').matches
-}
+const currentMonth = computed(() => new Date(viewMonth.value.getFullYear(), viewMonth.value.getMonth(), 1))
 
-const leftMonth = computed(() => new Date(viewMonth.value.getFullYear(), viewMonth.value.getMonth(), 1))
-const rightMonth = computed(() => addMonths(leftMonth.value, 1))
-
-const months = computed(() => {
-  if (isCompact.value) {
-    return [{
-      key: `${leftMonth.value.getFullYear()}-${leftMonth.value.getMonth()}`,
-      title: getMonthTitle(leftMonth.value),
-      days: getCalendarDays(leftMonth.value.getFullYear(), leftMonth.value.getMonth()),
-      showPrev: true,
-      showNext: true,
-    }]
-  }
-
-  return [
-    {
-      key: `${leftMonth.value.getFullYear()}-${leftMonth.value.getMonth()}`,
-      title: getMonthTitle(leftMonth.value),
-      days: getCalendarDays(leftMonth.value.getFullYear(), leftMonth.value.getMonth()),
-      showPrev: true,
-      showNext: false,
-    },
-    {
-      key: `${rightMonth.value.getFullYear()}-${rightMonth.value.getMonth()}`,
-      title: getMonthTitle(rightMonth.value),
-      days: getCalendarDays(rightMonth.value.getFullYear(), rightMonth.value.getMonth()),
-      showPrev: false,
-      showNext: true,
-    },
-  ]
-})
-
-function syncCompactMode(event?: MediaQueryListEvent) {
-  isCompact.value = (event?.matches ?? window.matchMedia('(max-width: 640px)').matches)
-}
-
-onMounted(() => {
-  syncCompactMode()
-  window.matchMedia('(max-width: 640px)').addEventListener('change', syncCompactMode)
-})
-
-onUnmounted(() => {
-  window.matchMedia('(max-width: 640px)').removeEventListener('change', syncCompactMode)
-})
+const month = computed(() => ({
+  key: `${currentMonth.value.getFullYear()}-${currentMonth.value.getMonth()}`,
+  title: getMonthTitle(currentMonth.value),
+  days: getCalendarDays(currentMonth.value.getFullYear(), currentMonth.value.getMonth()),
+}))
 
 function isBetween(date: Date, from: Date, to: Date) {
   const value = startOfDay(date).getTime()
@@ -126,14 +84,9 @@ function goToNextMonth() {
 <template>
   <div class="hero-search-calendar">
     <div class="hero-search-calendar__months">
-      <section
-        v-for="month in months"
-        :key="month.key"
-        class="hero-search-calendar__month"
-      >
+      <section class="hero-search-calendar__month">
         <div class="hero-search-calendar__header">
           <button
-            v-if="month.showPrev"
             type="button"
             class="hero-search-calendar__nav"
             aria-label="Предыдущий месяц"
@@ -141,14 +94,12 @@ function goToNextMonth() {
           >
             ‹
           </button>
-          <span v-else class="hero-search-calendar__nav hero-search-calendar__nav--placeholder" />
 
           <h3 class="hero-search-calendar__title">
             {{ month.title }}
           </h3>
 
           <button
-            v-if="month.showNext"
             type="button"
             class="hero-search-calendar__nav"
             aria-label="Следующий месяц"
@@ -156,7 +107,6 @@ function goToNextMonth() {
           >
             ›
           </button>
-          <span v-else class="hero-search-calendar__nav hero-search-calendar__nav--placeholder" />
         </div>
 
         <div class="hero-search-calendar__weekdays">
@@ -192,13 +142,13 @@ function goToNextMonth() {
 
 <style scoped>
 .hero-search-calendar {
-  min-width: 560px;
+  width: 100%;
+  min-width: 0;
 }
 
 .hero-search-calendar__months {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
+  grid-template-columns: 1fr;
 }
 
 .hero-search-calendar__header {
@@ -235,11 +185,6 @@ function goToNextMonth() {
   line-height: 1;
   cursor: pointer;
   transition: opacity 0.15s ease;
-}
-
-.hero-search-calendar__nav--placeholder {
-  pointer-events: none;
-  opacity: 0;
 }
 
 .hero-search-calendar__nav:hover {
@@ -337,17 +282,5 @@ function goToNextMonth() {
 
 .hero-search-calendar__day:not(.hero-search-calendar__day--selected):hover {
   background: rgb(209 101 16 / 12%);
-}
-
-@media (max-width: 640px) {
-  .hero-search-calendar {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .hero-search-calendar__months {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
 }
 </style>

@@ -721,9 +721,6 @@ onUnmounted(() => {
 }
 
 .hero-search__dropdown-panel--calendar {
-  right: auto;
-  width: max-content;
-  max-width: min(640px, calc(100vw - 32px));
   padding: 18px 20px;
   border-radius: 0;
 }
