@@ -32,7 +32,7 @@ function formatBasesCount(count: number) {
   display: block;
   overflow: hidden;
   aspect-ratio: 4 / 3;
-  border-radius: 18px;
+  border-radius: var(--wh-radius);
   color: var(--wh-white);
 }
 
@@ -54,7 +54,6 @@ function formatBasesCount(count: number) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   padding: 24px;
   text-align: center;
   background: rgba(17, 24, 39, 0.28);
@@ -62,15 +61,26 @@ function formatBasesCount(count: number) {
 
 .location-card__title {
   margin: 0;
-  font-size: clamp(1.125rem, 2vw, 1.5rem);
-  line-height: 1.3;
-  font-weight: 700;
+  font-family: "Inter", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
 }
 
 .location-card__count {
+  position: absolute;
+  right: 0;
+  bottom: 16%;
+  left: 0;
   margin: 0;
-  font-size: clamp(0.95rem, 1.5vw, 1.125rem);
-  font-weight: 500;
+
+  font-family: "Inter", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+
   opacity: 0.95;
 }
 </style>
