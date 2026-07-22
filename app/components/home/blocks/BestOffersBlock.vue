@@ -9,12 +9,16 @@ const offers = computed(() => props.items ?? [])
 const trackRef = ref<HTMLElement | null>(null)
 
 const CARD_WIDTH = 288
-const CARD_GAP = 20
+
+function getTrackGap(track: HTMLElement) {
+  const styles = getComputedStyle(track)
+  return Number.parseFloat(styles.columnGap || styles.gap) || 16
+}
 
 function scrollBy(direction: 'prev' | 'next') {
   const track = trackRef.value
   if (!track) return
-  const offset = (CARD_WIDTH + CARD_GAP) * (direction === 'next' ? 1 : -1)
+  const offset = (CARD_WIDTH + getTrackGap(track)) * (direction === 'next' ? 1 : -1)
   track.scrollBy({ left: offset, behavior: 'smooth' })
 }
 </script>
@@ -93,7 +97,7 @@ function scrollBy(direction: 'prev' | 'next') {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 288px;
-  gap: 20px;
+  gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -132,6 +136,10 @@ function scrollBy(direction: 'prev' | 'next') {
 
   .best-offers__arrow {
     display: none;
+  }
+
+  .best-offers__track {
+    gap: 8px;
   }
 }
 </style>
