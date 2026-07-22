@@ -71,7 +71,7 @@ function formatBasesCount(count: number) {
 .location-card__count {
   position: absolute;
   right: 0;
-  bottom: 16%;
+  bottom: 8%;
   left: 0;
   margin: 0;
 
