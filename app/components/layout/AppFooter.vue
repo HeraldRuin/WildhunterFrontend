@@ -206,17 +206,20 @@ const socials = [
 }
 
 .footer__legal-link {
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: var(--wh-gray-500);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+  color: #1c211c;
   text-decoration: underline;
-  text-decoration-color: #000;
+  text-decoration-color: #1c211c;
   text-underline-offset: 3px;
-  transition: color 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .footer__legal-link:hover {
-  color: var(--wh-gray-900);
+  opacity: 0.75;
 }
 
 .footer__legal-break {
@@ -226,8 +229,12 @@ const socials = [
 .footer__copyright {
   margin: 0;
   flex-shrink: 0;
-  font-size: 0.8125rem;
-  color: var(--wh-gray-500);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+  color: #1c211c;
   white-space: nowrap;
 }
 
@@ -299,7 +306,7 @@ const socials = [
   }
 
   .footer__socials {
-    margin-top: 8px;
+    margin-top: 16px;
   }
 
   .footer__bottom-inner {
