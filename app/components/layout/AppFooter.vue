@@ -92,14 +92,19 @@ const socials = [
     <div class="footer__bottom">
       <div class="container footer__bottom-inner">
         <div class="footer__legal">
-          <NuxtLink
-            v-for="link in legalLinks"
-            :key="link.to"
-            :to="link.to"
-            class="footer__legal-link"
-          >
-            {{ link.label }}
-          </NuxtLink>
+          <template v-for="(link, index) in legalLinks" :key="link.to">
+            <NuxtLink
+              :to="link.to"
+              class="footer__legal-link"
+            >
+              {{ link.label }}
+            </NuxtLink>
+            <span
+              v-if="index === 1 || index === 2"
+              class="footer__legal-break"
+              aria-hidden="true"
+            />
+          </template>
         </div>
         <p class="footer__copyright">
           © 2014–2026 гг. | wild-hunter.ru | Все права защищены.
@@ -214,6 +219,10 @@ const socials = [
   color: var(--wh-gray-900);
 }
 
+.footer__legal-break {
+  display: none;
+}
+
 .footer__copyright {
   margin: 0;
   flex-shrink: 0;
@@ -296,7 +305,7 @@ const socials = [
   .footer__bottom-inner {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 24px;
     padding-block: 20px 28px;
   }
 
@@ -305,6 +314,13 @@ const socials = [
     flex-wrap: wrap;
     align-items: flex-start;
     gap: 8px 20px;
+  }
+
+  .footer__legal-break {
+    display: block;
+    flex-basis: 100%;
+    width: 0;
+    height: 0;
   }
 
   .footer__copyright {
