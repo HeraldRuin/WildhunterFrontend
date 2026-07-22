@@ -129,7 +129,7 @@ function getStarColor(star: number) {
 .review-card__rating-text {
   font-size: 0.9rem;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--wh-white);
 }
 
 .review-card__role {
@@ -142,6 +142,6 @@ function getStarColor(star: number) {
   margin: 0;
   line-height: 1.55;
   font-size: 0.98rem;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--wh-green-gray);
 }
 </style>
