@@ -7,6 +7,7 @@ const props = defineProps<{
 
 const locations = computed(() => props.items ?? [])
 const trackRef = ref<HTMLElement | null>(null)
+const { canScrollPrev, canScrollNext } = useSliderScrollState(trackRef, locations)
 
 function getCardWidth(track: HTMLElement) {
   const slide = track.querySelector('.best-locations__slide') as HTMLElement | null
@@ -19,6 +20,9 @@ function getTrackGap(track: HTMLElement) {
 }
 
 function scrollBy(direction: 'prev' | 'next') {
+  if (direction === 'prev' && !canScrollPrev.value) return
+  if (direction === 'next' && !canScrollNext.value) return
+
   const track = trackRef.value
   if (!track) return
 
@@ -40,6 +44,7 @@ function scrollBy(direction: 'prev' | 'next') {
           class="best-locations__arrow"
           direction="prev"
           label="Предыдущие локации"
+          :disabled="!canScrollPrev"
           @click="scrollBy('prev')"
         />
 
@@ -56,6 +61,7 @@ function scrollBy(direction: 'prev' | 'next') {
           class="best-locations__arrow"
           direction="next"
           label="Следующие локации"
+          :disabled="!canScrollNext"
           @click="scrollBy('next')"
         />
       </div>

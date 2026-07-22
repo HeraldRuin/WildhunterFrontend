@@ -7,6 +7,7 @@ const props = defineProps<{
 
 const offers = computed(() => props.items ?? [])
 const trackRef = ref<HTMLElement | null>(null)
+const { canScrollPrev, canScrollNext } = useSliderScrollState(trackRef, offers)
 
 function getCardWidth(track: HTMLElement) {
   const styles = getComputedStyle(track)
@@ -19,6 +20,9 @@ function getTrackGap(track: HTMLElement) {
 }
 
 function scrollBy(direction: 'prev' | 'next') {
+  if (direction === 'prev' && !canScrollPrev.value) return
+  if (direction === 'next' && !canScrollNext.value) return
+
   const track = trackRef.value
   if (!track) return
   const offset = (getCardWidth(track) + getTrackGap(track)) * (direction === 'next' ? 1 : -1)
@@ -36,6 +40,7 @@ function scrollBy(direction: 'prev' | 'next') {
           class="best-offers__arrow"
           direction="prev"
           label="Предыдущие предложения"
+          :disabled="!canScrollPrev"
           @click="scrollBy('prev')"
         />
 
@@ -52,6 +57,7 @@ function scrollBy(direction: 'prev' | 'next') {
           class="best-offers__arrow"
           direction="next"
           label="Следующие предложения"
+          :disabled="!canScrollNext"
           @click="scrollBy('next')"
         />
       </div>
