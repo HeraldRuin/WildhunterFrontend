@@ -284,14 +284,19 @@ function handleSubmit() {
 }
 
 @media (max-width: 640px) {
+  .community-block {
+    min-height: 560px;
+  }
+
   .community-block__media img {
     object-position: 42% 16%;
   }
 
   .community-block__inner {
-    justify-content: center;
-    min-height: auto;
-    padding: 48px 24px;
+    justify-content: flex-start;
+    align-items: flex-end;
+    min-height: 560px;
+    padding: 24px 24px 40px;
   }
 
   .community-block__content {
