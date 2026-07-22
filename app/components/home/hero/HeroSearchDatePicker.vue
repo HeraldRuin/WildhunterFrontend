@@ -13,26 +13,56 @@ const end = defineModel<Date | null>('end', { default: null })
 
 const viewMonth = ref(startOfDay(start.value ?? new Date()))
 const weekdays = getWeekdayNames()
+const isCompact = ref(false)
+
+if (import.meta.client) {
+  isCompact.value = window.matchMedia('(max-width: 640px)').matches
+}
 
 const leftMonth = computed(() => new Date(viewMonth.value.getFullYear(), viewMonth.value.getMonth(), 1))
 const rightMonth = computed(() => addMonths(leftMonth.value, 1))
 
-const months = computed(() => [
-  {
-    key: `${leftMonth.value.getFullYear()}-${leftMonth.value.getMonth()}`,
-    title: getMonthTitle(leftMonth.value),
-    days: getCalendarDays(leftMonth.value.getFullYear(), leftMonth.value.getMonth()),
-    showPrev: true,
-    showNext: false,
-  },
-  {
-    key: `${rightMonth.value.getFullYear()}-${rightMonth.value.getMonth()}`,
-    title: getMonthTitle(rightMonth.value),
-    days: getCalendarDays(rightMonth.value.getFullYear(), rightMonth.value.getMonth()),
-    showPrev: false,
-    showNext: true,
-  },
-])
+const months = computed(() => {
+  if (isCompact.value) {
+    return [{
+      key: `${leftMonth.value.getFullYear()}-${leftMonth.value.getMonth()}`,
+      title: getMonthTitle(leftMonth.value),
+      days: getCalendarDays(leftMonth.value.getFullYear(), leftMonth.value.getMonth()),
+      showPrev: true,
+      showNext: true,
+    }]
+  }
+
+  return [
+    {
+      key: `${leftMonth.value.getFullYear()}-${leftMonth.value.getMonth()}`,
+      title: getMonthTitle(leftMonth.value),
+      days: getCalendarDays(leftMonth.value.getFullYear(), leftMonth.value.getMonth()),
+      showPrev: true,
+      showNext: false,
+    },
+    {
+      key: `${rightMonth.value.getFullYear()}-${rightMonth.value.getMonth()}`,
+      title: getMonthTitle(rightMonth.value),
+      days: getCalendarDays(rightMonth.value.getFullYear(), rightMonth.value.getMonth()),
+      showPrev: false,
+      showNext: true,
+    },
+  ]
+})
+
+function syncCompactMode(event?: MediaQueryListEvent) {
+  isCompact.value = (event?.matches ?? window.matchMedia('(max-width: 640px)').matches)
+}
+
+onMounted(() => {
+  syncCompactMode()
+  window.matchMedia('(max-width: 640px)').addEventListener('change', syncCompactMode)
+})
+
+onUnmounted(() => {
+  window.matchMedia('(max-width: 640px)').removeEventListener('change', syncCompactMode)
+})
 
 function isBetween(date: Date, from: Date, to: Date) {
   const value = startOfDay(date).getTime()
@@ -311,12 +341,13 @@ function goToNextMonth() {
 
 @media (max-width: 640px) {
   .hero-search-calendar {
+    width: 100%;
     min-width: 0;
   }
 
   .hero-search-calendar__months {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 0;
   }
 }
 </style>
