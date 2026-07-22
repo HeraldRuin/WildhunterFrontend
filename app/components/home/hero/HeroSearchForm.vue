@@ -116,6 +116,10 @@ const hasCustomDates = computed(() => {
   )
 })
 
+const isAnyDropdownOpen = computed(() =>
+  isLocationOpen.value || isAnimalOpen.value || isGuestsOpen.value || isDatesOpen.value,
+)
+
 function closeOtherDropdowns(except?: 'location' | 'animal' | 'guests' | 'dates') {
   if (except !== 'location') {
     isLocationOpen.value = false
@@ -192,14 +196,12 @@ function clearAnimalHover() {
   hoveredAnimalId.value = null
 }
 
-function setLocationHoverFromEvent(event: MouseEvent) {
-  const option = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-location-id]')
-  hoveredLocationId.value = option?.dataset.locationId ?? null
+function setLocationHover(id: string | number) {
+  hoveredLocationId.value = String(id)
 }
 
-function setAnimalHoverFromEvent(event: MouseEvent) {
-  const option = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-animal-id]')
-  hoveredAnimalId.value = option?.dataset.animalId ?? null
+function setAnimalHover(id: string | number) {
+  hoveredAnimalId.value = String(id)
 }
 
 function closeLocationDropdown() {
@@ -286,7 +288,10 @@ onUnmounted(() => {
 <template>
   <form
     class="hero-search"
-    :class="{ 'hero-search--split': layout === 'split' }"
+    :class="{
+      'hero-search--split': layout === 'split',
+      'hero-search--dropdown-open': isAnyDropdownOpen,
+    }"
     @submit.prevent="submitSearch"
   >
     <div class="hero-search__panel">
@@ -326,8 +331,7 @@ onUnmounted(() => {
         class="hero-search__dropdown-list"
         role="listbox"
         aria-label="Локация"
-        @mousemove="setLocationHoverFromEvent"
-        @mouseleave="clearLocationHover"
+        @pointerleave="clearLocationHover"
       >
         <li v-for="item in locations" :key="item.id">
           <button
@@ -338,6 +342,7 @@ onUnmounted(() => {
               'hero-search__dropdown-option--active': String(item.id) === location,
               'hero-search__dropdown-option--hovered': hoveredLocationId === String(item.id),
             }"
+            @pointerenter="setLocationHover(item.id)"
             @click="selectLocation(item)"
           >
             <span class="hero-search__dropdown-option-dot" aria-hidden="true" />
@@ -383,8 +388,7 @@ onUnmounted(() => {
         class="hero-search__dropdown-list"
         role="listbox"
         aria-label="Животные"
-        @mousemove="setAnimalHoverFromEvent"
-        @mouseleave="clearAnimalHover"
+        @pointerleave="clearAnimalHover"
       >
         <li v-for="item in animals" :key="item.id">
           <button
@@ -395,6 +399,7 @@ onUnmounted(() => {
               'hero-search__dropdown-option--active': String(item.id) === animal,
               'hero-search__dropdown-option--hovered': hoveredAnimalId === String(item.id),
             }"
+            @pointerenter="setAnimalHover(item.id)"
             @click="selectAnimal(item)"
           >
             <span class="hero-search__dropdown-option-dot" aria-hidden="true" />
@@ -570,10 +575,16 @@ onUnmounted(() => {
 
 .hero-search__field--open {
   z-index: 30;
+  isolation: isolate;
 }
 
-.hero-search__field--open .hero-search__dropdown-list {
-  z-index: 50;
+.hero-search--dropdown-open .hero-search__field:not(.hero-search__field--open) {
+  pointer-events: none;
+}
+
+.hero-search__field--open .hero-search__dropdown-list,
+.hero-search__field--open .hero-search__dropdown-panel {
+  z-index: 100;
 }
 
 .hero-search__field--location {

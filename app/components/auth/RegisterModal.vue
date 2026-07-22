@@ -178,9 +178,8 @@ function clearRoleHover() {
   hoveredRoleCode.value = null
 }
 
-function setRoleHoverFromEvent(event: MouseEvent) {
-  const option = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-role-code]')
-  hoveredRoleCode.value = option?.dataset.roleCode ?? null
+function setRoleHover(code: string) {
+  hoveredRoleCode.value = code
 }
 
 function closeRoleDropdown() {
@@ -411,8 +410,7 @@ onUnmounted(() => {
               <ul
                 v-if="isRoleOpen && roles.length"
                 class="register-modal__dropdown-list"
-                @mousemove="setRoleHoverFromEvent"
-                @mouseleave="clearRoleHover"
+                @pointerleave="clearRoleHover"
               >
                 <li v-for="item in roles" :key="item.id">
                   <button
@@ -423,6 +421,7 @@ onUnmounted(() => {
                       'register-modal__dropdown-option--active': item.code === role,
                       'register-modal__dropdown-option--hovered': hoveredRoleCode === item.code,
                     }"
+                    @pointerenter="setRoleHover(item.code)"
                     @click="selectRole(item)"
                   >
                     <span class="register-modal__dropdown-option-dot" aria-hidden="true" />
