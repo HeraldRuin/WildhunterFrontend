@@ -305,8 +305,17 @@ function handleSubmit() {
 
   .community-block__title {
     width: 100%;
-    font-size: clamp(24px, 6vw, 32px);
+    font-size: 24px;
     line-height: 1.15;
+  }
+
+  .community-block__title-line:nth-child(2),
+  .community-block__title-line:nth-child(3) {
+    display: inline;
+  }
+
+  .community-block__title-line:nth-child(2)::after {
+    content: ' ';
   }
 }
 </style>
