@@ -204,6 +204,16 @@ function setAnimalHover(id: string | number) {
   hoveredAnimalId.value = String(id)
 }
 
+function setLocationHoverFromEvent(event: MouseEvent) {
+  const option = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-location-id]')
+  hoveredLocationId.value = option?.dataset.locationId ?? null
+}
+
+function setAnimalHoverFromEvent(event: MouseEvent) {
+  const option = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-animal-id]')
+  hoveredAnimalId.value = option?.dataset.animalId ?? null
+}
+
 function closeLocationDropdown() {
   isLocationOpen.value = false
   clearLocationHover()
@@ -332,6 +342,9 @@ onUnmounted(() => {
         role="listbox"
         aria-label="Локация"
         @pointerleave="clearLocationHover"
+        @mouseleave="clearLocationHover"
+        @mousemove="setLocationHoverFromEvent"
+        @pointermove="setLocationHoverFromEvent"
       >
         <li v-for="item in locations" :key="item.id">
           <button
@@ -343,6 +356,7 @@ onUnmounted(() => {
               'hero-search__dropdown-option--hovered': hoveredLocationId === String(item.id),
             }"
             @pointerenter="setLocationHover(item.id)"
+            @pointerdown="setLocationHover(item.id)"
             @click="selectLocation(item)"
           >
             <span class="hero-search__dropdown-option-dot" aria-hidden="true" />
@@ -389,6 +403,9 @@ onUnmounted(() => {
         role="listbox"
         aria-label="Животные"
         @pointerleave="clearAnimalHover"
+        @mouseleave="clearAnimalHover"
+        @mousemove="setAnimalHoverFromEvent"
+        @pointermove="setAnimalHoverFromEvent"
       >
         <li v-for="item in animals" :key="item.id">
           <button
@@ -400,6 +417,7 @@ onUnmounted(() => {
               'hero-search__dropdown-option--hovered': hoveredAnimalId === String(item.id),
             }"
             @pointerenter="setAnimalHover(item.id)"
+            @pointerdown="setAnimalHover(item.id)"
             @click="selectAnimal(item)"
           >
             <span class="hero-search__dropdown-option-dot" aria-hidden="true" />
@@ -579,6 +597,10 @@ onUnmounted(() => {
 }
 
 .hero-search--dropdown-open .hero-search__field:not(.hero-search__field--open) {
+  pointer-events: none;
+}
+
+.hero-search--dropdown-open .hero-search__submit {
   pointer-events: none;
 }
 
@@ -844,6 +866,11 @@ onUnmounted(() => {
   color: #1c211c;
   pointer-events: none;
   transform: translateY(-50%);
+  transition: transform 0.2s ease;
+}
+
+.hero-search__field--open .hero-search__chevron {
+  transform: translateY(-50%) rotate(180deg);
 }
 
 .hero-search__clear {
