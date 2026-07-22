@@ -2,11 +2,9 @@
 import type { OfferItem } from '~/types/api'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
 
-defineProps<{
+const props = defineProps<{
   item: OfferItem
 }>()
-
-const FAVORITE_TEST_SERVICE_ID = 27
 
 const { services } = useApi()
 const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
@@ -51,7 +49,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   isFavoriteLoading.value = true
 
   try {
-    const response = await services.toggleFavorite(FAVORITE_TEST_SERVICE_ID)
+    const response = await services.toggleFavorite(props.item.id)
 
     if (response.success === false) {
       const message = response.message || FAVORITE_REGISTRATION_MESSAGE
@@ -100,17 +98,19 @@ async function handleFavoriteClick(event: MouseEvent) {
           />
         </svg>
       </button>
-      <div class="offer-card__rating">
-        <span class="offer-card__reviews">{{ item.reviews }} отзыва</span>
-        <span class="offer-card__star">★</span>
-        <span class="offer-card__score">{{ item.rating.toFixed(1).replace('.', ',') }}</span>
+      <div v-if="item.reviews > 0 || item.rating > 0" class="offer-card__rating">
+        <span v-if="item.reviews > 0" class="offer-card__reviews">{{ item.reviews }} отзыва</span>
+        <template v-if="item.rating > 0">
+          <span class="offer-card__star">★</span>
+          <span class="offer-card__score">{{ item.rating.toFixed(1).replace('.', ',') }}</span>
+        </template>
       </div>
     </div>
 
     <div class="offer-card__body">
       <div class="offer-card__row">
         <h3 class="offer-card__title">{{ item.title }}</h3>
-        <p class="offer-card__price">{{ formatPrice(item.price) }} ₽ / ночь</p>
+        <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽ / ночь</p>
       </div>
       <p class="offer-card__location">{{ item.location }}</p>
     </div>

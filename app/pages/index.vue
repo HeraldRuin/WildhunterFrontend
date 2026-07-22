@@ -3,7 +3,7 @@ definePageMeta({
   layout: 'home',
 })
 
-const { reviews, location } = useApi()
+const { reviews, location, hotels } = useApi()
 
 const { data: reviewItems } = await useAsyncData('home-reviews', () =>
   reviews.getReviewItems({
@@ -18,6 +18,10 @@ const { data: locationItems } = await useAsyncData('home-location-offers', () =>
   location.getLocationOfferItems(),
 )
 
+const { data: offerItems } = await useAsyncData('home-hotel-offers', () =>
+  hotels.getHotelOfferItems(),
+)
+
 function handleSearch(payload: Record<string, string>) {
   navigateTo({
     path: '/bases',
@@ -30,7 +34,7 @@ function handleSearch(payload: Record<string, string>) {
   <div class="home">
     <HomeHeroSearch @search="handleSearch" />
     <HomeBlocksWhyUsBlock />
-    <HomeBlocksBestOffersBlock />
+    <HomeBlocksBestOffersBlock :items="offerItems ?? []" />
     <HomeBlocksBestLocationsBlock :items="locationItems ?? []" />
     <HomeBlocksHowItWorksBlock />
     <HomeBlocksCommunityBlock />

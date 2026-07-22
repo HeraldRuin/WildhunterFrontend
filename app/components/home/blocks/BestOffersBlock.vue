@@ -5,60 +5,7 @@ const props = defineProps<{
   items?: OfferItem[]
 }>()
 
-const defaultItems: OfferItem[] = [
-  {
-    id: 1,
-    object_model: 'tour',
-    title: 'Хромой кабан-2',
-    location: 'Ярославская область',
-    price: 4000,
-    image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800',
-    reviews: 32,
-    rating: 4.9,
-  },
-  {
-    id: 2,
-    object_model: 'tour',
-    title: 'Хромой кабан-2',
-    location: 'Ярославская область',
-    price: 4000,
-    image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800',
-    reviews: 32,
-    rating: 4.9,
-  },
-  {
-    id: 3,
-    object_model: 'tour',
-    title: 'Хромой кабан-2',
-    location: 'Ярославская область',
-    price: 4000,
-    image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800',
-    reviews: 32,
-    rating: 4.9,
-  },
-  {
-    id: 4,
-    object_model: 'tour',
-    title: 'Хромой кабан-2',
-    location: 'Ярославская область',
-    price: 4000,
-    image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800',
-    reviews: 32,
-    rating: 4.9,
-  },
-  {
-    id: 5,
-    object_model: 'tour',
-    title: 'Хромой кабан-2',
-    location: 'Ярославская область',
-    price: 4000,
-    image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800',
-    reviews: 32,
-    rating: 4.9,
-  },
-]
-
-const offers = computed(() => props.items?.length ? props.items : defaultItems)
+const offers = computed(() => props.items ?? [])
 const trackRef = ref<HTMLElement | null>(null)
 
 function scrollBy(direction: 'prev' | 'next') {
@@ -70,7 +17,7 @@ function scrollBy(direction: 'prev' | 'next') {
 </script>
 
 <template>
-  <section class="best-offers">
+  <section v-if="offers.length" class="best-offers">
     <div class="container best-offers__inner">
       <h2 class="best-offers__title">Лучшие предложения сейчас</h2>
 
@@ -83,8 +30,8 @@ function scrollBy(direction: 'prev' | 'next') {
 
         <div ref="trackRef" class="best-offers__track">
           <HomeOfferCard
-            v-for="(item, index) in offers"
-            :key="`${item.id}-${index}`"
+            v-for="item in offers"
+            :key="item.id"
             :item="item"
             class="best-offers__slide"
           />

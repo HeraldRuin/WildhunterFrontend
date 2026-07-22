@@ -4,6 +4,7 @@ import {
   useConfigApi,
   useHomeApi,
   useLocationApi,
+  useHotelsApi,
   useAnimalsApi,
   useReviewsApi,
   useRolesApi,
@@ -18,6 +19,7 @@ export function useApi() {
   const auth = useAuthApi()
   const search = useSearchApi()
   const location = useLocationApi()
+  const hotels = useHotelsApi()
   const animals = useAnimalsApi()
   const roles = useRolesApi()
   const reviews = useReviewsApi()
@@ -30,6 +32,7 @@ export function useApi() {
     auth,
     search,
     location,
+    hotels,
     animals,
     roles,
     reviews,

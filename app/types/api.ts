@@ -84,6 +84,17 @@ export interface LocationOffer {
   hotel_count: number
 }
 
+export interface HotelOffer {
+  id: number
+  title: string
+  slug: string
+  image_url: string
+  star_rate: number | null
+  location: SearchLocation
+  price?: number | string
+  review_count?: number
+}
+
 export interface SearchLocation {
   id: number
   name: string
