@@ -317,5 +317,17 @@ function handleSubmit() {
   .community-block__title-line:nth-child(2)::after {
     content: ' ';
   }
+
+  .community-block__form {
+    width: 100%;
+  }
+
+  .community-block__field input {
+    width: 100%;
+  }
+
+  .community-block__submit {
+    width: 100%;
+  }
 }
 </style>
