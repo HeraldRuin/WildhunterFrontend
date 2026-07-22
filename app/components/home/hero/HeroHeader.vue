@@ -7,15 +7,13 @@ const { open: openRegisterModal } = useRegisterModal()
   <header class="hero-header">
     <div class="hero-header__left">
       <button type="button" class="hero-header__burger" aria-label="Меню">
-        <svg width="25.5" height="17" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M4 7h16M4 12h16M4 17h16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </svg>
+        <img
+          src="/icons/material-symbols_menu-rounded.png"
+          alt=""
+          width="34"
+          height="34"
+          aria-hidden="true"
+        >
       </button>
       <button type="button" class="hero-header__menu hero-header__menu--desktop">
         Для охотников
@@ -90,9 +88,14 @@ const { open: openRegisterModal } = useRegisterModal()
   padding: 0;
   border: none;
   background: transparent;
-  color: #000000;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+.hero-header__burger img {
+  display: block;
+  width: 34px;
+  height: 34px;
 }
 
 .hero-header__menu {
