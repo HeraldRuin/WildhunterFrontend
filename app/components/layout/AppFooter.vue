@@ -31,9 +31,9 @@ const legalLinks = [
 ]
 
 const socials = [
-  { label: 'Odnoklassniki', href: '#', icon: 'ok' },
-  { label: 'Telegram', href: '#', icon: 'telegram' },
-  { label: 'VK', href: '#', icon: 'vk' },
+  { label: 'Max', href: '#', src: '/icons/max.png' },
+  { label: 'Telegram', href: '#', src: '/icons/telegram.png' },
+  { label: 'VK', href: '#', src: '/icons/vk.png' },
 ]
 </script>
 
@@ -76,16 +76,13 @@ const socials = [
               class="footer__social"
               :aria-label="social.label"
             >
-              <svg v-if="social.icon === 'ok'" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8" />
-                <path d="M8.5 12.5c1.2 1.4 2.4 2.1 3.5 2.1s2.3-.7 3.5-2.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              </svg>
-              <svg v-else-if="social.icon === 'telegram'" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21 4L4 11l6 2 3 7 2-7 6-9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-              </svg>
-              <svg v-else width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6.5 8h3.2c3.1 0 5.6 2.5 5.6 5.6v4.8M6.5 8v10.4M6.5 8L4 5.5M9.7 18.4h3.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+              <img
+                :src="social.src"
+                :alt="social.label"
+                width="37"
+                height="36"
+                loading="lazy"
+              >
             </a>
           </div>
         </div>
@@ -164,19 +161,25 @@ const socials = [
 }
 
 .footer__social {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
+  display: block;
+  flex-shrink: 0;
+  width: 37px;
+  height: 36px;
   border-radius: 10px;
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
-  transition: background 0.15s ease, transform 0.15s ease;
+  overflow: hidden;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.footer__social img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .footer__social:hover {
-  background: var(--wh-orange-600);
   transform: translateY(-1px);
+  opacity: 0.9;
 }
 
 .footer__bottom {
