@@ -128,8 +128,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   position: relative;
   overflow: hidden;
   aspect-ratio: 1 / 1;
-  border-radius: 18px;
-  background: var(--wh-gray-100);
+  border-radius: var(--wh-radius);
 }
 
 .offer-card__media img {
@@ -225,24 +224,33 @@ async function handleFavoriteClick(event: MouseEvent) {
 
 .offer-card__title {
   margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.35;
-  font-weight: 700;
-  color: var(--wh-gray-900);
+  font-family: "Inter", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
 }
 
 .offer-card__price {
   margin: 0;
   flex-shrink: 0;
-  font-size: 0.98rem;
-  font-weight: 600;
-  color: var(--wh-gray-900);
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
   white-space: nowrap;
 }
 
 .offer-card__location {
   margin: 6px 0 0;
-  color: var(--wh-gray-500);
-  font-size: 0.92rem;
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
 }
 </style>

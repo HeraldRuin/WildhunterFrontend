@@ -1,9 +1,6 @@
 import type { ApiSuccessResponse, HotelOffer, OfferItem } from '~/types/api'
 import { useApiClient } from './client'
 
-const DEFAULT_OFFER_IMAGE =
-  'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800'
-
 export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
   const price = Number(offer.price) || 0
 
@@ -13,7 +10,7 @@ export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
     title: offer.title,
     location: offer.location?.name ?? '',
     price,
-    image: offer.image_url || DEFAULT_OFFER_IMAGE,
+    image: offer.image_url,
     reviews: offer.review_count ?? 0,
     rating: offer.star_rate ?? 0,
   }
