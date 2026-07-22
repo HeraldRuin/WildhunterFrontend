@@ -305,6 +305,7 @@ function toggleItem(id: number) {
     grid-column: 1;
     grid-row: 2;
     padding-top: 12px;
+    padding-left: calc(40px + 32px);
   }
 
   .faq-block__icon {
