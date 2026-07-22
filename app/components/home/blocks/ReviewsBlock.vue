@@ -7,11 +7,29 @@ const props = defineProps<{
 
 const reviews = computed(() => props.items ?? [])
 const trackRef = ref<HTMLElement | null>(null)
+const { canScrollPrev, canScrollNext } = useSliderScrollState(trackRef, reviews)
+
+function getCardWidth(track: HTMLElement) {
+  const slide = track.querySelector('.reviews-block__slide') as HTMLElement | null
+  return slide?.offsetWidth || 0
+}
+
+function getTrackGap(track: HTMLElement) {
+  const styles = getComputedStyle(track)
+  return Number.parseFloat(styles.columnGap || styles.gap) || 20
+}
 
 function scrollBy(direction: 'prev' | 'next') {
+  if (direction === 'prev' && !canScrollPrev.value) return
+  if (direction === 'next' && !canScrollNext.value) return
+
   const track = trackRef.value
   if (!track) return
-  const offset = track.clientWidth * 0.8 * (direction === 'next' ? 1 : -1)
+
+  const cardWidth = getCardWidth(track)
+  if (!cardWidth) return
+
+  const offset = (cardWidth + getTrackGap(track)) * (direction === 'next' ? 1 : -1)
   track.scrollBy({ left: offset, behavior: 'smooth' })
 }
 </script>
@@ -22,16 +40,13 @@ function scrollBy(direction: 'prev' | 'next') {
       <h2 class="reviews-block__title">Отзывы</h2>
 
       <div class="reviews-block__slider-wrap">
-        <button
-          type="button"
-          class="reviews-block__arrow reviews-block__arrow--prev"
-          aria-label="Предыдущие отзывы"
+        <CommonSliderArrow
+          class="reviews-block__arrow"
+          direction="prev"
+          label="Предыдущие отзывы"
+          :disabled="!canScrollPrev"
           @click="scrollBy('prev')"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
-        </button>
+        />
 
         <div ref="trackRef" class="reviews-block__track">
           <HomeReviewCard
@@ -42,16 +57,13 @@ function scrollBy(direction: 'prev' | 'next') {
           />
         </div>
 
-        <button
-          type="button"
-          class="reviews-block__arrow reviews-block__arrow--next"
-          aria-label="Следующие отзывы"
+        <CommonSliderArrow
+          class="reviews-block__arrow"
+          direction="next"
+          label="Следующие отзывы"
+          :disabled="!canScrollNext"
           @click="scrollBy('next')"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
-        </button>
+        />
       </div>
     </div>
   </section>
@@ -82,7 +94,7 @@ function scrollBy(direction: 'prev' | 'next') {
 
 .reviews-block__slider-wrap {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  grid-template-columns: 30px minmax(0, 1fr) 30px;
   align-items: center;
   gap: 16px;
   width: 100%;
@@ -108,36 +120,13 @@ function scrollBy(direction: 'prev' | 'next') {
   min-width: 0;
 }
 
-.reviews-block__arrow {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 999px;
-  background: var(--wh-white);
-  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
-  color: var(--wh-gray-900);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.reviews-block__arrow:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 28px rgba(17, 24, 39, 0.12);
-}
-
 @media (max-width: 1024px) {
   .reviews-block__slider-wrap {
-    grid-template-columns: 40px minmax(0, 1fr) 40px;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .reviews-block__arrow {
-    width: 40px;
-    height: 40px;
+    display: none;
   }
 
   .reviews-block__track {
