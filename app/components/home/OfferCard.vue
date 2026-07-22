@@ -127,7 +127,8 @@ async function handleFavoriteClick(event: MouseEvent) {
 .offer-card__media {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 1 / 1;
+  width: 100%;
+  aspect-ratio: 288 / 300;
   border-radius: var(--wh-radius);
 }
 
