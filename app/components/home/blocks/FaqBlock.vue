@@ -87,8 +87,15 @@ function toggleItem(id: number) {
         <div class="faq-block__cta">
           <h3 class="faq-block__cta-title">Остались вопросы?</h3>
           <p class="faq-block__cta-text">
-            Напишите нам и мы проконсультируем<br>
-            вас и ответим на вопросы
+            <span class="faq-block__cta-text-desktop">
+              Напишите нам и мы проконсультируем<br>
+              вас и ответим на вопросы
+            </span>
+            <span class="faq-block__cta-text-mobile">
+              Напишите нам и мы<br>
+              проконсультируем вас и ответим<br>
+              на вопросы
+            </span>
           </p>
           <NuxtLink to="/support" class="btn btn--primary faq-block__cta-btn">
             Поддержка
@@ -237,6 +244,10 @@ function toggleItem(id: number) {
   color: rgb(0 0 0 / 80%);
 }
 
+.faq-block__cta-text-mobile {
+  display: none;
+}
+
 .faq-block__cta-btn {
   grid-column: 4;
   flex: 0 0 auto;
@@ -334,6 +345,14 @@ function toggleItem(id: number) {
 
   .faq-block__cta-text {
     text-align: left;
+  }
+
+  .faq-block__cta-text-desktop {
+    display: none;
+  }
+
+  .faq-block__cta-text-mobile {
+    display: inline;
   }
 
   .faq-block__cta-btn {
