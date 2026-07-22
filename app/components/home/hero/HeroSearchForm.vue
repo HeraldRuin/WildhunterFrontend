@@ -1013,6 +1013,8 @@ onUnmounted(() => {
   }
 
   .hero-search__field--animals .hero-search__dropdown-list {
+    top: auto;
+    bottom: calc(100% + 4px);
     border-radius: var(--wh-radius-lg);
   }
 
@@ -1020,6 +1022,16 @@ onUnmounted(() => {
     grid-column: 1 / -1;
     grid-row: 3;
     margin-top: 0;
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hero-search__field--dates .hero-search__dropdown-panel--calendar {
+    top: auto;
+    bottom: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
     border-radius: var(--wh-radius-lg);
   }
 
