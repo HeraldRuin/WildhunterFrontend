@@ -60,7 +60,7 @@ function handleSubmit() {
 .community-block {
   position: relative;
   overflow: hidden;
-  min-height: 562px;
+  min-height: 400px;
   background: #243d31;
 }
 
@@ -98,10 +98,10 @@ function handleSubmit() {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  width: min(100%, 1440px);
+  width: 100%;
   min-height: 640px;
-  margin-inline: auto;
-  padding: 56px 80px 56px 24px;
+  margin-inline: 0;
+  padding: 56px clamp(16px, calc(80px - (1422px - 100vw) * 64 / 398), 80px) 56px 24px;
 }
 
 .community-block__content {
@@ -139,7 +139,7 @@ function handleSubmit() {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  width: min(100%, 360px);
+  width: min(100%, 372px);
 }
 
 .community-block__field {
@@ -149,7 +149,7 @@ function handleSubmit() {
 }
 
 .community-block__field input {
-  width: 100%;
+  width: 284px;
   padding: 8px 0 10px;
   border: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.85);
@@ -202,7 +202,7 @@ function handleSubmit() {
 }
 
 .community-block__submit {
-  width: 100%;
+  width: 372px;
   margin-top: 4px;
   padding-block: 14px;
   font-family: Inter, sans-serif;
@@ -241,6 +241,11 @@ function handleSubmit() {
 }
 
 @media (max-width: 1024px) {
+  .community-block__inner {
+    min-height: 400px;
+    padding: 56px 16px 56px 24px;
+  }
+
   .community-block__content {
     width: min(100%, 360px);
   }
@@ -252,7 +257,20 @@ function handleSubmit() {
   }
 
   .community-block__form {
-    width: min(100%, 280px);
+    width: min(100%, 360px);
+  }
+
+  .community-block__submit {
+    width: 360px;
+  }
+
+  .community-block__field input,
+  .community-block__field input::placeholder {
+    font-size: 16px;
+  }
+
+  .community-block__checkbox {
+    font-size: 12px;
   }
 
   .community-block__title-line:nth-child(2),
