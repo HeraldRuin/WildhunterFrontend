@@ -214,9 +214,9 @@ const socials = [
   font-weight: 400;
   line-height: 120%;
   letter-spacing: -0.05em;
-  color: var(--wh-black-text);
+  color: #888888;
   text-decoration: underline;
-  text-decoration-color: #1c211c;
+  text-decoration-color: #888888;
   text-underline-offset: 3px;
   transition: opacity 0.15s ease;
 }
@@ -237,7 +237,7 @@ const socials = [
   font-weight: 400;
   line-height: 120%;
   letter-spacing: -0.05em;
-  color: #1c211c;
+  color: #888888;
   white-space: nowrap;
 }
 

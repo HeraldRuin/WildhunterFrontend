@@ -57,45 +57,79 @@ onUnmounted(() => {
     :class="{ 'auth-user-menu--open': isOpen }"
   >
     <div
-      class="auth-user-menu__trigger"
-      :class="{ 'auth-user-menu__trigger--open': isOpen }"
+      class="auth-user-menu__mobile"
+      :class="{ 'auth-user-menu__mobile--open': isOpen }"
     >
       <NuxtLink
         to="/profile"
-        class="auth-user-menu__content"
+        class="auth-user-menu__mobile-name"
         @click="closeMenu"
       >
-        <span class="auth-user-menu__avatar" aria-hidden="true">
-          <img
-            v-if="user?.avatar"
-            :src="user.avatar"
-            :alt="displayName"
-          >
-        </span>
-
-        <span class="auth-user-menu__name">
-          {{ displayName }}
-        </span>
+        {{ displayName }}
       </NuxtLink>
 
       <button
         type="button"
-        class="auth-user-menu__arrow"
+        class="auth-user-menu__mobile-arrow"
         :aria-expanded="isOpen"
         aria-haspopup="menu"
         aria-label="Открыть меню пользователя"
         @click.stop="toggleMenu"
       >
         <svg
-          class="auth-user-menu__arrow-icon"
-          width="16"
-          height="16"
+          class="auth-user-menu__mobile-arrow-icon"
+          width="12"
+          height="12"
           viewBox="0 0 12 12"
           aria-hidden="true"
         >
-          <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
+    </div>
+
+    <div class="auth-user-menu__desktop">
+      <div
+        class="auth-user-menu__trigger"
+        :class="{ 'auth-user-menu__trigger--open': isOpen }"
+      >
+        <NuxtLink
+          to="/profile"
+          class="auth-user-menu__content"
+          @click="closeMenu"
+        >
+          <span class="auth-user-menu__avatar" aria-hidden="true">
+            <img
+              v-if="user?.avatar"
+              :src="user.avatar"
+              :alt="displayName"
+            >
+          </span>
+
+          <span class="auth-user-menu__name">
+            {{ displayName }}
+          </span>
+        </NuxtLink>
+
+        <button
+          type="button"
+          class="auth-user-menu__arrow"
+          :aria-expanded="isOpen"
+          aria-haspopup="menu"
+          aria-label="Открыть меню пользователя"
+          @click.stop="toggleMenu"
+        >
+          <svg
+            class="auth-user-menu__arrow-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 12 12"
+            aria-hidden="true"
+          >
+            <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
     </div>
 
     <Transition name="auth-user-menu">
@@ -137,6 +171,16 @@ onUnmounted(() => {
 
 .auth-user-menu--open {
   z-index: 1100;
+}
+
+.auth-user-menu__mobile {
+  display: none;
+}
+
+.auth-user-menu__desktop {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .auth-user-menu__trigger {
@@ -307,22 +351,70 @@ onUnmounted(() => {
 }
 
 @media (max-width: 640px) {
-  .auth-user-menu__content {
-    max-width: 140px;
-    padding: 8px 10px 8px 8px;
+  .auth-user-menu {
+    align-items: flex-end;
   }
 
-  .auth-user-menu__name {
-    font-size: 0.9rem;
+  .auth-user-menu__mobile {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: min(168px, 40vw);
   }
 
-  .auth-user-menu__avatar {
-    width: 32px;
-    height: 32px;
+  .auth-user-menu__mobile-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--wh-black-text);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: none;
   }
 
-  .auth-user-menu__arrow {
-    width: 38px;
+  .auth-user-menu__mobile-arrow {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 12px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--wh-black-text);
+    cursor: pointer;
+  }
+
+  .auth-user-menu__mobile-arrow-icon {
+    display: block;
+    transition: transform 0.2s ease;
+  }
+
+  .auth-user-menu__mobile--open .auth-user-menu__mobile-arrow-icon {
+    transform: rotate(180deg);
+  }
+
+  .auth-user-menu__desktop {
+    display: none;
+  }
+
+  .auth-user-menu__dropdown {
+    right: -12px;
+    left: auto;
+    width: max-content;
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+    padding: 4px 6px;
+  }
+
+  .auth-user-menu__item {
+    padding: 10px 12px;
+    white-space: nowrap;
   }
 }
 </style>
