@@ -22,7 +22,17 @@ function close(id: string) {
   remove(id)
 }
 
+function closeByGroup(group: string) {
+  [...notifications.value]
+    .filter(notification => notification.group === group)
+    .forEach(notification => close(notification.id))
+}
+
 function show(notification: Omit<Notification, 'id'>) {
+  if (notification.group) {
+    closeByGroup(notification.group)
+  }
+
   const id = createId()
 
   const newNotification: Notification = {
@@ -49,20 +59,22 @@ function show(notification: Omit<Notification, 'id'>) {
   return id
 }
 
-function success(message: string, title = 'Успех') {
-  return show({ type: 'success', title, message })
+type NotificationOptions = Pick<Notification, 'group' | 'duration'>
+
+function success(message: string, title = 'Успех', options?: NotificationOptions) {
+  return show({ type: 'success', title, message, ...options })
 }
 
-function error(message: string, title = 'Ошибка') {
-  return show({ type: 'error', title, message })
+function error(message: string, title = 'Ошибка', options?: NotificationOptions) {
+  return show({ type: 'error', title, message, ...options })
 }
 
-function warning(message: string, title = 'Внимание') {
-  return show({ type: 'warning', title, message })
+function warning(message: string, title = 'Внимание', options?: NotificationOptions) {
+  return show({ type: 'warning', title, message, ...options })
 }
 
-function info(message: string, title = 'Информация') {
-  return show({ type: 'info', title, message })
+function info(message: string, title = 'Информация', options?: NotificationOptions) {
+  return show({ type: 'info', title, message, ...options })
 }
 
 function clear() {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { OfferItem } from '~/types/api'
-import { featureFlags } from '~/config/features'
+import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
 import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
 import { formatReviewsCount } from '~/utils/pluralize'
@@ -53,13 +53,13 @@ function shouldOpenRegistrationModal(error: unknown, message: string) {
 
 function notifyFavoriteSuccess(message: string) {
   if (featureFlags.favoriteNotifications && message) {
-    notifications.success(message)
+    notifications.success(message, 'Успех', { group: FAVORITE_NOTIFICATION_GROUP })
   }
 }
 
 function notifyFavoriteError(message: string) {
   if (featureFlags.favoriteNotifications && message) {
-    notifications.error(message)
+    notifications.error(message, 'Ошибка', { group: FAVORITE_NOTIFICATION_GROUP })
   }
 }
 
