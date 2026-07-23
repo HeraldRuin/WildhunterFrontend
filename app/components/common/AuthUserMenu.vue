@@ -157,11 +157,6 @@ onUnmounted(() => {
   padding: 10px 12px 10px 10px;
   color: inherit;
   text-decoration: none;
-  transition: opacity 0.15s ease;
-}
-
-.auth-user-menu__content:hover {
-  opacity: 0.88;
 }
 
 .auth-user-menu__name {
@@ -172,10 +167,6 @@ onUnmounted(() => {
   line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.auth-user-menu__name:hover {
-  opacity: 1;
 }
 
 .auth-user-menu__avatar {
