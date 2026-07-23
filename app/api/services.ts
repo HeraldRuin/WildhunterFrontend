@@ -4,6 +4,7 @@ import { useApiClient } from './client'
 export interface FavoriteResponse {
   success?: boolean
   message?: string
+  data?: FavoriteServiceItem | FavoriteServiceItem[]
 }
 
 export interface FavoriteServiceItem {
@@ -15,9 +16,16 @@ export interface FavoriteServiceItem {
 export function useServicesApi() {
   const { apiFetch } = useApiClient()
 
-  function toggleFavorite(serviceId: number) {
+  function addFavorite(serviceId: number) {
     return apiFetch<FavoriteResponse>(`/services/${serviceId}/favorite`, {
       method: 'POST',
+      body: {},
+    })
+  }
+
+  function removeFavorite(serviceId: number) {
+    return apiFetch<FavoriteResponse>(`/services/${serviceId}/favorite`, {
+      method: 'DELETE',
     })
   }
 
@@ -28,7 +36,8 @@ export function useServicesApi() {
   }
 
   return {
-    toggleFavorite,
+    addFavorite,
+    removeFavorite,
     getFavorites,
   }
 }

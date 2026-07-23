@@ -59,8 +59,12 @@ async function handleFavoriteClick(event: MouseEvent) {
 
   isFavoriteLoading.value = true
 
+  const wasFavorite = isFavorite.value
+
   try {
-    const response = await services.toggleFavorite(props.item.id)
+    const response = wasFavorite
+      ? await services.removeFavorite(props.item.id)
+      : await services.addFavorite(props.item.id)
 
     if (response.success === false) {
       const message = response.message || FAVORITE_REGISTRATION_MESSAGE
@@ -72,7 +76,7 @@ async function handleFavoriteClick(event: MouseEvent) {
       return
     }
 
-    setFavorite(props.item.id, !isFavorite.value)
+    setFavorite(props.item.id, !wasFavorite)
   } catch (error) {
     const message = getErrorMessage(error)
 
