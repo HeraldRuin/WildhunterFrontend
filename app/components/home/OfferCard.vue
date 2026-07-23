@@ -161,7 +161,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   padding: 24px;
   background:
     linear-gradient(180deg, rgb(0 0 0 / 0) 55%, rgb(0 0 0 / 28%) 100%),
-    linear-gradient(145deg, #6f876c 0%, var(--wh-green) 52%, #425741 100%);
+    linear-gradient(145deg, #b8b8b8 0%, #9a9a9a 52%, #757575 100%);
 }
 
 .offer-card__placeholder span {
