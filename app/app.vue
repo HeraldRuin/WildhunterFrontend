@@ -12,5 +12,6 @@ useAuthModalsScrollLock()
     <AuthRegisterModal />
     <AuthForgotPasswordModal />
     <AuthFavoriteAuthModal />
+    <CommonNotificationsContainer />
   </div>
 </template>
