@@ -15,6 +15,7 @@ const showPassword = ref(false)
 const isSubmitting = ref(false)
 const submitError = ref('')
 const fieldErrors = ref<Record<string, string[]>>({})
+const resetStepHint = ref('')
 
 function getFieldError(field: string) {
   return fieldErrors.value[field]?.[0]
@@ -61,6 +62,15 @@ function getApiErrorPayload(source: unknown) {
   }
 
   return null
+}
+
+function getApiMessage(data: unknown) {
+  return getApiErrorPayload(data)?.message?.trim() || ''
+}
+
+function proceedToResetStep(data: unknown) {
+  resetStepHint.value = getApiMessage(data)
+  step.value = 'reset'
 }
 
 function applyValidationErrors(data: unknown) {
@@ -123,6 +133,7 @@ function resetForm() {
   showPassword.value = false
   submitError.value = ''
   fieldErrors.value = {}
+  resetStepHint.value = ''
   isSubmitting.value = false
 }
 
@@ -137,7 +148,7 @@ async function handleEmailSubmit() {
     })
 
     if (shouldProceedToResetStep(response)) {
-      step.value = 'reset'
+      proceedToResetStep(response)
       return
     }
 
@@ -148,7 +159,7 @@ async function handleEmailSubmit() {
     const data = (error as { data?: unknown }).data
 
     if (shouldProceedToResetStep(data)) {
-      step.value = 'reset'
+      proceedToResetStep(data)
       return
     }
 
@@ -259,23 +270,7 @@ watch(isOpen, (open) => {
         @keydown="handleKeydown"
       >
         <div class="forgot-password-modal__card">
-          <button
-            type="button"
-            class="forgot-password-modal__close"
-            aria-label="Закрыть"
-            :disabled="isSubmitting"
-            @click="close"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-              <path
-                d="M5 5l10 10M15 5L5 15"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-          </button>
+          <CommonModalCloseButton :disabled="isSubmitting" @click="close" />
 
           <h2 id="forgot-password-modal-title" class="forgot-password-modal__title">
             Сбросить пароль
@@ -300,8 +295,8 @@ watch(isOpen, (open) => {
             </template>
 
             <template v-else>
-              <p class="forgot-password-modal__hint">
-                Код отправлен на {{ email }}
+              <p v-if="resetStepHint" class="forgot-password-modal__hint">
+                {{ resetStepHint }}
               </p>
 
               <div class="forgot-password-modal__field">
@@ -432,34 +427,6 @@ watch(isOpen, (open) => {
   border-radius: var(--wh-radius);
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
-}
-
-.forgot-password-modal__close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--wh-gray-400);
-  cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-
-.forgot-password-modal__close:hover:not(:disabled) {
-  color: var(--wh-gray-900);
-  background: var(--wh-gray-100);
-}
-
-.forgot-password-modal__close:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .forgot-password-modal__title {

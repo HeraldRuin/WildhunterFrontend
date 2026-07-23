@@ -33,22 +33,7 @@ function handleRegister() {
         @keydown="handleKeydown"
       >
         <div class="favorite-auth-modal__card">
-          <button
-            type="button"
-            class="favorite-auth-modal__close"
-            aria-label="Закрыть"
-            @click="close"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-              <path
-                d="M5 5l10 10M15 5L5 15"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-          </button>
+          <CommonModalCloseButton @click="close" />
 
           <div class="favorite-auth-modal__icon" aria-hidden="true">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
@@ -102,29 +87,6 @@ function handleRegister() {
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
   text-align: center;
-}
-
-.favorite-auth-modal__close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--wh-gray-400);
-  cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-
-.favorite-auth-modal__close:hover {
-  color: var(--wh-black-text);
-  background: var(--wh-gray);
 }
 
 .favorite-auth-modal__icon {

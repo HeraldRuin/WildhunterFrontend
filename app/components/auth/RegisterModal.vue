@@ -340,23 +340,7 @@ onUnmounted(() => {
             <span class="register-modal__spinner" />
           </div>
 
-          <button
-            type="button"
-            class="register-modal__close"
-            aria-label="Закрыть"
-            :disabled="isSubmitting"
-            @click="close"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-              <path
-                d="M5 5l10 10M15 5L5 15"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-          </button>
+          <CommonModalCloseButton :disabled="isSubmitting" @click="close" />
 
           <h2 id="register-modal-title" class="register-modal__title">Регистрация</h2>
 
@@ -618,34 +602,6 @@ onUnmounted(() => {
   to {
     transform: rotate(360deg);
   }
-}
-
-.register-modal__close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--wh-gray-400);
-  cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-
-.register-modal__close:hover:not(:disabled) {
-  color: var(--wh-gray-900);
-  background: var(--wh-gray-100);
-}
-
-.register-modal__close:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .register-modal__title {
