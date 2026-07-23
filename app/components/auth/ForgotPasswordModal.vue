@@ -31,21 +31,70 @@ function clearFieldError(field: string) {
   submitError.value = ''
 }
 
+const CODE_FIELD_ERROR_CODES = ['code_expired', 'code_invalid'] as const
+
+function getApiErrorPayload(source: unknown) {
+  if (!source || typeof source !== 'object') {
+    return null
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    errors?: Record<string, string[]> | unknown[]
+    error_code?: string
+  }
+
+  if (
+    payload.success === false
+    || payload.message
+    || payload.error_code
+    || payload.errors
+  ) {
+    return payload
+  }
+
+  const nestedData = (source as { data?: unknown }).data
+
+  if (nestedData && nestedData !== source) {
+    return getApiErrorPayload(nestedData)
+  }
+
+  return null
+}
+
 function applyValidationErrors(data: unknown) {
-  if (!data || typeof data !== 'object') {
+  const response = getApiErrorPayload(data)
+
+  if (!response) {
     return false
   }
 
-  const response = data as { message?: string, errors?: Record<string, string[]> }
+  if (
+    response.message
+    && response.error_code
+    && CODE_FIELD_ERROR_CODES.includes(response.error_code as typeof CODE_FIELD_ERROR_CODES[number])
+  ) {
+    fieldErrors.value = { code: [response.message] }
+    submitError.value = ''
+    return true
+  }
 
-  if (response.errors && Object.keys(response.errors).length > 0) {
-    fieldErrors.value = response.errors
+  const fieldErrorsData = response.errors
+  const hasFieldErrors = fieldErrorsData
+    && !Array.isArray(fieldErrorsData)
+    && Object.keys(fieldErrorsData).length > 0
+
+  if (hasFieldErrors) {
+    fieldErrors.value = fieldErrorsData
     submitError.value = ''
     return true
   }
 
   if (response.message) {
+    fieldErrors.value = {}
     submitError.value = response.message
+    return true
   }
 
   return false
