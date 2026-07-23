@@ -11,8 +11,8 @@ export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
     location: offer.location?.name ?? '',
     price,
     image: offer.image_url,
-    reviews: offer.review_count ?? 0,
-    rating: offer.star_rate ?? 0,
+    reviews: Number(offer.review_count) || 0,
+    rating: Number(offer.star_rate) || 0,
   }
 }
 
