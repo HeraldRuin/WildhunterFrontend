@@ -2,6 +2,7 @@
 const { isOpen, close } = useForgotPasswordModal()
 const { open: openLoginModal } = useLoginModal()
 const { auth } = useApi()
+const notifications = useNotifications()
 
 type Step = 'email' | 'reset'
 
@@ -103,6 +104,7 @@ async function handleResetSubmit() {
     })
 
     if (response.success) {
+      notifications.success(response.message || 'Пароль успешно изменён')
       close()
       resetForm()
       openLoginModal()
