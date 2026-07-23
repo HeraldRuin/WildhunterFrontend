@@ -98,6 +98,7 @@ onUnmounted(() => {
           class="auth-user-menu__content"
           @click="closeMenu"
         >
+          <!--
           <span class="auth-user-menu__avatar" aria-hidden="true">
             <img
               v-if="user?.avatar"
@@ -105,6 +106,7 @@ onUnmounted(() => {
               :alt="displayName"
             >
           </span>
+          -->
 
           <span class="auth-user-menu__name">
             {{ displayName }}
@@ -198,7 +200,7 @@ onUnmounted(() => {
   gap: 10px;
   min-width: 0;
   max-width: 220px;
-  padding: 10px 12px 10px 10px;
+  padding: 10px 12px;
   color: inherit;
   text-decoration: none;
 }
