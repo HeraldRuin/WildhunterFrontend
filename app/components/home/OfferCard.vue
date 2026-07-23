@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { OfferItem } from '~/types/api'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
+import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
 import { formatReviewsCount } from '~/utils/pluralize'
 
 const props = defineProps<{
@@ -12,6 +13,8 @@ const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
 
 const isFavoriteLoading = ref(false)
 const isFavorite = ref(false)
+const showImage = computed(() => shouldShowOfferImage(props.item.image))
+const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value)
@@ -78,7 +81,10 @@ async function handleFavoriteClick(event: MouseEvent) {
 <template>
   <NuxtLink :to="`/${item.object_model}/${item.id}`" class="offer-card">
     <div class="offer-card__media">
-      <img :src="item.image" :alt="item.title" loading="lazy">
+      <img v-if="showImage" :src="item.image" :alt="item.title" loading="lazy">
+      <div v-else-if="showCustomPlaceholder" class="offer-card__placeholder" aria-hidden="true">
+        <span>Фото отсутствует</span>
+      </div>
       <button
         type="button"
         class="offer-card__favorite"
@@ -132,15 +138,41 @@ async function handleFavoriteClick(event: MouseEvent) {
   border-radius: var(--wh-radius);
 }
 
-.offer-card__media img {
+.offer-card__media img,
+.offer-card__placeholder {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   transition: transform 0.3s ease;
 }
 
-.offer-card:hover .offer-card__media img {
+.offer-card__media img {
+  object-fit: cover;
+}
+
+.offer-card:hover .offer-card__media img,
+.offer-card:hover .offer-card__placeholder {
   transform: scale(1.03);
+}
+
+.offer-card__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0) 55%, rgb(0 0 0 / 28%) 100%),
+    linear-gradient(145deg, #6f876c 0%, var(--wh-green) 52%, #425741 100%);
+}
+
+.offer-card__placeholder span {
+  max-width: 12ch;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.05em;
+  text-align: center;
+  color: rgb(255 255 255 / 88%);
 }
 
 .offer-card__favorite {
@@ -196,6 +228,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   line-height: 1.2;
   letter-spacing: -0.05em;
   color: rgb(255 255 255 / 80%);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 35%);
 }
 
 .offer-card__star {
@@ -210,6 +243,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   line-height: 1.3;
   letter-spacing: -0.05em;
   color: #ffffff;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 35%);
 }
 
 .offer-card__body {
