@@ -37,7 +37,7 @@ function applyValidationErrors(data: unknown) {
 
   const response = data as { message?: string, errors?: Record<string, string[]> }
 
-  if (response.errors) {
+  if (response.errors && Object.keys(response.errors).length > 0) {
     fieldErrors.value = response.errors
     submitError.value = ''
     return true
@@ -48,6 +48,20 @@ function applyValidationErrors(data: unknown) {
   }
 
   return false
+}
+
+function shouldProceedToResetStep(data: unknown) {
+  if (!data || typeof data !== 'object') {
+    return false
+  }
+
+  const response = data as { success?: boolean, error_code?: string }
+
+  if (response.success) {
+    return true
+  }
+
+  return response.error_code === 'code_already_sent'
 }
 
 function resetForm() {
@@ -71,7 +85,7 @@ async function handleEmailSubmit() {
       email: email.value.trim(),
     })
 
-    if (response.success) {
+    if (shouldProceedToResetStep(response)) {
       step.value = 'reset'
       return
     }
@@ -81,6 +95,11 @@ async function handleEmailSubmit() {
     }
   } catch (error) {
     const data = (error as { data?: unknown }).data
+
+    if (shouldProceedToResetStep(data)) {
+      step.value = 'reset'
+      return
+    }
 
     if (!applyValidationErrors(data)) {
       submitError.value = 'Не удалось отправить код'
