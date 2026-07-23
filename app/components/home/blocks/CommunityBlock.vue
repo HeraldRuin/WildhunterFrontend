@@ -1,9 +1,81 @@
 <script setup lang="ts">
+const { newsletter } = useApi()
+const notifications = useNotifications()
+
 const email = ref('')
 const agreed = ref(true)
+const isSubmitting = ref(false)
+const submitError = ref('')
+const fieldErrors = ref<Record<string, string[]>>({})
 
-function handleSubmit() {
-  // API подключим позже
+function getFieldError(field: string) {
+  return fieldErrors.value[field]?.[0]
+}
+
+function clearFieldError(field: string) {
+  if (!fieldErrors.value[field]) {
+    return
+  }
+
+  const nextErrors = { ...fieldErrors.value }
+  delete nextErrors[field]
+  fieldErrors.value = nextErrors
+  submitError.value = ''
+}
+
+function applyValidationErrors(data: unknown) {
+  if (!data || typeof data !== 'object') {
+    return false
+  }
+
+  const response = data as {
+    success?: boolean
+    message?: string
+    errors?: Record<string, string[]>
+  }
+
+  if (response.errors && Object.keys(response.errors).length > 0) {
+    fieldErrors.value = response.errors
+    submitError.value = ''
+    return true
+  }
+
+  if (response.message) {
+    fieldErrors.value = {}
+    submitError.value = response.message
+    return true
+  }
+
+  return false
+}
+
+async function handleSubmit() {
+  isSubmitting.value = true
+  fieldErrors.value = {}
+  submitError.value = ''
+
+  try {
+    const response = await newsletter.subscribe({
+      email: email.value.trim(),
+      privacy_policy: agreed.value,
+    })
+
+    if (response.success) {
+      notifications.success(response.message || 'Вы подписаны на рассылку')
+      email.value = ''
+      return
+    }
+
+    if (!applyValidationErrors(response)) {
+      submitError.value = 'Не удалось подписаться на рассылку'
+    }
+  } catch (error) {
+    if (!applyValidationErrors((error as { data?: unknown }).data)) {
+      submitError.value = 'Не удалось подписаться на рассылку'
+    }
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -34,15 +106,47 @@ function handleSubmit() {
               autocomplete="email"
               placeholder="Ваш email"
               aria-label="Ваш email"
+              :aria-invalid="Boolean(getFieldError('email'))"
+              :aria-describedby="getFieldError('email') ? 'community-block-email-error' : undefined"
+              @input="clearFieldError('email')"
             >
+            <p
+              v-if="getFieldError('email')"
+              id="community-block-email-error"
+              class="community-block__error"
+            >
+              {{ getFieldError('email') }}
+            </p>
           </label>
 
           <label class="community-block__checkbox">
-            <input v-model="agreed" type="checkbox" name="privacy">
+            <input
+              v-model="agreed"
+              type="checkbox"
+              name="privacy"
+              :aria-invalid="Boolean(getFieldError('privacy_policy'))"
+              :aria-describedby="getFieldError('privacy_policy') ? 'community-block-privacy-error' : undefined"
+              @change="clearFieldError('privacy_policy')"
+            >
             <span>Я согласен с политикой конфиденциальности</span>
           </label>
+          <p
+            v-if="getFieldError('privacy_policy')"
+            id="community-block-privacy-error"
+            class="community-block__error community-block__error--checkbox"
+          >
+            {{ getFieldError('privacy_policy') }}
+          </p>
 
-          <button type="submit" class="community-block__submit btn btn--primary">
+          <p v-if="submitError" class="community-block__error community-block__error--submit">
+            {{ submitError }}
+          </p>
+
+          <button
+            type="submit"
+            class="community-block__submit btn btn--primary"
+            :disabled="isSubmitting"
+          >
             Подписаться на рассылку
           </button>
 
@@ -160,6 +264,22 @@ function handleSubmit() {
 
 .community-block__field input::placeholder {
   color: rgba(255, 255, 255, 0.55);
+}
+
+.community-block__error {
+  margin: 0;
+  font-family: Inter, sans-serif;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #ffb4b4;
+}
+
+.community-block__error--checkbox {
+  margin-top: -10px;
+}
+
+.community-block__error--submit {
+  margin-top: -6px;
 }
 
 .community-block__checkbox {

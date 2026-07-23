@@ -10,6 +10,7 @@ import {
   useRolesApi,
   useSearchApi,
   useServicesApi,
+  useNewsletterApi,
 } from '~/api'
 
 export function useApi() {
@@ -24,6 +25,7 @@ export function useApi() {
   const roles = useRolesApi()
   const reviews = useReviewsApi()
   const services = useServicesApi()
+  const newsletter = useNewsletterApi()
 
   return {
     ...client,
@@ -37,5 +39,6 @@ export function useApi() {
     roles,
     reviews,
     services,
+    newsletter,
   }
 }

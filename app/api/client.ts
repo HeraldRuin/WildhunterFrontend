@@ -5,18 +5,22 @@ export function useApiClient() {
   const version = (config.public.apiVersion as string).replace(/^\//, '').replace(/\/$/, '')
   const baseURL = `${base}/${version}`
 
-  function apiFetch<T>(path: string, options: Parameters<typeof $fetch>[1] = {}) {
-    const headers = new Headers(options.headers as HeadersInit | undefined)
+  function apiFetch<T>(
+    path: string,
+    options: Parameters<typeof $fetch>[1] & { skipAuth?: boolean } = {},
+  ) {
+    const { skipAuth, ...fetchOptions } = options
+    const headers = new Headers(fetchOptions.headers as HeadersInit | undefined)
 
     headers.set('Accept', 'application/json')
 
-    if (authorizationHeader.value) {
+    if (!skipAuth && authorizationHeader.value) {
       headers.set('Authorization', authorizationHeader.value)
     }
 
     return $fetch<T>(path, {
       baseURL,
-      ...options,
+      ...fetchOptions,
       headers,
     })
   }
