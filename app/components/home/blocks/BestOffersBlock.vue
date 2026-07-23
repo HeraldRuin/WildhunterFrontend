@@ -84,6 +84,13 @@ function scrollBy(direction: 'prev' | 'next') {
   gap: 40px;
 }
 
+@media (min-width: 1025px) {
+  .best-offers__inner.container {
+    /* 4×288px карточки + 3×16px gap + стрелки и отступы */
+    width: min(100% - 32px, 1292px);
+  }
+}
+
 .best-offers__title {
   margin: 0;
   font-size: clamp(1.75rem, 3vw, 2.25rem);
