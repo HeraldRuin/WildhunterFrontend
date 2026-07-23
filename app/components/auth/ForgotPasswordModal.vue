@@ -1,11 +1,141 @@
 <script setup lang="ts">
 const { isOpen, close } = useForgotPasswordModal()
+const { open: openLoginModal } = useLoginModal()
+const { auth } = useApi()
 
+type Step = 'email' | 'reset'
+
+const step = ref<Step>('email')
 const email = ref('')
+const code = ref('')
+const password = ref('')
+const passwordConfirmation = ref('')
+const isSubmitting = ref(false)
+const submitError = ref('')
+const fieldErrors = ref<Record<string, string[]>>({})
+
+function getFieldError(field: string) {
+  return fieldErrors.value[field]?.[0]
+}
+
+function clearFieldError(field: string) {
+  if (!fieldErrors.value[field]) {
+    return
+  }
+
+  const nextErrors = { ...fieldErrors.value }
+  delete nextErrors[field]
+  fieldErrors.value = nextErrors
+  submitError.value = ''
+}
+
+function applyValidationErrors(data: unknown) {
+  if (!data || typeof data !== 'object') {
+    return false
+  }
+
+  const response = data as { message?: string, errors?: Record<string, string[]> }
+
+  if (response.errors) {
+    fieldErrors.value = response.errors
+    submitError.value = ''
+    return true
+  }
+
+  if (response.message) {
+    submitError.value = response.message
+  }
+
+  return false
+}
+
+function resetForm() {
+  step.value = 'email'
+  email.value = ''
+  code.value = ''
+  password.value = ''
+  passwordConfirmation.value = ''
+  submitError.value = ''
+  fieldErrors.value = {}
+  isSubmitting.value = false
+}
+
+async function handleEmailSubmit() {
+  isSubmitting.value = true
+  submitError.value = ''
+  fieldErrors.value = {}
+
+  try {
+    const response = await auth.sendPasswordResetEmail({
+      email: email.value.trim(),
+    })
+
+    if (response.success) {
+      step.value = 'reset'
+      return
+    }
+
+    if (!applyValidationErrors(response)) {
+      submitError.value = response.message || 'Не удалось отправить код'
+    }
+  } catch (error) {
+    const data = (error as { data?: unknown }).data
+
+    if (!applyValidationErrors(data)) {
+      submitError.value = 'Не удалось отправить код'
+    }
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+async function handleResetSubmit() {
+  isSubmitting.value = true
+  submitError.value = ''
+  fieldErrors.value = {}
+
+  try {
+    const response = await auth.resetPassword({
+      email: email.value.trim(),
+      code: code.value.trim(),
+      password: password.value,
+      password_confirmation: passwordConfirmation.value,
+    })
+
+    if (response.success) {
+      close()
+      resetForm()
+      openLoginModal()
+      return
+    }
+
+    if (!applyValidationErrors(response)) {
+      submitError.value = response.message || 'Не удалось сбросить пароль'
+    }
+  } catch (error) {
+    const data = (error as { data?: unknown }).data
+
+    if (!applyValidationErrors(data)) {
+      submitError.value = 'Не удалось сбросить пароль'
+    }
+  } finally {
+    isSubmitting.value = false
+  }
+}
 
 function handleSubmit() {
-  // TODO: подключить API сброса пароля
+  if (step.value === 'email') {
+    handleEmailSubmit()
+    return
+  }
+
+  handleResetSubmit()
+}
+
+function switchToLogin() {
   close()
+  resetForm()
+  openLoginModal()
 }
 
 function handleBackdropClick(event: MouseEvent) {
@@ -19,6 +149,12 @@ function handleKeydown(event: KeyboardEvent) {
     close()
   }
 }
+
+watch(isOpen, (open) => {
+  if (!open) {
+    resetForm()
+  }
+})
 </script>
 
 <template>
@@ -38,6 +174,7 @@ function handleKeydown(event: KeyboardEvent) {
             type="button"
             class="forgot-password-modal__close"
             aria-label="Закрыть"
+            :disabled="isSubmitting"
             @click="close"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
@@ -55,20 +192,96 @@ function handleKeydown(event: KeyboardEvent) {
             Сбросить пароль
           </h2>
 
-          <form class="forgot-password-modal__form" @submit.prevent="handleSubmit">
-            <input
-              v-model="email"
-              type="email"
-              class="forgot-password-modal__input"
-              placeholder="Адрес Email"
-              autocomplete="email"
-              required
-            />
+          <form class="forgot-password-modal__form" novalidate @submit.prevent="handleSubmit">
+            <template v-if="step === 'email'">
+              <div class="forgot-password-modal__field">
+                <input
+                  v-model="email"
+                  type="email"
+                  class="forgot-password-modal__input"
+                  :class="{ 'forgot-password-modal__input--error': getFieldError('email') }"
+                  placeholder="Адрес Email"
+                  autocomplete="email"
+                  @input="clearFieldError('email')"
+                />
+                <p v-if="getFieldError('email')" class="forgot-password-modal__field-error">
+                  {{ getFieldError('email') }}
+                </p>
+              </div>
+            </template>
 
-            <button type="submit" class="forgot-password-modal__submit">
-              Отправить ссылку для сброса пароля
+            <template v-else>
+              <p class="forgot-password-modal__hint">
+                Код отправлен на {{ email }}
+              </p>
+
+              <div class="forgot-password-modal__field">
+                <input
+                  v-model="code"
+                  type="text"
+                  class="forgot-password-modal__input"
+                  :class="{ 'forgot-password-modal__input--error': getFieldError('code') }"
+                  placeholder="Код из письма"
+                  autocomplete="one-time-code"
+                  inputmode="numeric"
+                  @input="clearFieldError('code')"
+                />
+                <p v-if="getFieldError('code')" class="forgot-password-modal__field-error">
+                  {{ getFieldError('code') }}
+                </p>
+              </div>
+
+              <div class="forgot-password-modal__field">
+                <input
+                  v-model="password"
+                  type="password"
+                  class="forgot-password-modal__input"
+                  :class="{ 'forgot-password-modal__input--error': getFieldError('password') }"
+                  placeholder="Новый пароль"
+                  autocomplete="new-password"
+                  @input="clearFieldError('password')"
+                />
+                <p v-if="getFieldError('password')" class="forgot-password-modal__field-error">
+                  {{ getFieldError('password') }}
+                </p>
+              </div>
+
+              <div class="forgot-password-modal__field">
+                <input
+                  v-model="passwordConfirmation"
+                  type="password"
+                  class="forgot-password-modal__input"
+                  :class="{ 'forgot-password-modal__input--error': getFieldError('password_confirmation') }"
+                  placeholder="Подтверждение пароля"
+                  autocomplete="new-password"
+                  @input="clearFieldError('password_confirmation')"
+                />
+                <p v-if="getFieldError('password_confirmation')" class="forgot-password-modal__field-error">
+                  {{ getFieldError('password_confirmation') }}
+                </p>
+              </div>
+            </template>
+
+            <p v-if="submitError" class="forgot-password-modal__error">
+              {{ submitError }}
+            </p>
+
+            <button type="submit" class="forgot-password-modal__submit" :disabled="isSubmitting">
+              <template v-if="step === 'email'">
+                {{ isSubmitting ? 'Отправка...' : 'Отправить ссылку для сброса пароля' }}
+              </template>
+              <template v-else>
+                {{ isSubmitting ? 'Сохранение...' : 'Сбросить пароль' }}
+              </template>
             </button>
           </form>
+
+          <p class="forgot-password-modal__footer">
+            Вспомнили пароль?
+            <button type="button" class="forgot-password-modal__login-link" @click="switchToLogin">
+              Вход
+            </button>
+          </p>
         </div>
       </div>
     </Transition>
@@ -116,9 +329,14 @@ function handleKeydown(event: KeyboardEvent) {
   transition: color 0.15s ease, background 0.15s ease;
 }
 
-.forgot-password-modal__close:hover {
+.forgot-password-modal__close:hover:not(:disabled) {
   color: var(--wh-gray-900);
   background: var(--wh-gray-100);
+}
+
+.forgot-password-modal__close:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .forgot-password-modal__title {
@@ -135,6 +353,19 @@ function handleKeydown(event: KeyboardEvent) {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.forgot-password-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.forgot-password-modal__hint {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--wh-gray-600);
 }
 
 .forgot-password-modal__input {
@@ -158,6 +389,18 @@ function handleKeydown(event: KeyboardEvent) {
   box-shadow: 0 0 0 3px rgba(209, 101, 16, 0.15);
 }
 
+.forgot-password-modal__input--error,
+.forgot-password-modal__input--error:focus {
+  border-color: #dc2626;
+}
+
+.forgot-password-modal__field-error,
+.forgot-password-modal__error {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #dc2626;
+}
+
 .forgot-password-modal__submit {
   width: 100%;
   margin-top: 8px;
@@ -172,9 +415,38 @@ function handleKeydown(event: KeyboardEvent) {
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
-.forgot-password-modal__submit:hover {
+.forgot-password-modal__submit:hover:not(:disabled) {
   background: var(--wh-orange-600);
   transform: translateY(-1px);
+}
+
+.forgot-password-modal__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.forgot-password-modal__footer {
+  margin: 24px 0 0;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--wh-gray-900);
+}
+
+.forgot-password-modal__login-link {
+  margin-left: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: var(--wh-orange-500);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.forgot-password-modal__login-link:hover {
+  color: var(--wh-orange-600);
 }
 
 .forgot-password-modal-enter-active,
