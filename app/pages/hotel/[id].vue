@@ -574,6 +574,7 @@ function handleSearch(payload: Record<string, string>) {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
+  align-items: start;
 }
 
 .hotel-reviews__card {

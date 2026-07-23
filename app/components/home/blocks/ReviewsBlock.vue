@@ -109,6 +109,7 @@ function scrollBy(direction: 'prev' | 'next') {
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   min-width: 0;
+  align-items: start;
 }
 
 .reviews-block__track::-webkit-scrollbar {
