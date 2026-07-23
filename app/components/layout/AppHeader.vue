@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const mobileOpen = ref(false)
 const { open: openLoginModal } = useLoginModal()
+const { isAuthenticated } = useAuth()
 
 const navItems = [
   { label: 'Базы', to: '/bases' },
@@ -30,7 +31,14 @@ const navItems = [
       </nav>
 
       <div class="header__actions">
-        <button type="button" class="btn btn--outline header__login" @click="openLoginModal">
+        <CommonAuthUserMenu v-if="isAuthenticated" class="header__user-menu" />
+
+        <button
+          v-else
+          type="button"
+          class="btn btn--outline header__login"
+          @click="openLoginModal"
+        >
           Вход
         </button>
         <button
@@ -103,6 +111,19 @@ const navItems = [
 
 .header__login {
   padding-inline: 20px;
+}
+
+.header__user-menu :deep(.auth-user-menu__content) {
+  max-width: 180px;
+  padding: 12px 10px 12px 12px;
+}
+
+.header__user-menu :deep(.auth-user-menu__name) {
+  font-size: 0.95rem;
+}
+
+.header__user-menu :deep(.auth-user-menu__arrow) {
+  width: 40px;
 }
 
 .header__burger {

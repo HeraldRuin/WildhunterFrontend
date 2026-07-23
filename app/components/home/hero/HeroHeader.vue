@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { open: openLoginModal } = useLoginModal()
 const { open: openRegisterModal } = useRegisterModal()
+const { isAuthenticated } = useAuth()
 </script>
 
 <template>
@@ -38,14 +39,23 @@ const { open: openRegisterModal } = useRegisterModal()
     </NuxtLink>
 
     <div class="hero-header__right">
+      <CommonAuthUserMenu class="hero-header__user-menu" />
+
       <button
+        v-if="!isAuthenticated"
         type="button"
         class="hero-header__register hero-header__register--desktop"
         @click="openRegisterModal"
       >
         Регистрация
       </button>
-      <button type="button" class="hero-header__login" @click="openLoginModal">
+
+      <button
+        v-if="!isAuthenticated"
+        type="button"
+        class="hero-header__login"
+        @click="openLoginModal"
+      >
         Вход
       </button>
     </div>
