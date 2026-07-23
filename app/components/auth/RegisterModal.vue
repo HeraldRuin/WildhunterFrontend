@@ -4,6 +4,7 @@ import type { Role } from '~/types/api'
 const { isOpen, close } = useRegisterModal()
 const { open: openLoginModal } = useLoginModal()
 const { roles: rolesApi, auth } = useApi()
+const { loginWithSession } = useAuth()
 
 const firstName = ref('')
 const lastName = ref('')
@@ -260,6 +261,11 @@ async function handleSubmit() {
     })
 
     if (response.success) {
+      loginWithSession({
+        token: response.token,
+        token_type: response.token_type,
+        user: response.user,
+      })
       close()
       return
     }

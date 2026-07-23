@@ -2,14 +2,63 @@
 const { isOpen, close } = useLoginModal()
 const { open: openRegisterModal } = useRegisterModal()
 const { open: openForgotPasswordModal } = useForgotPasswordModal()
+const { login } = useAuth()
 
 const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
+const isSubmitting = ref(false)
+const submitError = ref('')
+const fieldErrors = ref<Record<string, string[]>>({})
 
-function handleSubmit() {
-  // TODO: подключить API авторизации
-  close()
+function getFieldError(field: string) {
+  return fieldErrors.value[field]?.[0]
+}
+
+function clearFieldError(field: string) {
+  if (!fieldErrors.value[field]) {
+    return
+  }
+
+  const nextErrors = { ...fieldErrors.value }
+  delete nextErrors[field]
+  fieldErrors.value = nextErrors
+  submitError.value = ''
+}
+
+function resetForm() {
+  email.value = ''
+  password.value = ''
+  rememberMe.value = false
+  submitError.value = ''
+  fieldErrors.value = {}
+  isSubmitting.value = false
+}
+
+async function handleSubmit() {
+  isSubmitting.value = true
+  submitError.value = ''
+  fieldErrors.value = {}
+
+  try {
+    const result = await login(email.value, password.value, rememberMe.value)
+
+    if (!result.success) {
+      if (result.errors) {
+        fieldErrors.value = result.errors
+      } else {
+        submitError.value = result.message
+      }
+      return
+    }
+
+    close()
+    resetForm()
+  } catch {
+    submitError.value = 'Не удалось войти'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 function switchToRegister() {
@@ -33,6 +82,12 @@ function handleKeydown(event: KeyboardEvent) {
     close()
   }
 }
+
+watch(isOpen, (open) => {
+  if (!open) {
+    resetForm()
+  }
+})
 </script>
 
 <template>
@@ -75,6 +130,7 @@ function handleKeydown(event: KeyboardEvent) {
               placeholder="Адрес Email"
               autocomplete="email"
               required
+              @input="clearFieldError('email')"
             />
 
             <input
@@ -84,7 +140,18 @@ function handleKeydown(event: KeyboardEvent) {
               placeholder="Пароль"
               autocomplete="current-password"
               required
+              @input="clearFieldError('password')"
             />
+
+            <p v-if="getFieldError('email')" class="login-modal__error">
+              {{ getFieldError('email') }}
+            </p>
+            <p v-if="getFieldError('password')" class="login-modal__error">
+              {{ getFieldError('password') }}
+            </p>
+            <p v-if="submitError" class="login-modal__error">
+              {{ submitError }}
+            </p>
 
             <div class="login-modal__options">
               <label class="login-modal__remember">
@@ -97,8 +164,8 @@ function handleKeydown(event: KeyboardEvent) {
               </button>
             </div>
 
-            <button type="submit" class="login-modal__submit">
-              Вход
+            <button type="submit" class="login-modal__submit" :disabled="isSubmitting">
+              {{ isSubmitting ? 'Вход...' : 'Вход' }}
             </button>
           </form>
 
@@ -274,6 +341,18 @@ function handleKeydown(event: KeyboardEvent) {
 .login-modal__submit:hover {
   background: var(--wh-orange-600);
   transform: translateY(-1px);
+}
+
+.login-modal__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-modal__error {
+  margin: -8px 0 0;
+  font-size: 0.82rem;
+  color: #dc2626;
 }
 
 .login-modal__footer {
