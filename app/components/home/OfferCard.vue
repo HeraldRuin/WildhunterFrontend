@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { OfferItem } from '~/types/api'
+import { featureFlags } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
 import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
 import { formatReviewsCount } from '~/utils/pluralize'
@@ -11,6 +12,7 @@ const props = defineProps<{
 const { services } = useApi()
 const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
 const { isFavorite: isHotelFavorite, setFavorite, loadFavorites, isLoaded } = useFavoriteHotels()
+const notifications = useNotifications()
 
 const isFavoriteLoading = ref(false)
 const isFavorite = computed(() => isHotelFavorite(props.item.id))
@@ -49,6 +51,18 @@ function shouldOpenRegistrationModal(error: unknown, message: string) {
     || message === FAVORITE_REGISTRATION_MESSAGE
 }
 
+function notifyFavoriteSuccess(message: string) {
+  if (featureFlags.favoriteNotifications && message) {
+    notifications.success(message)
+  }
+}
+
+function notifyFavoriteError(message: string) {
+  if (featureFlags.favoriteNotifications && message) {
+    notifications.error(message)
+  }
+}
+
 async function handleFavoriteClick(event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
@@ -71,17 +85,25 @@ async function handleFavoriteClick(event: MouseEvent) {
 
       if (shouldOpenRegistrationModal(null, message)) {
         openFavoriteAuthModal(message)
+      } else {
+        notifyFavoriteError(message)
       }
 
       return
     }
 
     setFavorite(props.item.id, !wasFavorite)
+
+    if (response.message) {
+      notifyFavoriteSuccess(response.message)
+    }
   } catch (error) {
     const message = getErrorMessage(error)
 
     if (shouldOpenRegistrationModal(error, message)) {
       openFavoriteAuthModal(message || FAVORITE_REGISTRATION_MESSAGE)
+    } else {
+      notifyFavoriteError(message)
     }
   } finally {
     isFavoriteLoading.value = false
