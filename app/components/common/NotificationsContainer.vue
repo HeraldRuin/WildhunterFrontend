@@ -96,15 +96,11 @@ const icons: Record<NotificationType, { path: string, viewBox?: string }> = {
   display: flex;
   align-items: flex-start;
   background: var(--wh-white);
-  border: 1px solid var(--wh-gray);
+  border: 1px solid rgb(28 33 28 / 18%);
   border-radius: var(--wh-radius);
-  box-shadow: var(--wh-shadow);
+  box-shadow: 0 4px 16px rgb(17 24 39 / 10%);
   overflow: hidden;
   pointer-events: auto;
-}
-
-.notif--success {
-  border-left: 3px solid var(--wh-green);
 }
 
 .notif--success .notif__aside {
@@ -112,17 +108,9 @@ const icons: Record<NotificationType, { path: string, viewBox?: string }> = {
   background: rgba(82, 113, 79, 0.1);
 }
 
-.notif--error {
-  border-left: 3px solid #dc2626;
-}
-
 .notif--error .notif__aside {
   color: #dc2626;
   background: rgba(220, 38, 38, 0.08);
-}
-
-.notif--warning {
-  border-left: 3px solid var(--wh-orange-500);
 }
 
 .notif--warning .notif__aside {
@@ -130,13 +118,9 @@ const icons: Record<NotificationType, { path: string, viewBox?: string }> = {
   background: rgba(209, 101, 16, 0.1);
 }
 
-.notif--info {
-  border-left: 3px solid var(--wh-green-700);
-}
-
 .notif--info .notif__aside {
-  color: var(--wh-green-700);
-  background: rgba(61, 86, 57, 0.08);
+  color: var(--wh-black-text);
+  background: var(--wh-gray-100);
 }
 
 .notif__aside {
