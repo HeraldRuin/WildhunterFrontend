@@ -5,20 +5,26 @@ definePageMeta({
 
 const { reviews, location, hotels } = useApi()
 
-const { data: reviewItems } = await useAsyncData('home-reviews', () =>
-  reviews.getReviewItems({
-    type: 'hotel',
-    order_by: 'created_at',
-    order_direction: 'desc',
-  }),
-)
+const [
+  { data: locationItems },
+  { data: offerItems },
+] = await Promise.all([
+  useAsyncData('home-location-offers', () => location.getLocationOfferItems()),
+  useAsyncData('home-hotel-offers', () => hotels.getHotelOfferItems()),
+])
 
-const { data: locationItems } = await useAsyncData('home-location-offers', () =>
-  location.getLocationOfferItems(),
-)
-
-const { data: offerItems } = await useAsyncData('home-hotel-offers', () =>
-  hotels.getHotelOfferItems(),
+const { data: reviewItems } = useAsyncData(
+  'home-reviews',
+  () =>
+    reviews.getReviewItems({
+      type: 'hotel',
+      order_by: 'created_at',
+      order_direction: 'desc',
+    }),
+  {
+    lazy: true,
+    default: () => [],
+  },
 )
 
 function handleSearch(payload: Record<string, string>) {

@@ -35,6 +35,7 @@ const { data: locations, pending: locationsLoading } = useAsyncData<SearchLocati
   'search-locations',
   () => locationApi.getLocationItems(),
   {
+    lazy: true,
     default: () => [],
   },
 )
@@ -43,6 +44,7 @@ const { data: animals, pending: animalsLoading } = useAsyncData<SearchAnimal[]>(
   'search-animals',
   () => animalsApi.getAnimalItems(),
   {
+    lazy: true,
     default: () => [],
   },
 )
