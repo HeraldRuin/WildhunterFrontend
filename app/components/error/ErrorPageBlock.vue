@@ -6,6 +6,20 @@ const props = withDefaults(defineProps<{
 })
 
 const displayCode = computed(() => String(props.statusCode))
+
+const errorLabel = computed(() => {
+  const code = Number(props.statusCode)
+
+  if (code === 404) {
+    return 'Страница не найдена'
+  }
+
+  if (code === 403) {
+    return 'Доступ запрещён'
+  }
+
+  return 'Ошибка сервера'
+})
 const nuxtError = useError()
 
 function goHome() {
@@ -27,7 +41,7 @@ function goHome() {
         <div class="error-hero__content">
           <div class="error-card">
             <p class="error-card__code">{{ displayCode }}</p>
-            <p class="error-card__label">ОШИБКА СЕРВЕРА</p>
+            <p class="error-card__label">{{ errorLabel }}</p>
             <button type="button" class="error-card__btn" @click="goHome">
               Вернуться на главную
             </button>
