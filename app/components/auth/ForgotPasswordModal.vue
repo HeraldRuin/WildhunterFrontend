@@ -11,6 +11,7 @@ const email = ref('')
 const code = ref('')
 const password = ref('')
 const passwordConfirmation = ref('')
+const showPassword = ref(false)
 const isSubmitting = ref(false)
 const submitError = ref('')
 const fieldErrors = ref<Record<string, string[]>>({})
@@ -70,6 +71,7 @@ function resetForm() {
   code.value = ''
   password.value = ''
   passwordConfirmation.value = ''
+  showPassword.value = false
   submitError.value = ''
   fieldErrors.value = {}
   isSubmitting.value = false
@@ -157,6 +159,23 @@ function switchToLogin() {
   close()
   resetForm()
   openLoginModal()
+}
+
+function generatePassword() {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*'
+  const length = 12
+  const randomValues = new Uint32Array(length)
+
+  crypto.getRandomValues(randomValues)
+  password.value = Array.from(randomValues, (value) => chars[value % chars.length]).join('')
+  passwordConfirmation.value = password.value
+  showPassword.value = true
+  clearFieldError('password')
+  clearFieldError('password_confirmation')
+}
+
+function togglePasswordVisibility() {
+  showPassword.value = !showPassword.value
 }
 
 function handleBackdropClick(event: MouseEvent) {
@@ -253,15 +272,49 @@ watch(isOpen, (open) => {
               </div>
 
               <div class="forgot-password-modal__field">
-                <input
-                  v-model="password"
-                  type="password"
-                  class="forgot-password-modal__input"
-                  :class="{ 'forgot-password-modal__input--error': getFieldError('password') }"
-                  placeholder="Новый пароль"
-                  autocomplete="new-password"
-                  @input="clearFieldError('password')"
-                />
+                <div class="forgot-password-modal__password-wrap">
+                  <input
+                    v-model="password"
+                    :type="showPassword ? 'text' : 'password'"
+                    class="forgot-password-modal__input forgot-password-modal__input--password"
+                    :class="{ 'forgot-password-modal__input--error': getFieldError('password') }"
+                    placeholder="Новый пароль"
+                    autocomplete="new-password"
+                    @input="clearFieldError('password')"
+                  />
+
+                  <div class="forgot-password-modal__password-actions">
+                    <button
+                      type="button"
+                      class="forgot-password-modal__generate"
+                      @click="generatePassword"
+                    >
+                      Сгенерировать
+                    </button>
+
+                    <button
+                      type="button"
+                      class="forgot-password-modal__toggle-password"
+                      :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'"
+                      @click="togglePasswordVisibility"
+                    >
+                      <img
+                        v-if="showPassword"
+                        src="/icons/Group.png"
+                        alt=""
+                        aria-hidden="true"
+                        class="forgot-password-modal__password-icon"
+                      />
+                      <img
+                        v-else
+                        src="/icons/weui_eyes-off-filled.png"
+                        alt=""
+                        aria-hidden="true"
+                        class="forgot-password-modal__password-icon forgot-password-modal__password-icon--hidden"
+                      />
+                    </button>
+                  </div>
+                </div>
                 <p v-if="getFieldError('password')" class="forgot-password-modal__field-error">
                   {{ getFieldError('password') }}
                 </p>
@@ -270,7 +323,7 @@ watch(isOpen, (open) => {
               <div class="forgot-password-modal__field">
                 <input
                   v-model="passwordConfirmation"
-                  type="password"
+                  :type="showPassword ? 'text' : 'password'"
                   class="forgot-password-modal__input"
                   :class="{ 'forgot-password-modal__input--error': getFieldError('password_confirmation') }"
                   placeholder="Подтверждение пароля"
@@ -415,6 +468,74 @@ watch(isOpen, (open) => {
   border-color: #dc2626;
 }
 
+.forgot-password-modal__password-wrap {
+  position: relative;
+}
+
+.forgot-password-modal__input--password {
+  padding-right: 168px;
+}
+
+.forgot-password-modal__password-actions {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transform: translateY(-50%);
+}
+
+.forgot-password-modal__generate {
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  color: var(--wh-orange-500);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.forgot-password-modal__generate:hover {
+  color: var(--wh-orange-600);
+}
+
+.forgot-password-modal__toggle-password {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--wh-gray-900);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.forgot-password-modal__toggle-password:hover {
+  color: var(--wh-gray-700);
+  background: var(--wh-gray-100);
+}
+
+.forgot-password-modal__password-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 22px;
+  height: 14px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.forgot-password-modal__password-icon--hidden {
+  width: 26px;
+  height: 26px;
+}
+
 .forgot-password-modal__field-error,
 .forgot-password-modal__error {
   margin: 0;
@@ -494,6 +615,14 @@ watch(isOpen, (open) => {
 @media (max-width: 480px) {
   .forgot-password-modal__card {
     padding: 32px 24px 24px;
+  }
+
+  .forgot-password-modal__input--password {
+    padding-right: 148px;
+  }
+
+  .forgot-password-modal__generate {
+    font-size: 0.76rem;
   }
 
   .forgot-password-modal__submit {
