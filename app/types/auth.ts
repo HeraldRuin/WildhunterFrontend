@@ -1,0 +1,21 @@
+export interface AuthUser {
+  id: number
+  first_name: string
+  last_name: string
+  email: string
+  avatar: string | null
+}
+
+export interface AuthSession {
+  token: string
+  token_type?: string
+  user?: AuthUser | null
+}
+
+export interface AuthSuccessResponse {
+  success: true
+  token: string
+  token_type: string
+  expires_in_minutes?: number | null
+  user: AuthUser
+}

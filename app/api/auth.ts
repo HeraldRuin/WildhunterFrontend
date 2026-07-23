@@ -1,4 +1,5 @@
 import type { ApiErrorResponse } from '~/types/api'
+import type { AuthSuccessResponse } from '~/types/auth'
 import { useApiClient } from './client'
 
 export interface LoginPayload {
@@ -16,33 +17,14 @@ export interface RegisterPayload {
   term: boolean
 }
 
-export interface RegisterSuccessResponse {
-  success: true
-  token: string
-  token_type: string
-  expires_in_minutes: number | null
-  user: {
-    id: number
-    first_name: string
-    last_name: string
-    email: string
-    avatar: string | null
-  }
-}
-
-export type RegisterResponse = RegisterSuccessResponse | ApiErrorResponse
-
-export interface AuthTokens {
-  access_token: string
-  token_type: string
-  expires_in: number
-}
+export type LoginResponse = AuthSuccessResponse | ApiErrorResponse
+export type RegisterResponse = AuthSuccessResponse | ApiErrorResponse
 
 export function useAuthApi() {
   const { apiFetch } = useApiClient()
 
   function login(payload: LoginPayload) {
-    return apiFetch<AuthTokens>('/auth/login', {
+    return apiFetch<LoginResponse>('/login', {
       method: 'POST',
       body: payload,
     })
@@ -56,13 +38,13 @@ export function useAuthApi() {
   }
 
   function logout() {
-    return apiFetch<ApiErrorResponse | { success: true }>('/auth/logout', {
+    return apiFetch<ApiErrorResponse | { success: true }>('/logout', {
       method: 'POST',
     })
   }
 
   function getMe() {
-    return apiFetch<unknown>('/auth/me')
+    return apiFetch<unknown>('/me')
   }
 
   return {
