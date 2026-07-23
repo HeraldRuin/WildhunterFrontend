@@ -58,4 +58,8 @@ export default defineNuxtConfig({
       apiVersion: 'v1',
     },
   },
+  routeRules: {
+    '/profile': { ssr: false },
+    '/profile/**': { ssr: false },
+  },
 })

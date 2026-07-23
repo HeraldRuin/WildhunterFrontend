@@ -4,6 +4,7 @@ import { getBookingsByTab } from '~/utils/bookings'
 
 definePageMeta({
   layout: 'profile',
+  middleware: 'auth',
 })
 
 useHead({

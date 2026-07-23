@@ -6,19 +6,21 @@ interface NavItem {
 }
 
 const route = useRoute()
-
-const user = {
-  name: 'Назар Тихонов',
-  role: 'Охотник',
-  memberSince: 'Feb 2026',
-  avatar: null as string | null,
-}
+const { user, logout } = useAuth()
 
 const navItems: NavItem[] = [
   { label: 'Бронирования', to: '/profile/bookings', icon: 'bookings' },
   { label: 'Мой профиль', to: '/profile', icon: 'profile' },
   { label: 'Изменить пароль', to: '/profile/password', icon: 'password' },
 ]
+
+const displayName = computed(() => {
+  if (!user.value) {
+    return 'Пользователь'
+  }
+
+  return [user.value.first_name, user.value.last_name].filter(Boolean).join(' ') || user.value.email
+})
 
 function isActive(to: string) {
   if (to === '/profile') {
@@ -27,6 +29,11 @@ function isActive(to: string) {
 
   return route.path.startsWith(to)
 }
+
+async function handleLogout() {
+  await logout()
+  await navigateTo('/')
+}
 </script>
 
 <template>
@@ -34,9 +41,9 @@ function isActive(to: string) {
     <div class="profile-sidebar__user">
       <div class="profile-sidebar__avatar">
         <img
-          v-if="user.avatar"
+          v-if="user?.avatar"
           :src="user.avatar"
-          :alt="user.name"
+          :alt="displayName"
         >
         <svg v-else viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="8" r="4" fill="currentColor" />
@@ -44,9 +51,9 @@ function isActive(to: string) {
         </svg>
       </div>
 
-      <span class="profile-sidebar__role">{{ user.role }}</span>
-      <h2 class="profile-sidebar__name">{{ user.name }}</h2>
-      <p class="profile-sidebar__since">Участник с {{ user.memberSince }}</p>
+      <span class="profile-sidebar__role">Профиль</span>
+      <h2 class="profile-sidebar__name">{{ displayName }}</h2>
+      <p v-if="user?.email" class="profile-sidebar__since">{{ user.email }}</p>
     </div>
 
     <nav class="profile-sidebar__nav">
@@ -79,7 +86,11 @@ function isActive(to: string) {
       <NuxtLink to="/" class="profile-sidebar__footer-link">
         Назад на Главную
       </NuxtLink>
-      <button type="button" class="profile-sidebar__footer-link profile-sidebar__footer-link--logout">
+      <button
+        type="button"
+        class="profile-sidebar__footer-link profile-sidebar__footer-link--logout"
+        @click="handleLogout"
+      >
         Выйти
       </button>
     </div>
