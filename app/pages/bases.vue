@@ -320,6 +320,10 @@ function handleFiltersReset() {
     padding-top: 48px;
   }
 
+  .bases-page__results-inner {
+    gap: 12px;
+  }
+
   .bases-page__grid {
     grid-template-columns: 1fr;
   }
