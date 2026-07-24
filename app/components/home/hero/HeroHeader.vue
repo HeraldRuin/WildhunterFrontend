@@ -31,11 +31,7 @@ const { isAuthenticated } = useAuth()
     </div>
 
     <NuxtLink to="/" class="hero-header__logo" aria-label="WH">
-      <CommonAppLogo
-        class="hero-header__logo-image"
-        :width="86"
-        :height="60"
-      />
+      <CommonAppLogo :width="104" />
     </NuxtLink>
 
     <div class="hero-header__right">
@@ -132,9 +128,10 @@ const { isAuthenticated } = useAuth()
   line-height: 0;
 }
 
-.hero-header__logo-image :deep(.app-logo) {
-  width: 86px !important;
-  height: 60px !important;
+.hero-header__logo :deep(.app-logo) {
+  width: 104px !important;
+  max-width: 104px !important;
+  height: auto !important;
 }
 
 .hero-header__register {
@@ -198,6 +195,11 @@ const { isAuthenticated } = useAuth()
   .hero-header__right {
     gap: 16px;
   }
+
+  .hero-header__logo :deep(.app-logo) {
+    width: 86px !important;
+    max-width: 86px !important;
+  }
 }
 
 @media (max-width: 640px) {
@@ -242,9 +244,9 @@ const { isAuthenticated } = useAuth()
     justify-self: center;
   }
 
-  .hero-header__logo-image :deep(.app-logo) {
-    width: 74px !important;
-    height: 52px !important;
+  .hero-header__logo :deep(.app-logo) {
+    width: 72px !important;
+    max-width: 72px !important;
   }
 
   .hero-header__login {

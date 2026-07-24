@@ -10,7 +10,11 @@ const props = withDefaults(defineProps<{
 })
 
 const logoWidth = computed(() => `${props.width ?? props.size}px`)
-const logoHeight = computed(() => `${props.height ?? props.size}px`)
+const logoHeight = computed(() => {
+  if (props.height != null) return `${props.height}px`
+  if (props.width != null) return 'auto'
+  return `${props.size}px`
+})
 </script>
 
 <template>
