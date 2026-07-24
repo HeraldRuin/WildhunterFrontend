@@ -238,9 +238,9 @@ function formatPrice(value: number) {
 .search-filters__panel {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 0;
   padding: 24px;
-  border: 1px solid var(--wh-gray-200);
+  border: 1px solid #bfbfbf;
   border-radius: var(--wh-radius-lg);
   background: var(--wh-white);
 }
@@ -250,6 +250,7 @@ function formatPrice(value: number) {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-bottom: 24px;
 }
 
 .search-filters__title {
@@ -276,6 +277,12 @@ function formatPrice(value: number) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.search-filters__group + .search-filters__group {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #bfbfbf;
 }
 
 .search-filters__label {
@@ -427,8 +434,10 @@ function formatPrice(value: number) {
 
 .search-filters__reset {
   align-self: flex-start;
-  padding: 0;
+  margin-top: 24px;
+  padding: 24px 0 0;
   border: none;
+  border-top: 1px solid #bfbfbf;
   background: transparent;
   color: #d64545;
   font: inherit;

@@ -258,9 +258,13 @@ function handleFiltersReset() {
 }
 
 .bases-page__map-link {
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 100%;
+  letter-spacing: -0.05em;
   color: #d64545;
+  text-decoration: underline;
   transition: opacity 0.15s ease;
 }
 
