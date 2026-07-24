@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SearchFiltersState, SearchSortOption } from '~/types/api'
+import type { SearchFiltersState } from '~/types/api'
 import {
   DEFAULT_SEARCH_FILTERS,
   SEARCH_AMENITIES,
@@ -21,13 +21,6 @@ const emit = defineEmits<{
   'update:mobileOpen': [value: boolean]
   reset: []
 }>()
-
-const sortOptions: Array<{ value: SearchSortOption, label: string }> = [
-  { value: 'recommended', label: 'Рекомендованные' },
-  { value: 'price_asc', label: 'Сначала дешёвые' },
-  { value: 'price_desc', label: 'Сначала дорогие' },
-  { value: 'rating', label: 'По рейтингу' },
-]
 
 const localFilters = computed({
   get: () => props.modelValue,
@@ -89,25 +82,10 @@ function closeMobile() {
         class="search-filters__group"
         title="Сортировка"
       >
-        <div class="search-filters__select-wrap">
-          <select
-            id="search-sort"
-            :value="localFilters.sort"
-            class="search-filters__select"
-            @change="updateField('sort', ($event.target as HTMLSelectElement).value as SearchSortOption)"
-          >
-            <option
-              v-for="option in sortOptions"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </option>
-          </select>
-          <svg class="search-filters__chevron" viewBox="0 0 8 13" aria-hidden="true">
-            <path d="M1.5 4.5 4 7.5 6.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </div>
+        <SearchFiltersSortFilter
+          :model-value="localFilters.sort"
+          @update:model-value="updateField('sort', $event)"
+        />
       </SearchFiltersFilterSection>
 
       <SearchFiltersFilterSection
@@ -245,32 +223,6 @@ function closeMobile() {
   font-size: 0.9375rem;
   font-weight: 700;
   color: var(--wh-gray-900);
-}
-
-.search-filters__select-wrap {
-  position: relative;
-}
-
-.search-filters__select {
-  width: 100%;
-  padding: 12px 36px 12px 14px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 12px;
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  appearance: none;
-  cursor: pointer;
-}
-
-.search-filters__chevron {
-  position: absolute;
-  top: 50%;
-  right: 14px;
-  width: 7px;
-  height: 13px;
-  color: var(--wh-gray-600);
-  pointer-events: none;
-  transform: translateY(-50%);
 }
 
 .search-filters__list {
