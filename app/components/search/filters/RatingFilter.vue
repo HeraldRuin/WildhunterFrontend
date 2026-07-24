@@ -23,8 +23,6 @@ function toggle(value: string) {
 
 <template>
   <div class="search-filters-rating">
-    <p class="search-filters-rating__title">Рейтинг</p>
-
     <p v-if="pending" class="search-filters-rating__state">
       Загрузка...
     </p>
@@ -53,13 +51,6 @@ function toggle(value: string) {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.search-filters-rating__title {
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--wh-gray-900);
 }
 
 .search-filters-rating__state {

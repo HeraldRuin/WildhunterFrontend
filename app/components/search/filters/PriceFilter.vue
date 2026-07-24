@@ -82,8 +82,6 @@ function commitMax() {
 
 <template>
   <div class="search-filters-price">
-    <p class="search-filters-price__title">По стоимости</p>
-
     <div class="search-filters-price__inputs">
       <input
         class="search-filters-price__input search-filters-price__input--min"
@@ -137,13 +135,6 @@ function commitMax() {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.search-filters-price__title {
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--wh-gray-900);
 }
 
 .search-filters-price__inputs {

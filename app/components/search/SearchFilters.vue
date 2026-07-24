@@ -86,8 +86,10 @@ function closeMobile() {
         </button>
       </div>
 
-      <div class="search-filters__group">
-        <label class="search-filters__label" for="search-sort">Сортировка</label>
+      <SearchFiltersFilterSection
+        class="search-filters__group"
+        title="Сортировка"
+      >
         <div class="search-filters__select-wrap">
           <select
             id="search-sort"
@@ -107,26 +109,36 @@ function closeMobile() {
             <path d="M1.5 4.5 4 7.5 6.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </div>
-      </div>
+      </SearchFiltersFilterSection>
 
-      <SearchFiltersPriceFilter
+      <SearchFiltersFilterSection
         class="search-filters__group"
-        :bound-min="priceBoundMin"
-        :bound-max="priceBoundMax"
-        :price-min="localFilters.priceMin"
-        :price-max="localFilters.priceMax"
-        @update:price-min="updateField('priceMin', $event)"
-        @update:price-max="updateField('priceMax', $event)"
-      />
+        title="По стоимости"
+      >
+        <SearchFiltersPriceFilter
+          :bound-min="priceBoundMin"
+          :bound-max="priceBoundMax"
+          :price-min="localFilters.priceMin"
+          :price-max="localFilters.priceMax"
+          @update:price-min="updateField('priceMin', $event)"
+          @update:price-max="updateField('priceMax', $event)"
+        />
+      </SearchFiltersFilterSection>
 
-      <SearchFiltersRatingFilter
+      <SearchFiltersFilterSection
         class="search-filters__group"
-        :model-value="localFilters.ratings"
-        @update:model-value="updateField('ratings', $event)"
-      />
+        title="Рейтинг"
+      >
+        <SearchFiltersRatingFilter
+          :model-value="localFilters.ratings"
+          @update:model-value="updateField('ratings', $event)"
+        />
+      </SearchFiltersFilterSection>
 
-      <div class="search-filters__group">
-        <p class="search-filters__label">Услуги на базе</p>
+      <SearchFiltersFilterSection
+        class="search-filters__group"
+        title="Услуги на базе"
+      >
         <ul class="search-filters__list">
           <li v-for="amenity in SEARCH_AMENITIES" :key="amenity.id">
             <label class="search-filters__checkbox">
@@ -140,10 +152,12 @@ function closeMobile() {
             </label>
           </li>
         </ul>
-      </div>
+      </SearchFiltersFilterSection>
 
-      <div class="search-filters__group">
-        <p class="search-filters__label">Питание на базе</p>
+      <SearchFiltersFilterSection
+        class="search-filters__group"
+        title="Питание на базе"
+      >
         <div class="search-filters__radios">
           <label class="search-filters__radio">
             <input
@@ -168,7 +182,7 @@ function closeMobile() {
             <span>Нет</span>
           </label>
         </div>
-      </div>
+      </SearchFiltersFilterSection>
 
       <button type="button" class="search-filters__reset" @click="handleReset">
         Сбросить
