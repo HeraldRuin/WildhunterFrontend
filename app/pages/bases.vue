@@ -317,7 +317,7 @@ function handleFiltersReset() {
 
 @media (max-width: 640px) {
   .bases-page__results {
-    padding-top: 28px;
+    padding-top: 48px;
   }
 
   .bases-page__grid {
@@ -325,15 +325,47 @@ function handleFiltersReset() {
   }
 
   .bases-page__toolbar {
-    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+    min-height: 0;
   }
 
   .bases-page__title {
-    font-size: 22px;
+    order: 1;
+    grid-column: auto;
+    font-size: 24px;
+    text-transform: uppercase;
   }
 
-  .bases-page__toolbar-link {
-    font-size: 16px;
+  .bases-page__filters-btn {
+    order: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 56px;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 999px;
+    background: var(--wh-orange-500);
+    color: var(--wh-white);
+    font-family: "Inter", sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 100%;
+    letter-spacing: -0.05em;
+    text-decoration: none;
+  }
+
+  .bases-page__filters-btn:hover {
+    background: var(--wh-orange-600);
+    opacity: 1;
+  }
+
+  .bases-page__map-link {
+    display: none;
   }
 }
 </style>
