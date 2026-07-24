@@ -13,9 +13,21 @@ useHead({
 })
 
 const route = useRoute()
-const { search: searchApi } = useApi()
+const { search: searchApi, hotels: hotelsApi } = useApi()
 
-const filters = ref<SearchFiltersState>({ ...DEFAULT_SEARCH_FILTERS })
+const { data: priceBounds } = await useAsyncData(
+  'hotel-price-range',
+  () => hotelsApi.getPriceRangeBounds(),
+  {
+    default: () => ({ min: 0, max: 15000 }),
+  },
+)
+
+const filters = ref<SearchFiltersState>({
+  ...DEFAULT_SEARCH_FILTERS,
+  priceMin: priceBounds.value.min,
+  priceMax: priceBounds.value.max,
+})
 const mobileFiltersOpen = ref(false)
 const currentPage = ref(Number(route.query.page) || 1)
 
@@ -56,7 +68,10 @@ const searchRequest = computed(() => {
     body.adults = Number(route.query.guests)
   }
 
-  if (filters.value.priceMin > 0 || filters.value.priceMax < 15000) {
+  if (
+    filters.value.priceMin > priceBounds.value.min
+    || filters.value.priceMax < priceBounds.value.max
+  ) {
     body.price_range = `${filters.value.priceMin};${filters.value.priceMax}`
   }
 
@@ -158,6 +173,8 @@ function handleFiltersReset() {
           <SearchFilters
             v-model="filters"
             v-model:mobile-open="mobileFiltersOpen"
+            :price-bound-min="priceBounds.min"
+            :price-bound-max="priceBounds.max"
             @reset="handleFiltersReset"
           />
 

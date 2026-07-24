@@ -177,6 +177,16 @@ export interface HomePageResponse extends ApiResponse<unknown> {
   data: HomeBlock[]
 }
 
+export interface HotelPriceRange {
+  min_price: string
+  max_price: string
+}
+
+export interface HotelPriceRangeBounds {
+  min: number
+  max: number
+}
+
 export interface HotelSearchBody {
   location_id?: number
   animal_id?: number

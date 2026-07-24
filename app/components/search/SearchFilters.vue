@@ -5,10 +5,16 @@ import {
   SEARCH_AMENITIES,
 } from '~/utils/search'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   modelValue: SearchFiltersState
   mobileOpen?: boolean
-}>()
+  priceBoundMin?: number
+  priceBoundMax?: number
+}>(), {
+  mobileOpen: false,
+  priceBoundMin: 0,
+  priceBoundMax: 15000,
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: SearchFiltersState]
@@ -47,7 +53,11 @@ function toggleAmenity(id: string) {
 }
 
 function handleReset() {
-  emit('update:modelValue', { ...DEFAULT_SEARCH_FILTERS })
+  emit('update:modelValue', {
+    ...DEFAULT_SEARCH_FILTERS,
+    priceMin: props.priceBoundMin,
+    priceMax: props.priceBoundMax,
+  })
   emit('reset')
 }
 
@@ -101,6 +111,8 @@ function closeMobile() {
 
       <SearchFiltersPriceFilter
         class="search-filters__group"
+        :bound-min="priceBoundMin"
+        :bound-max="priceBoundMax"
         :price-min="localFilters.priceMin"
         :price-max="localFilters.priceMax"
         @update:price-min="updateField('priceMin', $event)"

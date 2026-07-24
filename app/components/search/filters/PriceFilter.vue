@@ -1,15 +1,24 @@
 <script setup lang="ts">
+const props = withDefaults(defineProps<{
+  boundMin?: number
+  boundMax?: number
+}>(), {
+  boundMin: 0,
+  boundMax: 15000,
+})
+
 const priceMin = defineModel<number>('priceMin', { required: true })
 const priceMax = defineModel<number>('priceMax', { required: true })
 
-const min = 0
-const max = 15000
 const step = 500
 
 const minDraft = ref('')
 const maxDraft = ref('')
 const editingMin = ref(false)
 const editingMax = ref(false)
+
+const min = computed(() => props.boundMin)
+const max = computed(() => props.boundMax)
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value)
@@ -25,8 +34,9 @@ function parsePrice(raw: string) {
 }
 
 const rangeStyle = computed(() => {
-  const minPercent = ((priceMin.value - min) / (max - min)) * 100
-  const maxPercent = ((priceMax.value - min) / (max - min)) * 100
+  const span = max.value - min.value || 1
+  const minPercent = ((priceMin.value - min.value) / span) * 100
+  const maxPercent = ((priceMax.value - min.value) / span) * 100
 
   return {
     background: `linear-gradient(
@@ -42,11 +52,11 @@ const rangeStyle = computed(() => {
 })
 
 function updateMin(value: number) {
-  priceMin.value = Math.min(Math.max(value, min), priceMax.value)
+  priceMin.value = Math.min(Math.max(value, min.value), priceMax.value)
 }
 
 function updateMax(value: number) {
-  priceMax.value = Math.max(Math.min(value, max), priceMin.value)
+  priceMax.value = Math.max(Math.min(value, max.value), priceMin.value)
 }
 
 function focusMin() {
