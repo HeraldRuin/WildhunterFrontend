@@ -54,10 +54,6 @@ function handleReset() {
 function closeMobile() {
   emit('update:mobileOpen', false)
 }
-
-function formatPrice(value: number) {
-  return new Intl.NumberFormat('ru-RU').format(value)
-}
 </script>
 
 <template>
@@ -103,54 +99,13 @@ function formatPrice(value: number) {
         </div>
       </div>
 
-      <div class="search-filters__group">
-        <p class="search-filters__label">По стоимости</p>
-        <div class="search-filters__price-range">
-          <input
-            :value="localFilters.priceMin"
-            type="range"
-            min="0"
-            max="15000"
-            step="500"
-            class="search-filters__range"
-            @input="updateField('priceMin', Number(($event.target as HTMLInputElement).value))"
-          >
-          <input
-            :value="localFilters.priceMax"
-            type="range"
-            min="0"
-            max="15000"
-            step="500"
-            class="search-filters__range search-filters__range--max"
-            @input="updateField('priceMax', Number(($event.target as HTMLInputElement).value))"
-          >
-        </div>
-        <div class="search-filters__price-inputs">
-          <label class="search-filters__price-field">
-            <span>От</span>
-            <input
-              :value="localFilters.priceMin"
-              type="number"
-              min="0"
-              max="15000"
-              @input="updateField('priceMin', Number(($event.target as HTMLInputElement).value))"
-            >
-          </label>
-          <label class="search-filters__price-field">
-            <span>До</span>
-            <input
-              :value="localFilters.priceMax"
-              type="number"
-              min="0"
-              max="15000"
-              @input="updateField('priceMax', Number(($event.target as HTMLInputElement).value))"
-            >
-          </label>
-        </div>
-        <p class="search-filters__price-caption">
-          {{ formatPrice(localFilters.priceMin) }} ₽ — {{ formatPrice(localFilters.priceMax) }} ₽
-        </p>
-      </div>
+      <SearchFiltersPriceFilter
+        class="search-filters__group"
+        :price-min="localFilters.priceMin"
+        :price-max="localFilters.priceMax"
+        @update:price-min="updateField('priceMin', $event)"
+        @update:price-max="updateField('priceMax', $event)"
+      />
 
       <SearchFiltersRatingFilter
         class="search-filters__group"
@@ -296,66 +251,6 @@ function formatPrice(value: number) {
   color: var(--wh-gray-600);
   pointer-events: none;
   transform: translateY(-50%);
-}
-
-.search-filters__price-range {
-  position: relative;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--wh-gray-200);
-}
-
-.search-filters__range {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  margin: 0;
-  background: transparent;
-  pointer-events: none;
-  appearance: none;
-}
-
-.search-filters__range::-webkit-slider-thumb {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--wh-orange-500);
-  border-radius: 50%;
-  background: var(--wh-white);
-  pointer-events: auto;
-  appearance: none;
-  cursor: pointer;
-}
-
-.search-filters__range--max {
-  z-index: 1;
-}
-
-.search-filters__price-inputs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.search-filters__price-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.8125rem;
-  color: var(--wh-gray-500);
-}
-
-.search-filters__price-field input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 10px;
-  color: var(--wh-gray-900);
-}
-
-.search-filters__price-caption {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--wh-gray-500);
 }
 
 .search-filters__list {

@@ -1,0 +1,220 @@
+<script setup lang="ts">
+const priceMin = defineModel<number>('priceMin', { required: true })
+const priceMax = defineModel<number>('priceMax', { required: true })
+
+const min = 0
+const max = 15000
+const step = 500
+
+const minDraft = ref('')
+const maxDraft = ref('')
+const editingMin = ref(false)
+const editingMax = ref(false)
+
+function formatPrice(value: number) {
+  return new Intl.NumberFormat('ru-RU').format(value)
+}
+
+function displayPrice(value: number) {
+  return `${formatPrice(value)}₽`
+}
+
+function parsePrice(raw: string) {
+  const digits = raw.replace(/[^\d]/g, '')
+  return digits ? Number(digits) : 0
+}
+
+const rangeStyle = computed(() => {
+  const minPercent = ((priceMin.value - min) / (max - min)) * 100
+  const maxPercent = ((priceMax.value - min) / (max - min)) * 100
+
+  return {
+    background: `linear-gradient(
+      to right,
+      #e5e5e5 0%,
+      #e5e5e5 ${minPercent}%,
+      var(--wh-green) ${minPercent}%,
+      var(--wh-green) ${maxPercent}%,
+      #e5e5e5 ${maxPercent}%,
+      #e5e5e5 100%
+    )`,
+  }
+})
+
+function updateMin(value: number) {
+  priceMin.value = Math.min(Math.max(value, min), priceMax.value)
+}
+
+function updateMax(value: number) {
+  priceMax.value = Math.max(Math.min(value, max), priceMin.value)
+}
+
+function focusMin() {
+  editingMin.value = true
+  minDraft.value = String(priceMin.value)
+}
+
+function focusMax() {
+  editingMax.value = true
+  maxDraft.value = String(priceMax.value)
+}
+
+function commitMin() {
+  updateMin(parsePrice(minDraft.value))
+  editingMin.value = false
+}
+
+function commitMax() {
+  updateMax(parsePrice(maxDraft.value))
+  editingMax.value = false
+}
+</script>
+
+<template>
+  <div class="search-filters-price">
+    <p class="search-filters-price__title">По стоимости</p>
+
+    <div class="search-filters-price__inputs">
+      <input
+        class="search-filters-price__input"
+        type="text"
+        inputmode="numeric"
+        :value="editingMin ? minDraft : displayPrice(priceMin)"
+        @focus="focusMin"
+        @blur="commitMin"
+        @input="minDraft = ($event.target as HTMLInputElement).value"
+        @keydown.enter="($event.target as HTMLInputElement).blur()"
+      >
+      <input
+        class="search-filters-price__input"
+        type="text"
+        inputmode="numeric"
+        :value="editingMax ? maxDraft : displayPrice(priceMax)"
+        @focus="focusMax"
+        @blur="commitMax"
+        @input="maxDraft = ($event.target as HTMLInputElement).value"
+        @keydown.enter="($event.target as HTMLInputElement).blur()"
+      >
+    </div>
+
+    <div class="search-filters-price__range" :style="rangeStyle">
+      <input
+        :value="priceMin"
+        type="range"
+        :min="min"
+        :max="max"
+        :step="step"
+        class="search-filters-price__slider"
+        aria-label="Минимальная цена"
+        @input="updateMin(Number(($event.target as HTMLInputElement).value))"
+      >
+      <input
+        :value="priceMax"
+        type="range"
+        :min="min"
+        :max="max"
+        :step="step"
+        class="search-filters-price__slider search-filters-price__slider--max"
+        aria-label="Максимальная цена"
+        @input="updateMax(Number(($event.target as HTMLInputElement).value))"
+      >
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.search-filters-price {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-filters-price__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--wh-gray-900);
+}
+
+.search-filters-price__inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  border: 1px solid #d9d9d9;
+  border-radius: 999px;
+  background: var(--wh-white);
+  overflow: hidden;
+}
+
+.search-filters-price__input {
+  width: 100%;
+  min-width: 0;
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
+  color: var(--wh-gray-900);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  outline: none;
+}
+
+.search-filters-price__input:first-child {
+  border-right: 1px solid #d9d9d9;
+}
+
+.search-filters-price__range {
+  position: relative;
+  height: 4px;
+  margin-inline: 4px;
+  border-radius: 999px;
+}
+
+.search-filters-price__slider {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  appearance: none;
+}
+
+.search-filters-price__slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+}
+
+.search-filters-price__slider::-moz-range-track {
+  height: 4px;
+  background: transparent;
+}
+
+.search-filters-price__slider::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: none;
+  border-radius: 50%;
+  background: var(--wh-green);
+  pointer-events: auto;
+  appearance: none;
+  cursor: pointer;
+}
+
+.search-filters-price__slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: var(--wh-green);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.search-filters-price__slider--max {
+  z-index: 1;
+}
+</style>
