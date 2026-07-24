@@ -215,7 +215,7 @@ function handleFiltersReset() {
 }
 
 .bases-page__results {
-  padding: 80px 0 72px;
+  padding: 80px 0 104px;
 }
 
 .bases-page__results-inner {
