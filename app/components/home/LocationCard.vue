@@ -8,7 +8,7 @@ defineProps<{
 </script>
 
 <template>
-  <NuxtLink :to="`/regions/${item.id}`" class="location-card">
+  <NuxtLink :to="`/locations/${item.id}`" class="location-card">
     <img :src="item.image" :alt="item.title" loading="lazy">
     <div class="location-card__overlay">
       <h3 class="location-card__title">{{ item.title }}</h3>

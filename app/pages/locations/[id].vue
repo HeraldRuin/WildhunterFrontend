@@ -1,0 +1,368 @@
+<script setup lang="ts">
+import type { OfferItem, SearchFiltersState } from '~/types/api'
+import {
+  DEFAULT_SEARCH_FILTERS,
+  MOCK_SEARCH_ITEMS,
+  toOfferItem,
+} from '~/utils/search'
+
+definePageMeta({
+  layout: 'home',
+})
+
+const route = useRoute()
+const { location: locationApi, hotels: hotelsApi } = useApi()
+
+const locationId = computed(() => Number(route.params.id))
+
+const { data: locationName } = await useAsyncData(
+  () => `location-name-${route.params.id}`,
+  async () => {
+    try {
+      const locations = await locationApi.getLocationItems()
+      const match = locations.find(item => item.id === locationId.value)
+
+      return match?.name ?? ''
+    }
+    catch {
+      return ''
+    }
+  },
+  {
+    default: () => '',
+  },
+)
+
+const { data: priceBounds } = await useAsyncData(
+  'hotel-price-range',
+  () => hotelsApi.getPriceRangeBounds(),
+  {
+    default: () => ({ min: 0, max: 15000 }),
+  },
+)
+
+useHead(() => ({
+  title: locationName.value
+    ? `${locationName.value} — WH`
+    : 'Область — WH',
+}))
+
+const filters = ref<SearchFiltersState>({
+  ...DEFAULT_SEARCH_FILTERS,
+  priceMin: priceBounds.value.min,
+  priceMax: priceBounds.value.max,
+})
+const mobileFiltersOpen = ref(false)
+const currentPage = ref(Number(route.query.page) || 1)
+const perPage = 6
+
+const mockOffers = computed<OfferItem[]>(() => {
+  const region = locationName.value || 'Область'
+
+  return MOCK_SEARCH_ITEMS.map((item, index) => ({
+    ...toOfferItem(item, index),
+    location: region,
+  }))
+})
+
+const filteredOffers = computed(() => {
+  return mockOffers.value.filter((item) => {
+    if (item.price < filters.value.priceMin || item.price > filters.value.priceMax) {
+      return false
+    }
+
+    if (filters.value.ratings.length) {
+      const matchesRating = filters.value.ratings.some((rating) => {
+        const min = Number(rating)
+        return Number.isFinite(min) && item.rating >= min
+      })
+
+      if (!matchesRating) {
+        return false
+      }
+    }
+
+    return true
+  })
+})
+
+const totalCount = computed(() => filteredOffers.value.length)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / perPage)))
+
+const offerItems = computed(() => {
+  const page = Math.min(currentPage.value, totalPages.value)
+  const start = (page - 1) * perPage
+
+  return filteredOffers.value.slice(start, start + perPage)
+})
+
+watch(totalPages, (pages) => {
+  if (currentPage.value > pages) {
+    currentPage.value = pages
+  }
+})
+
+function handlePageChange(page: number) {
+  currentPage.value = page
+  navigateTo({
+    path: route.path,
+    query: {
+      ...route.query,
+      page: page > 1 ? String(page) : undefined,
+    },
+  })
+}
+
+function handleFiltersReset() {
+  currentPage.value = 1
+  filters.value = {
+    ...DEFAULT_SEARCH_FILTERS,
+    priceMin: priceBounds.value.min,
+    priceMax: priceBounds.value.max,
+  }
+}
+</script>
+
+<template>
+  <div class="location-page">
+    <SearchHero
+      :title="locationName || 'Область'"
+      background-image="/images/location-img.jpg"
+      hide-search
+    />
+
+    <section class="location-page__results">
+      <div class="container location-page__results-inner">
+        <div class="location-page__toolbar">
+          <button
+            v-show="!mobileFiltersOpen"
+            type="button"
+            class="location-page__toolbar-link location-page__filters-btn"
+            @click="mobileFiltersOpen = true"
+          >
+            Фильтры
+          </button>
+
+          <h1 class="location-page__title">
+            Найдено баз: {{ totalCount }}
+          </h1>
+
+          <!--
+          <NuxtLink
+            :to="`/bases/map?location=${locationId}`"
+            class="location-page__toolbar-link location-page__map-link"
+          >
+            Показать на карте
+          </NuxtLink>
+          -->
+        </div>
+
+        <div
+          class="location-page__layout"
+          :class="{ 'location-page__layout--filters-open': mobileFiltersOpen }"
+        >
+          <SearchFilters
+            v-model="filters"
+            v-model:mobile-open="mobileFiltersOpen"
+            :price-bound-min="priceBounds.min"
+            :price-bound-max="priceBounds.max"
+            @reset="handleFiltersReset"
+          />
+
+          <div class="location-page__main">
+            <div v-if="!offerItems.length" class="location-page__state">
+              По вашему запросу базы не найдены. Попробуйте изменить фильтры.
+            </div>
+
+            <div v-else class="location-page__grid">
+              <HomeOfferCard
+                v-for="(item, index) in offerItems"
+                :key="`${item.id}-${index}`"
+                :item="item"
+              />
+            </div>
+
+            <CommonPagination
+              :current-page="currentPage"
+              :total-pages="totalPages"
+              @change="handlePageChange"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <HomeBlocksLocationAboutBlock :location-name="locationName || 'Область'" />
+    <HomeBlocksCommunityBlock variant="centered" />
+    <LayoutAppFooter />
+  </div>
+</template>
+
+<style scoped>
+.location-page {
+  background: var(--wh-white);
+}
+
+.location-page__results {
+  padding: 80px 0 104px;
+}
+
+.location-page__results-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.location-page__toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  min-height: 1.75em;
+}
+
+.location-page__title {
+  grid-column: 2;
+  margin: 0;
+  font-family: "UNCAGE", sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 130%;
+  letter-spacing: -0.03em;
+  text-align: center;
+  color: var(--wh-gray-900);
+  white-space: nowrap;
+}
+
+.location-page__toolbar-link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 100%;
+  letter-spacing: -0.05em;
+  color: #d64545;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.location-page__toolbar-link:hover {
+  opacity: 0.8;
+}
+
+.location-page__filters-btn {
+  display: none;
+  justify-self: start;
+}
+
+.location-page__map-link {
+  justify-self: end;
+}
+
+.location-page__layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.location-page__main {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  min-width: 0;
+}
+
+.location-page__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 20px;
+}
+
+.location-page__state {
+  padding: 48px 24px;
+  border: 1px dashed var(--wh-gray-200);
+  border-radius: var(--wh-radius-lg);
+  text-align: center;
+  color: var(--wh-gray-500);
+}
+
+@media (max-width: 1024px) {
+  .location-page__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .location-page__filters-btn {
+    display: inline;
+  }
+
+  .location-page__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .location-page__layout--filters-open .location-page__main {
+    display: none;
+  }
+
+  .location-page__results {
+    padding-top: 48px;
+  }
+
+  .location-page__results-inner {
+    gap: 12px;
+  }
+
+  .location-page__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .location-page__toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+    min-height: 0;
+  }
+
+  .location-page__title {
+    order: 1;
+    grid-column: auto;
+    font-size: 24px;
+    text-transform: uppercase;
+  }
+
+  .location-page__filters-btn {
+    order: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 56px;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 999px;
+    background: var(--wh-orange-500);
+    color: var(--wh-white);
+    font-family: "Inter", sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 100%;
+    letter-spacing: -0.05em;
+    text-decoration: none;
+  }
+
+  .location-page__filters-btn:hover {
+    background: var(--wh-orange-600);
+    opacity: 1;
+  }
+
+  .location-page__map-link {
+    display: none;
+  }
+}
+</style>

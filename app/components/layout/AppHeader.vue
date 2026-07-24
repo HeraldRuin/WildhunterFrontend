@@ -5,7 +5,7 @@ const { isAuthenticated } = useAuth()
 
 const navItems = [
   { label: 'Базы', to: '/bases' },
-  { label: 'Области', to: '/regions' },
+  { label: 'Области', to: '/locations' },
   { label: 'О нас', to: '/about' },
 ]
 </script>

@@ -17,7 +17,7 @@ defineProps<{
         <NuxtLink
           v-for="region in regions"
           :key="region.id"
-          :to="`/regions/${region.id}`"
+          :to="`/locations/${region.id}`"
           class="region-card"
         >
           <img :src="region.image" :alt="region.title" loading="lazy">
