@@ -310,10 +310,6 @@ function handleFiltersReset() {
     grid-template-columns: 1fr;
   }
 
-  .bases-page__layout--filters-open .bases-page__main {
-    display: none;
-  }
-
   .bases-page__filters-btn {
     display: inline;
   }
@@ -324,6 +320,10 @@ function handleFiltersReset() {
 }
 
 @media (max-width: 640px) {
+  .bases-page__layout--filters-open .bases-page__main {
+    display: none;
+  }
+
   .bases-page__results {
     padding-top: 48px;
   }

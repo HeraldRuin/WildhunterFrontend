@@ -12,14 +12,75 @@ const emit = defineEmits<{
   search: [payload: Record<string, string>]
 }>()
 
+const route = useRoute()
 const { location: locationApi, animals: animalsApi } = useApi()
 
-const location = ref('')
-const animal = ref('')
-const checkIn = ref<Date | null>(parseDisplayDate('04.02.26'))
-const checkOut = ref<Date | null>(parseDisplayDate('05.02.26'))
-const adultsCount = ref(1)
+const DEFAULT_CHECK_IN = '04.02.26'
+const DEFAULT_CHECK_OUT = '05.02.26'
 const maxAdults = 100
+
+function queryString(key: string): string {
+  const value = route.query[key]
+  return Array.isArray(value) ? String(value[0] || '') : String(value || '')
+}
+
+function hasSearchQuery() {
+  return (
+    'location' in route.query
+    || 'animal' in route.query
+    || 'checkIn' in route.query
+    || 'checkOut' in route.query
+    || 'guests' in route.query
+  )
+}
+
+function adultsFromQuery() {
+  const count = Number(queryString('guests'))
+  if (!Number.isFinite(count) || count < 1) {
+    return 1
+  }
+
+  return Math.min(maxAdults, Math.floor(count))
+}
+
+const location = ref(hasSearchQuery() ? queryString('location') : '')
+const animal = ref(hasSearchQuery() ? queryString('animal') : '')
+const checkIn = ref<Date | null>(
+  hasSearchQuery()
+    ? (parseDisplayDate(queryString('checkIn')) ?? parseDisplayDate(DEFAULT_CHECK_IN))
+    : parseDisplayDate(DEFAULT_CHECK_IN),
+)
+const checkOut = ref<Date | null>(
+  hasSearchQuery()
+    ? (parseDisplayDate(queryString('checkOut')) ?? parseDisplayDate(DEFAULT_CHECK_OUT))
+    : parseDisplayDate(DEFAULT_CHECK_OUT),
+)
+const adultsCount = ref(hasSearchQuery() ? adultsFromQuery() : 1)
+
+function hydrateFromRoute() {
+  if (!hasSearchQuery()) {
+    return
+  }
+
+  location.value = queryString('location')
+  animal.value = queryString('animal')
+  checkIn.value = parseDisplayDate(queryString('checkIn')) ?? parseDisplayDate(DEFAULT_CHECK_IN)
+  checkOut.value = parseDisplayDate(queryString('checkOut')) ?? parseDisplayDate(DEFAULT_CHECK_OUT)
+  adultsCount.value = adultsFromQuery()
+}
+
+watch(
+  () => [
+    route.query.location,
+    route.query.animal,
+    route.query.checkIn,
+    route.query.checkOut,
+    route.query.guests,
+  ],
+  () => {
+    hydrateFromRoute()
+  },
+)
 const isLocationOpen = ref(false)
 const isAnimalOpen = ref(false)
 const isGuestsOpen = ref(false)
@@ -105,8 +166,8 @@ const hasCustomDates = computed(() => {
     return false
   }
 
-  const defaultStart = parseDisplayDate('04.02.26')
-  const defaultEnd = parseDisplayDate('05.02.26')
+  const defaultStart = parseDisplayDate(DEFAULT_CHECK_IN)
+  const defaultEnd = parseDisplayDate(DEFAULT_CHECK_OUT)
 
   if (!defaultStart || !defaultEnd) {
     return true
@@ -272,8 +333,8 @@ function clearGuests(event: MouseEvent) {
 
 function clearDates(event: MouseEvent) {
   event.stopPropagation()
-  checkIn.value = parseDisplayDate('04.02.26')
-  checkOut.value = parseDisplayDate('05.02.26')
+  checkIn.value = parseDisplayDate(DEFAULT_CHECK_IN)
+  checkOut.value = parseDisplayDate(DEFAULT_CHECK_OUT)
   isDatesOpen.value = false
 }
 

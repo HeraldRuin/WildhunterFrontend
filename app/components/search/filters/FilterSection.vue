@@ -3,7 +3,7 @@ const props = withDefaults(defineProps<{
   title: string
   defaultOpen?: boolean
 }>(), {
-  defaultOpen: true,
+  defaultOpen: false,
 })
 
 const isOpen = ref(props.defaultOpen)
