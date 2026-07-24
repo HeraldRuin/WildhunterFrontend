@@ -19,10 +19,10 @@ export const SEARCH_AMENITIES = [
 ]
 
 export const SEARCH_RATING_OPTIONS = [
-  { value: 9, label: 'Превосходно 9+' },
-  { value: 8, label: 'Очень хорошо 8+' },
-  { value: 7, label: 'Хорошо 7+' },
-  { value: 6, label: 'Нормально 6+' },
+  { value: 9, label: 'Превосходно' },
+  { value: 8, label: 'Очень хорошо' },
+  { value: 7, label: 'Хорошо' },
+  { value: 6, label: 'Нормально' },
 ]
 
 export const MOCK_SEARCH_ITEMS: BookableItem[] = [

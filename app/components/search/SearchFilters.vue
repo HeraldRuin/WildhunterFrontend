@@ -3,7 +3,6 @@ import type { SearchFiltersState, SearchSortOption } from '~/types/api'
 import {
   DEFAULT_SEARCH_FILTERS,
   SEARCH_AMENITIES,
-  SEARCH_RATING_OPTIONS,
 } from '~/utils/search'
 
 const props = defineProps<{
@@ -37,14 +36,6 @@ function updateField<K extends keyof SearchFiltersState>(
     ...localFilters.value,
     [field]: value,
   }
-}
-
-function toggleRating(value: number) {
-  const ratings = localFilters.value.ratings.includes(value)
-    ? localFilters.value.ratings.filter(item => item !== value)
-    : [...localFilters.value.ratings, value]
-
-  updateField('ratings', ratings)
 }
 
 function toggleAmenity(id: string) {
@@ -161,22 +152,11 @@ function formatPrice(value: number) {
         </p>
       </div>
 
-      <div class="search-filters__group">
-        <p class="search-filters__label">Рейтинг</p>
-        <ul class="search-filters__list">
-          <li v-for="option in SEARCH_RATING_OPTIONS" :key="option.value">
-            <label class="search-filters__checkbox">
-              <input
-                type="checkbox"
-                :checked="localFilters.ratings.includes(option.value)"
-                @change="toggleRating(option.value)"
-              >
-              <span class="search-filters__checkmark" />
-              <span>{{ option.label }}</span>
-            </label>
-          </li>
-        </ul>
-      </div>
+      <SearchFiltersRatingFilter
+        class="search-filters__group"
+        :model-value="localFilters.ratings"
+        @update:model-value="updateField('ratings', $event)"
+      />
 
       <div class="search-filters__group">
         <p class="search-filters__label">Услуги на базе</p>
