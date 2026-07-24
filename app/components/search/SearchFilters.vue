@@ -211,13 +211,16 @@ function closeMobile() {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 40px;
 }
 
 .search-filters__title {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 800;
+  font-family: "Inter", sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 120%;
+  letter-spacing: -0.05em;
   color: var(--wh-gray-900);
 }
 

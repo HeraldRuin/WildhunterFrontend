@@ -72,9 +72,13 @@ function toggle() {
 }
 
 .search-filters-section__title {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  line-height: 1.2;
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-gray-900);
 }
 
 .search-filters-section__chevron {

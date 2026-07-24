@@ -10,7 +10,7 @@ const emit = defineEmits<{
       <HomeHeroHeader />
 
       <p class="search-top__tagline">
-        Онлайн-платформа для настоящих охотников
+        Онлайн-платформа<br class="search-top__tagline-br"> для настоящих охотников
       </p>
 
       <HomeHeroSearchForm layout="split" @search="emit('search', $event)" />
@@ -46,6 +46,7 @@ const emit = defineEmits<{
 .search-top__tagline {
   margin: 0;
   width: 859px;
+  max-width: 100%;
   font-family: "UNCAGE", sans-serif;
   font-size: 40px;
   font-weight: 400;
@@ -55,11 +56,27 @@ const emit = defineEmits<{
   color: rgba(255, 255, 255, 0.92);
 }
 
+.search-top__tagline-br {
+  display: none;
+}
+
 @media (max-width: 1024px) {
+  .search-top {
+    height: 445px;
+  }
+
   .search-top__inner {
     gap: 20px;
-    padding-inline: 16px;
-    padding-bottom: 36px;
+    padding: 140px 16px 36px;
+  }
+
+  .search-top__tagline {
+    width: auto;
+    font-size: 38px;
+  }
+
+  .search-top__tagline-br {
+    display: block;
   }
 }
 
