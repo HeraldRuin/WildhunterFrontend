@@ -22,6 +22,12 @@ const errorLabel = computed(() => {
 })
 const nuxtError = useError()
 
+const bgImage = '/images/error.jpg'
+
+const bgStyle = computed(() => ({
+  backgroundImage: `linear-gradient(180deg, rgba(17, 24, 39, 0.04) 0%, rgba(17, 24, 39, 0.1) 100%), url(${bgImage})`,
+}))
+
 function goHome() {
   if (nuxtError.value) {
     clearError({ redirect: '/' })
@@ -34,7 +40,7 @@ function goHome() {
 
 <template>
   <div class="error-page">
-    <section class="error-hero">
+    <section class="error-hero" :style="bgStyle">
       <div class="error-hero__inner">
         <HomeHeroHeader />
 
@@ -49,63 +55,74 @@ function goHome() {
         </div>
       </div>
     </section>
+
+    <HomeBlocksCommunityBlock variant="centered" plain />
+    <LayoutAppFooter />
   </div>
 </template>
 
 <style scoped>
 .error-page {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .error-hero {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   width: 100%;
-  min-height: 100vh;
-  background: var(--wh-green-700);
+  min-height: 810px;
+  background-size: cover;
+  background-position: center 35%;
+  background-repeat: no-repeat;
   color: var(--wh-white);
 }
 
 .error-hero__inner {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
-  width: min(100%, 1440px);
-  min-height: 100vh;
-  margin-inline: auto;
+  width: 100%;
 }
 
 .error-hero__content {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   flex: 1;
   width: 100%;
-  padding: 48px 80px 80px;
+  padding: 48px 80px 80px 120px;
 }
 
 .error-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-  width: min(100%, 480px);
+  width: min(100%, 592px);
   padding: 48px 56px 40px;
   border-radius: var(--wh-radius-lg);
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
 }
 
 .error-card__code {
   margin: 0;
-  font-size: clamp(4.5rem, 10vw, 7rem);
-  font-weight: 800;
+  font-size: 200px;
+  font-weight: 400;
   line-height: 1;
   letter-spacing: -0.02em;
 }
 
 .error-card__label {
   margin: 0 0 32px;
-  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-size: 32px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -135,22 +152,51 @@ function goHome() {
 }
 
 @media (max-width: 1024px) {
+  .error-hero {
+    background-size: 240%;
+    background-position: center 40%;
+  }
+
   .error-hero__content {
+    justify-content: center;
     padding: 40px 32px 64px;
   }
 
   .error-card {
+    width: 592px;
+    height: 537px;
     padding: 40px 40px 32px;
+    justify-content: center;
+  }
+
+  .error-card__label {
+    font-size: 28px;
   }
 }
 
 @media (max-width: 640px) {
+  .error-hero {
+    background-size: auto 180%;
+    background-position: center 35%;
+  }
+
   .error-hero__content {
     padding: 32px 16px 48px;
   }
 
   .error-card {
+    width: 345px;
+    height: 515px;
     padding: 32px 28px 28px;
+    justify-content: center;
+  }
+
+  .error-card__code {
+    font-size: 120px;
+  }
+
+  .error-card__label {
+    font-size: 24px;
   }
 
   .error-card__btn {
