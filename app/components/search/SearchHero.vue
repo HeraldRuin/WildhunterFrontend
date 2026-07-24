@@ -1,20 +1,56 @@
 <script setup lang="ts">
+const props = withDefaults(defineProps<{
+  title?: string
+  hideSearch?: boolean
+  backgroundImage?: string
+}>(), {
+  title: undefined,
+  hideSearch: false,
+  backgroundImage: undefined,
+})
+
 const emit = defineEmits<{
   search: [payload: Record<string, string>]
 }>()
+
+const backgroundStyle = computed(() => {
+  if (!props.backgroundImage) {
+    return undefined
+  }
+
+  return {
+    backgroundImage: `url(${props.backgroundImage})`,
+  }
+})
 </script>
 
 <template>
-  <section class="search-top">
+  <section
+    class="search-top"
+    :class="{
+      'search-top--compact': hideSearch,
+      'search-top--image': Boolean(backgroundImage),
+    }"
+    :style="backgroundStyle"
+  >
     <div class="search-top__inner">
       <HomeHeroHeader />
 
       <p class="search-top__tagline">
-        Онлайн-платформа<br class="search-top__tagline-br">
-        <span class="search-top__tagline-rest">для настоящих<br class="search-top__tagline-br--mobile"> охотников</span>
+        <template v-if="title">
+          {{ title }}
+        </template>
+        <template v-else>
+          Онлайн-платформа<br class="search-top__tagline-br">
+          <span class="search-top__tagline-rest">для настоящих<br class="search-top__tagline-br--mobile"> охотников</span>
+        </template>
       </p>
 
-      <HomeHeroSearchForm layout="split" @search="emit('search', $event)" />
+      <HomeHeroSearchForm
+        v-if="!hideSearch"
+        layout="split"
+        @search="emit('search', $event)"
+      />
     </div>
   </section>
 </template>
@@ -26,6 +62,17 @@ const emit = defineEmits<{
   background: var(--wh-green);
 }
 
+.search-top--compact {
+  height: 280px;
+}
+
+.search-top--image {
+  background-color: transparent;
+  background-position: center 52%;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
 .search-top__inner {
   display: flex;
   flex-direction: column;
@@ -34,6 +81,10 @@ const emit = defineEmits<{
   width: min(100%, 1440px);
   margin-inline: auto;
   padding: 172px 24px 48px;
+}
+
+.search-top--compact .search-top__inner {
+  padding-bottom: 56px;
 }
 
 .search-top__inner :deep(.hero-header) {
@@ -70,9 +121,17 @@ const emit = defineEmits<{
     height: 445px;
   }
 
+  .search-top--compact {
+    height: 260px;
+  }
+
   .search-top__inner {
     gap: 20px;
     padding: 140px 16px 36px;
+  }
+
+  .search-top--compact .search-top__inner {
+    padding-bottom: 48px;
   }
 
   .search-top__inner :deep(.hero-header) {
@@ -99,8 +158,16 @@ const emit = defineEmits<{
     min-height: 567px;
   }
 
+  .search-top--compact {
+    min-height: 220px;
+  }
+
   .search-top__inner {
     padding: 110px 12px 40px;
+  }
+
+  .search-top--compact .search-top__inner {
+    padding-bottom: 40px;
   }
 
   .search-top__tagline {
