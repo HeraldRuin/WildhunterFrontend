@@ -101,15 +101,12 @@ async function handleSubmit() {
     <div class="community-block__inner">
       <div class="community-block__content">
         <h2 class="community-block__title">
-          <template v-if="variant === 'centered'">
-            Присоединяйтесь<br>
-            к нашему сообществу
-          </template>
-          <template v-else>
-            <span class="community-block__title-line">Присоединяйтесь</span>
-            <span class="community-block__title-line">к нашему</span>
-            <span class="community-block__title-line">сообществу</span>
-          </template>
+          <span class="community-block__title-line">Присоединяйтесь</span>
+          <span class="community-block__title-line">
+            <span class="community-block__title-word">к</span>
+            <span class="community-block__title-word">нашему</span>
+          </span>
+          <span class="community-block__title-line">сообществу</span>
         </h2>
 
         <form class="community-block__form" @submit.prevent="handleSubmit">
@@ -220,7 +217,7 @@ async function handleSubmit() {
   width: 100%;
   min-height: 640px;
   margin-inline: 0;
-  padding: 56px clamp(16px, calc(80px - (1422px - 100vw) * 64 / 398), 80px) 56px 24px;
+  padding: 56px clamp(48px, calc(216px - (1422px - 100vw) * 64 / 398), 216px) 56px 24px;
 }
 
 .community-block__content {
@@ -254,6 +251,10 @@ async function handleSubmit() {
   content: ' ';
 }
 
+.community-block__title-word + .community-block__title-word {
+  margin-left: 0.45em;
+}
+
 .community-block__form {
   display: flex;
   flex-direction: column;
@@ -268,7 +269,7 @@ async function handleSubmit() {
 }
 
 .community-block__field input {
-  width: 284px;
+  width: 100%;
   padding: 8px 0 10px;
   border: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.85);
@@ -429,7 +430,7 @@ async function handleSubmit() {
 @media (max-width: 1024px) {
   .community-block__inner {
     min-height: 400px;
-    padding: 56px 16px 56px 24px;
+    padding: 56px 32px 56px 24px;
   }
 
   .community-block__content {
