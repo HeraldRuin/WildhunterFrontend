@@ -33,6 +33,20 @@ export function parseDisplayDate(value: string) {
   return new Date(2000 + year, month - 1, day)
 }
 
+export function formatApiDate(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+export function parseDisplayDateToApiDate(value: string) {
+  const date = parseDisplayDate(value)
+
+  return date ? formatApiDate(date) : undefined
+}
+
 export function isSameDay(left: Date, right: Date) {
   return left.getFullYear() === right.getFullYear()
     && left.getMonth() === right.getMonth()

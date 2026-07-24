@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import type { BookableItem, SearchApiResponse, SearchFiltersState } from '~/types/api'
-import {
-  DEFAULT_SEARCH_FILTERS,
-  MOCK_SEARCH_ITEMS,
-  toOfferItem,
-} from '~/utils/search'
+import type { HotelSearchBody, OfferItem, SearchFiltersState } from '~/types/api'
+import { mapHotelOfferToItem } from '~/api/hotels'
+import { parseDisplayDateToApiDate } from '~/utils/date'
+import { DEFAULT_SEARCH_FILTERS } from '~/utils/search'
 
 definePageMeta({
   layout: 'home',
@@ -20,105 +18,90 @@ const { search: searchApi } = useApi()
 const filters = ref<SearchFiltersState>({ ...DEFAULT_SEARCH_FILTERS })
 const mobileFiltersOpen = ref(false)
 const currentPage = ref(Number(route.query.page) || 1)
-const itemsPerPage = 9
 
-const searchParams = computed(() => {
-  const params: Record<string, unknown> = {
-    page: currentPage.value,
-    limit: itemsPerPage,
-  }
+interface NormalizedSearchResult {
+  items: OfferItem[]
+  total: number
+  totalPages: number
+}
+
+const emptySearchResult = (): NormalizedSearchResult => ({
+  items: [],
+  total: 0,
+  totalPages: 1,
+})
+
+const searchRequest = computed(() => {
+  const body: HotelSearchBody = {}
 
   if (route.query.location) {
-    params.location_id = route.query.location
+    body.location_id = Number(route.query.location)
   }
 
   if (route.query.animal) {
-    params.animal_id = route.query.animal
+    body.animal_id = Number(route.query.animal)
+  }
+
+  const checkIn = parseDisplayDateToApiDate(String(route.query.checkIn || ''))
+  if (checkIn) {
+    body.check_in = checkIn
+  }
+
+  const checkOut = parseDisplayDateToApiDate(String(route.query.checkOut || ''))
+  if (checkOut) {
+    body.check_out = checkOut
+  }
+
+  if (route.query.guests) {
+    body.adults = Number(route.query.guests)
   }
 
   if (filters.value.priceMin > 0 || filters.value.priceMax < 15000) {
-    params.price_range = `${filters.value.priceMin};${filters.value.priceMax}`
+    body.price_range = `${filters.value.priceMin};${filters.value.priceMax}`
   }
 
   if (filters.value.ratings.length) {
-    params.review_score = filters.value.ratings
+    body.review_score = filters.value.ratings
   }
 
-  return params
+  return {
+    page: currentPage.value,
+    body,
+  }
 })
 
-const { data: searchResponse, pending } = await useAsyncData(
+const { data: searchResult, pending } = await useAsyncData(
   'hotel-search',
   async () => {
     try {
-      const response = await searchApi.searchByType('hotel', searchParams.value) as SearchApiResponse
+      const response = await searchApi.searchHotels(
+        searchRequest.value.page,
+        searchRequest.value.body,
+      )
 
-      if (response.status === 1 && response.data?.data?.length) {
-        return response.data
+      if (!response.success) {
+        return emptySearchResult()
+      }
+
+      return {
+        items: response.data.items.map(mapHotelOfferToItem),
+        total: response.data.pagination.total,
+        totalPages: Math.max(1, response.data.pagination.last_page),
       }
     }
     catch {
-      // API недоступен — используем мок-данные
+      return emptySearchResult()
     }
-
-    return null
   },
   {
-    watch: [searchParams],
-    default: () => null,
+    watch: [searchRequest],
+    default: emptySearchResult,
   },
 )
 
-const fallbackItems = computed(() => {
-  let items = [...MOCK_SEARCH_ITEMS]
-
-  if (route.query.location) {
-    items = items.filter((_, index) => index % 3 !== 2)
-  }
-
-  if (filters.value.priceMax < 15000) {
-    items = items.filter(item => (item.sale_price ?? item.price) <= filters.value.priceMax)
-  }
-
-  if (filters.value.priceMin > 0) {
-    items = items.filter(item => (item.sale_price ?? item.price) >= filters.value.priceMin)
-  }
-
-  switch (filters.value.sort) {
-    case 'price_asc':
-      items.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price))
-      break
-    case 'price_desc':
-      items.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price))
-      break
-    default:
-      break
-  }
-
-  return items
-})
-
-const totalCount = computed(() => searchResponse.value?.total ?? fallbackItems.value.length)
-const totalPages = computed(() => {
-  if (searchResponse.value?.total_pages) {
-    return searchResponse.value.total_pages
-  }
-
-  return Math.max(1, Math.ceil(fallbackItems.value.length / itemsPerPage))
-})
-
-const pageItems = computed<BookableItem[]>(() => {
-  if (searchResponse.value?.data?.length) {
-    return searchResponse.value.data
-  }
-
-  const start = (currentPage.value - 1) * itemsPerPage
-  return fallbackItems.value.slice(start, start + itemsPerPage)
-})
-
-const offerItems = computed(() =>
-  pageItems.value.map((item, index) => toOfferItem(item, index)),
-)
+const totalCount = computed(() => searchResult.value.total)
+const totalPages = computed(() => searchResult.value.totalPages)
+const offerItems = computed(() => searchResult.value.items)
 
 function handleSearch(payload: Record<string, string>) {
   currentPage.value = 1

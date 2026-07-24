@@ -89,10 +89,24 @@ export interface HotelOffer {
   title: string
   slug: string
   image_url: string
-  star_rate: number | null
+  star_rate: number | string | null
   location: SearchLocation
   price?: number | string
   review_count?: number
+  is_in_wishList?: boolean
+}
+
+export interface HotelSearchPagination {
+  current_page: number
+  per_page: number
+  total: number
+  last_page: number
+  has_more_pages: boolean
+}
+
+export interface HotelSearchResultData {
+  items: HotelOffer[]
+  pagination: HotelSearchPagination
 }
 
 export interface SearchLocation {
@@ -156,6 +170,16 @@ export interface HomeBlock {
 
 export interface HomePageResponse extends ApiResponse<unknown> {
   data: HomeBlock[]
+}
+
+export interface HotelSearchBody {
+  location_id?: number
+  animal_id?: number
+  check_in?: string
+  check_out?: string
+  adults?: number
+  price_range?: string
+  review_score?: number[]
 }
 
 export interface SearchResultData {
