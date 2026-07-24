@@ -70,7 +70,6 @@ function closeMobile() {
   <aside
     class="search-filters"
     :class="{ 'search-filters--mobile-open': mobileOpen }"
-    @click.self="closeMobile"
   >
     <div class="search-filters__panel">
       <CommonModalCloseButton
@@ -80,7 +79,9 @@ function closeMobile() {
       />
 
       <div class="search-filters__header">
-        <h2 class="search-filters__title">Фильтры</h2>
+        <h2 class="search-filters__title">
+          Фильтры
+        </h2>
       </div>
 
       <SearchFiltersFilterSection
@@ -347,30 +348,11 @@ function closeMobile() {
 
 @media (max-width: 1024px) {
   .search-filters {
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background: rgba(17, 24, 39, 0.45);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
+    display: none;
   }
 
   .search-filters--mobile-open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .search-filters__panel {
-    width: 488px;
-    max-width: 100%;
-    max-height: min(90vh, 820px);
-    overflow-y: auto;
-    box-shadow: var(--wh-shadow);
+    display: block;
   }
 
   :deep(.search-filters__modal-close) {

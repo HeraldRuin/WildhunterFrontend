@@ -152,6 +152,7 @@ function handleFiltersReset() {
       <div class="container bases-page__results-inner">
         <div class="bases-page__toolbar">
           <button
+            v-show="!mobileFiltersOpen"
             type="button"
             class="bases-page__toolbar-link bases-page__filters-btn"
             @click="mobileFiltersOpen = true"
@@ -168,7 +169,10 @@ function handleFiltersReset() {
           </NuxtLink>
         </div>
 
-        <div class="bases-page__layout">
+        <div
+          class="bases-page__layout"
+          :class="{ 'bases-page__layout--filters-open': mobileFiltersOpen }"
+        >
           <SearchFilters
             v-model="filters"
             v-model:mobile-open="mobileFiltersOpen"
@@ -304,6 +308,10 @@ function handleFiltersReset() {
 @media (max-width: 1024px) {
   .bases-page__layout {
     grid-template-columns: 1fr;
+  }
+
+  .bases-page__layout--filters-open .bases-page__main {
+    display: none;
   }
 
   .bases-page__filters-btn {
