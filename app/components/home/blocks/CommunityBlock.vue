@@ -1,8 +1,10 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
   variant?: 'side' | 'centered'
+  plain?: boolean
 }>(), {
   variant: 'side',
+  plain: false,
 })
 
 const { newsletter } = useApi()
@@ -88,9 +90,12 @@ async function handleSubmit() {
 <template>
   <section
     class="community-block"
-    :class="{ 'community-block--centered': variant === 'centered' }"
+    :class="{
+      'community-block--centered': variant === 'centered',
+      'community-block--plain': plain,
+    }"
   >
-    <div class="community-block__media" aria-hidden="true">
+    <div v-if="!plain" class="community-block__media" aria-hidden="true">
       <img
         :src="variant === 'centered' ? '/images/communutu2-bg.jpg' : '/images/community-bg.png'"
         alt=""
@@ -377,6 +382,10 @@ async function handleSubmit() {
   transform: translateY(-1px);
 }
 
+.community-block--plain {
+  background: var(--wh-green);
+}
+
 .community-block--centered .community-block__media img {
   object-position: center 82%;
 }
@@ -485,7 +494,7 @@ async function handleSubmit() {
 
 @media (max-width: 640px) {
   .community-block {
-    min-height: 560px;
+    min-height: 391px;
   }
 
   .community-block--centered .community-block__inner {
