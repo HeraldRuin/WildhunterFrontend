@@ -278,7 +278,7 @@ async function handleSubmit() {
 }
 
 .community-block__field input::placeholder {
-  color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
 }
 
 .community-block__error {
@@ -299,7 +299,7 @@ async function handleSubmit() {
 
 .community-block__checkbox {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   cursor: pointer;
   color: rgba(255, 255, 255, 0.55);
@@ -314,12 +314,13 @@ async function handleSubmit() {
 .community-block__checkbox input {
   width: 16px;
   height: 16px;
-  margin-top: 2px;
+  margin-top: 0;
   flex-shrink: 0;
   appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 2px;
   background: transparent;
+  color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
   position: relative;
 }
@@ -327,13 +328,13 @@ async function handleSubmit() {
 .community-block__checkbox input:checked::after {
   content: '';
   position: absolute;
-  top: 1px;
-  left: 4px;
-  width: 5px;
-  height: 9px;
-  border: solid #fff;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 8px;
+  border: solid currentColor;
   border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  transform: translate(-50%, -65%) rotate(45deg);
 }
 
 .community-block__submit {
