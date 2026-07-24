@@ -86,7 +86,7 @@ function commitMax() {
 
     <div class="search-filters-price__inputs">
       <input
-        class="search-filters-price__input"
+        class="search-filters-price__input search-filters-price__input--min"
         type="text"
         inputmode="numeric"
         :value="editingMin ? minDraft : displayPrice(priceMin)"
@@ -96,7 +96,7 @@ function commitMax() {
         @keydown.enter="($event.target as HTMLInputElement).blur()"
       >
       <input
-        class="search-filters-price__input"
+        class="search-filters-price__input search-filters-price__input--max"
         type="text"
         inputmode="numeric"
         :value="editingMax ? maxDraft : displayPrice(priceMax)"
@@ -149,19 +149,16 @@ function commitMax() {
 .search-filters-price__inputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 6px;
   align-items: stretch;
-  border: 1px solid #d9d9d9;
-  border-radius: 999px;
-  background: var(--wh-white);
-  overflow: hidden;
 }
 
 .search-filters-price__input {
   width: 100%;
   min-width: 0;
   padding: 14px 20px;
-  border: none;
-  background: transparent;
+  border: 1px solid #d9d9d9;
+  background: var(--wh-white);
   color: var(--wh-gray-900);
   font: inherit;
   font-size: 1rem;
@@ -171,8 +168,12 @@ function commitMax() {
   outline: none;
 }
 
-.search-filters-price__input:first-child {
-  border-right: 1px solid #d9d9d9;
+.search-filters-price__input--min {
+  border-radius: 999px 0 0 999px;
+}
+
+.search-filters-price__input--max {
+  border-radius: 0 999px 999px 0;
 }
 
 .search-filters-price__range {
