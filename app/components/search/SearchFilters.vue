@@ -336,9 +336,8 @@ function closeMobile() {
 .search-filters__reset {
   align-self: flex-start;
   margin-top: 24px;
-  padding: 24px 0 0;
+  padding: 0;
   border: none;
-  border-top: 1px solid #bfbfbf;
   background: transparent;
   color: #d64545;
   font: inherit;
