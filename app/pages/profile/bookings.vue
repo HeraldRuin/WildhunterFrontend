@@ -97,12 +97,12 @@ const emptyText = computed(() =>
 }
 
 .bookings-page__breadcrumbs a {
-  color: var(--wh-green-800);
-  transition: color 0.15s ease;
+  color: var(--wh-green);
+  transition: opacity 0.15s ease;
 }
 
 .bookings-page__breadcrumbs a:hover {
-  color: var(--wh-green-600);
+  opacity: 0.8;
 }
 
 .bookings-page__notifications {

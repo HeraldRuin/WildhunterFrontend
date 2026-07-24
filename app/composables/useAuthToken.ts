@@ -24,12 +24,19 @@ function pickUserForStorage(user: AuthUser | null | undefined): AuthUser | null 
     return null
   }
 
+  const avatar = user.avatar
+    ?? (user as AuthUser & { avatar_url?: string | null }).avatar_url
+    ?? null
+
   return {
     id: user.id,
     first_name: user.first_name ?? '',
     last_name: user.last_name ?? '',
     email: user.email ?? '',
-    avatar: user.avatar ?? null,
+    avatar,
+    role: user.role ?? null,
+    role_name: user.role_name ?? null,
+    created_at: user.created_at ?? null,
   }
 }
 
@@ -185,6 +192,28 @@ export function useAuthToken() {
     clearBrowserStorage()
   }
 
+  function updateUser(nextUser: Partial<AuthUser>) {
+    const current = user.value
+
+    if (!current) {
+      return
+    }
+
+    user.value = {
+      ...current,
+      ...nextUser,
+    }
+
+    const stored = readBrowserStorage()
+
+    if (stored?.token) {
+      persistBrowserStorage({
+        ...stored,
+        user: user.value,
+      }, Boolean(localStorage.getItem(TOKEN_KEY)))
+    }
+  }
+
   function initFromStorage() {
     if (!import.meta.client || token.value) {
       return
@@ -208,5 +237,6 @@ export function useAuthToken() {
     initFromStorage,
     setSession,
     clearSession,
+    updateUser,
   }
 }

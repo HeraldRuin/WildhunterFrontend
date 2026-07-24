@@ -203,12 +203,12 @@ function handleCancel() {
 }
 
 .profile-page__breadcrumbs a {
-  color: var(--wh-green-800);
-  transition: color 0.15s ease;
+  color: var(--wh-green);
+  transition: opacity 0.15s ease;
 }
 
 .profile-page__breadcrumbs a:hover {
-  color: var(--wh-green-600);
+  opacity: 0.8;
 }
 
 .profile-page__notifications {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatMemberSince } from '~/utils/user'
+
 interface NavItem {
   label: string
   to: string
@@ -7,6 +9,7 @@ interface NavItem {
 
 const route = useRoute()
 const { user, logout } = useAuth()
+const { profile } = useProfile()
 
 const navItems: NavItem[] = [
   { label: 'Бронирования', to: '/profile/bookings', icon: 'bookings' },
@@ -15,12 +18,23 @@ const navItems: NavItem[] = [
 ]
 
 const displayName = computed(() => {
+  const profileUser = profile.value
+
+  if (profileUser) {
+    const fullName = [profileUser.first_name, profileUser.last_name].filter(Boolean).join(' ')
+    return fullName || profileUser.user_name || profileUser.email
+  }
+
   if (!user.value) {
     return 'Пользователь'
   }
 
   return [user.value.first_name, user.value.last_name].filter(Boolean).join(' ') || user.value.email
 })
+
+const avatarUrl = computed(() => profile.value?.avatar ?? user.value?.avatar ?? null)
+const roleName = computed(() => profile.value?.role_name || user.value?.role_name || '')
+const memberSince = computed(() => formatMemberSince(profile.value?.created_at ?? user.value?.created_at ?? ''))
 
 function isActive(to: string) {
   if (to === '/profile') {
@@ -41,8 +55,8 @@ async function handleLogout() {
     <div class="profile-sidebar__user">
       <div class="profile-sidebar__avatar">
         <img
-          v-if="user?.avatar"
-          :src="user.avatar"
+          v-if="avatarUrl"
+          :src="avatarUrl"
           :alt="displayName"
         >
         <svg v-else viewBox="0 0 24 24" aria-hidden="true">
@@ -51,9 +65,9 @@ async function handleLogout() {
         </svg>
       </div>
 
-      <span class="profile-sidebar__role">Профиль</span>
+      <span v-if="roleName" class="profile-sidebar__role">{{ roleName }}</span>
       <h2 class="profile-sidebar__name">{{ displayName }}</h2>
-      <p v-if="user?.email" class="profile-sidebar__since">{{ user.email }}</p>
+      <p v-if="memberSince" class="profile-sidebar__since">Участник с: {{ memberSince }}</p>
     </div>
 
     <nav class="profile-sidebar__nav">
@@ -100,17 +114,19 @@ async function handleLogout() {
 <style scoped>
 .profile-sidebar {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: var(--profile-sidebar-gap, 16px);
+  left: var(--profile-sidebar-gap, 16px);
   z-index: 40;
   display: flex;
   flex-direction: column;
-  width: 280px;
-  height: 100vh;
+  width: var(--profile-sidebar-width, 280px);
+  height: calc(100vh - var(--profile-sidebar-gap, 16px) * 2);
   padding: 32px 24px 24px;
-  background: var(--wh-green-800);
+  border-radius: var(--wh-radius-lg);
+  background: var(--wh-green);
   color: var(--wh-white);
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  overflow: hidden;
 }
 
 .profile-sidebar__user {
@@ -118,7 +134,7 @@ async function handleLogout() {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding-bottom: 28px;
+  padding-bottom: 37px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
@@ -126,8 +142,8 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: 120px;
+  height: 120px;
   margin-bottom: 12px;
   border-radius: 50%;
   background: #656c77;
@@ -142,32 +158,33 @@ async function handleLogout() {
 }
 
 .profile-sidebar__avatar svg {
-  width: 44px;
-  height: 44px;
+  width: 64px;
+  height: 64px;
   color: rgba(255, 255, 255, 0.85);
 }
 
 .profile-sidebar__role {
   display: inline-block;
-  margin-bottom: 10px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--wh-white);
-  color: var(--wh-green-800);
-  font-size: 0.72rem;
-  font-weight: 700;
+  margin-bottom: 0;
+  padding: 10px;
+  border: 1px solid var(--wh-white);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--wh-white);
+  font-size: 20px;
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 
 .profile-sidebar__name {
-  margin: 0 0 4px;
-  font-size: 1rem;
+  margin: 14px 0 4px;
+  font-size: 20px;
   font-weight: 700;
 }
 
 .profile-sidebar__since {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.65);
 }
 
@@ -175,7 +192,7 @@ async function handleLogout() {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 24px 0;
+  padding: 10px 0;
   flex: 1;
 }
 
@@ -227,7 +244,7 @@ async function handleLogout() {
   padding: 10px 14px;
   border: none;
   background: none;
-  color: #6dd4a8;
+  color: var(--wh-white);
   font-size: 0.88rem;
   font-weight: 500;
   text-align: left;

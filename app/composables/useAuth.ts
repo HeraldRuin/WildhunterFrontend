@@ -1,5 +1,22 @@
 import type { ApiErrorResponse } from '~/types/api'
-import type { AuthSession } from '~/types/auth'
+import type { AuthSession, AuthUser } from '~/types/auth'
+import { extractAvatarUrl, extractCreatedAt, extractRoleCode, extractRoleName } from '~/utils/user'
+
+function normalizeAuthUser(user: AuthUser | undefined) {
+  if (!user) {
+    return undefined
+  }
+
+  const source = user as AuthUser & { avatar_url?: string | null }
+
+  return {
+    ...user,
+    avatar: user.avatar ?? extractAvatarUrl(source) ?? source.avatar_url ?? null,
+    role: user.role ?? extractRoleCode(source) ?? null,
+    role_name: user.role_name ?? extractRoleName(source) ?? null,
+    created_at: user.created_at ?? extractCreatedAt(source) ?? null,
+  }
+}
 
 export function useAuth() {
   const authToken = useAuthToken()
@@ -22,7 +39,7 @@ export function useAuth() {
     authToken.setSession({
       token: response.token,
       token_type: response.token_type,
-      user: response.user,
+      user: normalizeAuthUser(response.user),
     }, remember)
 
     return { success: true as const }
@@ -33,6 +50,8 @@ export function useAuth() {
   }
 
   async function logout() {
+    const { resetProfile } = useProfile()
+
     try {
       if (authToken.token.value) {
         await auth.logout()
@@ -41,6 +60,7 @@ export function useAuth() {
       // Даже если сервер недоступен, очищаем локальную сессию.
     } finally {
       authToken.clearSession()
+      resetProfile()
     }
   }
 

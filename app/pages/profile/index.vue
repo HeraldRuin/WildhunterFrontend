@@ -8,75 +8,25 @@ useHead({
   title: 'Мой профиль — WH',
 })
 
-interface WeaponLicense {
-  id: number | null
-  licenseNumber: string
-  licenseDate: string
-  weaponType: string
-  caliber: string
-  isNew?: boolean
-}
+const { profile, pending, error, loadProfile, addWeaponRow } = useProfile()
 
-const userId = 6363
 const notificationCount = 2
 
-const nickname = ref('Ник пользователя')
-const email = ref('tihonasar@gmail.com')
-const firstName = ref('Назар')
-const lastName = ref('Мухаметгалеев')
-const phone = ref('+7 (999) 999-99-98')
-const birthday = ref('03.03.2026')
-const bio = ref('')
-const hunterBilletNumber = ref('')
-
-const weapons = ref<WeaponLicense[]>([
-  {
-    id: 1,
-    licenseNumber: '123456',
-    licenseDate: '2026-03-01',
-    weaponType: '1',
-    caliber: '20',
-  },
-  {
-    id: null,
-    licenseNumber: '',
-    licenseDate: '',
-    weaponType: '',
-    caliber: '',
-    isNew: true,
-  },
-])
-
-const weaponTypes = [
-  { value: '1', label: 'Двухстволка' },
-  { value: '2', label: 'Карабин' },
-  { value: '3', label: 'Винтовка' },
-]
-
-const calibers = [
-  { value: '12', label: '12' },
-  { value: '16', label: '16' },
-  { value: '20', label: '20' },
-  { value: '308', label: '.308' },
-]
-
-function addWeapon() {
-  weapons.value.push({
-    id: null,
-    licenseNumber: '',
-    licenseDate: '',
-    weaponType: '',
-    caliber: '',
-    isNew: true,
-  })
-}
+onMounted(() => {
+  loadProfile()
+})
 
 function removeWeapon(index: number) {
-  weapons.value.splice(index, 1)
+  if (!profile.value) {
+    return
+  }
+
+  profile.value.weapons.splice(index, 1)
 }
 
 function saveWeapon(index: number) {
-  const weapon = weapons.value[index]
+  const weapon = profile.value?.weapons[index]
+
   if (!weapon) {
     return
   }
@@ -86,7 +36,7 @@ function saveWeapon(index: number) {
 }
 
 function handleSubmit() {
-  // TODO: подключить API
+  // TODO: подключить API сохранения профиля
 }
 </script>
 
@@ -110,19 +60,26 @@ function handleSubmit() {
 
     <h1 class="profile-page__title">Настройки</h1>
 
-    <form class="profile-form" @submit.prevent="handleSubmit">
+    <p v-if="pending" class="profile-page__status">Загрузка профиля...</p>
+    <p v-else-if="error" class="profile-page__status profile-page__status--error">{{ error }}</p>
+
+    <form
+      v-else-if="profile"
+      class="profile-form"
+      @submit.prevent="handleSubmit"
+    >
       <div class="profile-form__grid">
         <section class="profile-form__section">
           <h2 class="profile-form__section-title">
             Личная информация
-            <span class="profile-form__user-id">ID: {{ userId }}</span>
+            <span class="profile-form__user-id">ID: {{ profile.id }}</span>
           </h2>
 
           <div class="profile-form__field">
             <label class="profile-form__label" for="nickname">Ник</label>
             <input
               id="nickname"
-              v-model="nickname"
+              v-model="profile.user_name"
               type="text"
               class="profile-form__input"
               placeholder="Ник пользователя"
@@ -133,7 +90,7 @@ function handleSubmit() {
             <label class="profile-form__label" for="email">Email</label>
             <input
               id="email"
-              v-model="email"
+              v-model="profile.email"
               type="email"
               class="profile-form__input"
               placeholder="Email"
@@ -145,7 +102,7 @@ function handleSubmit() {
               <label class="profile-form__label" for="first-name">Имя</label>
               <input
                 id="first-name"
-                v-model="firstName"
+                v-model="profile.first_name"
                 type="text"
                 class="profile-form__input"
                 placeholder="Имя"
@@ -155,7 +112,7 @@ function handleSubmit() {
               <label class="profile-form__label" for="last-name">Фамилия</label>
               <input
                 id="last-name"
-                v-model="lastName"
+                v-model="profile.last_name"
                 type="text"
                 class="profile-form__input"
                 placeholder="Фамилия"
@@ -167,7 +124,7 @@ function handleSubmit() {
             <label class="profile-form__label" for="phone">Номер телефона</label>
             <input
               id="phone"
-              v-model="phone"
+              v-model="profile.phone"
               type="tel"
               class="profile-form__input"
               placeholder="+7 (999) 999-99-99"
@@ -178,7 +135,7 @@ function handleSubmit() {
             <label class="profile-form__label" for="birthday">Дата рождения</label>
             <input
               id="birthday"
-              v-model="birthday"
+              v-model="profile.birthday"
               type="text"
               class="profile-form__input"
               placeholder="ДД.ММ.ГГГГ"
@@ -189,7 +146,7 @@ function handleSubmit() {
             <label class="profile-form__label" for="bio">Обо мне</label>
             <textarea
               id="bio"
-              v-model="bio"
+              v-model="profile.bio"
               class="profile-form__textarea"
               rows="4"
               placeholder="Расскажите о себе"
@@ -204,7 +161,12 @@ function handleSubmit() {
                 <input type="file" accept="image/*" hidden>
               </label>
               <div class="profile-form__avatar-preview">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <img
+                  v-if="profile.avatar"
+                  :src="profile.avatar"
+                  alt="Аватар"
+                >
+                <svg v-else viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="12" cy="8" r="4" fill="currentColor" />
                   <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="currentColor" />
                 </svg>
@@ -218,7 +180,7 @@ function handleSubmit() {
             <label class="profile-form__label" for="hunter-billet">Номер охот. билета</label>
             <input
               id="hunter-billet"
-              v-model="hunterBilletNumber"
+              v-model="profile.hunter_billet_number"
               type="text"
               class="profile-form__input"
               placeholder="Добавить номер"
@@ -226,7 +188,7 @@ function handleSubmit() {
           </div>
 
           <article
-            v-for="(weapon, index) in weapons"
+            v-for="(weapon, index) in profile.weapons"
             :key="weapon.id ?? `new-${index}`"
             class="profile-weapon"
           >
@@ -254,7 +216,7 @@ function handleSubmit() {
               <div class="profile-form__field profile-form__field--inline">
                 <label class="profile-form__label">Номер</label>
                 <input
-                  v-model="weapon.licenseNumber"
+                  v-model="weapon.hunter_license_number"
                   type="text"
                   class="profile-form__input"
                   placeholder="Добавить лицензию"
@@ -264,7 +226,7 @@ function handleSubmit() {
               <div class="profile-form__field profile-form__field--inline">
                 <label class="profile-form__label">Дата</label>
                 <input
-                  v-model="weapon.licenseDate"
+                  v-model="weapon.hunter_license_date"
                   type="date"
                   class="profile-form__input"
                 >
@@ -273,10 +235,10 @@ function handleSubmit() {
 
             <div class="profile-form__field">
               <label class="profile-form__label">Тип оружия</label>
-              <select v-model="weapon.weaponType" class="profile-form__select">
+              <select v-model="weapon.weapon_type_id" class="profile-form__select">
                 <option value="" disabled hidden>Добавить оружие</option>
                 <option
-                  v-for="type in weaponTypes"
+                  v-for="type in profile.weapon_types"
                   :key="type.value"
                   :value="type.value"
                 >
@@ -290,7 +252,7 @@ function handleSubmit() {
               <select v-model="weapon.caliber" class="profile-form__select">
                 <option value="" disabled hidden>Добавить калибр</option>
                 <option
-                  v-for="caliber in calibers"
+                  v-for="caliber in profile.calibers"
                   :key="caliber.value"
                   :value="caliber.value"
                 >
@@ -303,7 +265,7 @@ function handleSubmit() {
           <button
             type="button"
             class="profile-form__add-weapon"
-            @click="addWeapon"
+            @click="addWeaponRow"
           >
             Добавить оружие
           </button>
@@ -346,12 +308,12 @@ function handleSubmit() {
 }
 
 .profile-page__breadcrumbs a {
-  color: var(--wh-green-800);
-  transition: color 0.15s ease;
+  color: var(--wh-green);
+  transition: opacity 0.15s ease;
 }
 
 .profile-page__breadcrumbs a:hover {
-  color: var(--wh-green-600);
+  opacity: 0.8;
 }
 
 .profile-page__notifications {
@@ -399,6 +361,15 @@ function handleSubmit() {
   text-transform: uppercase;
   letter-spacing: 0.02em;
   color: var(--wh-gray-900);
+}
+
+.profile-page__status {
+  margin: 0;
+  color: var(--wh-gray-600);
+}
+
+.profile-page__status--error {
+  color: #dc2626;
 }
 
 .profile-form__grid {
@@ -526,6 +497,13 @@ function handleSubmit() {
   border-radius: 10px;
   background: #656c77;
   overflow: hidden;
+}
+
+.profile-form__avatar-preview img,
+.profile-form__avatar-preview svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-form__avatar-preview svg {

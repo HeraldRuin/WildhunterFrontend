@@ -6,13 +6,6 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'WH — Охотничьи базы',
-      script: [
-        {
-          key: 'scroll-reset',
-          tagPosition: 'head',
-          children: `(function(){function r(){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0}if('scrollRestoration'in history){history.scrollRestoration='manual'}r();window.addEventListener('pageshow',r);document.addEventListener('DOMContentLoaded',r);window.addEventListener('load',r)})();`,
-        },
-      ],
       link: [
         {
           rel: 'icon',

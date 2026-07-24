@@ -4,6 +4,9 @@ export interface AuthUser {
   last_name: string
   email: string
   avatar: string | null
+  role?: string | null
+  role_name?: string | null
+  created_at?: string | null
 }
 
 export interface AuthSession {
