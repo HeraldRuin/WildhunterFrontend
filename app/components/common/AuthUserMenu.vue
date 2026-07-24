@@ -56,37 +56,25 @@ onUnmounted(() => {
     class="auth-user-menu"
     :class="{ 'auth-user-menu--open': isOpen }"
   >
-    <div
+    <button
+      type="button"
       class="auth-user-menu__mobile"
       :class="{ 'auth-user-menu__mobile--open': isOpen }"
+      :aria-expanded="isOpen"
+      aria-haspopup="menu"
+      aria-label="Открыть меню пользователя"
+      @click.stop="toggleMenu"
     >
-      <NuxtLink
-        to="/profile"
-        class="auth-user-menu__mobile-name"
-        @click="closeMenu"
+      <svg
+        class="auth-user-menu__mobile-arrow-icon"
+        width="12"
+        height="12"
+        viewBox="0 0 12 12"
+        aria-hidden="true"
       >
-        {{ displayName }}
-      </NuxtLink>
-
-      <button
-        type="button"
-        class="auth-user-menu__mobile-arrow"
-        :aria-expanded="isOpen"
-        aria-haspopup="menu"
-        aria-label="Открыть меню пользователя"
-        @click.stop="toggleMenu"
-      >
-        <svg
-          class="auth-user-menu__mobile-arrow-icon"
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          aria-hidden="true"
-        >
-          <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      </button>
-    </div>
+        <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </button>
 
     <div class="auth-user-menu__desktop">
       <div
@@ -360,45 +348,37 @@ onUnmounted(() => {
   .auth-user-menu__mobile {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    max-width: min(168px, 40vw);
-  }
-
-  .auth-user-menu__mobile-name {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--wh-black-text);
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: 18px;
-    font-weight: 500;
-    line-height: 1;
-    letter-spacing: -0.05em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-decoration: none;
-  }
-
-  .auth-user-menu__mobile-arrow {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
     justify-content: center;
-    width: 12px;
-    height: 12px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     border: none;
-    background: transparent;
-    color: var(--wh-black-text);
+    border-radius: 999px;
+    background: var(--wh-orange-500);
+    color: var(--wh-white);
     cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .auth-user-menu__mobile:hover,
+  .auth-user-menu__mobile--open {
+    background: var(--wh-orange-600);
   }
 
   .auth-user-menu__mobile-arrow-icon {
     display: block;
-    transition: transform 0.2s ease;
   }
 
   .auth-user-menu__mobile--open .auth-user-menu__mobile-arrow-icon {
     transform: rotate(180deg);
+  }
+
+  .auth-user-menu__mobile:hover .auth-user-menu__mobile-arrow-icon {
+    animation: auth-user-menu-arrow-bounce 0.45s ease-in-out 3;
+  }
+
+  .auth-user-menu__mobile--open:hover .auth-user-menu__mobile-arrow-icon {
+    animation: auth-user-menu-arrow-bounce-open 0.45s ease-in-out 3;
   }
 
   .auth-user-menu__desktop {
@@ -406,7 +386,7 @@ onUnmounted(() => {
   }
 
   .auth-user-menu__dropdown {
-    right: -12px;
+    right: 0;
     left: auto;
     width: max-content;
     min-width: 0;
