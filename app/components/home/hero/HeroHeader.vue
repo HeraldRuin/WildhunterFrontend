@@ -181,7 +181,7 @@ const { isAuthenticated } = useAuth()
 
 @media (max-width: 1024px) {
   .hero-header {
-    width: 100%;
+    width: calc(100vw - 24px);
     max-width: none;
     gap: 12px;
     height: 100px;
