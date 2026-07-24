@@ -70,6 +70,10 @@ const emit = defineEmits<{
     padding: 140px 16px 36px;
   }
 
+  .search-top__inner :deep(.hero-header) {
+    width: calc(100% - 24px);
+  }
+
   .search-top__tagline {
     width: auto;
     font-size: 38px;

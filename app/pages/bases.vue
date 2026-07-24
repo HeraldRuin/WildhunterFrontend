@@ -151,22 +151,21 @@ function handleFiltersReset() {
     <section class="bases-page__results">
       <div class="container bases-page__results-inner">
         <div class="bases-page__toolbar">
+          <button
+            type="button"
+            class="bases-page__toolbar-link bases-page__filters-btn"
+            @click="mobileFiltersOpen = true"
+          >
+            Фильтры
+          </button>
+
           <h1 class="bases-page__title">
             Найдено баз: {{ totalCount }}
           </h1>
 
-          <div class="bases-page__toolbar-actions">
-            <button
-              type="button"
-              class="bases-page__filters-btn"
-              @click="mobileFiltersOpen = true"
-            >
-              Фильтры
-            </button>
-            <NuxtLink to="/bases/map" class="bases-page__map-link">
-              Показать на карте
-            </NuxtLink>
-          </div>
+          <NuxtLink to="/bases/map" class="bases-page__toolbar-link bases-page__map-link">
+            Показать на карте
+          </NuxtLink>
         </div>
 
         <div class="bases-page__layout">
@@ -226,55 +225,30 @@ function handleFiltersReset() {
 }
 
 .bases-page__toolbar {
-  position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: flex-end;
   gap: 16px;
   min-height: 1.75em;
 }
 
 .bases-page__title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+  grid-column: 2;
   margin: 0;
-
   font-family: "UNCAGE", sans-serif;
   font-size: 32px;
   font-weight: 400;
   line-height: 130%;
   letter-spacing: -0.03em;
-
   text-align: center;
   color: var(--wh-gray-900);
-
-  transform: translate(-50%, -50%);
   white-space: nowrap;
 }
 
-.bases-page__toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.bases-page__filters-btn {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 18px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 999px;
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.bases-page__map-link {
+.bases-page__toolbar-link {
+  padding: 0;
+  border: none;
+  background: transparent;
   font-family: "Inter", sans-serif;
   font-size: 18px;
   font-weight: 500;
@@ -282,11 +256,21 @@ function handleFiltersReset() {
   letter-spacing: -0.05em;
   color: #d64545;
   text-decoration: underline;
+  cursor: pointer;
   transition: opacity 0.15s ease;
 }
 
-.bases-page__map-link:hover {
+.bases-page__toolbar-link:hover {
   opacity: 0.8;
+}
+
+.bases-page__filters-btn {
+  display: none;
+  justify-self: start;
+}
+
+.bases-page__map-link {
+  justify-self: end;
 }
 
 .bases-page__layout {
@@ -323,7 +307,7 @@ function handleFiltersReset() {
   }
 
   .bases-page__filters-btn {
-    display: inline-flex;
+    display: inline;
   }
 
   .bases-page__grid {
@@ -341,20 +325,15 @@ function handleFiltersReset() {
   }
 
   .bases-page__toolbar {
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    min-height: 0;
+    gap: 12px;
   }
 
   .bases-page__title {
-    position: static;
-    transform: none;
+    font-size: 22px;
   }
 
-  .bases-page__toolbar-actions {
-    width: 100%;
-    justify-content: space-between;
+  .bases-page__toolbar-link {
+    font-size: 16px;
   }
 }
 </style>
