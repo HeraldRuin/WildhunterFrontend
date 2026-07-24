@@ -1,4 +1,10 @@
-import type { ApiSuccessResponse, ReviewItem, ReviewsQuery, ServiceReview } from '~/types/api'
+import type {
+  ApiSuccessResponse,
+  ReviewItem,
+  ReviewRatingOption,
+  ReviewsQuery,
+  ServiceReview,
+} from '~/types/api'
 import { useApiClient } from './client'
 
 export function mapServiceReviewToItem(review: ServiceReview): ReviewItem {
@@ -37,8 +43,32 @@ export function useReviewsApi() {
     return response.data.map(mapServiceReviewToItem)
   }
 
+  function getRatings() {
+    return apiFetch<ApiSuccessResponse<ReviewRatingOption[]>>('/reviews/ratings', {
+      method: 'GET',
+      skipAuth: true,
+    })
+  }
+
+  async function getRatingItems() {
+    try {
+      const response = await getRatings()
+
+      if (!response.success) {
+        return []
+      }
+
+      return response.data
+    }
+    catch {
+      return []
+    }
+  }
+
   return {
     getReviews,
     getReviewItems,
+    getRatings,
+    getRatingItems,
   }
 }

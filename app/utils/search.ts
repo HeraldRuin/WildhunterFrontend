@@ -18,13 +18,6 @@ export const SEARCH_AMENITIES = [
   { id: 'pool', label: 'Бассейн' },
 ]
 
-export const SEARCH_RATING_OPTIONS = [
-  { value: 9, label: 'Превосходно' },
-  { value: 8, label: 'Очень хорошо' },
-  { value: 7, label: 'Хорошо' },
-  { value: 6, label: 'Нормально' },
-]
-
 export const MOCK_SEARCH_ITEMS: BookableItem[] = [
   {
     id: 1,

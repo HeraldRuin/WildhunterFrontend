@@ -162,6 +162,11 @@ export interface ReviewsQuery {
   limit?: number
 }
 
+export interface ReviewRatingOption {
+  value: string
+  label: string
+}
+
 export interface HomeBlock {
   type: string
   name?: string
@@ -179,7 +184,7 @@ export interface HotelSearchBody {
   check_out?: string
   adults?: number
   price_range?: string
-  review_score?: number[]
+  review_score?: string[]
 }
 
 export interface SearchResultData {
@@ -198,7 +203,7 @@ export interface SearchFiltersState {
   sort: SearchSortOption
   priceMin: number
   priceMax: number
-  ratings: number[]
+  ratings: string[]
   amenities: string[]
   hasMeals: '' | 'yes' | 'no'
 }

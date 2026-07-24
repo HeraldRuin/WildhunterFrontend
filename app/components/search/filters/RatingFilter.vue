@@ -1,9 +1,20 @@
 <script setup lang="ts">
-import { SEARCH_RATING_OPTIONS } from '~/utils/search'
+import type { ReviewRatingOption } from '~/types/api'
 
-const model = defineModel<number[]>({ required: true })
+const model = defineModel<string[]>({ required: true })
 
-function toggle(value: number) {
+const { reviews: reviewsApi } = useApi()
+
+const { data: options, pending } = useAsyncData<ReviewRatingOption[]>(
+  'search-review-ratings',
+  () => reviewsApi.getRatingItems(),
+  {
+    lazy: true,
+    default: () => [],
+  },
+)
+
+function toggle(value: string) {
   model.value = model.value.includes(value)
     ? model.value.filter(item => item !== value)
     : [...model.value, value]
@@ -13,9 +24,14 @@ function toggle(value: number) {
 <template>
   <div class="search-filters-rating">
     <p class="search-filters-rating__title">Рейтинг</p>
-    <ul class="search-filters-rating__list">
+
+    <p v-if="pending" class="search-filters-rating__state">
+      Загрузка...
+    </p>
+
+    <ul v-else class="search-filters-rating__list">
       <li
-        v-for="option in SEARCH_RATING_OPTIONS"
+        v-for="option in options"
         :key="option.value"
       >
         <label class="search-filters-rating__option">
@@ -44,6 +60,12 @@ function toggle(value: number) {
   font-size: 0.9375rem;
   font-weight: 700;
   color: var(--wh-gray-900);
+}
+
+.search-filters-rating__state {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--wh-gray-500);
 }
 
 .search-filters-rating__list {
