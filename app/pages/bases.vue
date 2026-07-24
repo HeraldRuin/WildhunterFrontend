@@ -188,7 +188,7 @@ function handleFiltersReset() {
       </div>
     </section>
 
-    <HomeBlocksCommunityBlock />
+    <HomeBlocksCommunityBlock variant="centered" />
     <LayoutAppFooter />
   </div>
 </template>

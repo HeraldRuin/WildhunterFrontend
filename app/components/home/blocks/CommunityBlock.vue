@@ -1,4 +1,10 @@
 <script setup lang="ts">
+withDefaults(defineProps<{
+  variant?: 'side' | 'centered'
+}>(), {
+  variant: 'side',
+})
+
 const { newsletter } = useApi()
 const notifications = useNotifications()
 
@@ -80,10 +86,13 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <section class="community-block">
+  <section
+    class="community-block"
+    :class="{ 'community-block--centered': variant === 'centered' }"
+  >
     <div class="community-block__media" aria-hidden="true">
       <img
-        src="/images/community-bg.png"
+        :src="variant === 'centered' ? '/images/communutu2-bg.jpg' : '/images/community-bg.png'"
         alt=""
         loading="lazy"
       >
@@ -92,9 +101,15 @@ async function handleSubmit() {
     <div class="community-block__inner">
       <div class="community-block__content">
         <h2 class="community-block__title">
-          <span class="community-block__title-line">Присоединяйтесь</span>
-          <span class="community-block__title-line">к нашему</span>
-          <span class="community-block__title-line">сообществу</span>
+          <template v-if="variant === 'centered'">
+            Присоединяйтесь<br>
+            к нашему сообществу
+          </template>
+          <template v-else>
+            <span class="community-block__title-line">Присоединяйтесь</span>
+            <span class="community-block__title-line">к нашему</span>
+            <span class="community-block__title-line">сообществу</span>
+          </template>
         </h2>
 
         <form class="community-block__form" @submit.prevent="handleSubmit">
@@ -150,7 +165,7 @@ async function handleSubmit() {
             Подписаться на рассылку
           </button>
 
-          <div class="community-block__social">
+          <div v-if="variant !== 'centered'" class="community-block__social">
             <a href="#" class="community-block__social-btn">Telegram</a>
             <a href="#" class="community-block__social-btn">Max</a>
           </div>
@@ -360,6 +375,56 @@ async function handleSubmit() {
   transform: translateY(-1px);
 }
 
+.community-block--centered .community-block__media img {
+  object-position: center 82%;
+}
+
+.community-block--centered .community-block__media::after {
+  background: rgba(17, 24, 39, 0.42);
+}
+
+.community-block--centered .community-block__inner {
+  justify-content: center;
+  align-items: center;
+  min-height: 390px;
+  padding: 64px 24px;
+}
+
+.community-block--centered .community-block__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 720px);
+  text-align: center;
+}
+
+.community-block--centered .community-block__title {
+  width: 100%;
+  min-height: auto;
+  margin-bottom: 32px;
+
+  font-family: "UNCAGE", sans-serif;
+  font-size: 44px;
+  font-weight: 400;
+  line-height: 110%;
+  letter-spacing: -0.05em;
+
+  text-align: center;
+}
+
+.community-block--centered .community-block__form {
+  align-items: stretch;
+  width: min(100%, 372px);
+}
+
+.community-block--centered .community-block__field input {
+  width: 100%;
+}
+
+.community-block--centered .community-block__submit {
+  width: 100%;
+}
+
 @media (max-width: 1024px) {
   .community-block__inner {
     min-height: 400px;
@@ -408,8 +473,17 @@ async function handleSubmit() {
     min-height: 560px;
   }
 
+  .community-block--centered .community-block__inner {
+    min-height: 480px;
+    padding: 48px 24px;
+  }
+
   .community-block__media img {
     object-position: 42% 16%;
+  }
+
+  .community-block--centered .community-block__media img {
+    object-position: center 72%;
   }
 
   .community-block__inner {
