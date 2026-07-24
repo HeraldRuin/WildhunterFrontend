@@ -178,7 +178,7 @@ function handleFiltersReset() {
               />
             </div>
 
-            <SearchPagination
+            <CommonPagination
               :current-page="currentPage"
               :total-pages="totalPages"
               @change="handlePageChange"
