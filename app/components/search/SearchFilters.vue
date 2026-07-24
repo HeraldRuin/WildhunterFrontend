@@ -70,20 +70,17 @@ function closeMobile() {
   <aside
     class="search-filters"
     :class="{ 'search-filters--mobile-open': mobileOpen }"
+    @click.self="closeMobile"
   >
     <div class="search-filters__panel">
+      <CommonModalCloseButton
+        class="search-filters__modal-close"
+        aria-label="Закрыть фильтры"
+        @click="closeMobile"
+      />
+
       <div class="search-filters__header">
         <h2 class="search-filters__title">Фильтры</h2>
-        <button
-          type="button"
-          class="search-filters__close"
-          aria-label="Закрыть фильтры"
-          @click="closeMobile"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
-        </button>
       </div>
 
       <SearchFiltersFilterSection
@@ -197,6 +194,7 @@ function closeMobile() {
 }
 
 .search-filters__panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -224,17 +222,8 @@ function closeMobile() {
   color: var(--wh-gray-900);
 }
 
-.search-filters__close {
+:deep(.search-filters__modal-close) {
   display: none;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 999px;
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  cursor: pointer;
 }
 
 .search-filters__group {
@@ -362,7 +351,9 @@ function closeMobile() {
     inset: 0;
     z-index: 200;
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
     background: rgba(17, 24, 39, 0.45);
     opacity: 0;
     pointer-events: none;
@@ -375,21 +366,15 @@ function closeMobile() {
   }
 
   .search-filters__panel {
-    width: min(100%, 380px);
-    height: 100%;
+    width: 488px;
+    max-width: 100%;
+    max-height: min(90vh, 820px);
     overflow-y: auto;
-    border: none;
-    border-radius: 0;
-    transform: translateX(100%);
-    transition: transform 0.25s ease;
+    box-shadow: var(--wh-shadow);
   }
 
-  .search-filters--mobile-open .search-filters__panel {
-    transform: translateX(0);
-  }
-
-  .search-filters__close {
-    display: grid;
+  :deep(.search-filters__modal-close) {
+    display: flex;
   }
 }
 </style>
