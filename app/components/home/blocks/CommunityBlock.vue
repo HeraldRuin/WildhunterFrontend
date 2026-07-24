@@ -443,6 +443,10 @@ async function handleSubmit() {
     font-size: 32px;
   }
 
+  .community-block--centered .community-block__title {
+    font-size: 32px;
+  }
+
   .community-block__form {
     width: min(100%, 360px);
   }
@@ -467,6 +471,15 @@ async function handleSubmit() {
 
   .community-block__title-line:nth-child(2)::after {
     content: none;
+  }
+
+  .community-block--centered .community-block__title-line:nth-child(2),
+  .community-block--centered .community-block__title-line:nth-child(3) {
+    display: inline;
+  }
+
+  .community-block--centered .community-block__title-line:nth-child(2)::after {
+    content: ' ';
   }
 }
 
@@ -503,6 +516,10 @@ async function handleSubmit() {
     width: 100%;
     font-size: 24px;
     line-height: 1.15;
+  }
+
+  .community-block--centered .community-block__title {
+    font-size: 24px;
   }
 
   .community-block__title-line:nth-child(2),
