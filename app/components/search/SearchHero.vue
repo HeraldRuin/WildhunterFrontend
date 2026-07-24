@@ -20,7 +20,9 @@ const emit = defineEmits<{
 
 <style scoped>
 .search-top {
-  background: #586a41;
+  position: relative;
+  height: 375px;
+  background: var(--wh-green);
 }
 
 .search-top__inner {
@@ -30,18 +32,26 @@ const emit = defineEmits<{
   gap: 24px;
   width: min(100%, 1440px);
   margin-inline: auto;
-  padding: 0 24px 48px;
+  padding: 172px 24px 48px;
+}
+
+.search-top__inner :deep(.hero-header) {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
 }
 
 .search-top__tagline {
   margin: 0;
-  max-width: 860px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: 0.16em;
+  width: 859px;
+  font-family: "UNCAGE", sans-serif;
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 130%;
+  letter-spacing: -0.03em;
   text-align: center;
-  text-transform: uppercase;
   color: rgba(255, 255, 255, 0.92);
 }
 
