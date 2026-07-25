@@ -1,5 +1,6 @@
 import type {
   ApiSuccessResponse,
+  HotelDetailApiResponse,
   HotelOffer,
   HotelPriceRange,
   HotelPriceRangeBounds,
@@ -19,7 +20,9 @@ export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
     id: offer.id,
     object_model: 'hotel',
     title: offer.title,
+    slug: offer.slug,
     location: offer.location?.name ?? '',
+    locationSlug: offer.location?.slug,
     price,
     image: offer.image_url,
     reviews: Number(offer.review_count) || 0,
@@ -45,6 +48,20 @@ export function useHotelsApi() {
     }
 
     return response.data.map(mapHotelOfferToItem)
+  }
+
+  function getHotelDetail(
+    locationSlug: string,
+    hotelSlug: string,
+    options: Parameters<typeof apiFetch>[1] = {},
+  ) {
+    return apiFetch<HotelDetailApiResponse>(
+      `/hotels/${encodeURIComponent(locationSlug)}/${encodeURIComponent(hotelSlug)}`,
+      {
+        method: 'GET',
+        ...options,
+      },
+    )
   }
 
   function getPriceRange() {
@@ -78,6 +95,7 @@ export function useHotelsApi() {
   return {
     getHotelOffers,
     getHotelOfferItems,
+    getHotelDetail,
     getPriceRange,
     getPriceRangeBounds,
   }

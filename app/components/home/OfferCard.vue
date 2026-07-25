@@ -2,12 +2,35 @@
 import type { OfferItem } from '~/types/api'
 import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
+import { getHotelPath } from '~/utils/hotel'
 import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
 import { formatReviewsCount } from '~/utils/pluralize'
 
 const props = defineProps<{
   item: OfferItem
 }>()
+
+const hotelLink = computed(() => {
+  if (
+    props.item.object_model === 'hotel'
+    && props.item.slug
+    && props.item.locationSlug
+  ) {
+    return getHotelPath(props.item.locationSlug, props.item.slug)
+  }
+
+  return `/${props.item.object_model}/${props.item.id}`
+})
+
+function prefetchTargetPage() {
+  if (
+    props.item.object_model === 'hotel'
+    && props.item.slug
+    && props.item.locationSlug
+  ) {
+    prefetchHotelDetail(props.item.locationSlug, props.item.slug)
+  }
+}
 
 const { services } = useApi()
 const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
@@ -112,7 +135,12 @@ async function handleFavoriteClick(event: MouseEvent) {
 </script>
 
 <template>
-  <NuxtLink :to="`/${item.object_model}/${item.id}`" class="offer-card">
+  <NuxtLink
+    :to="hotelLink"
+    class="offer-card"
+    @mouseenter="prefetchTargetPage"
+    @focus="prefetchTargetPage"
+  >
     <div class="offer-card__media">
       <img v-if="showImage" :src="item.image" :alt="item.title" loading="lazy" decoding="async">
       <div v-else-if="showCustomPlaceholder" class="offer-card__placeholder" aria-hidden="true">

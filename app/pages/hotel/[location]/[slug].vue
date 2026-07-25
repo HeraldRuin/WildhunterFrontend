@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import type { HotelDetailApiResponse, ReviewItem } from '~/types/api'
+import type { ReviewItem } from '~/types/api'
 import {
   MOCK_HOTEL_REVIEWS,
-  createMockHotelDetail,
   formatHotelPrice,
-  normalizeHotelDetail,
   toRelatedOffers,
 } from '~/utils/hotel'
 import { formatReviewsCount } from '~/utils/pluralize'
@@ -14,36 +12,16 @@ definePageMeta({
 })
 
 const route = useRoute()
-const hotelId = computed(() => Number(route.params.id))
-const { search: searchApi, reviews: reviewsApi } = useApi()
+const hotelParams = computed(() => ({
+  locationSlug: String(route.params.location || ''),
+  hotelSlug: String(route.params.slug || ''),
+}))
+const { reviews: reviewsApi } = useApi()
 
-const { data: hotel, pending } = await useAsyncData(
-  () => `hotel-detail-${hotelId.value}`,
-  async () => {
-    try {
-      const response = await searchApi.getDetail('hotel', hotelId.value) as HotelDetailApiResponse
+const { data: hotel, pending } = useHotelDetail(hotelParams)
 
-      if (response.status === 1 && response.data) {
-        const normalized = normalizeHotelDetail(response.data, hotelId.value)
-
-        if (normalized) {
-          return normalized
-        }
-      }
-    }
-    catch {
-      // API недоступен — используем мок-данные
-    }
-
-    return createMockHotelDetail(hotelId.value)
-  },
-  {
-    watch: [hotelId],
-  },
-)
-
-const { data: reviewItems } = await useAsyncData(
-  () => `hotel-reviews-${hotelId.value}`,
+const { data: reviewItems } = useAsyncData(
+  () => `hotel-reviews-${hotelParams.value.locationSlug}-${hotelParams.value.hotelSlug}`,
   async () => {
     try {
       const items = await reviewsApi.getReviewItems({
@@ -61,7 +39,8 @@ const { data: reviewItems } = await useAsyncData(
     return MOCK_HOTEL_REVIEWS
   },
   {
-    watch: [hotelId],
+    watch: [hotelParams],
+    lazy: true,
     default: () => MOCK_HOTEL_REVIEWS,
   },
 )

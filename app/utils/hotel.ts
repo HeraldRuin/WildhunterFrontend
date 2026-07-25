@@ -1,6 +1,15 @@
 import type { BookableItem, HotelDetail, HotelTermGroup, ReviewItem } from '~/types/api'
 import { MOCK_SEARCH_ITEMS, toOfferItem } from '~/utils/search'
 
+export interface HotelSlugParams {
+  locationSlug: string
+  hotelSlug: string
+}
+
+export function getHotelPath(locationSlug: string, hotelSlug: string) {
+  return `/hotel/${locationSlug}/${hotelSlug}`
+}
+
 const DEFAULT_GALLERY = [
   'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200',
   'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
@@ -101,14 +110,23 @@ function buildGallery(data: Record<string, unknown>, fallbackImage: string) {
   return [fallbackImage, ...DEFAULT_GALLERY.slice(1)]
 }
 
-export function createMockHotelDetail(id: number): HotelDetail {
-  const base = MOCK_SEARCH_ITEMS.find(item => item.id === id) ?? MOCK_SEARCH_ITEMS[0]
+function findMockHotel(params: HotelSlugParams) {
+  return MOCK_SEARCH_ITEMS.find(item =>
+    item.slug === params.hotelSlug
+    && item.location?.slug === params.locationSlug,
+  ) ?? MOCK_SEARCH_ITEMS.find(item => item.slug === params.hotelSlug)
+    ?? MOCK_SEARCH_ITEMS[0]
+}
+
+export function createMockHotelDetail(params: HotelSlugParams): HotelDetail {
+  const base = findMockHotel(params)
   const related = MOCK_SEARCH_ITEMS.filter(item => item.id !== base.id).slice(0, 4)
 
   return {
     id: base.id,
     object_model: base.object_model,
     title: base.title,
+    slug: base.slug ?? params.hotelSlug,
     price: base.price,
     sale_price: base.sale_price,
     image: base.image,
@@ -117,7 +135,11 @@ export function createMockHotelDetail(id: number): HotelDetail {
       <p>На территории есть домики для проживания, баня, места для разборки добычи и охраняемая парковка. База подходит как для индивидуальных выездов, так и для небольших групп.</p>
     `,
     address: `${base.location?.name ?? 'Ярославская область'}, лесной массив, 12 км от трассы`,
-    location: base.location,
+    location: {
+      id: base.location?.id ?? 0,
+      name: base.location?.name ?? '',
+      slug: base.location?.slug ?? params.locationSlug,
+    },
     gallery: buildGallery({}, base.image),
     map_lat: 57.6261,
     map_lng: 39.8845,
@@ -138,7 +160,7 @@ export function createMockHotelDetail(id: number): HotelDetail {
   }
 }
 
-export function normalizeHotelDetail(raw: unknown, id: number): HotelDetail | null {
+export function normalizeHotelDetail(raw: unknown, params: HotelSlugParams): HotelDetail | null {
   if (!raw || typeof raw !== 'object') {
     return null
   }
@@ -150,23 +172,36 @@ export function normalizeHotelDetail(raw: unknown, id: number): HotelDetail | nu
     return null
   }
 
-  const image = String(data.image ?? data.banner_image ?? '')
+  const image = String(data.image ?? data.banner_image ?? data.image_url ?? '')
   const related = Array.isArray(data.related)
     ? data.related as BookableItem[]
-    : MOCK_SEARCH_ITEMS.filter(item => item.id !== id).slice(0, 4)
+    : MOCK_SEARCH_ITEMS.filter(item => item.slug !== params.hotelSlug).slice(0, 4)
 
   const reviewScore = data.review_score as Record<string, unknown> | undefined
+  const location = data.location as HotelDetail['location'] | undefined
+  const slug = String(data.slug ?? params.hotelSlug)
 
   return {
-    id: Number(data.id ?? id),
+    id: Number(data.id ?? 0),
     object_model: String(data.object_model ?? 'hotel'),
     title,
+    slug,
     price: Number(data.price ?? 0),
     sale_price: data.sale_price ? Number(data.sale_price) : undefined,
     image,
     content: data.content ? String(data.content) : undefined,
     address: data.address ? String(data.address) : undefined,
-    location: data.location as HotelDetail['location'],
+    location: location
+      ? {
+          id: Number(location.id ?? 0),
+          name: String(location.name ?? ''),
+          slug: location.slug ? String(location.slug) : params.locationSlug,
+        }
+      : {
+          id: 0,
+          name: '',
+          slug: params.locationSlug,
+        },
     gallery: buildGallery(data, image),
     map_lat: data.map_lat ? Number(data.map_lat) : undefined,
     map_lng: data.map_lng ? Number(data.map_lng) : undefined,
@@ -178,7 +213,7 @@ export function normalizeHotelDetail(raw: unknown, id: number): HotelDetail | nu
         }
       : undefined,
     terms: parseTerms(data.terms),
-    animals: createMockHotelDetail(id).animals,
+    animals: createMockHotelDetail(params).animals,
     related,
     check_in_time: data.check_in_time ? String(data.check_in_time) : '14:00',
     check_out_time: data.check_out_time ? String(data.check_out_time) : '12:00',

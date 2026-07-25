@@ -43,7 +43,9 @@ export interface OfferItem {
   id: number
   object_model: string
   title: string
+  slug?: string
   location: string
+  locationSlug?: string
   price: number
   image: string
   reviews: number
@@ -54,6 +56,7 @@ export interface BookableItem {
   id: number
   object_model: string
   title: string
+  slug?: string
   price: number
   sale_price?: number
   discount_percent?: number
@@ -62,6 +65,7 @@ export interface BookableItem {
   location?: {
     id: number
     name: string
+    slug?: string
   }
   is_featured?: boolean
   is_wishlist?: boolean
@@ -247,6 +251,7 @@ export interface HotelDetail {
   id: number
   object_model: string
   title: string
+  slug: string
   price: number
   sale_price?: number
   image: string
@@ -255,6 +260,7 @@ export interface HotelDetail {
   location?: {
     id: number
     name: string
+    slug?: string
   }
   gallery: string[]
   map_lat?: number
@@ -267,6 +273,4 @@ export interface HotelDetail {
   check_out_time?: string
 }
 
-export interface HotelDetailApiResponse extends ApiResponse<unknown> {
-  data: HotelDetail
-}
+export type HotelDetailApiResponse = ApiSuccessResponse<HotelDetail>
