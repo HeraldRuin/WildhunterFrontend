@@ -5,13 +5,29 @@ definePageMeta({
 
 const { reviews, location, hotels } = useApi()
 
-const [
-  { data: locationItems },
-  { data: offerItems },
-] = await Promise.all([
-  useAsyncData('home-location-offers', () => location.getLocationOfferItems()),
-  useAsyncData('home-hotel-offers', () => hotels.getHotelOfferItems()),
-])
+function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {
+  return nuxtApp.payload.data[key] as T | undefined
+    ?? nuxtApp.static.data[key] as T | undefined
+}
+
+// Без await: назад с /locations не ждёт повторный API (~4с).
+const { data: locationItems } = useAsyncData(
+  'home-location-offers',
+  () => location.getLocationOfferItems(),
+  {
+    default: () => [],
+    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
+  },
+)
+
+const { data: offerItems } = useAsyncData(
+  'home-hotel-offers',
+  () => hotels.getHotelOfferItems(),
+  {
+    default: () => [],
+    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
+  },
+)
 
 const { data: reviewItems } = useAsyncData(
   'home-reviews',
@@ -24,6 +40,7 @@ const { data: reviewItems } = useAsyncData(
   {
     lazy: true,
     default: () => [],
+    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
   },
 )
 

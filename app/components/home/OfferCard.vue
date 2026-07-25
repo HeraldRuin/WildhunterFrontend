@@ -114,7 +114,7 @@ async function handleFavoriteClick(event: MouseEvent) {
 <template>
   <NuxtLink :to="`/${item.object_model}/${item.id}`" class="offer-card">
     <div class="offer-card__media">
-      <img v-if="showImage" :src="item.image" :alt="item.title" loading="lazy">
+      <img v-if="showImage" :src="item.image" :alt="item.title" loading="lazy" decoding="async">
       <div v-else-if="showCustomPlaceholder" class="offer-card__placeholder" aria-hidden="true">
         <span>Фото отсутствует</span>
       </div>
@@ -169,6 +169,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   width: 100%;
   aspect-ratio: 288 / 300;
   border-radius: var(--wh-radius);
+  background: var(--wh-gray-100);
 }
 
 .offer-card__media img,

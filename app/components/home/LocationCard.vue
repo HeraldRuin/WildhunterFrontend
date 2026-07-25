@@ -9,7 +9,7 @@ defineProps<{
 
 <template>
   <NuxtLink :to="`/locations/${item.id}`" class="location-card">
-    <img :src="item.image" :alt="item.title" loading="lazy">
+    <img :src="item.image" :alt="item.title" loading="lazy" decoding="async">
     <div class="location-card__overlay">
       <h3 class="location-card__title">{{ item.title }}</h3>
       <p class="location-card__count">{{ formatBasesCount(item.bases_count) }}</p>
@@ -25,6 +25,7 @@ defineProps<{
   aspect-ratio: 4 / 3;
   border-radius: var(--wh-radius);
   color: var(--wh-white);
+  background: var(--wh-gray-100);
 }
 
 .location-card img {

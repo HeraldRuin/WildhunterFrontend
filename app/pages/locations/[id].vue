@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { OfferItem, SearchFiltersState } from '~/types/api'
+import type { LocationItem, OfferItem, SearchFiltersState } from '~/types/api'
 import {
   DEFAULT_SEARCH_FILTERS,
   MOCK_SEARCH_ITEMS,
@@ -14,10 +14,27 @@ const route = useRoute()
 const { location: locationApi, hotels: hotelsApi } = useApi()
 
 const locationId = computed(() => Number(route.params.id))
+const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
 
-const { data: locationName } = await useAsyncData(
+const { data: homeLocations } = useNuxtData<LocationItem[]>('home-location-offers')
+
+const cachedLocationName = computed(() => {
+  const fromHome = homeLocations.value?.find(item => item.id === locationId.value)?.title
+  if (fromHome) {
+    return fromHome
+  }
+
+  return ''
+})
+
+// Не блокируем переход: имя берём из кэша главной, API — только fallback.
+const { data: fetchedLocationName } = useAsyncData(
   () => `location-name-${route.params.id}`,
   async () => {
+    if (cachedLocationName.value) {
+      return cachedLocationName.value
+    }
+
     try {
       const locations = await locationApi.getLocationItems()
       const match = locations.find(item => item.id === locationId.value)
@@ -29,15 +46,22 @@ const { data: locationName } = await useAsyncData(
     }
   },
   {
+    lazy: true,
+    server: false,
     default: () => '',
   },
 )
 
-const { data: priceBounds } = await useAsyncData(
+const locationName = computed(
+  () => cachedLocationName.value || fetchedLocationName.value || '',
+)
+
+const { data: priceBounds } = useAsyncData(
   'hotel-price-range',
   () => hotelsApi.getPriceRangeBounds(),
   {
-    default: () => ({ min: 0, max: 15000 }),
+    lazy: true,
+    default: () => ({ ...DEFAULT_PRICE_BOUNDS }),
   },
 )
 
@@ -49,9 +73,30 @@ useHead(() => ({
 
 const filters = ref<SearchFiltersState>({
   ...DEFAULT_SEARCH_FILTERS,
-  priceMin: priceBounds.value.min,
-  priceMax: priceBounds.value.max,
+  priceMin: DEFAULT_PRICE_BOUNDS.min,
+  priceMax: DEFAULT_PRICE_BOUNDS.max,
 })
+
+watch(
+  priceBounds,
+  (bounds) => {
+    if (!bounds) {
+      return
+    }
+
+    const isDefaultRange = (
+      filters.value.priceMin === DEFAULT_PRICE_BOUNDS.min
+      && filters.value.priceMax === DEFAULT_PRICE_BOUNDS.max
+    )
+
+    if (isDefaultRange) {
+      filters.value.priceMin = bounds.min
+      filters.value.priceMax = bounds.max
+    }
+  },
+  { immediate: true },
+)
+
 const mobileFiltersOpen = ref(false)
 const currentPage = ref(Number(route.query.page) || 1)
 const perPage = 6

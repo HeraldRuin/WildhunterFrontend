@@ -1,4 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'http://109.172.31.240/api'
+const uploadsOrigin = new URL(apiBase).origin
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -28,6 +31,10 @@ export default defineNuxtConfig({
           rel: 'apple-touch-icon',
           sizes: '180x180',
           href: '/apple-touch-icon.png',
+        },
+        {
+          rel: 'preconnect',
+          href: uploadsOrigin,
         },
         {
           rel: 'preconnect',
