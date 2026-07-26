@@ -12,12 +12,18 @@ const { location: locationApi, hotels: hotelsApi } = useApi()
 const locationId = computed(() => Number(route.params.id))
 const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
 
+function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {
+  return nuxtApp.payload.data[key] as T | undefined
+    ?? nuxtApp.static.data[key] as T | undefined
+}
+
 const { data: homeLocations } = useNuxtData<LocationItem[]>('home-location-offers')
 
 const cachedLocationName = computed(() => {
   return homeLocations.value?.find(item => item.id === locationId.value)?.title ?? ''
 })
 
+// getCachedData: назад с отеля не дергает API снова и не показывает спиннер.
 const { data: locationHotels, pending: hotelsPending } = useAsyncData(
   () => `location-hotels-${route.params.id}`,
   async () => {
@@ -36,6 +42,7 @@ const { data: locationHotels, pending: hotelsPending } = useAsyncData(
     lazy: true,
     default: () => [] as OfferItem[],
     watch: [locationId],
+    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
   },
 )
 
@@ -66,6 +73,7 @@ const { data: fetchedLocationName } = useAsyncData(
     lazy: true,
     server: false,
     default: () => '',
+    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
   },
 )
 
@@ -88,6 +96,7 @@ const { data: priceBounds } = useAsyncData(
   {
     lazy: true,
     default: () => ({ ...DEFAULT_PRICE_BOUNDS }),
+    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
   },
 )
 
@@ -241,7 +250,7 @@ function handleFiltersReset() {
 
           <div class="location-page__main">
             <div
-              v-if="hotelsPending"
+              v-if="hotelsPending && !locationHotels.length"
               class="location-page__state location-page__state--loading"
             >
               <CommonSpinner
