@@ -119,6 +119,21 @@ function handleThumbHover(thumbIndex: number) {
 }
 
 const lightboxOpen = ref(false)
+const lightboxZoom = ref(1)
+const lightboxPanX = ref(0)
+const lightboxPanY = ref(0)
+const lightboxDragging = ref(false)
+
+const ZOOM_MIN = 1
+const ZOOM_MAX = 4
+const ZOOM_STEP = 0.18
+
+let dragStartX = 0
+let dragStartY = 0
+let dragOriginX = 0
+let dragOriginY = 0
+
+const canNavigateLightbox = computed(() => props.images.length > 1)
 
 const lightboxImage = computed(() => {
   const item = activeImage.value
@@ -129,20 +144,34 @@ const lightboxImage = computed(() => {
   return item.large || item.medium || item.thumb || ''
 })
 
+const lightboxImageStyle = computed(() => ({
+  transform: `translate(${lightboxPanX.value}px, ${lightboxPanY.value}px) scale(${lightboxZoom.value})`,
+  cursor: lightboxZoom.value > 1
+    ? (lightboxDragging.value ? 'grabbing' : 'grab')
+    : 'zoom-in',
+}))
+
+function resetLightboxZoom() {
+  lightboxZoom.value = 1
+  lightboxPanX.value = 0
+  lightboxPanY.value = 0
+  lightboxDragging.value = false
+}
+
 function openLightbox() {
   const item = activeImage.value
   if (item?.large) {
     prefetchLarge(item.large)
   }
 
+  resetLightboxZoom()
   lightboxOpen.value = true
 }
 
 function closeLightbox() {
   lightboxOpen.value = false
+  resetLightboxZoom()
 }
-
-const canNavigateLightbox = computed(() => props.images.length > 1)
 
 function showLightboxImage(index: number) {
   if (!props.images.length) {
@@ -152,6 +181,7 @@ function showLightboxImage(index: number) {
   const total = props.images.length
   const nextIndex = ((index % total) + total) % total
   selectImage(nextIndex)
+  resetLightboxZoom()
 
   const prev = props.images[(nextIndex - 1 + total) % total]
   const next = props.images[(nextIndex + 1) % total]
@@ -161,6 +191,69 @@ function showLightboxImage(index: number) {
   if (next?.large) {
     prefetchLarge(next.large)
   }
+}
+
+function handleLightboxWheel(event: WheelEvent) {
+  event.preventDefault()
+
+  const direction = event.deltaY > 0 ? -1 : 1
+  const next = Math.min(
+    ZOOM_MAX,
+    Math.max(ZOOM_MIN, lightboxZoom.value + direction * ZOOM_STEP),
+  )
+
+  lightboxZoom.value = Math.round(next * 100) / 100
+
+  if (lightboxZoom.value === ZOOM_MIN) {
+    lightboxPanX.value = 0
+    lightboxPanY.value = 0
+  }
+}
+
+function handleLightboxPointerDown(event: PointerEvent) {
+  if (lightboxZoom.value <= ZOOM_MIN || event.button !== 0) {
+    return
+  }
+
+  lightboxDragging.value = true
+  dragStartX = event.clientX
+  dragStartY = event.clientY
+  dragOriginX = lightboxPanX.value
+  dragOriginY = lightboxPanY.value
+  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+}
+
+function handleLightboxPointerMove(event: PointerEvent) {
+  if (!lightboxDragging.value) {
+    return
+  }
+
+  lightboxPanX.value = dragOriginX + (event.clientX - dragStartX)
+  lightboxPanY.value = dragOriginY + (event.clientY - dragStartY)
+}
+
+function handleLightboxPointerUp(event: PointerEvent) {
+  if (!lightboxDragging.value) {
+    return
+  }
+
+  lightboxDragging.value = false
+
+  try {
+    ;(event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId)
+  }
+  catch {
+    // ignore if capture already released
+  }
+}
+
+function handleLightboxDoubleClick() {
+  if (lightboxZoom.value > ZOOM_MIN) {
+    resetLightboxZoom()
+    return
+  }
+
+  lightboxZoom.value = 2
 }
 
 function showPrevLightboxImage() {
@@ -330,11 +423,25 @@ onBeforeUnmount(() => {
           </svg>
         </button>
 
-        <img
-          class="hotel-gallery-lightbox__image"
-          :src="lightboxImage"
-          :alt="`${title} — фото ${activeIndex + 1}`"
-        >
+        <div class="hotel-gallery-lightbox__viewer">
+          <div
+            class="hotel-gallery-lightbox__stage"
+            @wheel="handleLightboxWheel"
+            @pointerdown="handleLightboxPointerDown"
+            @pointermove="handleLightboxPointerMove"
+            @pointerup="handleLightboxPointerUp"
+            @pointercancel="handleLightboxPointerUp"
+            @dblclick="handleLightboxDoubleClick"
+          >
+            <img
+              class="hotel-gallery-lightbox__image"
+              :src="lightboxImage"
+              :alt="`${title} — фото ${activeIndex + 1}`"
+              :style="lightboxImageStyle"
+              draggable="false"
+            >
+          </div>
+        </div>
 
         <button
           v-if="canNavigateLightbox"
@@ -540,7 +647,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 48px 16px 24px;
+  padding: 32px 12px 16px;
   background: rgba(17, 24, 39, 0.88);
   backdrop-filter: blur(6px);
 }
@@ -587,14 +694,50 @@ onBeforeUnmount(() => {
   transform: scale(1.05);
 }
 
-.hotel-gallery-lightbox__image {
+.hotel-gallery-lightbox__viewer {
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  box-sizing: border-box;
+  min-width: 0;
   max-width: min(100%, 1400px);
   max-height: calc(100vh - 72px);
+  width: min(1400px, calc(100vw - 160px));
+  height: min(780px, calc(100vh - 96px));
+  padding: 12px 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--wh-radius);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hotel-gallery-lightbox__stage {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+
+.hotel-gallery-lightbox__image {
+  max-width: 100%;
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
   border-radius: var(--wh-radius);
+  transform-origin: center center;
+  transition: transform 0.05s linear;
+  will-change: transform;
+}
+
+.hotel-gallery-lightbox__stage:active .hotel-gallery-lightbox__image {
+  transition: none;
 }
 
 .hotel-gallery-lightbox-enter-active,
@@ -611,6 +754,11 @@ onBeforeUnmount(() => {
   .hotel-gallery-lightbox {
     gap: 8px;
     padding: 56px 8px 16px;
+  }
+
+  .hotel-gallery-lightbox__viewer {
+    width: calc(100vw - 72px);
+    height: calc(100vh - 80px);
   }
 
   .hotel-gallery-lightbox__nav {
