@@ -10,8 +10,6 @@ const props = withDefaults(defineProps<{
 const priceMin = defineModel<number>('priceMin', { required: true })
 const priceMax = defineModel<number>('priceMax', { required: true })
 
-const step = 500
-
 const minDraft = ref('')
 const maxDraft = ref('')
 const editingMin = ref(false)
@@ -19,6 +17,22 @@ const editingMax = ref(false)
 
 const min = computed(() => props.boundMin)
 const max = computed(() => props.boundMax)
+
+// Step must divide (max - min), else native range snaps off the edge (1200…38000 + step 500 → 37700).
+const step = computed(() => {
+  const span = max.value - min.value
+  if (span <= 0) {
+    return 1
+  }
+
+  for (const candidate of [500, 100, 50, 10, 1]) {
+    if (span % candidate === 0) {
+      return candidate
+    }
+  }
+
+  return 1
+})
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value)
@@ -78,6 +92,9 @@ function commitMax() {
   updateMax(parsePrice(maxDraft.value))
   editingMax.value = false
 }
+
+// Remount ranges when bounds change — native range keeps a clamped thumb if value briefly exceeded max.
+const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
 </script>
 
 <template>
@@ -107,6 +124,7 @@ function commitMax() {
 
     <div class="search-filters-price__range" :style="rangeStyle">
       <input
+        :key="`min-${sliderKey}`"
         :value="priceMin"
         type="range"
         :min="min"
@@ -117,6 +135,7 @@ function commitMax() {
         @input="updateMin(Number(($event.target as HTMLInputElement).value))"
       >
       <input
+        :key="`max-${sliderKey}`"
         :value="priceMax"
         type="range"
         :min="min"

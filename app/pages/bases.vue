@@ -15,11 +15,13 @@ useHead({
 const route = useRoute()
 const { search: searchApi, hotels: hotelsApi } = useApi()
 
+const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
+
 const { data: priceBounds } = await useAsyncData(
   'hotel-price-range',
   () => hotelsApi.getPriceRangeBounds(),
   {
-    default: () => ({ min: 0, max: 15000 }),
+    default: () => ({ ...DEFAULT_PRICE_BOUNDS }),
   },
 )
 
@@ -28,6 +30,27 @@ const filters = ref<SearchFiltersState>({
   priceMin: priceBounds.value.min,
   priceMax: priceBounds.value.max,
 })
+
+watch(
+  priceBounds,
+  (bounds) => {
+    if (!bounds) {
+      return
+    }
+
+    const isDefaultRange = (
+      filters.value.priceMin === DEFAULT_PRICE_BOUNDS.min
+      && filters.value.priceMax === DEFAULT_PRICE_BOUNDS.max
+    )
+
+    if (isDefaultRange) {
+      filters.value.priceMin = bounds.min
+      filters.value.priceMax = bounds.max
+    }
+  },
+  { immediate: true },
+)
+
 const mobileFiltersOpen = ref(false)
 const currentPage = ref(Number(route.query.page) || 1)
 
