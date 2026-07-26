@@ -1,4 +1,4 @@
-import type { BookableItem, HotelDetail, HotelTermGroup, ReviewItem } from '~/types/api'
+import type { BookableItem, HotelDetail, HotelGalleryImage, HotelTermGroup, ReviewItem } from '~/types/api'
 import { MOCK_SEARCH_ITEMS, toOfferItem } from '~/utils/search'
 
 export interface HotelSlugParams {
@@ -94,24 +94,44 @@ function parseTerms(raw: unknown): HotelTermGroup[] {
   }).filter(group => group.terms.length)
 }
 
-function extractGalleryUrl(item: unknown): string {
+function readUrl(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function toGalleryImage(item: unknown): HotelGalleryImage | null {
   if (typeof item === 'string' && item.trim()) {
-    return item.trim()
+    const url = item.trim()
+    return { large: url, medium: url, thumb: url }
   }
 
   if (!item || typeof item !== 'object') {
-    return ''
+    return null
   }
 
   const record = item as Record<string, unknown>
-  const url = record.large ?? record.medium ?? record.url ?? record.image ?? record.thumb
+  const large = readUrl(record.large)
+  const medium = readUrl(record.medium)
+  const thumb = readUrl(record.thumb)
+  const fallback = readUrl(record.url) || readUrl(record.image)
 
-  return typeof url === 'string' ? url.trim() : ''
+  const resolvedLarge = large || medium || fallback || thumb
+  const resolvedMedium = medium || large || fallback || thumb
+  const resolvedThumb = thumb || medium || large || fallback
+
+  if (!resolvedLarge && !resolvedMedium && !resolvedThumb) {
+    return null
+  }
+
+  return {
+    large: resolvedLarge || resolvedMedium || resolvedThumb,
+    medium: resolvedMedium || resolvedLarge || resolvedThumb,
+    thumb: resolvedThumb || resolvedMedium || resolvedLarge,
+  }
 }
 
-function buildGallery(data: Record<string, unknown>, fallbackImage: string) {
+function buildGallery(data: Record<string, unknown>, fallbackImage: string): HotelGalleryImage[] {
   const gallery = Array.isArray(data.gallery)
-    ? data.gallery.map(extractGalleryUrl).filter(Boolean)
+    ? data.gallery.map(toGalleryImage).filter((item): item is HotelGalleryImage => Boolean(item))
     : []
 
   if (gallery.length) {
@@ -120,14 +140,16 @@ function buildGallery(data: Record<string, unknown>, fallbackImage: string) {
 
   const single = data.banner_image ?? data.image_url ?? data.image
   if (typeof single === 'string' && single.trim()) {
-    return [single.trim()]
+    const url = single.trim()
+    return [{ large: url, medium: url, thumb: url }]
   }
 
   if (fallbackImage.trim()) {
-    return [fallbackImage.trim()]
+    const url = fallbackImage.trim()
+    return [{ large: url, medium: url, thumb: url }]
   }
 
-  return [...DEFAULT_GALLERY]
+  return DEFAULT_GALLERY.map(url => ({ large: url, medium: url, thumb: url }))
 }
 
 function findMockHotel(params: HotelSlugParams) {

@@ -247,6 +247,12 @@ export interface HotelAnimalItem {
   price?: number
 }
 
+export interface HotelGalleryImage {
+  large: string
+  medium: string
+  thumb: string
+}
+
 export interface HotelDetail {
   id: number
   object_model: string
@@ -262,7 +268,7 @@ export interface HotelDetail {
     name: string
     slug?: string
   }
-  gallery: string[]
+  gallery: HotelGalleryImage[]
   map_lat?: number
   map_lng?: number
   review_score?: HotelReviewScore
