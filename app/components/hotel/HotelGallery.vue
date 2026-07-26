@@ -441,6 +441,25 @@ onBeforeUnmount(() => {
               draggable="false"
             >
           </div>
+
+          <div
+            v-if="images.length > 1"
+            class="hotel-gallery-lightbox__dots"
+            role="tablist"
+            :aria-label="`Фото ${activeIndex + 1} из ${images.length}`"
+          >
+            <button
+              v-for="(_, index) in images"
+              :key="`lightbox-dot-${index}`"
+              type="button"
+              class="hotel-gallery-lightbox__dot"
+              :class="{ 'hotel-gallery-lightbox__dot--active': index === activeIndex }"
+              role="tab"
+              :aria-selected="index === activeIndex"
+              :aria-label="`Фото ${index + 1}`"
+              @click="showLightboxImage(index)"
+            />
+          </div>
         </div>
 
         <button
@@ -695,17 +714,14 @@ onBeforeUnmount(() => {
 }
 
 .hotel-gallery-lightbox__viewer {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 14px;
   box-sizing: border-box;
-  min-width: 0;
-  max-width: min(100%, 1400px);
-  max-height: calc(100vh - 72px);
-  width: min(1400px, calc(100vw - 160px));
-  height: min(780px, calc(100vh - 96px));
+  width: min(1600px, calc(100vw - 120px));
+  height: min(920px, calc(100vh - 64px));
   padding: 12px 12px 16px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: var(--wh-radius);
@@ -723,6 +739,35 @@ onBeforeUnmount(() => {
   user-select: none;
 }
 
+.hotel-gallery-lightbox__dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.hotel-gallery-lightbox__dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.hotel-gallery-lightbox__dot:hover {
+  border-color: rgba(255, 255, 255, 0.9);
+  transform: scale(1.15);
+}
+
+.hotel-gallery-lightbox__dot--active {
+  background: #fff;
+  border-color: #fff;
+}
 
 .hotel-gallery-lightbox__image {
   max-width: 100%;
