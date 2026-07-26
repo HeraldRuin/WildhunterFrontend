@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import type { LocationItem, OfferItem, SearchFiltersState } from '~/types/api'
-import {
-  DEFAULT_SEARCH_FILTERS,
-  MOCK_SEARCH_ITEMS,
-  toOfferItem,
-} from '~/utils/search'
+import { DEFAULT_SEARCH_FILTERS } from '~/utils/search'
 
 definePageMeta({
   layout: 'home',
@@ -19,20 +15,41 @@ const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
 const { data: homeLocations } = useNuxtData<LocationItem[]>('home-location-offers')
 
 const cachedLocationName = computed(() => {
-  const fromHome = homeLocations.value?.find(item => item.id === locationId.value)?.title
-  if (fromHome) {
-    return fromHome
-  }
-
-  return ''
+  return homeLocations.value?.find(item => item.id === locationId.value)?.title ?? ''
 })
 
-// Не блокируем переход: имя берём из кэша главной, API — только fallback.
+const { data: locationHotels, pending: hotelsPending } = useAsyncData(
+  () => `location-hotels-${route.params.id}`,
+  async () => {
+    if (!Number.isFinite(locationId.value) || locationId.value <= 0) {
+      return [] as OfferItem[]
+    }
+
+    try {
+      return await locationApi.getLocationHotelItems(locationId.value)
+    }
+    catch {
+      return [] as OfferItem[]
+    }
+  },
+  {
+    lazy: true,
+    default: () => [] as OfferItem[],
+    watch: [locationId],
+  },
+)
+
+// Не блокируем переход: имя берём из кэша главной / ответа отелей, API — fallback.
 const { data: fetchedLocationName } = useAsyncData(
   () => `location-name-${route.params.id}`,
   async () => {
     if (cachedLocationName.value) {
       return cachedLocationName.value
+    }
+
+    const fromHotels = locationHotels.value.find(item => item.location)?.location
+    if (fromHotels) {
+      return fromHotels
     }
 
     try {
@@ -52,9 +69,18 @@ const { data: fetchedLocationName } = useAsyncData(
   },
 )
 
-const locationName = computed(
-  () => cachedLocationName.value || fetchedLocationName.value || '',
-)
+const locationName = computed(() => {
+  if (cachedLocationName.value) {
+    return cachedLocationName.value
+  }
+
+  const fromHotels = locationHotels.value.find(item => item.location)?.location
+  if (fromHotels) {
+    return fromHotels
+  }
+
+  return fetchedLocationName.value || ''
+})
 
 const { data: priceBounds } = useAsyncData(
   'hotel-price-range',
@@ -101,17 +127,8 @@ const mobileFiltersOpen = ref(false)
 const currentPage = ref(Number(route.query.page) || 1)
 const perPage = 6
 
-const mockOffers = computed<OfferItem[]>(() => {
-  const region = locationName.value || 'Область'
-
-  return MOCK_SEARCH_ITEMS.map((item, index) => ({
-    ...toOfferItem(item, index),
-    location: region,
-  }))
-})
-
 const filteredOffers = computed(() => {
-  return mockOffers.value.filter((item) => {
+  return locationHotels.value.filter((item) => {
     if (item.price < filters.value.priceMin || item.price > filters.value.priceMax) {
       return false
     }
@@ -145,6 +162,10 @@ watch(totalPages, (pages) => {
   if (currentPage.value > pages) {
     currentPage.value = pages
   }
+})
+
+watch(locationId, () => {
+  currentPage.value = 1
 })
 
 function handlePageChange(page: number) {
@@ -215,8 +236,12 @@ function handleFiltersReset() {
           />
 
           <div class="location-page__main">
-            <div v-if="!offerItems.length" class="location-page__state">
-              По вашему запросу базы не найдены. Попробуйте изменить фильтры.
+            <div v-if="hotelsPending" class="location-page__state">
+              Загрузка...
+            </div>
+
+            <div v-else-if="!offerItems.length" class="location-page__state">
+              В этой области базы не найдены.
             </div>
 
             <div v-else class="location-page__grid">
