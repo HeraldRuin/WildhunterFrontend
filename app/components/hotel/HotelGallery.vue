@@ -142,9 +142,52 @@ function closeLightbox() {
   lightboxOpen.value = false
 }
 
+const canNavigateLightbox = computed(() => props.images.length > 1)
+
+function showLightboxImage(index: number) {
+  if (!props.images.length) {
+    return
+  }
+
+  const total = props.images.length
+  const nextIndex = ((index % total) + total) % total
+  selectImage(nextIndex)
+
+  const prev = props.images[(nextIndex - 1 + total) % total]
+  const next = props.images[(nextIndex + 1) % total]
+  if (prev?.large) {
+    prefetchLarge(prev.large)
+  }
+  if (next?.large) {
+    prefetchLarge(next.large)
+  }
+}
+
+function showPrevLightboxImage() {
+  showLightboxImage(activeIndex.value - 1)
+}
+
+function showNextLightboxImage() {
+  showLightboxImage(activeIndex.value + 1)
+}
+
 function handleLightboxKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     closeLightbox()
+    return
+  }
+
+  if (!canNavigateLightbox.value) {
+    return
+  }
+
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    showPrevLightboxImage()
+  }
+  else if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    showNextLightboxImage()
   }
 }
 
@@ -269,11 +312,47 @@ onBeforeUnmount(() => {
           </svg>
         </button>
 
+        <button
+          v-if="canNavigateLightbox"
+          type="button"
+          class="hotel-gallery-lightbox__nav hotel-gallery-lightbox__nav--prev"
+          aria-label="Предыдущее фото"
+          @click="showPrevLightboxImage"
+        >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M15 5l-7 7 7 7"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+
         <img
           class="hotel-gallery-lightbox__image"
           :src="lightboxImage"
           :alt="`${title} — фото ${activeIndex + 1}`"
         >
+
+        <button
+          v-if="canNavigateLightbox"
+          type="button"
+          class="hotel-gallery-lightbox__nav hotel-gallery-lightbox__nav--next"
+          aria-label="Следующее фото"
+          @click="showNextLightboxImage"
+        >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M9 5l7 7-7 7"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </div>
     </Transition>
   </Teleport>
@@ -457,9 +536,11 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   z-index: 1100;
-  display: grid;
-  place-items: center;
-  padding: 48px 24px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 16px 24px;
   background: rgba(17, 24, 39, 0.88);
   backdrop-filter: blur(6px);
 }
@@ -468,7 +549,7 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 16px;
   right: 16px;
-  z-index: 1;
+  z-index: 2;
   display: grid;
   place-items: center;
   width: 40px;
@@ -485,7 +566,29 @@ onBeforeUnmount(() => {
   background: rgba(17, 24, 39, 0.55);
 }
 
+.hotel-gallery-lightbox__nav {
+  flex: 0 0 auto;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.4);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.hotel-gallery-lightbox__nav:hover {
+  background: rgba(17, 24, 39, 0.65);
+  transform: scale(1.05);
+}
+
 .hotel-gallery-lightbox__image {
+  flex: 1 1 auto;
   max-width: min(100%, 1400px);
   max-height: calc(100vh - 72px);
   width: auto;
@@ -502,5 +605,22 @@ onBeforeUnmount(() => {
 .hotel-gallery-lightbox-enter-from,
 .hotel-gallery-lightbox-leave-to {
   opacity: 0;
+}
+
+@media (max-width: 640px) {
+  .hotel-gallery-lightbox {
+    gap: 8px;
+    padding: 56px 8px 16px;
+  }
+
+  .hotel-gallery-lightbox__nav {
+    width: 40px;
+    height: 40px;
+  }
+
+  .hotel-gallery-lightbox__nav svg {
+    width: 22px;
+    height: 22px;
+  }
 }
 </style>
