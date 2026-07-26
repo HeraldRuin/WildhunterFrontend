@@ -150,6 +150,7 @@ const filteredOffers = computed(() => {
 
 const totalCount = computed(() => filteredOffers.value.length)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / perPage)))
+const countReady = computed(() => !hotelsPending.value)
 
 const offerItems = computed(() => {
   const page = Math.min(currentPage.value, totalPages.value)
@@ -209,7 +210,10 @@ function handleFiltersReset() {
             Фильтры
           </button>
 
-          <h1 class="location-page__title">
+          <h1
+            v-if="countReady"
+            class="location-page__title"
+          >
             Найдено баз: {{ totalCount }}
           </h1>
 
@@ -302,6 +306,19 @@ function handleFiltersReset() {
   text-align: center;
   color: var(--wh-gray-900);
   white-space: nowrap;
+  animation: location-title-in 0.35s ease;
+}
+
+@keyframes location-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .location-page__toolbar-link {
