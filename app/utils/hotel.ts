@@ -94,20 +94,40 @@ function parseTerms(raw: unknown): HotelTermGroup[] {
   }).filter(group => group.terms.length)
 }
 
+function extractGalleryUrl(item: unknown): string {
+  if (typeof item === 'string' && item.trim()) {
+    return item.trim()
+  }
+
+  if (!item || typeof item !== 'object') {
+    return ''
+  }
+
+  const record = item as Record<string, unknown>
+  const url = record.large ?? record.medium ?? record.url ?? record.image ?? record.thumb
+
+  return typeof url === 'string' ? url.trim() : ''
+}
+
 function buildGallery(data: Record<string, unknown>, fallbackImage: string) {
   const gallery = Array.isArray(data.gallery)
-    ? data.gallery.map(item => String(item)).filter(Boolean)
+    ? data.gallery.map(extractGalleryUrl).filter(Boolean)
     : []
 
   if (gallery.length) {
     return gallery
   }
 
-  if (data.banner_image) {
-    return [String(data.banner_image), ...DEFAULT_GALLERY.slice(1)]
+  const single = data.banner_image ?? data.image_url ?? data.image
+  if (typeof single === 'string' && single.trim()) {
+    return [single.trim()]
   }
 
-  return [fallbackImage, ...DEFAULT_GALLERY.slice(1)]
+  if (fallbackImage.trim()) {
+    return [fallbackImage.trim()]
+  }
+
+  return [...DEFAULT_GALLERY]
 }
 
 function findMockHotel(params: HotelSlugParams) {
@@ -180,6 +200,13 @@ export function normalizeHotelDetail(raw: unknown, params: HotelSlugParams): Hot
   const reviewScore = data.review_score as Record<string, unknown> | undefined
   const location = data.location as HotelDetail['location'] | undefined
   const slug = String(data.slug ?? params.hotelSlug)
+  const starRate = Number(data.star_rate ?? 0)
+  const reviewCount = Number(
+    reviewScore?.total_review
+    ?? data.review_count
+    ?? data.reviews
+    ?? 0,
+  )
 
   return {
     id: Number(data.id ?? 0),
@@ -207,11 +234,17 @@ export function normalizeHotelDetail(raw: unknown, params: HotelSlugParams): Hot
     map_lng: data.map_lng ? Number(data.map_lng) : undefined,
     review_score: reviewScore
       ? {
-          score_total: Number(reviewScore.score_total ?? 0),
+          score_total: Number(reviewScore.score_total ?? starRate ?? 0),
           score_text: String(reviewScore.score_text ?? ''),
-          total_review: Number(reviewScore.total_review ?? 0),
+          total_review: Number.isFinite(reviewCount) ? reviewCount : 0,
         }
-      : undefined,
+      : Number.isFinite(starRate) && starRate > 0
+        ? {
+            score_total: starRate,
+            score_text: '',
+            total_review: Number.isFinite(reviewCount) ? reviewCount : 0,
+          }
+        : undefined,
     terms: parseTerms(data.terms),
     animals: createMockHotelDetail(params).animals,
     related,
