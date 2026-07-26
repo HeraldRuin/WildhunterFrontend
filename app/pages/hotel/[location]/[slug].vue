@@ -170,7 +170,7 @@ async function handleFavoriteClick() {
 
     <template v-else-if="hotel">
       <section class="hotel-page__hero">
-        <div class="container hotel-page__hero-inner">
+        <div class="hotel-page__hero-inner">
           <nav class="hotel-page__breadcrumbs" aria-label="Хлебные крошки">
             <NuxtLink to="/">Главная</NuxtLink>
             <span aria-hidden="true">&gt;</span>
@@ -242,7 +242,7 @@ async function handleFavoriteClick() {
       </section>
 
       <section class="hotel-page__content">
-        <div class="container hotel-page__main">
+        <div class="hotel-page__main">
           <section v-if="hotel.content" class="hotel-section">
             <h2 class="hotel-section__title">Описание</h2>
             <div class="hotel-section__content hotel-section__content--html" v-html="hotel.content" />
@@ -332,6 +332,8 @@ async function handleFavoriteClick() {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: min(100% - 48px, calc(100vw - 220px));
+  margin-inline: auto;
 }
 
 .hotel-page__breadcrumbs {
@@ -467,7 +469,9 @@ async function handleFavoriteClick() {
   display: flex;
   flex-direction: column;
   gap: 40px;
+  width: min(100% - 48px, calc(100vw - 220px));
   min-width: 0;
+  margin-inline: auto;
 }
 
 .hotel-page__address {
@@ -569,6 +573,10 @@ async function handleFavoriteClick() {
     width: calc(100% - 24px);
   }
 
+  .hotel-page__hero-inner,
+  .hotel-page__main {
+    width: min(100% - 32px, calc(100vw - 48px));
+  }
 }
 
 @media (max-width: 640px) {
