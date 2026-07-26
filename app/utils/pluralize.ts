@@ -20,6 +20,10 @@ export function pluralizeRu(count: number, forms: RuPluralForms) {
 }
 
 export function formatReviewsCount(count: number) {
+  if (count <= 0) {
+    return 'нет отзывов'
+  }
+
   return pluralizeRu(count, ['отзыв', 'отзыва', 'отзывов'])
 }
 
