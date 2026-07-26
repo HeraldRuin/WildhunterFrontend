@@ -1,29 +1,72 @@
 <script setup lang="ts">
+import type { HotelGalleryImage } from '~/types/api'
+
 const props = defineProps<{
-  images: string[]
+  images: HotelGalleryImage[]
   title: string
 }>()
 
-const activeIndex = ref(0)
+const COLLAPSED_THUMB_COUNT = 4
 
-const visibleImages = computed(() => props.images.slice(0, 5))
-const extraCount = computed(() => Math.max(props.images.length - 5, 0))
+const activeIndex = ref(0)
+const expanded = ref(false)
+
+const thumbImages = computed(() => {
+  const rest = props.images.slice(1)
+
+  if (expanded.value) {
+    return rest
+  }
+
+  return rest.slice(0, COLLAPSED_THUMB_COUNT)
+})
+
+const hasMore = computed(() => props.images.length > 1 + COLLAPSED_THUMB_COUNT)
+
+const mainImage = computed(() => {
+  const item = props.images[activeIndex.value] ?? props.images[0]
+  return item?.large || item?.medium || ''
+})
+
+watch(
+  () => props.images,
+  () => {
+    activeIndex.value = 0
+    expanded.value = false
+  },
+)
 
 function selectImage(index: number) {
   activeIndex.value = index
 }
+
+function handleThumbClick(thumbIndex: number) {
+  const isMoreButton = !expanded.value
+    && hasMore.value
+    && thumbIndex === thumbImages.value.length - 1
+
+  if (isMoreButton) {
+    expanded.value = true
+    return
+  }
+
+  selectImage(thumbIndex + 1)
+}
 </script>
 
 <template>
-  <div class="hotel-gallery">
+  <div
+    class="hotel-gallery"
+    :class="{ 'hotel-gallery--expanded': expanded }"
+  >
     <button
       type="button"
       class="hotel-gallery__main"
-      :aria-label="`Открыть фото ${activeIndex + 1}`"
+      :aria-label="`Фото ${activeIndex + 1}`"
       @click="selectImage(activeIndex)"
     >
       <img
-        :src="visibleImages[activeIndex] ?? visibleImages[0]"
+        :src="mainImage"
         :alt="`${title} — фото ${activeIndex + 1}`"
         loading="eager"
       >
@@ -31,21 +74,29 @@ function selectImage(index: number) {
 
     <div class="hotel-gallery__thumbs">
       <button
-        v-for="(image, index) in visibleImages.slice(1)"
-        :key="`${image}-${index}`"
+        v-for="(image, index) in thumbImages"
+        :key="`${image.medium}-${index}`"
         type="button"
         class="hotel-gallery__thumb"
         :class="{ 'hotel-gallery__thumb--active': index + 1 === activeIndex }"
-        :aria-label="`Показать фото ${index + 2}`"
-        @click="selectImage(index + 1)"
+        :aria-label="
+          !expanded && hasMore && index === thumbImages.length - 1
+            ? 'Показать еще'
+            : `Показать фото ${index + 2}`
+        "
+        @click="handleThumbClick(index)"
       >
-        <img :src="image" :alt="`${title} — фото ${index + 2}`" loading="lazy">
+        <img
+          :src="image.medium || image.thumb"
+          :alt="`${title} — фото ${index + 2}`"
+          loading="lazy"
+        >
 
         <span
-          v-if="index === visibleImages.slice(1).length - 1 && extraCount"
+          v-if="!expanded && hasMore && index === thumbImages.length - 1"
           class="hotel-gallery__more"
         >
-          +{{ extraCount }} фото
+          Показать еще
         </span>
       </button>
     </div>
@@ -55,11 +106,10 @@ function selectImage(index: number) {
 <style scoped>
 .hotel-gallery {
   display: grid;
-  grid-template-columns: 592px 472px;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
   gap: 8px;
-  width: max-content;
-  max-width: 100%;
-  height: 472px;
+  width: 100%;
+  height: 520px;
 }
 
 .hotel-gallery__main,
@@ -68,14 +118,14 @@ function selectImage(index: number) {
   overflow: hidden;
   padding: 0;
   border: none;
-  border-radius: 18px;
+  border-radius: var(--wh-radius);
   background: var(--wh-gray-100);
   cursor: pointer;
 }
 
 .hotel-gallery__main {
-  width: 592px;
-  height: 472px;
+  width: 100%;
+  height: 520px;
 }
 
 .hotel-gallery__main img,
@@ -96,7 +146,16 @@ function selectImage(index: number) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  height: 472px;
+  height: 520px;
+  min-height: 0;
+}
+
+.hotel-gallery--expanded .hotel-gallery__thumbs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: none;
+  grid-auto-rows: minmax(120px, 1fr);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .hotel-gallery__thumb {
@@ -104,14 +163,20 @@ function selectImage(index: number) {
   aspect-ratio: auto;
 }
 
-.hotel-gallery__thumb--active {
-  outline: 2px solid var(--wh-orange-500);
-  outline-offset: -2px;
+.hotel-gallery__thumb--active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 2px solid var(--wh-orange-500);
+  border-radius: inherit;
+  pointer-events: none;
 }
 
 .hotel-gallery__more {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: grid;
   place-items: center;
   background: rgba(17, 24, 39, 0.45);
@@ -129,7 +194,7 @@ function selectImage(index: number) {
   .hotel-gallery__main {
     width: 100%;
     height: auto;
-    aspect-ratio: 592 / 472;
+    aspect-ratio: 3 / 2;
   }
 
   .hotel-gallery__thumbs {
@@ -138,13 +203,19 @@ function selectImage(index: number) {
     height: auto;
   }
 
+  .hotel-gallery--expanded .hotel-gallery__thumbs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-height: 360px;
+  }
+
   .hotel-gallery__thumb {
     aspect-ratio: 1 / 1;
   }
 }
 
 @media (max-width: 640px) {
-  .hotel-gallery__thumbs {
+  .hotel-gallery__thumbs,
+  .hotel-gallery--expanded .hotel-gallery__thumbs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
