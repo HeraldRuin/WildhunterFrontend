@@ -55,9 +55,11 @@ function selectImage(index: number) {
 <style scoped>
 .hotel-gallery {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  grid-template-columns: 592px 472px;
   gap: 8px;
-  min-height: 420px;
+  width: max-content;
+  max-width: 100%;
+  height: 472px;
 }
 
 .hotel-gallery__main,
@@ -72,8 +74,8 @@ function selectImage(index: number) {
 }
 
 .hotel-gallery__main {
-  grid-row: 1 / span 2;
-  min-height: 100%;
+  width: 592px;
+  height: 472px;
 }
 
 .hotel-gallery__main img,
@@ -91,9 +93,10 @@ function selectImage(index: number) {
 
 .hotel-gallery__thumbs {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  min-height: 100%;
+  height: 472px;
 }
 
 .hotel-gallery__thumb {
@@ -120,17 +123,19 @@ function selectImage(index: number) {
 @media (max-width: 900px) {
   .hotel-gallery {
     grid-template-columns: 1fr;
-    min-height: auto;
+    height: auto;
   }
 
   .hotel-gallery__main {
-    grid-row: auto;
-    aspect-ratio: 4 / 3;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 592 / 472;
   }
 
   .hotel-gallery__thumbs {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-template-rows: none;
+    height: auto;
   }
 
   .hotel-gallery__thumb {
