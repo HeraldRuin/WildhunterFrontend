@@ -405,80 +405,82 @@ onBeforeUnmount(() => {
           </svg>
         </button>
 
-        <button
-          v-if="canNavigateLightbox"
-          type="button"
-          class="hotel-gallery-lightbox__nav hotel-gallery-lightbox__nav--prev"
-          aria-label="Предыдущее фото"
-          @click="showPrevLightboxImage"
-        >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M15 5l-7 7 7 7"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-
-        <div class="hotel-gallery-lightbox__viewer">
-          <div
-            class="hotel-gallery-lightbox__stage"
-            @wheel="handleLightboxWheel"
-            @pointerdown="handleLightboxPointerDown"
-            @pointermove="handleLightboxPointerMove"
-            @pointerup="handleLightboxPointerUp"
-            @pointercancel="handleLightboxPointerUp"
-            @dblclick="handleLightboxDoubleClick"
+        <div class="hotel-gallery-lightbox__layout">
+          <button
+            v-if="canNavigateLightbox"
+            type="button"
+            class="hotel-gallery-lightbox__nav hotel-gallery-lightbox__nav--prev"
+            aria-label="Предыдущее фото"
+            @click="showPrevLightboxImage"
           >
-            <img
-              class="hotel-gallery-lightbox__image"
-              :src="lightboxImage"
-              :alt="`${title} — фото ${activeIndex + 1}`"
-              :style="lightboxImageStyle"
-              draggable="false"
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M15 5l-7 7 7 7"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+
+          <div class="hotel-gallery-lightbox__viewer">
+            <div
+              class="hotel-gallery-lightbox__stage"
+              @wheel="handleLightboxWheel"
+              @pointerdown="handleLightboxPointerDown"
+              @pointermove="handleLightboxPointerMove"
+              @pointerup="handleLightboxPointerUp"
+              @pointercancel="handleLightboxPointerUp"
+              @dblclick="handleLightboxDoubleClick"
             >
+              <img
+                class="hotel-gallery-lightbox__image"
+                :src="lightboxImage"
+                :alt="`${title} — фото ${activeIndex + 1}`"
+                :style="lightboxImageStyle"
+                draggable="false"
+              >
+            </div>
+
+            <div
+              v-if="images.length > 1"
+              class="hotel-gallery-lightbox__dots"
+              role="tablist"
+              :aria-label="`Фото ${activeIndex + 1} из ${images.length}`"
+            >
+              <button
+                v-for="(_, index) in images"
+                :key="`lightbox-dot-${index}`"
+                type="button"
+                class="hotel-gallery-lightbox__dot"
+                :class="{ 'hotel-gallery-lightbox__dot--active': index === activeIndex }"
+                role="tab"
+                :aria-selected="index === activeIndex"
+                :aria-label="`Фото ${index + 1}`"
+                @click="showLightboxImage(index)"
+              />
+            </div>
           </div>
 
-          <div
-            v-if="images.length > 1"
-            class="hotel-gallery-lightbox__dots"
-            role="tablist"
-            :aria-label="`Фото ${activeIndex + 1} из ${images.length}`"
+          <button
+            v-if="canNavigateLightbox"
+            type="button"
+            class="hotel-gallery-lightbox__nav hotel-gallery-lightbox__nav--next"
+            aria-label="Следующее фото"
+            @click="showNextLightboxImage"
           >
-            <button
-              v-for="(_, index) in images"
-              :key="`lightbox-dot-${index}`"
-              type="button"
-              class="hotel-gallery-lightbox__dot"
-              :class="{ 'hotel-gallery-lightbox__dot--active': index === activeIndex }"
-              role="tab"
-              :aria-selected="index === activeIndex"
-              :aria-label="`Фото ${index + 1}`"
-              @click="showLightboxImage(index)"
-            />
-          </div>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M9 5l7 7-7 7"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
         </div>
-
-        <button
-          v-if="canNavigateLightbox"
-          type="button"
-          class="hotel-gallery-lightbox__nav hotel-gallery-lightbox__nav--next"
-          aria-label="Следующее фото"
-          @click="showNextLightboxImage"
-        >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M9 5l7 7-7 7"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
       </div>
     </Transition>
   </Teleport>
@@ -662,11 +664,9 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   z-index: 1100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 32px 12px 16px;
+  display: grid;
+  place-items: center;
+  padding: 40px 16px 24px;
   background: rgba(17, 24, 39, 0.88);
   backdrop-filter: blur(6px);
 }
@@ -675,57 +675,68 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 16px;
   right: 16px;
-  z-index: 2;
+  z-index: 3;
   display: grid;
   place-items: center;
   width: 40px;
   height: 40px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 50%;
-  background: rgba(17, 24, 39, 0.35);
+  background: rgba(17, 24, 39, 0.45);
   color: #fff;
   cursor: pointer;
 }
 
 .hotel-gallery-lightbox__close:hover {
-  background: rgba(17, 24, 39, 0.55);
+  background: rgba(17, 24, 39, 0.7);
+}
+
+.hotel-gallery-lightbox__layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: min(1520px, calc(100vw - 32px));
+  max-height: calc(100vh - 88px);
+}
+
+.hotel-gallery-lightbox__viewer {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  box-sizing: border-box;
+  min-width: 0;
+  width: min(1400px, calc(100vw - 152px));
+  height: min(860px, calc(100vh - 88px));
+  padding: 16px 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: var(--wh-radius);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
 }
 
 .hotel-gallery-lightbox__nav {
-  flex: 0 0 auto;
+  flex: 0 0 48px;
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: 50%;
-  background: rgba(17, 24, 39, 0.4);
+  background: rgba(17, 24, 39, 0.65);
   color: #fff;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .hotel-gallery-lightbox__nav:hover {
-  background: rgba(17, 24, 39, 0.65);
+  background: rgba(17, 24, 39, 0.85);
   transform: scale(1.05);
-}
-
-.hotel-gallery-lightbox__viewer {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 14px;
-  box-sizing: border-box;
-  width: min(1600px, calc(100vw - 120px));
-  height: min(920px, calc(100vh - 64px));
-  padding: 12px 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: var(--wh-radius);
-  background: rgba(255, 255, 255, 0.04);
 }
 
 .hotel-gallery-lightbox__stage {
@@ -749,10 +760,10 @@ onBeforeUnmount(() => {
 }
 
 .hotel-gallery-lightbox__dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
@@ -760,7 +771,7 @@ onBeforeUnmount(() => {
 }
 
 .hotel-gallery-lightbox__dot:hover {
-  border-color: rgba(255, 255, 255, 0.9);
+  border-color: #fff;
   transform: scale(1.15);
 }
 
@@ -797,16 +808,21 @@ onBeforeUnmount(() => {
 
 @media (max-width: 640px) {
   .hotel-gallery-lightbox {
-    gap: 8px;
     padding: 56px 8px 16px;
   }
 
+  .hotel-gallery-lightbox__layout {
+    gap: 6px;
+    width: calc(100vw - 16px);
+  }
+
   .hotel-gallery-lightbox__viewer {
-    width: calc(100vw - 72px);
-    height: calc(100vh - 80px);
+    width: calc(100vw - 104px);
+    height: calc(100vh - 88px);
   }
 
   .hotel-gallery-lightbox__nav {
+    flex-basis: 40px;
     width: 40px;
     height: 40px;
   }
