@@ -146,61 +146,49 @@ const lightboxImage = computed(() => {
   return item.large || item.medium || item.thumb || ''
 })
 
+const lightboxStageSize = ref({ width: 0, height: 0 })
+
+function measureLightboxStage() {
+  const stageEl = lightboxStageRef.value
+  if (!stageEl) {
+    return
+  }
+
+  lightboxStageSize.value = {
+    width: stageEl.clientWidth,
+    height: stageEl.clientHeight,
+  }
+}
+
 function getLightboxPanLimits() {
-  const stage = lightboxStageRef.value
-  const img = lightboxImgRef.value
+  const stageEl = lightboxStageRef.value
+  const imgEl = lightboxImgRef.value
 
-  if (!stage || !img || lightboxZoom.value <= ZOOM_MIN) {
+  if (!stageEl || !imgEl || lightboxZoom.value <= ZOOM_MIN) {
     return { maxX: 0, maxY: 0 }
   }
 
-  const stageW = stage.clientWidth
-  const stageH = stage.clientHeight
-  const naturalW = img.naturalWidth
-  const naturalH = img.naturalHeight
+  const stage = stageEl.getBoundingClientRect()
+  const img = imgEl.getBoundingClientRect()
 
-  // Match object-fit: contain base size, then apply zoom.
-  let baseW = img.offsetWidth
-  let baseH = img.offsetHeight
-
-  if (naturalW > 0 && naturalH > 0 && stageW > 0 && stageH > 0) {
-    const fit = Math.min(stageW / naturalW, stageH / naturalH)
-    baseW = naturalW * fit
-    baseH = naturalH * fit
-  }
-
-  const scaledW = baseW * lightboxZoom.value
-  const scaledH = baseH * lightboxZoom.value
-
-  // Same rule on every side: pan until the photo edge meets the frame.
-  const maxX = Math.max(0, (scaledW - stageW) / 2)
-  const maxY = Math.max(0, (scaledH - stageH) / 2)
-
-  // One shared stop distance for left/right/top/bottom.
-  const edgeLimit = Math.min(
-    maxX > 0 ? maxX : Number.POSITIVE_INFINITY,
-    maxY > 0 ? maxY : Number.POSITIVE_INFINITY,
-  )
-
-  if (!Number.isFinite(edgeLimit)) {
-    return { maxX: 0, maxY: 0 }
-  }
-
+  // Use painted size so scale is accounted for correctly.
   return {
-    maxX: edgeLimit,
-    maxY: edgeLimit,
+    maxX: Math.max(0, (img.width - stage.width) / 2),
+    maxY: Math.max(0, (img.height - stage.height) / 2),
   }
 }
 
 const canPanLightbox = computed(() => {
-  // Depend on zoom so cursor updates when limits change.
   void lightboxZoom.value
+  void lightboxPanX.value
+  void lightboxPanY.value
+  void lightboxStageSize.value
   const { maxX, maxY } = getLightboxPanLimits()
-  return maxX > 0 || maxY > 0
+  return maxX > 1 || maxY > 1
 })
 
-const lightboxImageStyle = computed(() => ({
-  transform: `translate(${lightboxPanX.value}px, ${lightboxPanY.value}px) scale(${lightboxZoom.value})`,
+const lightboxPanStyle = computed(() => ({
+  transform: `translate(${lightboxPanX.value}px, ${lightboxPanY.value}px)`,
   cursor: lightboxZoom.value > 1
     ? (canPanLightbox.value
       ? (lightboxDragging.value ? 'grabbing' : 'grab')
@@ -208,19 +196,66 @@ const lightboxImageStyle = computed(() => ({
     : 'zoom-in',
 }))
 
-function clampLightboxPan(x: number, y: number) {
-  const { maxX, maxY } = getLightboxPanLimits()
+const lightboxScaleStyle = computed(() => ({
+  transform: `scale(${lightboxZoom.value})`,
+  maxWidth: lightboxStageSize.value.width
+    ? `${lightboxStageSize.value.width}px`
+    : '100%',
+  maxHeight: lightboxStageSize.value.height
+    ? `${lightboxStageSize.value.height}px`
+    : '100%',
+}))
 
-  return {
-    x: Math.min(maxX, Math.max(-maxX, x)),
-    y: Math.min(maxY, Math.max(-maxY, y)),
+function constrainLightboxPanToFrame() {
+  const stageEl = lightboxStageRef.value
+  const imgEl = lightboxImgRef.value
+
+  if (!stageEl || !imgEl || lightboxZoom.value <= ZOOM_MIN) {
+    lightboxPanX.value = 0
+    lightboxPanY.value = 0
+    return
+  }
+
+  const stage = stageEl.getBoundingClientRect()
+  const img = imgEl.getBoundingClientRect()
+
+  // Shorter than frame → keep vertically centered (no downward "drop").
+  if (img.height <= stage.height + 1) {
+    lightboxPanY.value = 0
+  }
+  else {
+    if (img.top > stage.top + 0.5) {
+      lightboxPanY.value -= img.top - stage.top
+    }
+    if (img.bottom < stage.bottom - 0.5) {
+      lightboxPanY.value += stage.bottom - img.bottom
+    }
+  }
+
+  if (img.width <= stage.width + 1) {
+    lightboxPanX.value = 0
+  }
+  else {
+    if (img.left > stage.left + 0.5) {
+      lightboxPanX.value -= img.left - stage.left
+    }
+    if (img.right < stage.right - 0.5) {
+      lightboxPanX.value += stage.right - img.right
+    }
   }
 }
 
 function setLightboxPan(x: number, y: number) {
-  const next = clampLightboxPan(x, y)
-  lightboxPanX.value = next.x
-  lightboxPanY.value = next.y
+  if (lightboxZoom.value <= ZOOM_MIN) {
+    lightboxPanX.value = 0
+    lightboxPanY.value = 0
+    return
+  }
+
+  lightboxPanX.value = x
+  lightboxPanY.value = y
+
+  nextTick(() => constrainLightboxPanToFrame())
 }
 
 function resetLightboxZoom() {
@@ -275,6 +310,13 @@ function handleLightboxWheel(event: WheelEvent) {
   )
 
   lightboxZoom.value = Math.round(next * 100) / 100
+
+  if (lightboxZoom.value <= ZOOM_MIN) {
+    lightboxPanX.value = 0
+    lightboxPanY.value = 0
+    return
+  }
+
   nextTick(() => setLightboxPan(lightboxPanX.value, lightboxPanY.value))
 }
 
@@ -308,6 +350,7 @@ function handleLightboxPointerUp(event: PointerEvent) {
   }
 
   lightboxDragging.value = false
+  setLightboxPan(lightboxPanX.value, lightboxPanY.value)
 
   try {
     ;(event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId)
@@ -326,6 +369,13 @@ function handleLightboxDoubleClick() {
   lightboxZoom.value = 2
   nextTick(() => setLightboxPan(0, 0))
 }
+
+watch(lightboxZoom, () => {
+  nextTick(() => {
+    measureLightboxStage()
+    setLightboxPan(lightboxPanX.value, lightboxPanY.value)
+  })
+})
 
 function showPrevLightboxImage() {
   showLightboxImage(activeIndex.value - 1)
@@ -364,6 +414,10 @@ watch(lightboxOpen, (isOpen) => {
 
   if (isOpen) {
     window.addEventListener('keydown', handleLightboxKeydown)
+    nextTick(() => {
+      measureLightboxStage()
+      constrainLightboxPanToFrame()
+    })
   }
   else {
     window.removeEventListener('keydown', handleLightboxKeydown)
@@ -506,14 +560,20 @@ onBeforeUnmount(() => {
               @pointercancel="handleLightboxPointerUp"
               @dblclick="handleLightboxDoubleClick"
             >
-              <img
-                ref="lightboxImgRef"
-                class="hotel-gallery-lightbox__image"
-                :src="lightboxImage"
-                :alt="`${title} — фото ${activeIndex + 1}`"
-                :style="lightboxImageStyle"
-                draggable="false"
+              <div
+                class="hotel-gallery-lightbox__pan"
+                :style="lightboxPanStyle"
               >
+                <img
+                  ref="lightboxImgRef"
+                  class="hotel-gallery-lightbox__image"
+                  :src="lightboxImage"
+                  :alt="`${title} — фото ${activeIndex + 1}`"
+                  :style="lightboxScaleStyle"
+                  draggable="false"
+                  @load="measureLightboxStage"
+                >
+              </div>
             </div>
 
             <div
@@ -813,6 +873,7 @@ onBeforeUnmount(() => {
 }
 
 .hotel-gallery-lightbox__stage {
+  position: relative;
   flex: 1 1 auto;
   display: grid;
   place-items: center;
@@ -821,6 +882,15 @@ onBeforeUnmount(() => {
   overflow: hidden;
   touch-action: none;
   user-select: none;
+}
+
+.hotel-gallery-lightbox__pan {
+  line-height: 0;
+  width: fit-content;
+  height: fit-content;
+  max-width: 100%;
+  max-height: 100%;
+  will-change: transform;
 }
 
 .hotel-gallery-lightbox__dots {
@@ -854,6 +924,7 @@ onBeforeUnmount(() => {
 }
 
 .hotel-gallery-lightbox__image {
+  display: block;
   max-width: 100%;
   max-height: 100%;
   width: auto;
@@ -861,11 +932,7 @@ onBeforeUnmount(() => {
   object-fit: contain;
   border-radius: var(--wh-radius);
   transform-origin: center center;
-  transition: transform 0.05s linear;
   will-change: transform;
-}
-
-.hotel-gallery-lightbox__stage:active .hotel-gallery-lightbox__image {
   transition: none;
 }
 
