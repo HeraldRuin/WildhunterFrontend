@@ -150,7 +150,7 @@ const filteredOffers = computed(() => {
 
 const totalCount = computed(() => filteredOffers.value.length)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / perPage)))
-const countReady = computed(() => !hotelsPending.value)
+const countReady = computed(() => !hotelsPending.value && totalCount.value > 0)
 
 const offerItems = computed(() => {
   const page = Math.min(currentPage.value, totalPages.value)
@@ -244,23 +244,28 @@ function handleFiltersReset() {
               Загрузка...
             </div>
 
-            <div v-else-if="!offerItems.length" class="location-page__state">
-              В этой области базы не найдены.
+            <div
+              v-else-if="!offerItems.length"
+              class="location-page__state location-page__state--empty"
+            >
+              Нет ни одного отеля в этой локации
             </div>
 
-            <div v-else class="location-page__grid">
-              <HomeOfferCard
-                v-for="(item, index) in offerItems"
-                :key="`${item.id}-${index}`"
-                :item="item"
+            <template v-else>
+              <div class="location-page__grid">
+                <HomeOfferCard
+                  v-for="(item, index) in offerItems"
+                  :key="`${item.id}-${index}`"
+                  :item="item"
+                />
+              </div>
+
+              <CommonPagination
+                :current-page="currentPage"
+                :total-pages="totalPages"
+                @change="handlePageChange"
               />
-            </div>
-
-            <CommonPagination
-              :current-page="currentPage"
-              :total-pages="totalPages"
-              @change="handlePageChange"
-            />
+            </template>
           </div>
         </div>
       </div>
@@ -371,10 +376,22 @@ function handleFiltersReset() {
 
 .location-page__state {
   padding: 48px 24px;
-  border: 1px dashed var(--wh-gray-200);
-  border-radius: var(--wh-radius-lg);
   text-align: center;
   color: var(--wh-gray-500);
+}
+
+.location-page__state--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  padding: 64px 24px;
+  font-family: "Inter", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 140%;
+  letter-spacing: -0.03em;
+  color: var(--wh-gray-900);
 }
 
 @media (max-width: 1024px) {
