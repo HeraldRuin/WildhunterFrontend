@@ -117,6 +117,60 @@ function handleThumbHover(thumbIndex: number) {
     prefetchLarge(item.large)
   }
 }
+
+const lightboxOpen = ref(false)
+
+const lightboxImage = computed(() => {
+  const item = activeImage.value
+  if (!item) {
+    return ''
+  }
+
+  return item.large || item.medium || item.thumb || ''
+})
+
+function openLightbox() {
+  const item = activeImage.value
+  if (item?.large) {
+    prefetchLarge(item.large)
+  }
+
+  lightboxOpen.value = true
+}
+
+function closeLightbox() {
+  lightboxOpen.value = false
+}
+
+function handleLightboxKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    closeLightbox()
+  }
+}
+
+watch(lightboxOpen, (isOpen) => {
+  if (!import.meta.client) {
+    return
+  }
+
+  document.body.style.overflow = isOpen ? 'hidden' : ''
+
+  if (isOpen) {
+    window.addEventListener('keydown', handleLightboxKeydown)
+  }
+  else {
+    window.removeEventListener('keydown', handleLightboxKeydown)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (!import.meta.client) {
+    return
+  }
+
+  document.body.style.overflow = ''
+  window.removeEventListener('keydown', handleLightboxKeydown)
+})
 </script>
 
 <template>
@@ -124,18 +178,37 @@ function handleThumbHover(thumbIndex: number) {
     class="hotel-gallery"
     :class="{ 'hotel-gallery--expanded': expanded }"
   >
-    <button
-      type="button"
-      class="hotel-gallery__main"
-      :aria-label="`Фото ${activeIndex + 1}`"
-      @click="selectImage(activeIndex)"
-    >
+    <div class="hotel-gallery__main">
       <img
         :src="mainImage"
         :alt="`${title} — фото ${activeIndex + 1}`"
         loading="eager"
       >
-    </button>
+
+      <button
+        type="button"
+        class="hotel-gallery__expand"
+        aria-label="Открыть фото крупнее"
+        @click="openLightbox"
+      >
+        <svg
+          class="hotel-gallery__expand-icon"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M9 4H4v5M15 4h5v5M9 20H4v-5M20 15v5h-5"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
 
     <div class="hotel-gallery__thumbs">
       <button
@@ -168,6 +241,42 @@ function handleThumbHover(thumbIndex: number) {
       </button>
     </div>
   </div>
+
+  <Teleport to="body">
+    <Transition name="hotel-gallery-lightbox">
+      <div
+        v-if="lightboxOpen"
+        class="hotel-gallery-lightbox"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Просмотр фото"
+        @click.self="closeLightbox"
+      >
+        <button
+          type="button"
+          class="hotel-gallery-lightbox__close"
+          aria-label="Закрыть"
+          @click="closeLightbox"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <path
+              d="M5 5l10 10M15 5L5 15"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+
+        <img
+          class="hotel-gallery-lightbox__image"
+          :src="lightboxImage"
+          :alt="`${title} — фото ${activeIndex + 1}`"
+        >
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -187,6 +296,9 @@ function handleThumbHover(thumbIndex: number) {
   border: none;
   border-radius: var(--wh-radius);
   background: var(--wh-gray-100);
+}
+
+.hotel-gallery__thumb {
   cursor: pointer;
 }
 
@@ -203,9 +315,61 @@ function handleThumbHover(thumbIndex: number) {
   transition: transform 0.3s ease;
 }
 
-.hotel-gallery__main:hover img,
 .hotel-gallery__thumb:hover img {
   transform: scale(1.02);
+}
+
+.hotel-gallery__expand {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.55);
+  color: var(--wh-white);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.hotel-gallery__expand-icon {
+  transform-origin: center;
+  transition: transform 0.2s ease;
+}
+
+.hotel-gallery__main:hover .hotel-gallery__expand,
+.hotel-gallery__expand:hover,
+.hotel-gallery__expand:focus-visible {
+  background: rgba(17, 24, 39, 0.78);
+  transform: scale(1.08);
+}
+
+.hotel-gallery__main:hover .hotel-gallery__expand-icon,
+.hotel-gallery__expand:hover .hotel-gallery__expand-icon,
+.hotel-gallery__expand:focus-visible .hotel-gallery__expand-icon {
+  transform: scale(1.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hotel-gallery__expand,
+  .hotel-gallery__expand-icon {
+    transition: none;
+  }
+
+  .hotel-gallery__main:hover .hotel-gallery__expand,
+  .hotel-gallery__expand:hover,
+  .hotel-gallery__expand:focus-visible,
+  .hotel-gallery__main:hover .hotel-gallery__expand-icon,
+  .hotel-gallery__expand:hover .hotel-gallery__expand-icon,
+  .hotel-gallery__expand:focus-visible .hotel-gallery__expand-icon {
+    transform: none;
+  }
 }
 
 .hotel-gallery__thumbs {
@@ -285,5 +449,58 @@ function handleThumbHover(thumbIndex: number) {
   .hotel-gallery--expanded .hotel-gallery__thumbs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+</style>
+
+<style>
+.hotel-gallery-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 48px 24px 24px;
+  background: rgba(17, 24, 39, 0.88);
+  backdrop-filter: blur(6px);
+}
+
+.hotel-gallery-lightbox__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.35);
+  color: #fff;
+  cursor: pointer;
+}
+
+.hotel-gallery-lightbox__close:hover {
+  background: rgba(17, 24, 39, 0.55);
+}
+
+.hotel-gallery-lightbox__image {
+  max-width: min(100%, 1400px);
+  max-height: calc(100vh - 72px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--wh-radius);
+}
+
+.hotel-gallery-lightbox-enter-active,
+.hotel-gallery-lightbox-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.hotel-gallery-lightbox-enter-from,
+.hotel-gallery-lightbox-leave-to {
+  opacity: 0;
 }
 </style>
