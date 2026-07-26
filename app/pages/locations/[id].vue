@@ -240,8 +240,15 @@ function handleFiltersReset() {
           />
 
           <div class="location-page__main">
-            <div v-if="hotelsPending" class="location-page__state">
-              Загрузка...
+            <div
+              v-if="hotelsPending"
+              class="location-page__state location-page__state--loading"
+            >
+              <CommonSpinner
+                variant="ring"
+                color="var(--wh-orange-500)"
+                size="lg"
+              />
             </div>
 
             <div
@@ -380,12 +387,16 @@ function handleFiltersReset() {
   color: var(--wh-gray-500);
 }
 
+.location-page__state--loading,
 .location-page__state--empty {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 360px;
   padding: 64px 24px;
+}
+
+.location-page__state--empty {
   font-family: "Inter", sans-serif;
   font-size: 20px;
   font-weight: 500;
