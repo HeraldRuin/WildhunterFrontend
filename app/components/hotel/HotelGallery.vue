@@ -123,6 +123,8 @@ const lightboxZoom = ref(1)
 const lightboxPanX = ref(0)
 const lightboxPanY = ref(0)
 const lightboxDragging = ref(false)
+const lightboxStageRef = ref<HTMLElement | null>(null)
+const lightboxImgRef = ref<HTMLImageElement | null>(null)
 
 const ZOOM_MIN = 1
 const ZOOM_MAX = 4
@@ -144,12 +146,82 @@ const lightboxImage = computed(() => {
   return item.large || item.medium || item.thumb || ''
 })
 
+function getLightboxPanLimits() {
+  const stage = lightboxStageRef.value
+  const img = lightboxImgRef.value
+
+  if (!stage || !img || lightboxZoom.value <= ZOOM_MIN) {
+    return { maxX: 0, maxY: 0 }
+  }
+
+  const stageW = stage.clientWidth
+  const stageH = stage.clientHeight
+  const naturalW = img.naturalWidth
+  const naturalH = img.naturalHeight
+
+  // Match object-fit: contain base size, then apply zoom.
+  let baseW = img.offsetWidth
+  let baseH = img.offsetHeight
+
+  if (naturalW > 0 && naturalH > 0 && stageW > 0 && stageH > 0) {
+    const fit = Math.min(stageW / naturalW, stageH / naturalH)
+    baseW = naturalW * fit
+    baseH = naturalH * fit
+  }
+
+  const scaledW = baseW * lightboxZoom.value
+  const scaledH = baseH * lightboxZoom.value
+
+  // Same rule on every side: pan until the photo edge meets the frame.
+  const maxX = Math.max(0, (scaledW - stageW) / 2)
+  const maxY = Math.max(0, (scaledH - stageH) / 2)
+
+  // One shared stop distance for left/right/top/bottom.
+  const edgeLimit = Math.min(
+    maxX > 0 ? maxX : Number.POSITIVE_INFINITY,
+    maxY > 0 ? maxY : Number.POSITIVE_INFINITY,
+  )
+
+  if (!Number.isFinite(edgeLimit)) {
+    return { maxX: 0, maxY: 0 }
+  }
+
+  return {
+    maxX: edgeLimit,
+    maxY: edgeLimit,
+  }
+}
+
+const canPanLightbox = computed(() => {
+  // Depend on zoom so cursor updates when limits change.
+  void lightboxZoom.value
+  const { maxX, maxY } = getLightboxPanLimits()
+  return maxX > 0 || maxY > 0
+})
+
 const lightboxImageStyle = computed(() => ({
   transform: `translate(${lightboxPanX.value}px, ${lightboxPanY.value}px) scale(${lightboxZoom.value})`,
   cursor: lightboxZoom.value > 1
-    ? (lightboxDragging.value ? 'grabbing' : 'grab')
+    ? (canPanLightbox.value
+      ? (lightboxDragging.value ? 'grabbing' : 'grab')
+      : 'default')
     : 'zoom-in',
 }))
+
+function clampLightboxPan(x: number, y: number) {
+  const { maxX, maxY } = getLightboxPanLimits()
+
+  return {
+    x: Math.min(maxX, Math.max(-maxX, x)),
+    y: Math.min(maxY, Math.max(-maxY, y)),
+  }
+}
+
+function setLightboxPan(x: number, y: number) {
+  const next = clampLightboxPan(x, y)
+  lightboxPanX.value = next.x
+  lightboxPanY.value = next.y
+}
 
 function resetLightboxZoom() {
   lightboxZoom.value = 1
@@ -203,15 +275,11 @@ function handleLightboxWheel(event: WheelEvent) {
   )
 
   lightboxZoom.value = Math.round(next * 100) / 100
-
-  if (lightboxZoom.value === ZOOM_MIN) {
-    lightboxPanX.value = 0
-    lightboxPanY.value = 0
-  }
+  nextTick(() => setLightboxPan(lightboxPanX.value, lightboxPanY.value))
 }
 
 function handleLightboxPointerDown(event: PointerEvent) {
-  if (lightboxZoom.value <= ZOOM_MIN || event.button !== 0) {
+  if (!canPanLightbox.value || event.button !== 0) {
     return
   }
 
@@ -228,8 +296,10 @@ function handleLightboxPointerMove(event: PointerEvent) {
     return
   }
 
-  lightboxPanX.value = dragOriginX + (event.clientX - dragStartX)
-  lightboxPanY.value = dragOriginY + (event.clientY - dragStartY)
+  setLightboxPan(
+    dragOriginX + (event.clientX - dragStartX),
+    dragOriginY + (event.clientY - dragStartY),
+  )
 }
 
 function handleLightboxPointerUp(event: PointerEvent) {
@@ -254,6 +324,7 @@ function handleLightboxDoubleClick() {
   }
 
   lightboxZoom.value = 2
+  nextTick(() => setLightboxPan(0, 0))
 }
 
 function showPrevLightboxImage() {
@@ -426,6 +497,7 @@ onBeforeUnmount(() => {
 
           <div class="hotel-gallery-lightbox__viewer">
             <div
+              ref="lightboxStageRef"
               class="hotel-gallery-lightbox__stage"
               @wheel="handleLightboxWheel"
               @pointerdown="handleLightboxPointerDown"
@@ -435,6 +507,7 @@ onBeforeUnmount(() => {
               @dblclick="handleLightboxDoubleClick"
             >
               <img
+                ref="lightboxImgRef"
                 class="hotel-gallery-lightbox__image"
                 :src="lightboxImage"
                 :alt="`${title} — фото ${activeIndex + 1}`"
