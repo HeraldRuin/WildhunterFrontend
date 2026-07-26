@@ -10,6 +10,8 @@ const COLLAPSED_THUMB_COUNT = 4
 
 const activeIndex = ref(0)
 const expanded = ref(false)
+/** large URLs already in browser cache — allows instant swap after medium preview */
+const readyLargeUrls = ref(new Set<string>())
 
 const thumbImages = computed(() => {
   const rest = props.images.slice(1)
@@ -23,21 +25,76 @@ const thumbImages = computed(() => {
 
 const hasMore = computed(() => props.images.length > 1 + COLLAPSED_THUMB_COUNT)
 
+const activeImage = computed(() => props.images[activeIndex.value] ?? props.images[0])
+
 const mainImage = computed(() => {
-  const item = props.images[activeIndex.value] ?? props.images[0]
-  return item?.large || item?.medium || ''
+  const item = activeImage.value
+  if (!item) {
+    return ''
+  }
+
+  const large = item.large || item.medium || ''
+  const medium = item.medium || item.thumb || large
+
+  // Show cached medium immediately; promote to large once prefetched/loaded.
+  if (large && readyLargeUrls.value.has(large)) {
+    return large
+  }
+
+  return medium || large
 })
+
+function markLargeReady(url: string) {
+  if (!url || readyLargeUrls.value.has(url)) {
+    return
+  }
+
+  const next = new Set(readyLargeUrls.value)
+  next.add(url)
+  readyLargeUrls.value = next
+}
+
+function prefetchLarge(url: string) {
+  if (!url || readyLargeUrls.value.has(url) || !import.meta.client) {
+    return
+  }
+
+  const img = new Image()
+  img.decoding = 'async'
+  img.onload = () => markLargeReady(url)
+  img.onerror = () => markLargeReady(url)
+  img.src = url
+
+  if (img.complete) {
+    markLargeReady(url)
+  }
+}
+
+function prefetchGalleryLarge(images: HotelGalleryImage[]) {
+  for (const image of images) {
+    if (image.large) {
+      prefetchLarge(image.large)
+    }
+  }
+}
 
 watch(
   () => props.images,
-  () => {
+  (images) => {
     activeIndex.value = 0
     expanded.value = false
+    readyLargeUrls.value = new Set()
+    prefetchGalleryLarge(images)
   },
+  { immediate: true },
 )
 
 function selectImage(index: number) {
   activeIndex.value = index
+  const item = props.images[index]
+  if (item?.large) {
+    prefetchLarge(item.large)
+  }
 }
 
 function handleThumbClick(thumbIndex: number) {
@@ -47,10 +104,18 @@ function handleThumbClick(thumbIndex: number) {
 
   if (isMoreButton) {
     expanded.value = true
+    prefetchGalleryLarge(props.images)
     return
   }
 
   selectImage(thumbIndex + 1)
+}
+
+function handleThumbHover(thumbIndex: number) {
+  const item = props.images[thumbIndex + 1]
+  if (item?.large) {
+    prefetchLarge(item.large)
+  }
 }
 </script>
 
@@ -85,6 +150,8 @@ function handleThumbClick(thumbIndex: number) {
             : `Показать фото ${index + 2}`
         "
         @click="handleThumbClick(index)"
+        @mouseenter="handleThumbHover(index)"
+        @focus="handleThumbHover(index)"
       >
         <img
           :src="image.medium || image.thumb"
