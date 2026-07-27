@@ -140,6 +140,7 @@ const { data: searchResult, pending } = await useAsyncData(
 const totalCount = computed(() => searchResult.value.total)
 const totalPages = computed(() => searchResult.value.totalPages)
 const offerItems = computed(() => searchResult.value.items)
+const hasResults = computed(() => offerItems.value.length > 0)
 
 function handleSearch(payload: Record<string, string>) {
   currentPage.value = 1
@@ -173,7 +174,10 @@ function handleFiltersReset() {
 
     <section class="bases-page__results">
       <div class="container bases-page__results-inner">
-        <div class="bases-page__toolbar">
+        <div
+          class="bases-page__toolbar"
+          :class="{ 'bases-page__toolbar--empty': !hasResults }"
+        >
           <button
             v-show="!mobileFiltersOpen"
             type="button"
@@ -183,11 +187,15 @@ function handleFiltersReset() {
             Фильтры
           </button>
 
-          <h1 class="bases-page__title">
+          <h1 v-if="hasResults" class="bases-page__title">
             Найдено баз: {{ totalCount }}
           </h1>
 
-          <NuxtLink to="/bases/map" class="bases-page__toolbar-link bases-page__map-link">
+          <NuxtLink
+            v-if="hasResults"
+            to="/bases/map"
+            class="bases-page__toolbar-link bases-page__map-link"
+          >
             Показать на карте
           </NuxtLink>
         </div>
@@ -209,7 +217,7 @@ function handleFiltersReset() {
               Загрузка...
             </div>
 
-            <div v-else-if="!offerItems.length" class="bases-page__state">
+            <div v-else-if="!offerItems.length" class="bases-page__state bases-page__state--empty">
               По вашему запросу базы не найдены. Попробуйте изменить фильтры.
             </div>
 
@@ -321,14 +329,28 @@ function handleFiltersReset() {
 }
 
 .bases-page__state {
-  padding: 48px 24px;
-  border: 1px dashed var(--wh-gray-200);
-  border-radius: var(--wh-radius-lg);
+  padding: 24px 0;
   text-align: center;
+  font-family: "Inter", sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
   color: var(--wh-gray-500);
 }
 
+.bases-page__state--empty {
+  color: var(--wh-gray-900);
+}
+
+.bases-page__toolbar--empty {
+  display: none;
+}
+
 @media (max-width: 1024px) {
+  .bases-page__toolbar--empty {
+    display: flex;
+  }
+
   .bases-page__layout {
     grid-template-columns: 1fr;
   }
