@@ -108,7 +108,7 @@ const searchRequest = computed(() => {
   }
 })
 
-const { data: searchResult, pending } = await useAsyncData(
+const { data: searchResult, status } = await useAsyncData(
   'hotel-search',
   async () => {
     try {
@@ -137,6 +137,7 @@ const { data: searchResult, pending } = await useAsyncData(
   },
 )
 
+const isSearchLoading = computed(() => status.value === 'pending')
 const totalCount = computed(() => searchResult.value.total)
 const totalPages = computed(() => searchResult.value.totalPages)
 const offerItems = computed(() => searchResult.value.items)
@@ -213,8 +214,15 @@ function handleFiltersReset() {
           />
 
           <div class="bases-page__main">
-            <div v-if="pending" class="bases-page__state">
-              Загрузка...
+            <div
+              v-if="isSearchLoading"
+              class="bases-page__state bases-page__state--loading"
+            >
+              <CommonSpinner
+                variant="ring"
+                color="var(--wh-orange-500)"
+                size="lg"
+              />
             </div>
 
             <div v-else-if="!offerItems.length" class="bases-page__state bases-page__state--empty">
@@ -336,6 +344,13 @@ function handleFiltersReset() {
   font-weight: 500;
   line-height: 1.5;
   color: var(--wh-gray-500);
+}
+
+.bases-page__state--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
 }
 
 .bases-page__state--empty {
