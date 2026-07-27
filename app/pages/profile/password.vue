@@ -334,7 +334,7 @@ onMounted(() => {
               id="confirm-password"
               v-model="confirmPassword"
               :type="showNewPassword ? 'text' : 'password'"
-              class="password-form__input password-form__input--plain"
+              class="password-form__input"
               :class="{
                 'password-form__input--masked': !showNewPassword && confirmPassword,
                 'password-form__input--error': getFieldError('new_password_confirmation'),
@@ -344,6 +344,27 @@ onMounted(() => {
               minlength="8"
               @input="clearFieldError('new_password_confirmation')"
             >
+            <button
+              type="button"
+              class="password-form__toggle"
+              :aria-label="showNewPassword ? 'Скрыть пароль' : 'Показать пароль'"
+              @click="showNewPassword = !showNewPassword"
+            >
+              <img
+                v-if="showNewPassword"
+                src="/icons/Group.png"
+                alt=""
+                aria-hidden="true"
+                class="password-form__password-icon"
+              >
+              <img
+                v-else
+                src="/icons/weui_eyes-off-filled.png"
+                alt=""
+                aria-hidden="true"
+                class="password-form__password-icon password-form__password-icon--hidden"
+              >
+            </button>
           </div>
           <p v-if="getFieldError('new_password_confirmation')" class="password-form__field-error">
             {{ getFieldError('new_password_confirmation') }}
@@ -511,10 +532,6 @@ onMounted(() => {
 .password-form__input--masked {
   font-size: 13px;
   letter-spacing: 0.28em;
-}
-
-.password-form__input--plain {
-  padding-right: 14px;
 }
 
 .password-form__input::placeholder {
@@ -686,6 +703,24 @@ onMounted(() => {
 }
 
 @media (--wh-mobile) {
+  .profile-page {
+    padding: 16px 20px 32px;
+  }
+
+  .profile-page__header {
+    height: auto;
+    min-height: 31px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  .profile-page__title {
+    font-size: clamp(1.25rem, 5vw, 1.75rem);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
   .password-form__generate {
     position: static;
     transform: none;
@@ -702,14 +737,18 @@ onMounted(() => {
   .password-form__actions {
     flex-direction: column;
     align-items: stretch;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: none;
   }
 
   .password-form__submit {
     width: 100%;
+    min-width: 0;
   }
 
   .password-form__cancel {
-    align-self: center;
+    display: none;
   }
 }
 </style>

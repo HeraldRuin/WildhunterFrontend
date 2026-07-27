@@ -369,4 +369,60 @@ async function handleLogout() {
     padding-top: 12px;
   }
 }
+
+@media (--wh-mobile) {
+  .profile-sidebar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 24px 20px 20px;
+  }
+
+  .profile-sidebar__user {
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 0 0 20px;
+    margin-right: 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    text-align: center;
+  }
+
+  .profile-sidebar__avatar {
+    margin-bottom: 12px;
+  }
+
+  .profile-sidebar__meta {
+    align-items: center;
+    text-align: center;
+  }
+
+  .profile-sidebar__role {
+    order: 0;
+    margin-top: 0;
+  }
+
+  .profile-sidebar__name {
+    order: 0;
+    margin: 14px 0 4px;
+  }
+
+  .profile-sidebar__since {
+    order: 0;
+    text-align: center;
+  }
+
+  .profile-sidebar__menu {
+    flex: 0 0 auto;
+  }
+
+  .profile-sidebar__nav {
+    padding: 12px 0;
+  }
+
+  .profile-sidebar__nav-link {
+    padding: 12px 14px;
+  }
+}
 </style>

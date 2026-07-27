@@ -48,4 +48,11 @@ onMounted(() => {
     overflow: visible;
   }
 }
+
+@media (--wh-mobile) {
+  .profile-layout__content {
+    border-radius: var(--wh-radius-lg);
+    background: var(--wh-white);
+  }
+}
 </style>
