@@ -246,8 +246,11 @@ function handleCancel() {
 }
 
 .profile-page__title--divider {
+  width: 896px;
+  max-width: 100%;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--wh-gray-200);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
 }
 
 .password-form__fields {
@@ -379,9 +382,12 @@ function handleCancel() {
   display: flex;
   align-items: center;
   gap: 20px;
+  width: 896px;
+  max-width: 100%;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid var(--wh-gray-200);
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
 }
 
 .password-form__submit {
