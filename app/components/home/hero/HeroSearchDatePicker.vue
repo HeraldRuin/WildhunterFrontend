@@ -10,6 +10,7 @@ import {
 
 const start = defineModel<Date | null>('start', { default: null })
 const end = defineModel<Date | null>('end', { default: null })
+const activePart = defineModel<'start' | 'end' | null>('activePart', { default: 'start' })
 
 const viewMonth = ref(startOfDay(start.value ?? new Date()))
 const weekdays = getWeekdayNames()
@@ -47,25 +48,53 @@ function getDayState(date: Date) {
   return 'default'
 }
 
+function focusMonthForPart(part: 'start' | 'end' | null) {
+  const target = part === 'end'
+    ? (end.value ?? start.value)
+    : (start.value ?? end.value)
+
+  if (!target) {
+    return
+  }
+
+  viewMonth.value = startOfDay(target)
+}
+
+watch(
+  activePart,
+  (part) => {
+    focusMonthForPart(part)
+  },
+  { immediate: true },
+)
+
 function selectDate(date: Date) {
   const normalized = startOfDay(date)
+  const part = activePart.value ?? 'start'
 
-  if (!start.value || (start.value && end.value)) {
+  if (part === 'start') {
     start.value = normalized
-    end.value = null
+
+    if (end.value && startOfDay(end.value).getTime() < normalized.getTime()) {
+      end.value = null
+    }
+
+    activePart.value = 'end'
+    return
+  }
+
+  if (!start.value) {
+    start.value = normalized
+    activePart.value = 'end'
     return
   }
 
   const currentStart = startOfDay(start.value)
 
   if (normalized.getTime() < currentStart.getTime()) {
-    end.value = currentStart
     start.value = normalized
-    return
-  }
-
-  if (isSameDay(normalized, currentStart)) {
-    end.value = normalized
+    end.value = null
+    activePart.value = 'end'
     return
   }
 
@@ -128,6 +157,9 @@ function goToNextMonth() {
               class="hero-search-calendar__day"
               :class="{
                 'hero-search-calendar__day--selected': getDayState(day.date) === 'start' || getDayState(day.date) === 'end',
+                'hero-search-calendar__day--active-target':
+                  (activePart === 'start' && getDayState(day.date) === 'start')
+                  || (activePart === 'end' && getDayState(day.date) === 'end'),
               }"
               @click="selectDate(day.date)"
             >
@@ -268,7 +300,7 @@ function goToNextMonth() {
   font-weight: 500;
   line-height: 1;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.2s ease;
 }
 
 .hero-search-calendar__cell--outside .hero-search-calendar__day {
@@ -280,7 +312,23 @@ function goToNextMonth() {
   color: var(--wh-white);
 }
 
+.hero-search-calendar__day--active-target {
+  box-shadow: 0 0 0 2px rgb(209 101 16 / 45%);
+  animation: hero-search-day-pulse 1.4s ease-in-out infinite;
+}
+
 .hero-search-calendar__day:not(.hero-search-calendar__day--selected):hover {
   background: rgb(209 101 16 / 12%);
+}
+
+@keyframes hero-search-day-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgb(209 101 16 / 35%);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgb(209 101 16 / 18%);
+  }
 }
 </style>

@@ -85,6 +85,7 @@ const isLocationOpen = ref(false)
 const isAnimalOpen = ref(false)
 const isGuestsOpen = ref(false)
 const isDatesOpen = ref(false)
+const activeDatePart = ref<'start' | 'end' | null>(null)
 const locationFieldRef = ref<HTMLElement | null>(null)
 const animalFieldRef = ref<HTMLElement | null>(null)
 const guestsFieldRef = ref<HTMLElement | null>(null)
@@ -147,18 +148,24 @@ function formatAdultsLabel(count: number) {
 
 const guestsLabel = computed(() => formatAdultsLabel(adultsCount.value))
 
+const checkInLabel = computed(() =>
+  checkIn.value ? formatDisplayDate(checkIn.value) : 'Заезд',
+)
+
+const checkOutLabel = computed(() =>
+  checkOut.value ? formatDisplayDate(checkOut.value) : 'Выезд',
+)
+
 const dateRangeLabel = computed(() => {
   if (!checkIn.value) {
     return 'Выберите даты'
   }
 
-  const startLabel = formatDisplayDate(checkIn.value)
-
   if (!checkOut.value) {
-    return startLabel
+    return checkInLabel.value
   }
 
-  return `${startLabel} - ${formatDisplayDate(checkOut.value)}`
+  return `${checkInLabel.value} - ${checkOutLabel.value}`
 })
 
 const hasCustomDates = computed(() => {
@@ -198,6 +205,7 @@ function closeOtherDropdowns(except?: 'location' | 'animal' | 'guests' | 'dates'
 
   if (except !== 'dates') {
     isDatesOpen.value = false
+    activeDatePart.value = null
   }
 }
 
@@ -224,9 +232,34 @@ function toggleGuestsDropdown() {
   closeOtherDropdowns(isGuestsOpen.value ? 'guests' : undefined)
 }
 
+function openDatesFor(part: 'start' | 'end') {
+  if (isDatesOpen.value && activeDatePart.value === part) {
+    closeDatesDropdown()
+    return
+  }
+
+  isDatesOpen.value = true
+  activeDatePart.value = part
+  closeOtherDropdowns('dates')
+}
+
 function toggleDatesDropdown() {
-  isDatesOpen.value = !isDatesOpen.value
-  closeOtherDropdowns(isDatesOpen.value ? 'dates' : undefined)
+  if (isDatesOpen.value) {
+    closeDatesDropdown()
+    return
+  }
+
+  openDatesFor('start')
+}
+
+function onDatesFieldClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+
+  if (target.closest('.hero-search__date-part, .hero-search__clear, .hero-search__dates-chevron, .hero-search__dropdown-panel')) {
+    return
+  }
+
+  openDatesFor('start')
 }
 
 function incrementAdults() {
@@ -293,6 +326,7 @@ function closeGuestsDropdown() {
 
 function closeDatesDropdown() {
   isDatesOpen.value = false
+  activeDatePart.value = null
 }
 
 function handleDocumentClick(event: MouseEvent) {
@@ -335,7 +369,7 @@ function clearDates(event: MouseEvent) {
   event.stopPropagation()
   checkIn.value = parseDisplayDate(DEFAULT_CHECK_IN)
   checkOut.value = parseDisplayDate(DEFAULT_CHECK_OUT)
-  isDatesOpen.value = false
+  closeDatesDropdown()
 }
 
 function submitSearch() {
@@ -494,15 +528,30 @@ onUnmounted(() => {
       ref="datesFieldRef"
       class="hero-search__field hero-search__field--dates"
       :class="{ 'hero-search__field--open': isDatesOpen }"
+      @click="onDatesFieldClick"
     >
       <span class="hero-search__label">Заезд - Выезд</span>
-      <button
-        type="button"
-        class="hero-search__control hero-search__dropdown-trigger"
-        @click="toggleDatesDropdown"
-      >
-        <span class="hero-search__dropdown-value">{{ dateRangeLabel }}</span>
-      </button>
+      <div class="hero-search__control hero-search__dates-control">
+        <button
+          type="button"
+          class="hero-search__date-part"
+          :class="{ 'hero-search__date-part--active': isDatesOpen && activeDatePart === 'start' }"
+          aria-label="Выбрать дату заезда"
+          @click="openDatesFor('start')"
+        >
+          {{ checkInLabel }}
+        </button>
+        <span class="hero-search__dates-sep" aria-hidden="true">-</span>
+        <button
+          type="button"
+          class="hero-search__date-part"
+          :class="{ 'hero-search__date-part--active': isDatesOpen && activeDatePart === 'end' }"
+          aria-label="Выбрать дату выезда"
+          @click="openDatesFor('end')"
+        >
+          {{ checkOutLabel }}
+        </button>
+      </div>
       <button
         v-if="hasCustomDates"
         type="button"
@@ -514,12 +563,24 @@ onUnmounted(() => {
           <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
         </svg>
       </button>
-      <svg v-else class="hero-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
-        <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
+      <button
+        v-else
+        type="button"
+        class="hero-search__dates-chevron"
+        aria-label="Открыть календарь"
+        @click="toggleDatesDropdown"
+      >
+        <svg class="hero-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
+          <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
 
       <div v-if="isDatesOpen" class="hero-search__dropdown-panel hero-search__dropdown-panel--calendar">
-        <HomeHeroSearchDatePicker v-model:start="checkIn" v-model:end="checkOut" />
+        <HomeHeroSearchDatePicker
+          v-model:start="checkIn"
+          v-model:end="checkOut"
+          v-model:active-part="activeDatePart"
+        />
       </div>
     </div>
 
@@ -764,6 +825,90 @@ onUnmounted(() => {
   line-height: inherit;
   letter-spacing: inherit;
   color: inherit;
+}
+
+.hero-search__dates-control {
+  gap: 0;
+  padding-right: 28px;
+}
+
+.hero-search__date-part {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 50%;
+  padding: 2px 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: #1c211c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-search__date-part--active {
+  color: var(--wh-orange-500);
+  animation: hero-search-date-part-pulse 1.4s ease-in-out infinite;
+}
+
+.hero-search__dates-sep {
+  flex-shrink: 0;
+  margin: 0 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: #1c211c;
+  opacity: 0.45;
+  user-select: none;
+}
+
+.hero-search__dates-chevron {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.hero-search__dates-chevron .hero-search__chevron {
+  position: static;
+  transform: none;
+}
+
+.hero-search__field--open .hero-search__dates-chevron .hero-search__chevron {
+  transform: rotate(180deg);
+}
+
+@keyframes hero-search-date-part-pulse {
+  0%,
+  100% {
+    background: rgb(209 101 16 / 0%);
+    box-shadow: 0 0 0 0 rgb(209 101 16 / 0%);
+  }
+
+  50% {
+    background: rgb(209 101 16 / 10%);
+    box-shadow: 0 0 0 3px rgb(209 101 16 / 8%);
+  }
 }
 
 .hero-search__control input::placeholder {
