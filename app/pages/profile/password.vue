@@ -192,7 +192,9 @@ async function handleSubmit() {
 }
 
 function handleCancel() {
-  navigateTo('/profile')
+  resetFormFields()
+  fieldErrors.value = {}
+  submitError.value = ''
 }
 </script>
 
