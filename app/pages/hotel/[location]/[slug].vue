@@ -42,7 +42,7 @@ const pageTitle = computed(() => `${displayHotel.value.title} — WH`)
 
 const breadcrumbs = computed(() => [
   { label: 'Главная', to: '/' },
-  { label: 'Базы', to: '/bases' },
+  { label: 'Базы' },
   { label: displayHotel.value.title },
 ])
 

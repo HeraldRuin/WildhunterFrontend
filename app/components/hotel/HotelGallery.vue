@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { HotelGalleryImage } from '~/types/api'
+import { isValidGalleryImage } from '~/utils/image'
 
 const props = defineProps<{
   images: HotelGalleryImage[]
@@ -9,13 +10,16 @@ const props = defineProps<{
 
 const COLLAPSED_THUMB_COUNT = 4
 
+const visibleImages = computed(() => props.images.filter(image => isValidGalleryImage(image)))
+const isEmpty = computed(() => !props.placeholder && visibleImages.value.length === 0)
+
 const activeIndex = ref(0)
 const expanded = ref(false)
 /** large URLs already in browser cache — allows instant swap after medium preview */
 const readyLargeUrls = ref(new Set<string>())
 
 const thumbImages = computed(() => {
-  const rest = props.images.slice(1)
+  const rest = visibleImages.value.slice(1)
 
   if (expanded.value) {
     return rest
@@ -24,9 +28,9 @@ const thumbImages = computed(() => {
   return rest.slice(0, COLLAPSED_THUMB_COUNT)
 })
 
-const hasMore = computed(() => props.images.length > 1 + COLLAPSED_THUMB_COUNT)
+const hasMore = computed(() => visibleImages.value.length > 1 + COLLAPSED_THUMB_COUNT)
 
-const activeImage = computed(() => props.images[activeIndex.value] ?? props.images[0])
+const activeImage = computed(() => visibleImages.value[activeIndex.value] ?? visibleImages.value[0])
 
 const mainImage = computed(() => {
   const item = activeImage.value
@@ -80,7 +84,7 @@ function prefetchGalleryLarge(images: HotelGalleryImage[]) {
 }
 
 watch(
-  () => props.images,
+  () => visibleImages.value,
   (images) => {
     activeIndex.value = 0
     expanded.value = false
@@ -92,7 +96,7 @@ watch(
 
 function selectImage(index: number) {
   activeIndex.value = index
-  const item = props.images[index]
+  const item = visibleImages.value[index]
   if (item?.large) {
     prefetchLarge(item.large)
   }
@@ -105,7 +109,7 @@ function handleThumbClick(thumbIndex: number) {
 
   if (isMoreButton) {
     expanded.value = true
-    prefetchGalleryLarge(props.images)
+    prefetchGalleryLarge(visibleImages.value)
     return
   }
 
@@ -113,7 +117,7 @@ function handleThumbClick(thumbIndex: number) {
 }
 
 function handleThumbHover(thumbIndex: number) {
-  const item = props.images[thumbIndex + 1]
+  const item = visibleImages.value[thumbIndex + 1]
   if (item?.large) {
     prefetchLarge(item.large)
   }
@@ -136,7 +140,7 @@ let dragStartY = 0
 let dragOriginX = 0
 let dragOriginY = 0
 
-const canNavigateLightbox = computed(() => props.images.length > 1)
+const canNavigateLightbox = computed(() => visibleImages.value.length > 1)
 
 const lightboxImage = computed(() => {
   const item = activeImage.value
@@ -282,17 +286,17 @@ function closeLightbox() {
 }
 
 function showLightboxImage(index: number) {
-  if (!props.images.length) {
+  if (!visibleImages.value.length) {
     return
   }
 
-  const total = props.images.length
+  const total = visibleImages.value.length
   const nextIndex = ((index % total) + total) % total
   selectImage(nextIndex)
   resetLightboxZoom()
 
-  const prev = props.images[(nextIndex - 1 + total) % total]
-  const next = props.images[(nextIndex + 1) % total]
+  const prev = visibleImages.value[(nextIndex - 1 + total) % total]
+  const next = visibleImages.value[(nextIndex + 1) % total]
   if (prev?.large) {
     prefetchLarge(prev.large)
   }
@@ -448,6 +452,16 @@ onBeforeUnmount(() => {
         :key="index"
         class="hotel-gallery__thumb hotel-gallery__skeleton"
       />
+    </div>
+  </div>
+
+  <div
+    v-else-if="isEmpty"
+    class="hotel-gallery hotel-gallery--empty"
+    aria-label="Фотографии отсутствуют"
+  >
+    <div class="hotel-gallery__main hotel-gallery__skeleton hotel-gallery__empty">
+      <span class="hotel-gallery__empty-label">Нет фото</span>
     </div>
   </div>
 
@@ -672,6 +686,28 @@ onBeforeUnmount(() => {
   min-height: 0;
 }
 
+.hotel-gallery--empty {
+  display: block;
+  height: 520px;
+}
+
+.hotel-gallery--empty .hotel-gallery__main {
+  width: 100%;
+  height: 520px;
+  min-height: 520px;
+}
+
+.hotel-gallery__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hotel-gallery__empty-label {
+  font-size: 1rem;
+  color: var(--wh-gray-400);
+}
+
 .hotel-gallery__main,
 .hotel-gallery__thumb {
   position: relative;
@@ -804,6 +840,16 @@ onBeforeUnmount(() => {
   .hotel-gallery {
     grid-template-columns: 1fr;
     height: auto;
+  }
+
+  .hotel-gallery--empty {
+    height: auto;
+  }
+
+  .hotel-gallery--empty .hotel-gallery__main {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 3 / 2;
   }
 
   .hotel-gallery__main {

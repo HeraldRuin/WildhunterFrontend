@@ -26,3 +26,7 @@ export function shouldShowOfferImage(image?: string | null) {
 
   return !shouldUseCustomOfferPlaceholder(value)
 }
+
+export function isValidGalleryImage(image: { large?: string, medium?: string, thumb?: string }) {
+  return [image.large, image.medium, image.thumb].some(url => shouldShowOfferImage(url))
+}

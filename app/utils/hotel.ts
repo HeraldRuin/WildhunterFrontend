@@ -1,4 +1,5 @@
 import type { BookableItem, HotelDetail, HotelGalleryImage, HotelTermGroup, ReviewItem } from '~/types/api'
+import { isValidGalleryImage, shouldShowOfferImage } from '~/utils/image'
 import { MOCK_SEARCH_ITEMS, toOfferItem } from '~/utils/search'
 
 export interface HotelSlugParams {
@@ -122,14 +123,20 @@ function toGalleryImage(item: unknown): HotelGalleryImage | null {
     return null
   }
 
-  return {
+  const image = {
     large: resolvedLarge || resolvedMedium || resolvedThumb,
     medium: resolvedMedium || resolvedLarge || resolvedThumb,
     thumb: resolvedThumb || resolvedMedium || resolvedLarge,
   }
+
+  return isValidGalleryImage(image) ? image : null
 }
 
-function buildGallery(data: Record<string, unknown>, fallbackImage: string): HotelGalleryImage[] {
+function buildGallery(
+  data: Record<string, unknown>,
+  fallbackImage: string,
+  options: { useDefaultFallback?: boolean } = {},
+): HotelGalleryImage[] {
   const gallery = Array.isArray(data.gallery)
     ? data.gallery.map(toGalleryImage).filter((item): item is HotelGalleryImage => Boolean(item))
     : []
@@ -139,17 +146,21 @@ function buildGallery(data: Record<string, unknown>, fallbackImage: string): Hot
   }
 
   const single = data.banner_image ?? data.image_url ?? data.image
-  if (typeof single === 'string' && single.trim()) {
+  if (typeof single === 'string' && shouldShowOfferImage(single)) {
     const url = single.trim()
     return [{ large: url, medium: url, thumb: url }]
   }
 
-  if (fallbackImage.trim()) {
+  if (shouldShowOfferImage(fallbackImage)) {
     const url = fallbackImage.trim()
     return [{ large: url, medium: url, thumb: url }]
   }
 
-  return DEFAULT_GALLERY.map(url => ({ large: url, medium: url, thumb: url }))
+  if (options.useDefaultFallback) {
+    return DEFAULT_GALLERY.map(url => ({ large: url, medium: url, thumb: url }))
+  }
+
+  return []
 }
 
 function findMockHotel(params: HotelSlugParams) {
@@ -182,7 +193,7 @@ export function createMockHotelDetail(params: HotelSlugParams): HotelDetail {
       name: base.location?.name ?? '',
       slug: base.location?.slug ?? params.locationSlug,
     },
-    gallery: buildGallery({}, base.image),
+    gallery: buildGallery({}, base.image, { useDefaultFallback: true }),
     map_lat: 57.6261,
     map_lng: 39.8845,
     review_score: {
