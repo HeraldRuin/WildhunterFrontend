@@ -31,6 +31,19 @@ onMounted(() => {
 
 const pageTitle = computed(() => hotel.value ? `${hotel.value.title} — WH` : 'База — WH')
 
+const breadcrumbs = computed(() => {
+  const items = [
+    { label: 'Главная', to: '/' },
+    { label: 'Базы', to: '/bases' },
+  ]
+
+  if (hotel.value?.title) {
+    items.push({ label: hotel.value.title })
+  }
+
+  return items
+})
+
 useHead({
   title: pageTitle,
 })
@@ -171,13 +184,7 @@ async function handleFavoriteClick() {
     <template v-else-if="hotel">
       <section class="hotel-page__hero">
         <div class="hotel-page__hero-inner">
-          <nav class="hotel-page__breadcrumbs" aria-label="Хлебные крошки">
-            <NuxtLink to="/">Главная</NuxtLink>
-            <span aria-hidden="true">&gt;</span>
-            <NuxtLink to="/bases">Базы</NuxtLink>
-            <span aria-hidden="true">&gt;</span>
-            <span class="hotel-page__breadcrumbs-current" aria-current="page">{{ hotel.title }}</span>
-          </nav>
+          <AppBreadcrumbs :items="breadcrumbs" />
 
           <div class="hotel-page__title-row">
             <h1 class="hotel-page__title">{{ hotel.title }}</h1>
@@ -334,27 +341,6 @@ async function handleFavoriteClick() {
   gap: 24px;
   width: min(100% - 48px, calc(100vw - 220px));
   margin-inline: auto;
-}
-
-.hotel-page__breadcrumbs {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 0.875rem;
-  color: var(--wh-gray-400);
-}
-
-.hotel-page__breadcrumbs a {
-  transition: color 0.15s ease;
-}
-
-.hotel-page__breadcrumbs a:hover {
-  color: var(--wh-gray-900);
-}
-
-.hotel-page__breadcrumbs-current {
-  color: var(--wh-gray-900);
 }
 
 .hotel-page__title-row {

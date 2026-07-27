@@ -12,6 +12,11 @@ const { profile, pending, error, loadProfile, addWeaponRow } = useProfile()
 
 const notificationCount = 2
 
+const breadcrumbs = [
+  { label: 'Главная', to: '/' },
+  { label: 'Мой профиль' },
+]
+
 onMounted(() => {
   loadProfile()
 })
@@ -43,11 +48,7 @@ function handleSubmit() {
 <template>
   <div class="profile-page">
     <header class="profile-page__header">
-      <nav class="profile-page__breadcrumbs" aria-label="Хлебные крошки">
-        <NuxtLink to="/">Главная</NuxtLink>
-        <span aria-hidden="true">&gt;</span>
-        <span>Мой профиль</span>
-      </nav>
+      <AppBreadcrumbs :items="breadcrumbs" />
 
       <button type="button" class="profile-page__notifications" aria-label="Уведомления">
         <img
@@ -305,23 +306,6 @@ function handleSubmit() {
   background: var(--wh-white);
   border-radius: var(--wh-radius);
   overflow: visible;
-}
-
-.profile-page__breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  color: var(--wh-gray-500);
-}
-
-.profile-page__breadcrumbs a {
-  color: var(--wh-green);
-  transition: opacity 0.15s ease;
-}
-
-.profile-page__breadcrumbs a:hover {
-  opacity: 0.8;
 }
 
 .profile-page__notifications {

@@ -12,6 +12,11 @@ useHead({
 })
 
 const notificationCount = 2
+
+const breadcrumbs = [
+  { label: 'Главная', to: '/' },
+  { label: 'Бронирования' },
+]
 const activeTab = ref<BookingTab>('my')
 
 const tabs: { id: BookingTab, label: string }[] = [
@@ -31,11 +36,7 @@ const emptyText = computed(() =>
 <template>
   <div class="bookings-page">
     <header class="bookings-page__header">
-      <nav class="bookings-page__breadcrumbs" aria-label="Хлебные крошки">
-        <NuxtLink to="/">Главная</NuxtLink>
-        <span aria-hidden="true">&gt;</span>
-        <span>Бронирования</span>
-      </nav>
+      <AppBreadcrumbs :items="breadcrumbs" />
 
       <button type="button" class="bookings-page__notifications" aria-label="Уведомления">
         <img
@@ -94,23 +95,6 @@ const emptyText = computed(() =>
   background: var(--wh-white);
   border-radius: var(--wh-radius);
   overflow: visible;
-}
-
-.bookings-page__breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  color: var(--wh-gray-500);
-}
-
-.bookings-page__breadcrumbs a {
-  color: var(--wh-green);
-  transition: opacity 0.15s ease;
-}
-
-.bookings-page__breadcrumbs a:hover {
-  opacity: 0.8;
 }
 
 .bookings-page__notifications {

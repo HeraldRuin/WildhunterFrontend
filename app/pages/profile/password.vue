@@ -10,6 +10,12 @@ useHead({
 
 const notificationCount = 0
 
+const breadcrumbs = [
+  { label: 'Главная', to: '/' },
+  { label: 'Параметр' },
+  { label: 'Изменить пароль' },
+]
+
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
@@ -40,13 +46,7 @@ function handleCancel() {
 <template>
   <div class="profile-page">
     <header class="profile-page__header">
-      <nav class="profile-page__breadcrumbs" aria-label="Хлебные крошки">
-        <NuxtLink to="/">Главная</NuxtLink>
-        <span aria-hidden="true">&gt;</span>
-        <span>Параметр</span>
-        <span aria-hidden="true">&gt;</span>
-        <span>Изменить пароль</span>
-      </nav>
+      <AppBreadcrumbs :items="breadcrumbs" />
 
       <button type="button" class="profile-page__notifications" aria-label="Уведомления">
         <img
@@ -193,23 +193,6 @@ function handleCancel() {
   background: var(--wh-white);
   border-radius: var(--wh-radius);
   overflow: visible;
-}
-
-.profile-page__breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  color: var(--wh-gray-500);
-}
-
-.profile-page__breadcrumbs a {
-  color: var(--wh-green);
-  transition: opacity 0.15s ease;
-}
-
-.profile-page__breadcrumbs a:hover {
-  opacity: 0.8;
 }
 
 .profile-page__notifications {
@@ -379,7 +362,7 @@ function handleCancel() {
   letter-spacing: -0.05em;
   text-decoration: underline;
   text-decoration-style: solid;
-  text-underline-offset: 0;
+  text-underline-offset: 4px;
   text-decoration-thickness: auto;
   text-decoration-skip-ink: auto;
   white-space: nowrap;
