@@ -11,11 +11,19 @@ export type ChangePasswordResponse =
   | ApiSuccessResponse<unknown>
   | ApiErrorResponse
 
+export type CurrentPasswordResponse =
+  | ApiSuccessResponse<{ current_password: string | null }>
+  | ApiErrorResponse
+
 export function useUserApi() {
   const { apiFetch } = useApiClient()
 
   function getUser(id: number | string) {
     return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(`/user/${id}`)
+  }
+
+  function getCurrentPassword() {
+    return apiFetch<CurrentPasswordResponse>('/user/current-password')
   }
 
   function changePassword(payload: ChangePasswordPayload) {
@@ -27,6 +35,7 @@ export function useUserApi() {
 
   return {
     getUser,
+    getCurrentPassword,
     changePassword,
   }
 }

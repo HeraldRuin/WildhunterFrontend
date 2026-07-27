@@ -10,6 +10,7 @@ useHead({
 
 const { user: userApi } = useApi()
 const notifications = useNotifications()
+const { loadCurrentPassword, refreshCurrentPassword } = useCurrentPassword()
 
 const notificationCount = 0
 
@@ -174,6 +175,7 @@ async function handleSubmit() {
     if ('success' in response && response.success) {
       notifications.success(response.message || 'Пароль успешно изменён')
       resetFormFields()
+      currentPassword.value = (await refreshCurrentPassword()) || ''
       return
     }
 
@@ -195,7 +197,16 @@ function handleCancel() {
   resetFormFields()
   fieldErrors.value = {}
   submitError.value = ''
+  void applyCachedCurrentPassword()
 }
+
+async function applyCachedCurrentPassword(force = false) {
+  currentPassword.value = (await loadCurrentPassword(force)) || ''
+}
+
+onMounted(() => {
+  void applyCachedCurrentPassword()
+})
 </script>
 
 <template>

@@ -15,4 +15,8 @@ export type { FavoriteResponse, FavoriteServiceItem } from './services'
 export { useNewsletterApi } from './newsletter'
 export type { NewsletterSubscribePayload, NewsletterSubscribeResponse } from './newsletter'
 export { useUserApi } from './user'
-export type { ChangePasswordPayload, ChangePasswordResponse } from './user'
+export type {
+  ChangePasswordPayload,
+  ChangePasswordResponse,
+  CurrentPasswordResponse,
+} from './user'

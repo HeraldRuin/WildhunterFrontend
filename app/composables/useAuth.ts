@@ -51,6 +51,7 @@ export function useAuth() {
 
   async function logout() {
     const { resetProfile } = useProfile()
+    const { clearCurrentPassword } = useCurrentPassword()
 
     try {
       if (authToken.token.value) {
@@ -61,6 +62,7 @@ export function useAuth() {
     } finally {
       authToken.clearSession()
       resetProfile()
+      clearCurrentPassword()
     }
   }
 
