@@ -1,4 +1,10 @@
 :root {
+  /* Breakpoints — синхронно с app/assets/css/breakpoints.css */
+  --wh-bp-tablet: 1024px;
+  --wh-bp-narrow: 768px;
+  --wh-bp-mobile: 640px;
+  --wh-bp-mobile-sm: 480px;
+
   --wh-green: #52714f;
   --wh-green-800: #52714f;
   --wh-green-700: #52714f;

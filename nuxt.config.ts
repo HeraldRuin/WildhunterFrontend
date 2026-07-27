@@ -6,6 +6,14 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
+  postcss: {
+    plugins: {
+      '@csstools/postcss-global-data': {
+        files: ['./app/assets/css/breakpoints.css'],
+      },
+      'postcss-custom-media': {},
+    },
+  },
   app: {
     head: {
       title: 'WH — Охотничьи базы',
