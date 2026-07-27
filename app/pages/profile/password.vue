@@ -73,6 +73,7 @@ function handleCancel() {
               v-model="currentPassword"
               :type="showCurrentPassword ? 'text' : 'password'"
               class="password-form__input"
+              :class="{ 'password-form__input--masked': !showCurrentPassword && currentPassword }"
               placeholder="Текущий пароль"
               autocomplete="current-password"
             >
@@ -109,6 +110,7 @@ function handleCancel() {
                 v-model="newPassword"
                 :type="showNewPassword ? 'text' : 'password'"
                 class="password-form__input"
+                :class="{ 'password-form__input--masked': !showNewPassword && newPassword }"
                 placeholder="Новый пароль"
                 autocomplete="new-password"
                 minlength="8"
@@ -153,6 +155,7 @@ function handleCancel() {
               v-model="confirmPassword"
               :type="showNewPassword ? 'text' : 'password'"
               class="password-form__input password-form__input--plain"
+              :class="{ 'password-form__input--masked': !showNewPassword && confirmPassword }"
               placeholder="Новый пароль снова"
               autocomplete="new-password"
               minlength="8"
@@ -293,8 +296,16 @@ function handleCancel() {
   border-radius: 10px;
   background: var(--wh-white);
   color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.password-form__input--masked {
+  font-size: 13px;
+  letter-spacing: 0.28em;
 }
 
 .password-form__input--plain {
@@ -303,6 +314,7 @@ function handleCancel() {
 
 .password-form__input::placeholder {
   color: var(--wh-gray-400);
+  letter-spacing: normal;
 }
 
 .password-form__input:focus {
