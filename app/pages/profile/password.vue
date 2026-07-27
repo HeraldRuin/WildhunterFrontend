@@ -289,7 +289,7 @@ function handleCancel() {
 .password-form__input {
   width: 100%;
   padding: 12px 44px 12px 14px;
-  border: 1px solid var(--wh-gray-200);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 10px;
   background: var(--wh-white);
   color: var(--wh-gray-900);
