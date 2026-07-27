@@ -196,7 +196,7 @@ function handleBook() {
   color: var(--wh-gray-500);
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .hotel-booking {
     position: static;
   }

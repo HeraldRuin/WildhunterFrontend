@@ -292,14 +292,14 @@ function closeMobile() {
   cursor: pointer;
 }
 
-@media (min-width: 1025px) {
+@media (--wh-desktop) {
   .search-filters__panel {
     position: sticky;
     top: 96px;
   }
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .search-filters {
     position: fixed;
     inset: 0;
@@ -330,7 +330,7 @@ function closeMobile() {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .search-filters {
     position: static;
     inset: auto;

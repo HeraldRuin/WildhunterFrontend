@@ -241,7 +241,7 @@ const socials = [
   white-space: nowrap;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .footer__grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     column-gap: 24px;
@@ -278,7 +278,7 @@ const socials = [
   }
 }
 
-@media (max-width: 768px) {
+@media (--wh-narrow) {
   .footer__main {
     padding-block: 40px 28px;
   }

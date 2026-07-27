@@ -148,7 +148,7 @@ const navItems = [
   background: var(--wh-green-900);
 }
 
-@media (max-width: 900px) {
+@media (--wh-tablet) {
   .header__nav {
     position: absolute;
     top: 76px;

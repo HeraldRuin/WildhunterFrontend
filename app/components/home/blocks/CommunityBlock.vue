@@ -436,7 +436,7 @@ async function handleSubmit() {
   width: 100%;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .community-block__inner {
     min-height: 400px;
     padding: 56px 32px 56px 24px;
@@ -492,7 +492,7 @@ async function handleSubmit() {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .community-block {
     min-height: 391px;
   }

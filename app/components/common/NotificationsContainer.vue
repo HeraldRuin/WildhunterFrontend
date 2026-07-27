@@ -211,7 +211,7 @@ const icons: Record<NotificationType, { path: string, viewBox?: string }> = {
   transform: translateX(100%) scale(0.95);
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .notif-container {
     top: 72px;
     right: 12px;

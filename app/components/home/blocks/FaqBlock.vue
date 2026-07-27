@@ -256,7 +256,7 @@ function toggleItem(id: number) {
   white-space: nowrap;
 }
 
-@media (min-width: 1025px) {
+@media (--wh-desktop) {
   .faq-block__trigger {
     grid-template-columns: 592px minmax(0, 1fr) auto;
   }
@@ -266,7 +266,7 @@ function toggleItem(id: number) {
   }
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .faq-block__cta {
     grid-template-columns: max-content minmax(0, 1fr);
     grid-template-rows: auto auto;
@@ -297,7 +297,7 @@ function toggleItem(id: number) {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .faq-block__trigger {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;

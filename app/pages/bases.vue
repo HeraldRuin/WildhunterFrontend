@@ -377,7 +377,7 @@ function handleFiltersReset() {
   display: none;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .bases-page__toolbar--empty {
     display: flex;
   }
@@ -395,7 +395,7 @@ function handleFiltersReset() {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .bases-page__layout--filters-open .bases-page__main {
     display: none;
   }

@@ -306,7 +306,7 @@ const featuredItems = computed(() => (model.value.list_item as Array<Record<stri
   color: rgba(255, 255, 255, 0.85);
 }
 
-@media (max-width: 768px) {
+@media (--wh-narrow) {
   .section {
     padding-block: 48px;
   }

@@ -64,7 +64,7 @@ const columns = [
   color: #ffffff;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .project-description__grid {
     grid-template-columns: 1fr;
     gap: 24px;

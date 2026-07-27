@@ -84,7 +84,7 @@ function scrollBy(direction: 'prev' | 'next') {
   gap: 40px;
 }
 
-@media (min-width: 1025px) {
+@media (--wh-desktop) {
   .best-offers__inner.container {
     /* 4×288px карточки + 3×16px gap + стрелки и отступы */
     width: min(100% - 32px, 1292px);
@@ -148,7 +148,7 @@ function scrollBy(direction: 'prev' | 'next') {
   min-width: 180px;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .best-offers__slider-wrap {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -164,7 +164,7 @@ function scrollBy(direction: 'prev' | 'next') {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .best-offers__track {
     --best-offers-card-width: 345px;
     --best-offers-card-height: 325px;

@@ -176,7 +176,7 @@ const { isAuthenticated } = useAuth()
   transform: translateY(-1px);
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .hero-header {
     width: calc(100vw - 24px);
     max-width: none;
@@ -202,7 +202,7 @@ const { isAuthenticated } = useAuth()
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .hero-header {
     grid-template-columns: 1fr auto 1fr;
     justify-items: stretch;

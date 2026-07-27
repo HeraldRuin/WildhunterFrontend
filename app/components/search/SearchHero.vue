@@ -116,7 +116,7 @@ const backgroundStyle = computed(() => {
   display: none;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .search-top {
     height: 445px;
   }
@@ -152,7 +152,7 @@ const backgroundStyle = computed(() => {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .search-top {
     height: auto;
     min-height: 567px;

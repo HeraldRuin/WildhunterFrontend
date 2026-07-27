@@ -38,7 +38,7 @@
   display: none;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .hero-title__heading {
     max-width: 100%;
   }

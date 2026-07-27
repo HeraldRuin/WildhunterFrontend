@@ -340,7 +340,7 @@ onUnmounted(() => {
   transform: translateY(-4px);
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .auth-user-menu {
     align-items: flex-end;
   }

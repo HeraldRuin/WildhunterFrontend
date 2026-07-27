@@ -114,7 +114,7 @@ const items = [
   display: none;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .why-us__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -138,7 +138,7 @@ const items = [
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .why-us__grid {
     grid-template-columns: 1fr;
   }

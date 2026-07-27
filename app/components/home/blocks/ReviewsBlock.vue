@@ -121,7 +121,7 @@ function scrollBy(direction: 'prev' | 'next') {
   min-width: 0;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .reviews-block__slider-wrap {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -135,7 +135,7 @@ function scrollBy(direction: 'prev' | 'next') {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .reviews-block__track {
     grid-auto-columns: 100%;
   }

@@ -679,13 +679,13 @@ onMounted(() => {
   color: var(--wh-orange-600);
 }
 
-@media (max-width: 900px) {
+@media (--wh-tablet) {
   .profile-page {
     padding: 16px 20px 40px;
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .password-form__generate {
     position: static;
     transform: none;

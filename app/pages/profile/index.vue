@@ -588,7 +588,7 @@ function handleSubmit() {
   transform: translateY(-1px);
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .profile-form__grid {
     grid-template-columns: 1fr;
   }
@@ -598,13 +598,13 @@ function handleSubmit() {
   }
 }
 
-@media (max-width: 900px) {
+@media (--wh-tablet) {
   .profile-page {
     padding: 16px 20px 40px;
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .profile-form__row,
   .profile-weapon__row {
     grid-template-columns: 1fr;

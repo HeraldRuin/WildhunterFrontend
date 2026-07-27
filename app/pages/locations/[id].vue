@@ -414,7 +414,7 @@ function handleFiltersReset() {
   color: var(--wh-gray-900);
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .location-page__layout {
     grid-template-columns: 1fr;
   }
@@ -428,7 +428,7 @@ function handleFiltersReset() {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .location-page__layout--filters-open .location-page__main {
     display: none;
   }

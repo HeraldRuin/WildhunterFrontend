@@ -151,7 +151,7 @@ function goHome() {
   transform: translateY(-1px);
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .error-hero {
     background-size: 240%;
     background-position: center 40%;
@@ -174,7 +174,7 @@ function goHome() {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .error-hero {
     background-size: auto 180%;
     background-position: center 35%;

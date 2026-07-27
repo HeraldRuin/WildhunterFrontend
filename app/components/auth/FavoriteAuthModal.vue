@@ -142,7 +142,7 @@ function handleRegister() {
   opacity: 0;
 }
 
-@media (max-width: 480px) {
+@media (--wh-mobile-sm) {
   .favorite-auth-modal__card {
     padding: 32px 24px 24px;
   }

@@ -36,7 +36,7 @@
   color: rgba(255, 255, 255, 0.78);
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .cta-block__inner {
     flex-direction: column;
     align-items: flex-start;

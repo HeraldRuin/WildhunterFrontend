@@ -88,7 +88,7 @@ function scrollBy(direction: 'prev' | 'next') {
   gap: 40px;
 }
 
-@media (min-width: 1025px) {
+@media (--wh-desktop) {
   .best-locations__inner.container {
     /* 3×389px карточки + 2×16px gap + стрелки и отступы */
     width: min(100% - 32px, 1292px);
@@ -152,7 +152,7 @@ function scrollBy(direction: 'prev' | 'next') {
   min-width: 180px;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .best-locations__slider-wrap {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -179,7 +179,7 @@ function scrollBy(direction: 'prev' | 'next') {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .best-locations__track {
     --best-locations-card-width: 325px;
     --best-locations-card-height: 345px;

@@ -554,7 +554,7 @@ async function handleFavoriteClick() {
   white-space: nowrap;
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .hotel-page__header :deep(.hero-header) {
     width: calc(100% - 24px);
   }
@@ -565,7 +565,7 @@ async function handleFavoriteClick() {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .hotel-page__hero {
     padding-top: 20px;
   }

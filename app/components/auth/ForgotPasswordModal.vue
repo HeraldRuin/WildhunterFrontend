@@ -623,7 +623,7 @@ watch(isOpen, (open) => {
   opacity: 0;
 }
 
-@media (max-width: 480px) {
+@media (--wh-mobile-sm) {
   .forgot-password-modal__card {
     padding: 32px 24px 24px;
   }

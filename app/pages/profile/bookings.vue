@@ -183,7 +183,7 @@ const emptyText = computed(() =>
   background: var(--wh-orange-500);
 }
 
-@media (max-width: 900px) {
+@media (--wh-tablet) {
   .bookings-page {
     padding: 16px 20px 40px;
   }

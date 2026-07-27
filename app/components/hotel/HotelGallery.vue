@@ -756,7 +756,7 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
-@media (max-width: 900px) {
+@media (--wh-tablet) {
   .hotel-gallery {
     grid-template-columns: 1fr;
     height: auto;
@@ -784,7 +784,7 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .hotel-gallery__thumbs,
   .hotel-gallery--expanded .hotel-gallery__thumbs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -946,7 +946,7 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .hotel-gallery-lightbox {
     padding: 56px 8px 16px;
   }

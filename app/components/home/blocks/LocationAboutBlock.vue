@@ -82,7 +82,7 @@ const paragraphs = [
   color: rgba(255, 255, 255, 0.92);
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .location-about {
     padding: 64px 0;
   }
@@ -92,7 +92,7 @@ const paragraphs = [
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .location-about {
     padding: 48px 0;
   }

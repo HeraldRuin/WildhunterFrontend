@@ -214,7 +214,7 @@ const steps = [
   color: var(--wh-gray-900);
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .how-it-works__step-col {
     padding-bottom: 72px;
   }
@@ -270,7 +270,7 @@ const steps = [
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .how-it-works {
     padding-block: 48px 56px;
   }

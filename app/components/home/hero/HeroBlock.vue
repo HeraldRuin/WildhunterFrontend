@@ -74,7 +74,7 @@ function handleSearch(payload: Record<string, string>) {
   transform: translateX(-50%);
 }
 
-@media (max-width: 1024px) {
+@media (--wh-tablet) {
   .hero-block {
     height: auto;
     min-height: 1100px;
@@ -113,7 +113,7 @@ function handleSearch(payload: Record<string, string>) {
   }
 }
 
-@media (max-width: 640px) {
+@media (--wh-mobile) {
   .hero-block {
     height: auto;
     min-height: 870px;
