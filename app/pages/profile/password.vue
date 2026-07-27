@@ -310,6 +310,14 @@ function handleCancel() {
   box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
 }
 
+.password-form__input:-webkit-autofill,
+.password-form__input:-webkit-autofill:hover,
+.password-form__input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--wh-gray-900);
+  box-shadow: 0 0 0 1000px var(--wh-white) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
 .password-form__input-wrap > .password-form__toggle {
   position: absolute;
   top: 50%;
