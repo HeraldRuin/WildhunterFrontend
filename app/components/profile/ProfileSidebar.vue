@@ -65,9 +65,11 @@ async function handleLogout() {
         </svg>
       </div>
 
-      <span v-if="roleName" class="profile-sidebar__role">{{ roleName }}</span>
-      <h2 class="profile-sidebar__name">{{ displayName }}</h2>
-      <p v-if="memberSince" class="profile-sidebar__since">Участник с: {{ memberSince }}</p>
+      <div class="profile-sidebar__meta">
+        <span v-if="roleName" class="profile-sidebar__role">{{ roleName }}</span>
+        <h2 class="profile-sidebar__name">{{ displayName }}</h2>
+        <p v-if="memberSince" class="profile-sidebar__since">Участник с: {{ memberSince }}</p>
+      </div>
     </div>
 
     <div class="profile-sidebar__menu">
@@ -134,6 +136,13 @@ async function handleLogout() {
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.profile-sidebar__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
 .profile-sidebar__avatar {
   display: flex;
   align-items: center;
@@ -144,6 +153,7 @@ async function handleLogout() {
   border-radius: 50%;
   background: #656c77;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .profile-sidebar__avatar img,
@@ -287,24 +297,27 @@ async function handleLogout() {
     min-height: 0;
     flex-direction: row;
     align-items: stretch;
-    gap: 28px;
-    padding: 24px;
+    gap: 0;
+    padding: 24px 32px 24px 56px;
     overflow: visible;
   }
 
   .profile-sidebar__user {
     flex: 1 1 0;
-    align-items: flex-start;
-    text-align: left;
-    padding-bottom: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    padding: 0 28px 0 0;
+    margin-right: 28px;
     border-bottom: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: left;
   }
 
   .profile-sidebar__avatar {
-    order: 0;
-    width: 88px;
-    height: 88px;
-    margin-bottom: 14px;
+    width: 96px;
+    height: 96px;
+    margin-bottom: 0;
   }
 
   .profile-sidebar__avatar svg {
@@ -312,16 +325,22 @@ async function handleLogout() {
     height: 48px;
   }
 
+  .profile-sidebar__meta {
+    align-items: flex-start;
+    text-align: left;
+    min-width: 0;
+  }
+
   .profile-sidebar__role {
     order: 3;
-    margin-top: 12px;
+    margin-top: 10px;
     padding: 8px 12px;
     font-size: 16px;
   }
 
   .profile-sidebar__name {
     order: 1;
-    margin: 0 0 6px;
+    margin: 0 0 4px;
     font-size: 18px;
   }
 
@@ -333,6 +352,7 @@ async function handleLogout() {
   .profile-sidebar__menu {
     flex: 1 1 0;
     justify-content: flex-start;
+    min-width: 0;
   }
 
   .profile-sidebar__nav {

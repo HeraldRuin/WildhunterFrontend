@@ -4,6 +4,7 @@ import type { HotelGalleryImage } from '~/types/api'
 const props = defineProps<{
   images: HotelGalleryImage[]
   title: string
+  placeholder?: boolean
 }>()
 
 const COLLAPSED_THUMB_COUNT = 4
@@ -436,6 +437,22 @@ onBeforeUnmount(() => {
 
 <template>
   <div
+    v-if="placeholder"
+    class="hotel-gallery hotel-gallery--placeholder"
+    aria-hidden="true"
+  >
+    <div class="hotel-gallery__main hotel-gallery__skeleton" />
+    <div class="hotel-gallery__thumbs">
+      <div
+        v-for="index in 4"
+        :key="index"
+        class="hotel-gallery__thumb hotel-gallery__skeleton"
+      />
+    </div>
+  </div>
+
+  <div
+    v-else
     class="hotel-gallery"
     :class="{ 'hotel-gallery--expanded': expanded }"
   >
@@ -626,6 +643,33 @@ onBeforeUnmount(() => {
   gap: 8px;
   width: 100%;
   height: 520px;
+}
+
+.hotel-gallery__main.hotel-gallery__skeleton,
+.hotel-gallery__thumb.hotel-gallery__skeleton {
+  box-sizing: border-box;
+  border: 1px solid #c5cad3;
+  background: #dce0e6;
+}
+
+.hotel-gallery--placeholder .hotel-gallery__main {
+  width: 100%;
+  height: 520px;
+  min-height: 520px;
+}
+
+.hotel-gallery--placeholder .hotel-gallery__thumbs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  height: 520px;
+  min-height: 520px;
+}
+
+.hotel-gallery--placeholder .hotel-gallery__thumb {
+  width: 100%;
+  min-height: 0;
 }
 
 .hotel-gallery__main,

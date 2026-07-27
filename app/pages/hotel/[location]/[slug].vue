@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
-import { formatHotelPrice } from '~/utils/hotel'
+import { createMockHotelDetail, formatHotelPrice } from '~/utils/hotel'
 import { formatReviewsCount } from '~/utils/pluralize'
 
 definePageMeta({
@@ -14,7 +14,16 @@ const hotelParams = computed(() => ({
   hotelSlug: String(route.params.slug || ''),
 }))
 
-const { data: hotel, pending } = useHotelDetail(hotelParams)
+const { data: hotel, pending, status } = useHotelDetail(hotelParams)
+const placeholderHotel = computed(() => createMockHotelDetail(hotelParams.value))
+const isHotelLoading = computed(() => pending.value || status.value === 'idle' || !hotel.value)
+const displayHotel = computed(() => {
+  if (isHotelLoading.value) {
+    return placeholderHotel.value
+  }
+
+  return hotel.value ?? placeholderHotel.value
+})
 const { services } = useApi()
 const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
 const { isFavorite: isHotelFavorite, setFavorite, loadFavorites, isLoaded } = useFavoriteHotels()
@@ -29,27 +38,20 @@ onMounted(() => {
   }
 })
 
-const pageTitle = computed(() => hotel.value ? `${hotel.value.title} — WH` : 'База — WH')
+const pageTitle = computed(() => `${displayHotel.value.title} — WH`)
 
-const breadcrumbs = computed(() => {
-  const items = [
-    { label: 'Главная', to: '/' },
-    { label: 'Базы', to: '/bases' },
-  ]
-
-  if (hotel.value?.title) {
-    items.push({ label: hotel.value.title })
-  }
-
-  return items
-})
+const breadcrumbs = computed(() => [
+  { label: 'Главная', to: '/' },
+  { label: 'Базы', to: '/bases' },
+  { label: displayHotel.value.title },
+])
 
 useHead({
   title: pageTitle,
 })
 
 const ratingValue = computed(() => {
-  const score = hotel.value?.review_score?.score_total
+  const score = displayHotel.value.review_score?.score_total
 
   if (!score) {
     return '4,9'
@@ -59,7 +61,7 @@ const ratingValue = computed(() => {
 })
 
 const reviewsCount = computed(() => {
-  const fromScore = Number(hotel.value?.review_score?.total_review)
+  const fromScore = Number(displayHotel.value.review_score?.total_review)
   if (Number.isFinite(fromScore) && fromScore >= 0) {
     return fromScore
   }
@@ -69,15 +71,11 @@ const reviewsCount = computed(() => {
 const reviewsLabel = computed(() => formatReviewsCount(reviewsCount.value))
 
 const amenitiesGroup = computed(() => {
-  return hotel.value?.terms.find(group => /услуг/i.test(group.title)) ?? null
+  return displayHotel.value.terms.find(group => /услуг/i.test(group.title)) ?? null
 })
 
 const otherTermGroups = computed(() => {
-  if (!hotel.value) {
-    return []
-  }
-
-  return hotel.value.terms.filter(group => group.id !== amenitiesGroup.value?.id)
+  return displayHotel.value.terms.filter(group => group.id !== amenitiesGroup.value?.id)
 })
 
 function getErrorMessage(error: unknown) {
@@ -115,7 +113,7 @@ function notifyFavoriteError(message: string) {
 }
 
 async function handleFavoriteClick() {
-  if (!hotel.value || isFavoriteLoading.value) {
+  if (!hotel.value || isFavoriteLoading.value || isHotelLoading.value) {
     return
   }
 
@@ -171,30 +169,23 @@ async function handleFavoriteClick() {
     </div>
 
     <div
-      v-if="pending"
-      class="hotel-page__state hotel-page__state--loading"
+      class="hotel-page__body"
+      :class="{ 'hotel-page__body--loading': isHotelLoading }"
+      :aria-busy="isHotelLoading"
     >
-      <CommonSpinner
-        variant="ring"
-        color="var(--wh-orange-500)"
-        size="lg"
-      />
-    </div>
-
-    <template v-else-if="hotel">
       <section class="hotel-page__hero">
         <div class="hotel-page__hero-inner">
           <AppBreadcrumbs :items="breadcrumbs" />
 
           <div class="hotel-page__title-row">
-            <h1 class="hotel-page__title">{{ hotel.title }}</h1>
+            <h1 class="hotel-page__title">{{ displayHotel.title }}</h1>
             <button
               type="button"
               class="hotel-page__favorite"
               :class="{ 'hotel-page__favorite--active': isFavorite }"
               :aria-label="isFavorite ? 'Убрать из избранного' : 'В избранное'"
               :aria-pressed="isFavorite"
-              :disabled="isFavoriteLoading"
+              :disabled="isFavoriteLoading || isHotelLoading"
               @click="handleFavoriteClick"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -211,11 +202,11 @@ async function handleFavoriteClick() {
           </div>
 
           <section
-            v-if="hotel.address || amenitiesGroup"
+            v-if="displayHotel.address || amenitiesGroup"
             class="hotel-section hotel-section--amenities"
           >
-            <p v-if="hotel.address" class="hotel-page__address">
-              {{ hotel.address }}
+            <p v-if="displayHotel.address" class="hotel-page__address">
+              {{ displayHotel.address }}
             </p>
             <div class="hotel-page__amenities-row">
               <ul v-if="amenitiesGroup" class="hotel-amenities">
@@ -244,15 +235,19 @@ async function handleFavoriteClick() {
             </div>
           </section>
 
-          <HotelGallery :images="hotel.gallery" :title="hotel.title" />
+          <HotelGallery
+            :images="displayHotel.gallery"
+            :title="displayHotel.title"
+            :placeholder="isHotelLoading"
+          />
         </div>
       </section>
 
       <section class="hotel-page__content">
         <div class="hotel-page__main">
-          <section v-if="hotel.content" class="hotel-section">
+          <section v-if="displayHotel.content" class="hotel-section">
             <h2 class="hotel-section__title">Описание</h2>
-            <div class="hotel-section__content hotel-section__content--html" v-html="hotel.content" />
+            <div class="hotel-section__content hotel-section__content--html" v-html="displayHotel.content" />
           </section>
 
           <section
@@ -280,11 +275,11 @@ async function handleFavoriteClick() {
             </ul>
           </section>
 
-          <section v-if="hotel.animals.length" class="hotel-section">
+          <section v-if="displayHotel.animals.length" class="hotel-section">
             <h2 class="hotel-section__title">Доступная дичь</h2>
             <div class="hotel-animals">
               <article
-                v-for="animal in hotel.animals"
+                v-for="animal in displayHotel.animals"
                 :key="animal.id"
                 class="hotel-animals__item"
               >
@@ -301,7 +296,19 @@ async function handleFavoriteClick() {
 
         </div>
       </section>
-    </template>
+
+      <div
+        v-if="isHotelLoading"
+        class="hotel-page__loading-overlay"
+        aria-hidden="true"
+      >
+        <CommonSpinner
+          variant="ring"
+          color="var(--wh-orange-500)"
+          size="lg"
+        />
+      </div>
+    </div>
 
     <HomeBlocksCommunityBlock />
     <LayoutAppFooter />
@@ -323,12 +330,34 @@ async function handleFavoriteClick() {
   width: min(100%, calc(100vw - 160px));
 }
 
-.hotel-page__state--loading {
+.hotel-page__body {
+  position: relative;
+}
+
+.hotel-page__body--loading {
+  pointer-events: none;
+  user-select: none;
+}
+
+.hotel-page__body--loading .hotel-page__hero-inner > :not(.hotel-gallery) {
+  filter: blur(5px);
+  opacity: 0.55;
+}
+
+.hotel-page__body--loading .hotel-page__content {
+  filter: blur(5px);
+  opacity: 0.55;
+}
+
+.hotel-page__loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  min-height: calc(100vh - 160px);
-  padding: 64px 24px;
+  padding-top: min(400px, 44vh);
+  pointer-events: none;
 }
 
 .hotel-page__hero {
