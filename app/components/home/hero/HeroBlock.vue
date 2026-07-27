@@ -1,4 +1,10 @@
 <script setup lang="ts">
+withDefaults(defineProps<{
+  loading?: boolean
+}>(), {
+  loading: false,
+})
+
 const emit = defineEmits<{
   search: [payload: Record<string, string>]
 }>()
@@ -23,7 +29,7 @@ function handleSearch(payload: Record<string, string>) {
       <HomeHeroTitle />
     </div>
     <div class="hero-block__search">
-      <HomeHeroSearchForm @search="handleSearch" />
+      <HomeHeroSearchForm :loading="loading" @search="handleSearch" />
     </div>
   </section>
 </template>

@@ -108,7 +108,7 @@ const searchRequest = computed(() => {
   }
 })
 
-const { data: searchResult, status } = await useAsyncData(
+const { data: searchResult, refresh } = await useAsyncData(
   'hotel-search',
   async () => {
     try {
@@ -132,20 +132,36 @@ const { data: searchResult, status } = await useAsyncData(
     }
   },
   {
-    watch: [searchRequest],
+    // Manual refresh so we can drive the results spinner ourselves.
+    watch: false,
     default: emptySearchResult,
   },
 )
 
-const isSearchLoading = computed(() => status.value === 'pending')
+const isSearchLoading = ref(false)
+let searchLoadId = 0
+
+watch(searchRequest, async () => {
+  const loadId = ++searchLoadId
+  isSearchLoading.value = true
+
+  try {
+    await refresh()
+  } finally {
+    if (loadId === searchLoadId) {
+      isSearchLoading.value = false
+    }
+  }
+})
+
 const totalCount = computed(() => searchResult.value.total)
 const totalPages = computed(() => searchResult.value.totalPages)
 const offerItems = computed(() => searchResult.value.items)
 const hasResults = computed(() => offerItems.value.length > 0)
 
-function handleSearch(payload: Record<string, string>) {
+async function handleSearch(payload: Record<string, string>) {
   currentPage.value = 1
-  navigateTo({
+  await navigateTo({
     path: '/bases',
     query: {
       ...payload,

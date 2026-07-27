@@ -44,17 +44,30 @@ const { data: reviewItems } = useAsyncData(
   },
 )
 
-function handleSearch(payload: Record<string, string>) {
-  navigateTo({
-    path: '/bases',
-    query: payload,
-  })
+const isSearching = ref(false)
+
+async function handleSearch(payload: Record<string, string>) {
+  if (isSearching.value) {
+    return
+  }
+
+  isSearching.value = true
+
+  try {
+    await navigateTo({
+      path: '/bases',
+      query: payload,
+    })
+  }
+  catch {
+    isSearching.value = false
+  }
 }
 </script>
 
 <template>
   <div class="home">
-    <HomeHeroSearch @search="handleSearch" />
+    <HomeHeroSearch :loading="isSearching" @search="handleSearch" />
     <HomeBlocksWhyUsBlock />
     <HomeBlocksBestOffersBlock :items="offerItems ?? []" />
     <HomeBlocksBestLocationsBlock :items="locationItems ?? []" />

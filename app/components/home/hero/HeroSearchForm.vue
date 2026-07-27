@@ -4,8 +4,10 @@ import { formatDisplayDate, parseDisplayDate, startOfDay } from '~/utils/date'
 
 withDefaults(defineProps<{
   layout?: 'inline' | 'split'
+  loading?: boolean
 }>(), {
   layout: 'inline',
+  loading: false,
 })
 
 const emit = defineEmits<{
@@ -641,8 +643,21 @@ onUnmounted(() => {
     </div>
     </div>
 
-    <button type="submit" class="hero-search__submit">
-      Искать
+    <button
+      type="submit"
+      class="hero-search__submit"
+      :class="{ 'hero-search__submit--loading': loading }"
+      :disabled="loading"
+      :aria-busy="loading"
+    >
+      <CommonSpinner
+        v-if="loading"
+        variant="ring"
+        :size="22"
+        color="var(--wh-white)"
+        label="Поиск"
+      />
+      <span v-else>Искать</span>
     </button>
   </form>
 </template>
@@ -1126,6 +1141,16 @@ onUnmounted(() => {
 
 .hero-search__submit:hover {
   background: var(--wh-orange-600);
+}
+
+.hero-search__submit:disabled,
+.hero-search__submit--loading {
+  cursor: wait;
+}
+
+.hero-search__submit:disabled:hover,
+.hero-search__submit--loading:hover {
+  background: var(--wh-orange-500);
 }
 
 @media (max-width: 1024px) {
