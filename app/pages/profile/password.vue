@@ -49,10 +49,14 @@ function handleCancel() {
       </nav>
 
       <button type="button" class="profile-page__notifications" aria-label="Уведомления">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3a5 5 0 00-5 5v3.5l-1.5 2.5h13L17 11.5V8a5 5 0 00-5-5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-          <path d="M10 18a2 2 0 004 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
+        <img
+          src="/icons/bell.png"
+          alt=""
+          aria-hidden="true"
+          class="profile-page__notifications-icon"
+          width="18"
+          height="22"
+        >
         <span class="profile-page__notifications-badge">{{ notificationCount }}</span>
       </button>
     </header>
@@ -180,11 +184,15 @@ function handleCancel() {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  width: 896px;
+  max-width: 100%;
+  height: 31px;
   margin-bottom: 20px;
-  padding: 10px 16px;
+  padding: 0 16px;
+  box-sizing: border-box;
   background: var(--wh-white);
-  border: 1px solid var(--wh-gray-200);
   border-radius: var(--wh-radius);
+  overflow: visible;
 }
 
 .profile-page__breadcrumbs {
@@ -206,35 +214,35 @@ function handleCancel() {
 
 .profile-page__notifications {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
+  flex-shrink: 0;
+  width: 18px;
+  height: 22px;
   padding: 0;
   border: none;
-  border-radius: 50%;
   background: transparent;
-  color: var(--wh-gray-900);
   cursor: pointer;
+  overflow: visible;
 }
 
-.profile-page__notifications svg {
-  width: 22px;
+.profile-page__notifications-icon {
+  display: block;
+  width: 18px;
   height: 22px;
+  object-fit: contain;
 }
 
 .profile-page__notifications-badge {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: -6px;
+  right: -8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 16px;
   min-width: 16px;
   height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
+  padding: 0;
+  border-radius: 50%;
   background: #e74c3c;
   color: var(--wh-white);
   font-size: 0.65rem;
@@ -244,10 +252,13 @@ function handleCancel() {
 
 .profile-page__title {
   margin: 0 0 24px;
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+
+  font-family: "UNCAGE", sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 130%;
+  letter-spacing: -0.03em;
+
   color: var(--wh-gray-900);
 }
 
@@ -270,8 +281,12 @@ function handleCancel() {
 }
 
 .password-form__label {
-  font-size: 0.88rem;
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
   font-weight: 500;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+
   color: var(--wh-gray-600);
 }
 
