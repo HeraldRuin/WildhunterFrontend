@@ -120,6 +120,14 @@ function applyValidationErrors(data: unknown) {
 
   const normalizedErrors = normalizePasswordFieldErrors(response)
 
+  if (
+    normalizedErrors.new_password?.length
+    && !normalizedErrors.new_password_confirmation?.length
+    && newPassword.value === confirmPassword.value
+  ) {
+    normalizedErrors.new_password_confirmation = [...normalizedErrors.new_password]
+  }
+
   if (Object.keys(normalizedErrors).length > 0) {
     fieldErrors.value = normalizedErrors
     submitError.value = ''
@@ -338,9 +346,18 @@ function handleCancel() {
         <button
           type="submit"
           class="password-form__submit"
+          :class="{ 'password-form__submit--loading': isSubmitting }"
           :disabled="isSubmitting"
+          :aria-busy="isSubmitting"
         >
-          {{ isSubmitting ? 'Сохранение...' : 'Сохранить изменения' }}
+          <CommonSpinner
+            v-if="isSubmitting"
+            variant="ring"
+            :size="22"
+            color="var(--wh-white)"
+            label="Сохранение"
+          />
+          <span v-else>Сохранить изменения</span>
         </button>
         <button type="button" class="password-form__cancel" @click="handleCancel">
           Отмена
