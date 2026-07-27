@@ -1,7 +1,7 @@
 const PASSWORD_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*'
 const PASSWORD_DIGITS = '0123456789'
 
-export function generatePassword(length = 12): string {
+export function generatePassword(length = 8): string {
   const randomValues = new Uint32Array(length)
   crypto.getRandomValues(randomValues)
 
