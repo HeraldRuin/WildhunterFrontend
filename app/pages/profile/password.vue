@@ -16,7 +16,6 @@ const confirmPassword = ref('')
 
 const showCurrentPassword = ref(false)
 const showNewPassword = ref(false)
-const showConfirmPassword = ref(false)
 
 function generatePassword() {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*'
@@ -27,7 +26,6 @@ function generatePassword() {
   newPassword.value = Array.from(randomValues, (value) => chars[value % chars.length]).join('')
   confirmPassword.value = newPassword.value
   showNewPassword.value = true
-  showConfirmPassword.value = true
 }
 
 function handleSubmit() {
@@ -80,22 +78,26 @@ function handleCancel() {
               :aria-label="showCurrentPassword ? 'Скрыть пароль' : 'Показать пароль'"
               @click="showCurrentPassword = !showCurrentPassword"
             >
-              <svg v-if="showCurrentPassword" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" fill="none" stroke="currentColor" stroke-width="1.75" />
-                <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.75" />
-              </svg>
-              <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 3l18 18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
-                <path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a18.4 18.4 0 0 1-4.8 5.7M6.7 6.7C4.1 8.4 2 12 2 12s3.5 7 10 7c1.2 0 2.3-.2 3.3-.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
-              </svg>
+              <img
+                v-if="showCurrentPassword"
+                src="/icons/Group.png"
+                alt=""
+                aria-hidden="true"
+                class="password-form__password-icon"
+              >
+              <img
+                v-else
+                src="/icons/weui_eyes-off-filled.png"
+                alt=""
+                aria-hidden="true"
+                class="password-form__password-icon password-form__password-icon--hidden"
+              >
             </button>
           </div>
         </div>
 
         <div class="password-form__field">
-          <div class="password-form__label-row">
-            <label class="password-form__label" for="new-password">Новый пароль</label>
-          </div>
+          <label class="password-form__label" for="new-password">Новый пароль</label>
           <div class="password-form__new-row">
             <div class="password-form__input-wrap">
               <input
@@ -113,14 +115,20 @@ function handleCancel() {
                 :aria-label="showNewPassword ? 'Скрыть пароль' : 'Показать пароль'"
                 @click="showNewPassword = !showNewPassword"
               >
-                <svg v-if="showNewPassword" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" fill="none" stroke="currentColor" stroke-width="1.75" />
-                  <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.75" />
-                </svg>
-                <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M3 3l18 18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
-                  <path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a18.4 18.4 0 0 1-4.8 5.7M6.7 6.7C4.1 8.4 2 12 2 12s3.5 7 10 7c1.2 0 2.3-.2 3.3-.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
-                </svg>
+                <img
+                  v-if="showNewPassword"
+                  src="/icons/Group.png"
+                  alt=""
+                  aria-hidden="true"
+                  class="password-form__password-icon"
+                >
+                <img
+                  v-else
+                  src="/icons/weui_eyes-off-filled.png"
+                  alt=""
+                  aria-hidden="true"
+                  class="password-form__password-icon password-form__password-icon--hidden"
+                >
               </button>
             </div>
             <button
@@ -139,27 +147,12 @@ function handleCancel() {
             <input
               id="confirm-password"
               v-model="confirmPassword"
-              :type="showConfirmPassword ? 'text' : 'password'"
-              class="password-form__input"
+              :type="showNewPassword ? 'text' : 'password'"
+              class="password-form__input password-form__input--plain"
               placeholder="Новый пароль снова"
               autocomplete="new-password"
               minlength="8"
             >
-            <button
-              type="button"
-              class="password-form__toggle"
-              :aria-label="showConfirmPassword ? 'Скрыть пароль' : 'Показать пароль'"
-              @click="showConfirmPassword = !showConfirmPassword"
-            >
-              <svg v-if="showConfirmPassword" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" fill="none" stroke="currentColor" stroke-width="1.75" />
-                <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.75" />
-              </svg>
-              <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 3l18 18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
-                <path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a18.4 18.4 0 0 1-4.8 5.7M6.7 6.7C4.1 8.4 2 12 2 12s3.5 7 10 7c1.2 0 2.3-.2 3.3-.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
-              </svg>
-            </button>
           </div>
         </div>
       </div>
@@ -276,12 +269,6 @@ function handleCancel() {
   gap: 8px;
 }
 
-.password-form__label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .password-form__label {
   font-size: 0.88rem;
   font-weight: 500;
@@ -289,15 +276,13 @@ function handleCancel() {
 }
 
 .password-form__new-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  position: relative;
+  width: 100%;
 }
 
 .password-form__input-wrap {
   position: relative;
-  flex: 1;
-  min-width: 0;
+  width: 100%;
 }
 
 .password-form__input {
@@ -311,6 +296,10 @@ function handleCancel() {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.password-form__input--plain {
+  padding-right: 14px;
+}
+
 .password-form__input::placeholder {
   color: var(--wh-gray-400);
 }
@@ -320,10 +309,14 @@ function handleCancel() {
   box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
 }
 
-.password-form__toggle {
+.password-form__input-wrap > .password-form__toggle {
   position: absolute;
   top: 50%;
   right: 12px;
+  transform: translateY(-50%);
+}
+
+.password-form__toggle {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,36 +326,55 @@ function handleCancel() {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--wh-gray-400);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.password-form__toggle:hover {
+  background: var(--wh-gray-100);
+}
+
+.password-form__password-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 22px;
+  height: 14px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.password-form__password-icon--hidden {
+  width: 26px;
+  height: 26px;
+}
+
+.password-form__generate {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 16px);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--wh-green);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  font-style: normal;
+  line-height: 100%;
+  letter-spacing: -0.05em;
+  text-decoration: underline;
+  text-decoration-style: solid;
+  text-underline-offset: 0;
+  text-decoration-thickness: auto;
+  text-decoration-skip-ink: auto;
+  white-space: nowrap;
   cursor: pointer;
   transform: translateY(-50%);
   transition: color 0.15s ease;
 }
 
-.password-form__toggle:hover {
-  color: var(--wh-gray-600);
-}
-
-.password-form__toggle svg {
-  width: 20px;
-  height: 20px;
-}
-
-.password-form__generate {
-  flex-shrink: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--wh-orange-text);
-  font-size: 0.88rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
 .password-form__generate:hover {
-  color: var(--wh-orange-600);
+  color: var(--wh-green-900);
 }
 
 .password-form__actions {
@@ -381,7 +393,7 @@ function handleCancel() {
   min-width: 200px;
   padding: 14px 28px;
   border: none;
-  border-radius: 10px;
+  border-radius: 20px;
   background: var(--wh-orange-500);
   color: var(--wh-white);
   font-size: 0.95rem;
@@ -417,13 +429,17 @@ function handleCancel() {
 }
 
 @media (max-width: 640px) {
-  .password-form__new-row {
-    flex-direction: column;
-    align-items: stretch;
+  .password-form__generate {
+    position: static;
+    transform: none;
+    align-self: flex-end;
+    margin-top: 8px;
   }
 
-  .password-form__generate {
-    align-self: flex-end;
+  .password-form__new-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .password-form__actions {

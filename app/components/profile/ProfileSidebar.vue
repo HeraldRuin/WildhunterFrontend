@@ -178,7 +178,13 @@ async function handleLogout() {
 
 .profile-sidebar__since {
   margin: 0;
+
+  font-family: "Inter", sans-serif;
   font-size: 14px;
+  font-weight: 400;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+  text-align: center;
   color: rgba(255, 255, 255, 0.65);
 }
 
@@ -197,7 +203,7 @@ async function handleLogout() {
   padding: 12px 14px;
   border-radius: 10px;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 0.9rem;
+  font-size: 18px;
   font-weight: 500;
   transition: background 0.15s ease, color 0.15s ease;
 }
@@ -240,9 +246,14 @@ async function handleLogout() {
   padding: 10px 14px;
   border: none;
   background: none;
+
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+
   color: var(--wh-white);
-  font-size: 0.88rem;
-  font-weight: 500;
   text-align: left;
   cursor: pointer;
   transition: opacity 0.15s ease;
