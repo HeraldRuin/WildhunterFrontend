@@ -503,6 +503,7 @@ onMounted(() => {
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.4;
+  letter-spacing: 0.14em;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
