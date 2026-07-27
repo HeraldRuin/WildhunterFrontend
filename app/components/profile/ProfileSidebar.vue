@@ -4,7 +4,7 @@ import { formatMemberSince } from '~/utils/user'
 interface NavItem {
   label: string
   to: string
-  icon: 'bookings' | 'profile' | 'password'
+  iconSrc: string
 }
 
 const route = useRoute()
@@ -12,9 +12,9 @@ const { user, logout } = useAuth()
 const { profile } = useProfile()
 
 const navItems: NavItem[] = [
-  { label: 'Бронирования', to: '/profile/bookings', icon: 'bookings' },
-  { label: 'Мой профиль', to: '/profile', icon: 'profile' },
-  { label: 'Изменить пароль', to: '/profile/password', icon: 'password' },
+  { label: 'Бронирования', to: '/profile/bookings', iconSrc: '/icons/iconoir_clock-solid.png' },
+  { label: 'Мой профиль', to: '/profile', iconSrc: '/icons/lets-icons_setting-fill.png' },
+  { label: 'Изменить пароль', to: '/profile/password', iconSrc: '/icons/boxicons_pencil-filled.png' },
 ]
 
 const displayName = computed(() => {
@@ -79,18 +79,12 @@ async function handleLogout() {
         :class="{ 'profile-sidebar__nav-link--active': isActive(item.to) }"
       >
         <span class="profile-sidebar__nav-icon" aria-hidden="true">
-          <svg v-if="item.icon === 'bookings'" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8" />
-            <path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-          <svg v-else-if="item.icon === 'profile'" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8" />
-            <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4l1.4-1.4M17 7l1.4-1.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-          <svg v-else viewBox="0 0 24 24">
-            <path d="M4 20h4l10-10-4-4L4 16v4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-            <path d="M13 7l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
+          <img
+            :src="item.iconSrc"
+            :alt="''"
+            width="24"
+            height="24"
+          >
         </span>
         {{ item.label }}
       </NuxtLink>
@@ -221,14 +215,16 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 }
 
-.profile-sidebar__nav-icon svg {
-  width: 18px;
-  height: 18px;
+.profile-sidebar__nav-icon img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 .profile-sidebar__footer {
