@@ -232,13 +232,8 @@ function handlePhonePaste(event: ClipboardEvent) {
   phoneDigits.value = extractPhoneDigits(event.clipboardData?.getData('text') ?? '')
 }
 
-function generatePassword() {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*'
-  const length = 12
-  const randomValues = new Uint32Array(length)
-
-  crypto.getRandomValues(randomValues)
-  password.value = Array.from(randomValues, (value) => chars[value % chars.length]).join('')
+function handleGeneratePassword() {
+  password.value = generatePassword()
   showPassword.value = true
 }
 
@@ -480,7 +475,7 @@ onUnmounted(() => {
                 <button
                   type="button"
                   class="register-modal__generate"
-                  @click="generatePassword"
+                  @click="handleGeneratePassword"
                 >
                   Сгенерировать
                 </button>

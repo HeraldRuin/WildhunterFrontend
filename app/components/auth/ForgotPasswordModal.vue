@@ -221,13 +221,8 @@ function switchToLogin() {
   openLoginModal()
 }
 
-function generatePassword() {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*'
-  const length = 12
-  const randomValues = new Uint32Array(length)
-
-  crypto.getRandomValues(randomValues)
-  password.value = Array.from(randomValues, (value) => chars[value % chars.length]).join('')
+function handleGeneratePassword() {
+  password.value = generatePassword()
   passwordConfirmation.value = password.value
   showPassword.value = true
   clearFieldError('password')
@@ -331,7 +326,7 @@ watch(isOpen, (open) => {
                     <button
                       type="button"
                       class="forgot-password-modal__generate"
-                      @click="generatePassword"
+                      @click="handleGeneratePassword"
                     >
                       Сгенерировать
                     </button>

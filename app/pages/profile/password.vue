@@ -8,6 +8,9 @@ useHead({
   title: 'Изменить пароль — WH',
 })
 
+const { user: userApi } = useApi()
+const notifications = useNotifications()
+
 const notificationCount = 0
 
 const breadcrumbs = [
@@ -22,20 +25,162 @@ const confirmPassword = ref('')
 
 const showCurrentPassword = ref(false)
 const showNewPassword = ref(false)
+const isSubmitting = ref(false)
+const submitError = ref('')
+const fieldErrors = ref<Record<string, string[]>>({})
 
-function generatePassword() {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*'
-  const length = 12
-  const randomValues = new Uint32Array(length)
+type PasswordField = 'current_password' | 'new_password' | 'new_password_confirmation'
 
-  crypto.getRandomValues(randomValues)
-  newPassword.value = Array.from(randomValues, (value) => chars[value % chars.length]).join('')
-  confirmPassword.value = newPassword.value
-  showNewPassword.value = true
+function getFieldError(field: PasswordField) {
+  return fieldErrors.value[field]?.[0]
 }
 
-function handleSubmit() {
-  // TODO: подключить API
+function clearFieldError(field: PasswordField) {
+  if (!fieldErrors.value[field]) {
+    return
+  }
+
+  const nextErrors = { ...fieldErrors.value }
+  delete nextErrors[field]
+  fieldErrors.value = nextErrors
+  submitError.value = ''
+}
+
+function getApiErrorPayload(source: unknown) {
+  if (!source || typeof source !== 'object') {
+    return null
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    errors?: Record<string, string[]> | unknown[]
+    error_code?: string
+    code?: string
+  }
+
+  if (
+    payload.success === false
+    || payload.message
+    || payload.error_code
+    || payload.code
+    || payload.errors
+  ) {
+    return payload
+  }
+
+  const nestedData = (source as { data?: unknown }).data
+
+  if (nestedData && nestedData !== source) {
+    return getApiErrorPayload(nestedData)
+  }
+
+  return null
+}
+
+const CURRENT_PASSWORD_ERROR_CODES = ['invalid_current_password'] as const
+
+function normalizePasswordFieldErrors(response: NonNullable<ReturnType<typeof getApiErrorPayload>>) {
+  const normalized: Record<string, string[]> = {}
+
+  const rawErrors = response.errors
+
+  if (rawErrors && !Array.isArray(rawErrors)) {
+    Object.assign(normalized, rawErrors)
+  }
+
+  const errorCode = response.error_code ?? response.code
+
+  if (
+    errorCode
+    && CURRENT_PASSWORD_ERROR_CODES.includes(errorCode as typeof CURRENT_PASSWORD_ERROR_CODES[number])
+    && response.message
+  ) {
+    normalized.current_password = [response.message]
+    return normalized
+  }
+
+  if (
+    !Object.keys(normalized).length
+    && response.message
+    && /текущ|current password/i.test(response.message)
+  ) {
+    normalized.current_password = [response.message]
+  }
+
+  return normalized
+}
+
+function applyValidationErrors(data: unknown) {
+  const response = getApiErrorPayload(data)
+
+  if (!response) {
+    return false
+  }
+
+  const normalizedErrors = normalizePasswordFieldErrors(response)
+
+  if (Object.keys(normalizedErrors).length > 0) {
+    fieldErrors.value = normalizedErrors
+    submitError.value = ''
+    return true
+  }
+
+  if (response.message) {
+    fieldErrors.value = {}
+    submitError.value = response.message
+    return true
+  }
+
+  return false
+}
+
+function resetFormFields() {
+  currentPassword.value = ''
+  newPassword.value = ''
+  confirmPassword.value = ''
+  showCurrentPassword.value = false
+  showNewPassword.value = false
+}
+
+function handleGeneratePassword() {
+  newPassword.value = generatePassword()
+  confirmPassword.value = newPassword.value
+  showNewPassword.value = true
+  clearFieldError('new_password')
+  clearFieldError('new_password_confirmation')
+}
+
+async function handleSubmit() {
+  isSubmitting.value = true
+  submitError.value = ''
+  fieldErrors.value = {}
+
+  try {
+    const response = await userApi.changePassword({
+      current_password: currentPassword.value,
+      new_password: newPassword.value,
+      new_password_confirmation: confirmPassword.value,
+    })
+
+    if ('success' in response && response.success) {
+      notifications.success(response.message || 'Пароль успешно изменён')
+      resetFormFields()
+      return
+    }
+
+    if (!applyValidationErrors(response)) {
+      submitError.value = 'Не удалось изменить пароль'
+    }
+  } catch (error) {
+    const data = (error as { data?: unknown }).data
+
+    if (!applyValidationErrors(data)) {
+      submitError.value = 'Не удалось изменить пароль'
+    }
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 function handleCancel() {
@@ -73,9 +218,13 @@ function handleCancel() {
               v-model="currentPassword"
               :type="showCurrentPassword ? 'text' : 'password'"
               class="password-form__input"
-              :class="{ 'password-form__input--masked': !showCurrentPassword && currentPassword }"
+              :class="{
+                'password-form__input--masked': !showCurrentPassword && currentPassword,
+                'password-form__input--error': getFieldError('current_password'),
+              }"
               placeholder="Текущий пароль"
               autocomplete="current-password"
+              @input="clearFieldError('current_password')"
             >
             <button
               type="button"
@@ -99,6 +248,9 @@ function handleCancel() {
               >
             </button>
           </div>
+          <p v-if="getFieldError('current_password')" class="password-form__field-error">
+            {{ getFieldError('current_password') }}
+          </p>
         </div>
 
         <div class="password-form__field">
@@ -110,10 +262,14 @@ function handleCancel() {
                 v-model="newPassword"
                 :type="showNewPassword ? 'text' : 'password'"
                 class="password-form__input"
-                :class="{ 'password-form__input--masked': !showNewPassword && newPassword }"
+                :class="{
+                  'password-form__input--masked': !showNewPassword && newPassword,
+                  'password-form__input--error': getFieldError('new_password'),
+                }"
                 placeholder="Новый пароль"
                 autocomplete="new-password"
                 minlength="8"
+                @input="clearFieldError('new_password')"
               >
               <button
                 type="button"
@@ -140,11 +296,14 @@ function handleCancel() {
             <button
               type="button"
               class="password-form__generate"
-              @click="generatePassword"
+              @click="handleGeneratePassword"
             >
               Сгенерировать
             </button>
           </div>
+          <p v-if="getFieldError('new_password')" class="password-form__field-error">
+            {{ getFieldError('new_password') }}
+          </p>
         </div>
 
         <div class="password-form__field">
@@ -155,18 +314,33 @@ function handleCancel() {
               v-model="confirmPassword"
               :type="showNewPassword ? 'text' : 'password'"
               class="password-form__input password-form__input--plain"
-              :class="{ 'password-form__input--masked': !showNewPassword && confirmPassword }"
+              :class="{
+                'password-form__input--masked': !showNewPassword && confirmPassword,
+                'password-form__input--error': getFieldError('new_password_confirmation'),
+              }"
               placeholder="Новый пароль снова"
               autocomplete="new-password"
               minlength="8"
+              @input="clearFieldError('new_password_confirmation')"
             >
           </div>
+          <p v-if="getFieldError('new_password_confirmation')" class="password-form__field-error">
+            {{ getFieldError('new_password_confirmation') }}
+          </p>
         </div>
       </div>
 
+      <p v-if="submitError" class="password-form__submit-error">
+        {{ submitError }}
+      </p>
+
       <div class="password-form__actions">
-        <button type="submit" class="password-form__submit">
-          Сохранить изменения
+        <button
+          type="submit"
+          class="password-form__submit"
+          :disabled="isSubmitting"
+        >
+          {{ isSubmitting ? 'Сохранение...' : 'Сохранить изменения' }}
         </button>
         <button type="button" class="password-form__cancel" @click="handleCancel">
           Отмена
@@ -322,6 +496,29 @@ function handleCancel() {
   box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
 }
 
+.password-form__input--error,
+.password-form__input--error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.password-form__field-error {
+  margin: 0;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: #dc2626;
+}
+
+.password-form__submit-error {
+  max-width: 520px;
+  margin: 0 0 16px;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: #dc2626;
+}
+
 .password-form__input:-webkit-autofill,
 .password-form__input:-webkit-autofill:hover,
 .password-form__input:-webkit-autofill:focus {
@@ -426,9 +623,14 @@ function handleCancel() {
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
-.password-form__submit:hover {
+.password-form__submit:hover:not(:disabled) {
   background: var(--wh-orange-600);
   transform: translateY(-1px);
+}
+
+.password-form__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .password-form__cancel {
