@@ -32,10 +32,20 @@ onMounted(() => {
   background: var(--wh-gray-100);
 }
 
-@media (max-width: 900px) {
+@media (--wh-tablet) {
+  .profile-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--profile-sidebar-gap);
+    padding: var(--profile-sidebar-gap);
+    box-sizing: border-box;
+  }
+
   .profile-layout__content {
     margin-left: 0;
+    min-height: 0;
     max-height: none;
+    overflow: visible;
   }
 }
 </style>

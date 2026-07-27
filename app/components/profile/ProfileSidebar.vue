@@ -70,37 +70,39 @@ async function handleLogout() {
       <p v-if="memberSince" class="profile-sidebar__since">Участник с: {{ memberSince }}</p>
     </div>
 
-    <nav class="profile-sidebar__nav">
-      <NuxtLink
-        v-for="item in navItems"
-        :key="item.to"
-        :to="item.to"
-        class="profile-sidebar__nav-link"
-        :class="{ 'profile-sidebar__nav-link--active': isActive(item.to) }"
-      >
-        <span class="profile-sidebar__nav-icon" aria-hidden="true">
-          <img
-            :src="item.iconSrc"
-            :alt="''"
-            width="24"
-            height="24"
-          >
-        </span>
-        {{ item.label }}
-      </NuxtLink>
-    </nav>
+    <div class="profile-sidebar__menu">
+      <nav class="profile-sidebar__nav">
+        <NuxtLink
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          class="profile-sidebar__nav-link"
+          :class="{ 'profile-sidebar__nav-link--active': isActive(item.to) }"
+        >
+          <span class="profile-sidebar__nav-icon" aria-hidden="true">
+            <img
+              :src="item.iconSrc"
+              :alt="''"
+              width="24"
+              height="24"
+            >
+          </span>
+          {{ item.label }}
+        </NuxtLink>
+      </nav>
 
-    <div class="profile-sidebar__footer">
-      <NuxtLink to="/" class="profile-sidebar__footer-link">
-        Назад на Главную
-      </NuxtLink>
-      <button
-        type="button"
-        class="profile-sidebar__footer-link profile-sidebar__footer-link--logout"
-        @click="handleLogout"
-      >
-        Выйти
-      </button>
+      <div class="profile-sidebar__footer">
+        <NuxtLink to="/" class="profile-sidebar__footer-link">
+          Назад на Главную
+        </NuxtLink>
+        <button
+          type="button"
+          class="profile-sidebar__footer-link profile-sidebar__footer-link--logout"
+          @click="handleLogout"
+        >
+          Выйти
+        </button>
+      </div>
     </div>
   </aside>
 </template>
@@ -188,6 +190,13 @@ async function handleLogout() {
   color: rgba(255, 255, 255, 0.65);
 }
 
+.profile-sidebar__menu {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .profile-sidebar__nav {
   display: flex;
   flex-direction: column;
@@ -267,10 +276,77 @@ async function handleLogout() {
   font-family: inherit;
 }
 
-@media (max-width: 900px) {
+@media (--wh-tablet) {
   .profile-sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.25s ease;
+    position: relative;
+    top: auto;
+    left: auto;
+    z-index: 1;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 28px;
+    padding: 24px;
+    overflow: visible;
+  }
+
+  .profile-sidebar__user {
+    flex: 1 1 0;
+    align-items: flex-start;
+    text-align: left;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .profile-sidebar__avatar {
+    order: 0;
+    width: 88px;
+    height: 88px;
+    margin-bottom: 14px;
+  }
+
+  .profile-sidebar__avatar svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .profile-sidebar__role {
+    order: 3;
+    margin-top: 12px;
+    padding: 8px 12px;
+    font-size: 16px;
+  }
+
+  .profile-sidebar__name {
+    order: 1;
+    margin: 0 0 6px;
+    font-size: 18px;
+  }
+
+  .profile-sidebar__since {
+    order: 2;
+    text-align: left;
+  }
+
+  .profile-sidebar__menu {
+    flex: 1 1 0;
+    justify-content: flex-start;
+  }
+
+  .profile-sidebar__nav {
+    flex: 0 0 auto;
+    padding: 0 0 12px;
+  }
+
+  .profile-sidebar__nav-link {
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+
+  .profile-sidebar__footer {
+    padding-top: 12px;
   }
 }
 </style>
