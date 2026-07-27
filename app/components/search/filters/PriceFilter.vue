@@ -201,6 +201,17 @@ const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
   background: transparent;
   pointer-events: none;
   appearance: none;
+  outline: none;
+}
+
+.search-filters-price__slider:focus,
+.search-filters-price__slider:focus-visible,
+.search-filters-price__slider:active {
+  outline: none;
+}
+
+.search-filters-price__slider::-moz-focus-outer {
+  border: 0;
 }
 
 .search-filters-price__slider::-webkit-slider-runnable-track {
@@ -223,6 +234,14 @@ const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
   pointer-events: auto;
   appearance: none;
   cursor: pointer;
+  outline: none;
+  box-shadow: none;
+}
+
+.search-filters-price__slider:focus::-webkit-slider-thumb,
+.search-filters-price__slider:active::-webkit-slider-thumb {
+  outline: none;
+  box-shadow: none;
 }
 
 .search-filters-price__slider::-moz-range-thumb {
@@ -233,6 +252,14 @@ const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
   background: var(--wh-green);
   pointer-events: auto;
   cursor: pointer;
+  outline: none;
+  box-shadow: none;
+}
+
+.search-filters-price__slider:focus::-moz-range-thumb,
+.search-filters-price__slider:active::-moz-range-thumb {
+  outline: none;
+  box-shadow: none;
 }
 
 .search-filters-price__slider--max {
