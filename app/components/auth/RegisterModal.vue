@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Role } from '~/types/api'
+import { extractPhoneDigits, formatPhone } from '~/utils/phone'
 
 const { isOpen, close } = useRegisterModal()
 const { open: openLoginModal } = useLoginModal()
@@ -93,46 +94,6 @@ function resetForm() {
   fieldErrors.value = {}
   isSubmitting.value = false
   isRoleOpen.value = false
-}
-
-function extractPhoneDigits(value: string) {
-  let digits = value.replace(/\D/g, '')
-
-  if (digits.startsWith('7') || digits.startsWith('8')) {
-    digits = digits.slice(1)
-  }
-
-  return digits.slice(0, 10)
-}
-
-function formatPhone(digits: string) {
-  const normalized = extractPhoneDigits(digits)
-
-  if (!normalized.length) {
-    return ''
-  }
-
-  let formatted = '+7'
-
-  formatted += ` (${normalized.slice(0, 3)}`
-
-  if (normalized.length >= 3) {
-    formatted += ')'
-  }
-
-  if (normalized.length > 3) {
-    formatted += ` ${normalized.slice(3, 6)}`
-  }
-
-  if (normalized.length > 6) {
-    formatted += `-${normalized.slice(6, 8)}`
-  }
-
-  if (normalized.length > 8) {
-    formatted += `-${normalized.slice(8, 10)}`
-  }
-
-  return formatted
 }
 
 const phone = computed({

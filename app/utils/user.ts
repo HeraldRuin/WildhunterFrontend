@@ -1,5 +1,7 @@
 import type { Role } from '~/types/api'
 import type { ProfileUser, UserWeapon, WeaponOption } from '~/types/user'
+import { formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
+import { formatPhone } from '~/utils/phone'
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -112,17 +114,9 @@ export function formatBirthdayDisplay(value: unknown): string {
     return ''
   }
 
-  if (value.includes('.')) {
-    return value
-  }
+  const parsed = parseBirthdayDate(value)
 
-  const [year, month, day] = value.split('-')
-
-  if (year && month && day) {
-    return `${day.padStart(2, '0')}.${month.padStart(2, '0')}.${year}`
-  }
-
-  return value
+  return parsed ? formatBirthdayDate(parsed) : value.trim()
 }
 
 export function extractCreatedAt(source: Record<string, unknown>): string {
@@ -206,7 +200,7 @@ export function normalizeUserProfile(data: unknown): ProfileUser {
     email: String(source.email ?? ''),
     first_name: String(source.first_name ?? ''),
     last_name: String(source.last_name ?? ''),
-    phone: String(source.phone ?? ''),
+    phone: formatPhone(String(source.phone ?? '')),
     birthday: formatBirthdayDisplay(source.birthday),
     bio: String(source.bio ?? ''),
     avatar: extractAvatarUrl(source),

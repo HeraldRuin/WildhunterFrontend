@@ -13,6 +13,21 @@ const MONTH_NAMES = [
   'Декабрь',
 ]
 
+const MONTH_NAMES_GENITIVE = [
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
+]
+
 const WEEKDAY_NAMES = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
 
 export function formatDisplayDate(date: Date) {
@@ -39,6 +54,55 @@ export function formatApiDate(date: Date) {
   const day = String(date.getDate()).padStart(2, '0')
 
   return `${year}-${month}-${day}`
+}
+
+export function formatBirthdayDate(date: Date) {
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = String(date.getFullYear())
+
+  return `${day}.${month}.${year}`
+}
+
+export function parseBirthdayDate(value: string) {
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    return null
+  }
+
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (isoMatch) {
+    const year = Number(isoMatch[1])
+    const month = Number(isoMatch[2])
+    const day = Number(isoMatch[3])
+    const date = new Date(year, month - 1, day)
+    return Number.isNaN(date.getTime()) ? null : startOfDay(date)
+  }
+
+  const dottedMatch = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
+  if (dottedMatch) {
+    const day = Number(dottedMatch[1])
+    const month = Number(dottedMatch[2])
+    const year = Number(dottedMatch[3])
+    const date = new Date(year, month - 1, day)
+    return Number.isNaN(date.getTime()) ? null : startOfDay(date)
+  }
+
+  const russianMatch = trimmed.match(/^(\d{1,2})\s+([а-яё]+)\s+(\d{4})/i)
+  if (russianMatch) {
+    const day = Number(russianMatch[1])
+    const monthName = russianMatch[2].toLowerCase()
+    const year = Number(russianMatch[3])
+    const month = MONTH_NAMES_GENITIVE.findIndex(name => name === monthName)
+
+    if (month >= 0) {
+      const date = new Date(year, month, day)
+      return Number.isNaN(date.getTime()) ? null : startOfDay(date)
+    }
+  }
+
+  return parseDisplayDate(trimmed)
 }
 
 export function parseDisplayDateToApiDate(value: string) {
