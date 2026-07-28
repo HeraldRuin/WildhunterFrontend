@@ -2,6 +2,59 @@ import type { Role } from '~/types/api'
 import type { UpdateUserPayload } from '~/api/user'
 import type { ProfileUser } from '~/types/user'
 import { createEmptyWeapon, normalizeUserProfile, resolveRoleLabel, unwrapProfilePayload } from '~/utils/user'
+import { clearUserWeaponsCache } from '~/utils/userWeaponsCache'
+
+const PROFILE_CACHE_PREFIX = 'wh_profile_user'
+const ROLES_CACHE_KEY = 'wh_profile_roles'
+
+/** Общий на все вызовы useProfile — иначе layout + page стартуют два параллельных запроса */
+let loadProfilePromise: Promise<void> | null = null
+
+function readStorageJson<T>(key: string): T | null {
+  if (!import.meta.client) {
+    return null
+  }
+
+  try {
+    const raw = localStorage.getItem(key)
+
+    if (!raw) {
+      return null
+    }
+
+    return JSON.parse(raw) as T
+  } catch {
+    return null
+  }
+}
+
+function writeStorageJson(key: string, value: unknown) {
+  if (!import.meta.client) {
+    return
+  }
+
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+function removeStorageKey(key: string) {
+  if (!import.meta.client) {
+    return
+  }
+
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    // ignore
+  }
+}
+
+function profileCacheKey(userId: number | string) {
+  return `${PROFILE_CACHE_PREFIX}:${userId}`
+}
 
 export function useProfile() {
   const { user } = useAuth()
@@ -13,9 +66,48 @@ export function useProfile() {
   const error = useState<string | null>('profile_error', () => null)
   const roleOptions = useState<Role[]>('profile_roles', () => [])
 
-  async function ensureRoles() {
+  function readCachedProfile(userId: number): ProfileUser | null {
+    const cached = readStorageJson<ProfileUser>(profileCacheKey(userId))
+
+    if (!cached || typeof cached !== 'object' || Number(cached.id) !== Number(userId)) {
+      return null
+    }
+
+    return cached
+  }
+
+  function writeCachedProfile(profileData: ProfileUser) {
+    writeStorageJson(profileCacheKey(profileData.id), profileData)
+  }
+
+  function clearCachedProfile(userId?: number | null) {
+    if (userId) {
+      removeStorageKey(profileCacheKey(userId))
+    }
+  }
+
+  function hydrateRolesFromCache() {
     if (roleOptions.value.length > 0) {
       return roleOptions.value
+    }
+
+    const cached = readStorageJson<Role[]>(ROLES_CACHE_KEY)
+
+    if (Array.isArray(cached) && cached.length > 0) {
+      roleOptions.value = cached
+      return cached
+    }
+
+    return []
+  }
+
+  async function ensureRoles(force = false) {
+    if (!force) {
+      const fromMemoryOrCache = hydrateRolesFromCache()
+
+      if (fromMemoryOrCache.length > 0) {
+        return fromMemoryOrCache
+      }
     }
 
     try {
@@ -23,6 +115,7 @@ export function useProfile() {
 
       if (response.success) {
         roleOptions.value = response.data
+        writeStorageJson(ROLES_CACHE_KEY, response.data)
       }
     } catch {
       // Справочник ролей не обязателен для отображения профиля.
@@ -38,6 +131,39 @@ export function useProfile() {
     }
   }
 
+  function applyProfile(profileData: ProfileUser) {
+    profile.value = profileData
+    writeCachedProfile(profileData)
+
+    updateAuthUser({
+      id: profileData.id,
+      first_name: profileData.first_name,
+      last_name: profileData.last_name,
+      email: profileData.email,
+      avatar: profileData.avatar,
+      role: profileData.role_code || user.value?.role || null,
+      role_name: profileData.role_name || null,
+      created_at: profileData.created_at || null,
+    })
+  }
+
+  function hydrateFromCache(userId: number) {
+    if (profile.value) {
+      hydrateRolesFromCache()
+      return true
+    }
+
+    const cached = readCachedProfile(userId)
+
+    if (!cached) {
+      return false
+    }
+
+    profile.value = cached
+    hydrateRolesFromCache()
+    return true
+  }
+
   async function loadProfile(force = false) {
     const userId = user.value?.id
 
@@ -45,43 +171,48 @@ export function useProfile() {
       return
     }
 
-    if (profile.value && !force) {
+    // Обычный заход: только кэш, без запросов к /user и /roles
+    if (!force && hydrateFromCache(userId)) {
+      return
+    }
+
+    if (loadProfilePromise && !force) {
+      await loadProfilePromise
       return
     }
 
     pending.value = true
     error.value = null
 
-    try {
-      const [response, roles] = await Promise.all([
-        userApi.getUser(userId),
-        ensureRoles(),
-      ])
+    const request = (async () => {
+      try {
+        const [response, roles] = await Promise.all([
+          userApi.getUser(userId),
+          // Справочник ролей кэшируем отдельно; при обновлении профиля не дёргаем /roles снова
+          ensureRoles(false),
+        ])
 
-      if (!response.success) {
-        error.value = response.message || 'Не удалось загрузить профиль'
-        return
+        if (!response.success) {
+          error.value = response.message || 'Не удалось загрузить профиль'
+          return
+        }
+
+        const source = unwrapProfilePayload(response.data)
+        const normalized = applyRoleLabel(normalizeUserProfile(response.data), source, roles)
+        applyProfile(normalized)
+      } catch {
+        error.value = 'Не удалось загрузить профиль'
+      } finally {
+        pending.value = false
+
+        if (loadProfilePromise === request) {
+          loadProfilePromise = null
+        }
       }
+    })()
 
-      const source = unwrapProfilePayload(response.data)
-      const normalized = applyRoleLabel(normalizeUserProfile(response.data), source, roles)
-      profile.value = normalized
-
-      updateAuthUser({
-        id: normalized.id,
-        first_name: normalized.first_name,
-        last_name: normalized.last_name,
-        email: normalized.email,
-        avatar: normalized.avatar,
-        role: normalized.role_code || user.value?.role || null,
-        role_name: normalized.role_name || null,
-        created_at: normalized.created_at || null,
-      })
-    } catch {
-      error.value = 'Не удалось загрузить профиль'
-    } finally {
-      pending.value = false
-    }
+    loadProfilePromise = request
+    await request
   }
 
   async function saveProfile(payload: UpdateUserPayload) {
@@ -95,6 +226,9 @@ export function useProfile() {
   }
 
   function resetProfile() {
+    const userId = profile.value?.id ?? user.value?.id ?? null
+    clearCachedProfile(userId)
+    clearUserWeaponsCache(userId)
     profile.value = null
     error.value = null
   }
