@@ -156,7 +156,7 @@ export function formatMemberSince(value: string): string {
   })
 }
 
-function normalizeWeaponOptions(value: unknown): WeaponOption[] {
+export function normalizeWeaponOptions(value: unknown): WeaponOption[] {
   if (!Array.isArray(value)) {
     return []
   }

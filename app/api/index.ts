@@ -22,3 +22,5 @@ export type {
   UpdateUserPayload,
   UpdateUserResponse,
 } from './user'
+export { useWeaponsApi } from './weapons'
+export type { WeaponsResponse } from './weapons'

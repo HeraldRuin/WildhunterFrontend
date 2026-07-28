@@ -12,6 +12,7 @@ import {
   useServicesApi,
   useNewsletterApi,
   useUserApi,
+  useWeaponsApi,
 } from '~/api'
 
 export function useApi() {
@@ -28,6 +29,7 @@ export function useApi() {
   const services = useServicesApi()
   const newsletter = useNewsletterApi()
   const user = useUserApi()
+  const weapons = useWeaponsApi()
 
   return {
     ...client,
@@ -43,5 +45,6 @@ export function useApi() {
     services,
     newsletter,
     user,
+    weapons,
   }
 }
