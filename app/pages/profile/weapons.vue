@@ -64,7 +64,7 @@ function handleSubmit() {
       </button>
     </header>
 
-    <h1 class="profile-page__title profile-page__title--divider">Лицензия на оружие</h1>
+    <CommonPageTitle divider>Лицензия на оружие</CommonPageTitle>
 
     <p v-if="pending" class="profile-page__status">Загрузка...</p>
     <p v-else-if="error" class="profile-page__status profile-page__status--error">{{ error }}</p>
@@ -237,24 +237,6 @@ function handleSubmit() {
   line-height: 1;
 }
 
-.profile-page__title {
-  margin: 0 0 24px;
-  font-family: "UNCAGE", sans-serif;
-  font-size: 32px;
-  font-weight: 400;
-  line-height: 130%;
-  letter-spacing: -0.03em;
-  color: var(--wh-gray-900);
-}
-
-.profile-page__title--divider {
-  width: 896px;
-  max-width: 100%;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
-}
-
 .profile-page__status {
   margin: 0;
   color: var(--wh-gray-600);
@@ -423,12 +405,6 @@ function handleSubmit() {
     padding: 0;
     background: transparent;
     border-radius: 0;
-  }
-
-  .profile-page__title {
-    font-size: clamp(1.25rem, 5vw, 1.75rem);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
   }
 
   .profile-weapon__row {

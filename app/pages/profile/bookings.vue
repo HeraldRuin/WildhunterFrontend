@@ -51,7 +51,7 @@ const emptyText = computed(() =>
       </button>
     </header>
 
-    <h1 class="bookings-page__title">Бронирования</h1>
+    <CommonPageTitle divider>Бронирования</CommonPageTitle>
 
     <div class="bookings-page__tabs" role="tablist" aria-label="Разделы бронирований">
       <button
@@ -133,15 +133,6 @@ const emptyText = computed(() =>
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
-}
-
-.bookings-page__title {
-  margin: 0 0 20px;
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  color: var(--wh-gray-900);
 }
 
 .bookings-page__tabs {

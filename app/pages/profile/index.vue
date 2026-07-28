@@ -44,7 +44,7 @@ function handleSubmit() {
       </button>
     </header>
 
-    <h1 class="profile-page__title profile-page__title--divider">Настройки</h1>
+    <CommonPageTitle divider>Настройки</CommonPageTitle>
 
     <p v-if="pending" class="profile-page__status">Загрузка профиля...</p>
     <p v-else-if="error" class="profile-page__status profile-page__status--error">{{ error }}</p>
@@ -233,22 +233,6 @@ function handleSubmit() {
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
-}
-
-.profile-page__title {
-  margin: 0 0 24px;
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  color: var(--wh-gray-900);
-}
-
-.profile-page__title--divider {
-  width: 896px;
-  max-width: 100%;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .profile-page__status {

@@ -227,7 +227,7 @@ onMounted(() => {
       </button>
     </header>
 
-    <h1 class="profile-page__title profile-page__title--divider">Изменить пароль</h1>
+    <CommonPageTitle divider>Изменить пароль</CommonPageTitle>
 
     <form class="password-form" @submit.prevent="handleSubmit">
       <div class="password-form__fields">
@@ -459,40 +459,6 @@ onMounted(() => {
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
-}
-
-.profile-page__title {
-  margin: 0 0 24px;
-
-  font-family: "UNCAGE", sans-serif;
-  font-size: 32px;
-  font-weight: 400;
-  line-height: 130%;
-  letter-spacing: -0.03em;
-  text-transform: uppercase;
-
-  color: var(--wh-gray-900);
-}
-
-@media (max-width: 1024px) {
-  .profile-page__title.profile-page__title--divider {
-    font-size: 28px;
-  }
-}
-
-@media (max-width: 640px) {
-  .profile-page__title.profile-page__title--divider {
-    font-size: 24px;
-    letter-spacing: 0.02em;
-  }
-}
-
-.profile-page__title--divider {
-  width: 896px;
-  max-width: 100%;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
 }
 
 .password-form__fields {
