@@ -18,12 +18,13 @@ import {
 } from '~/utils/userWeaponsCache'
 
 type WeaponField =
+  | 'hunter_billet_number'
   | 'hunter_license_number'
   | 'hunter_license_date'
   | 'weapon_type_id'
   | 'caliber_id'
 
-const { profile, pending, error, loadProfile } = useProfile()
+const { profile, pending, error, loadProfile, patchCachedProfile } = useProfile()
 const { user } = useAuth()
 const { weapons: weaponsApi } = useApi()
 const notifications = useNotifications()
@@ -161,8 +162,28 @@ const licenseDateFieldRefs = new Map<number, HTMLElement>()
 const fieldErrors = ref<Record<string, string[]>>({})
 const submitError = ref('')
 const savingWeaponIndex = ref<number | null>(null)
+const confirmDeleteIndex = ref<number | null>(null)
 const expandedWeaponKeys = ref<string[]>([])
 const weaponSnapshots = ref<Record<number, string>>({})
+const hunterBilletSnapshot = ref('')
+const savingHunterBillet = ref(false)
+
+const isHunterBilletDirty = computed(() => {
+  const current = profile.value?.hunter_billet_number.trim() ?? ''
+  return current !== hunterBilletSnapshot.value
+})
+
+const hasHunterBilletDigits = computed(() =>
+  /\d/.test(profile.value?.hunter_billet_number ?? ''),
+)
+
+const showHunterBilletAction = computed(() =>
+  isHunterBilletDirty.value && hasHunterBilletDigits.value,
+)
+
+const hunterBilletActionLabel = computed(() =>
+  hunterBilletSnapshot.value ? 'Обновить' : 'Сохранить',
+)
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -219,8 +240,13 @@ async function loadUserWeapons(options: { force?: boolean, silent?: boolean } = 
       return
     }
 
-    const list = await weaponsApi.getUserWeaponList()
+    const { weapons: list, hunterBilletNumber } = await weaponsApi.getUserWeaponsBundle()
     applyWeaponsList(list)
+
+    // Номер билета приходит в /user/weapons — кладём в профиль и кэш
+    if (hunterBilletNumber) {
+      applyHunterBilletFromApi(hunterBilletNumber)
+    }
   } catch {
     if (!options.silent) {
       if (!weapons.value.length) {
@@ -246,8 +272,24 @@ function ensureWeaponDictionaries() {
   }
 }
 
+function syncHunterBilletSnapshot() {
+  hunterBilletSnapshot.value = profile.value?.hunter_billet_number.trim() ?? ''
+}
+
+function applyHunterBilletFromApi(value: string) {
+  const trimmed = value.trim()
+
+  if (!profile.value) {
+    return
+  }
+
+  patchCachedProfile({ hunter_billet_number: trimmed })
+  syncHunterBilletSnapshot()
+}
+
 async function bootWeaponsPage() {
   await loadProfile()
+  syncHunterBilletSnapshot()
 
   // Есть полный кэш списка — сразу показываем, без запроса
   if (hydrateWeaponsFromCache()) {
@@ -487,9 +529,55 @@ watch(
   },
 )
 
-function removeWeapon(index: number) {
-  weapons.value.splice(index, 1)
-  persistWeaponsCache(weapons.value)
+function requestDeleteWeapon(index: number) {
+  const weapon = weapons.value[index]
+
+  if (!weapon || savingWeaponIndex.value != null) {
+    return
+  }
+
+  // Новая несохранённая строка — убираем сразу
+  if (isNewWeapon(weapon)) {
+    weapons.value.splice(index, 1)
+    persistWeaponsCache(weapons.value)
+    confirmDeleteIndex.value = null
+    return
+  }
+
+  confirmDeleteIndex.value = index
+}
+
+function cancelDeleteConfirm() {
+  confirmDeleteIndex.value = null
+}
+
+async function confirmDeleteWeapon(index: number) {
+  const weapon = weapons.value[index]
+
+  if (!weapon || weapon.id == null || savingWeaponIndex.value != null) {
+    return
+  }
+
+  savingWeaponIndex.value = index
+  submitError.value = ''
+
+  try {
+    const response = await weaponsApi.deleteUserWeapon(weapon.id)
+
+    if ('success' in response && response.success) {
+      confirmDeleteIndex.value = null
+      notifications.success('Лицензия на оружие удалена')
+      await loadUserWeapons({ force: true, silent: true })
+      return
+    }
+
+    submitError.value = ('message' in response && response.message)
+      || 'Не удалось удалить оружие'
+  } catch {
+    submitError.value = 'Не удалось удалить оружие'
+  } finally {
+    savingWeaponIndex.value = null
+  }
 }
 
 async function saveWeapon(index: number) {
@@ -593,9 +681,13 @@ function toggleWeapon(index: number) {
     if (openLicenseDateIndex.value === index) {
       openLicenseDateIndex.value = null
     }
+    if (confirmDeleteIndex.value === index) {
+      confirmDeleteIndex.value = null
+    }
     return
   }
 
+  confirmDeleteIndex.value = null
   ensureWeaponDictionaries()
   expandedWeaponKeys.value = [...expandedWeaponKeys.value, key]
 }
@@ -637,8 +729,54 @@ function handleCancelNewWeapon() {
   }
 }
 
-function handleSubmit() {
-  // TODO: подключить API сохранения номера охотничьего билета
+async function saveHunterBillet() {
+  if (!profile.value || savingHunterBillet.value || !showHunterBilletAction.value) {
+    return
+  }
+
+  savingHunterBillet.value = true
+  clearFieldError('hunter_billet_number')
+  submitError.value = ''
+
+  const wasUpdate = Boolean(hunterBilletSnapshot.value)
+  const trimmed = profile.value.hunter_billet_number.trim()
+
+  try {
+    // Билет сохраняется через POST /user/weapons (можно только hunter_billet_number)
+    const response = await weaponsApi.saveUserWeapon({
+      hunter_billet_number: trimmed,
+    })
+
+    if ('success' in response && response.success) {
+      // Актуальные данные — из GET /user/weapons (+ кэш списка/билета)
+      await loadUserWeapons({ force: true, silent: true })
+      // Если лицензий ещё нет, GET не вернёт billet — фиксируем отправленное значение
+      applyHunterBilletFromApi(trimmed)
+
+      notifications.success(
+        wasUpdate
+          ? 'Номер охотничьего билета обновлён'
+          : 'Номер охотничьего билета сохранён',
+      )
+      return
+    }
+
+    if (!applyValidationErrors(response)) {
+      submitError.value = wasUpdate
+        ? 'Не удалось обновить номер охотничьего билета'
+        : 'Не удалось сохранить номер охотничьего билета'
+    }
+  } catch (error) {
+    const data = (error as { data?: unknown }).data
+
+    if (!applyValidationErrors(data)) {
+      submitError.value = wasUpdate
+        ? 'Не удалось обновить номер охотничьего билета'
+        : 'Не удалось сохранить номер охотничьего билета'
+    }
+  } finally {
+    savingHunterBillet.value = false
+  }
 }
 
 function onHunterBilletKeydown(event: KeyboardEvent) {
@@ -647,7 +785,7 @@ function onHunterBilletKeydown(event: KeyboardEvent) {
   }
 
   event.preventDefault()
-  handleSubmit()
+  void saveHunterBillet()
 }
 
 function isNewWeapon(weapon: { id: number | null, isNew?: boolean }) {
@@ -694,15 +832,39 @@ const hasNewWeapon = computed(() =>
     >
       <div class="weapons-form__body">
         <div class="weapons-form__billet">
-          <CommonFormField
+          <div
             v-if="profile"
-            id="hunter-billet"
-            label="Номер охот. билета"
-            placeholder="Введите номер охотничьего билета"
-            no-margin
-            v-model="profile.hunter_billet_number"
-            @keydown="onHunterBilletKeydown"
-          />
+            class="weapons-form__billet-row"
+          >
+            <CommonFormField
+              id="hunter-billet"
+              label="Номер охот. билета"
+              placeholder="Введите номер охотничьего билета"
+              no-margin
+              digits-only
+              v-model="profile.hunter_billet_number"
+              :error="getFieldError('hunter_billet_number')"
+              :disabled="savingHunterBillet"
+              @update:model-value="clearFieldError('hunter_billet_number')"
+              @keydown="onHunterBilletKeydown"
+            />
+            <CommonSpinner
+              v-if="savingHunterBillet"
+              class="weapons-form__billet-spinner"
+              variant="ring"
+              color="var(--wh-orange-500)"
+              :size="18"
+              :label="hunterBilletSnapshot ? 'Обновление номера билета' : 'Сохранение номера билета'"
+            />
+            <button
+              v-else-if="showHunterBilletAction"
+              type="button"
+              class="weapons-form__billet-action"
+              @click="saveHunterBillet"
+            >
+              {{ hunterBilletActionLabel }}
+            </button>
+          </div>
           <CommonFormField
             v-else
             label="Номер охот. билета"
@@ -883,6 +1045,25 @@ const hasNewWeapon = computed(() =>
                 >
                   {{ savingWeaponIndex === card.index ? 'Сохранение...' : 'Сохранить' }}
                 </button>
+                <template v-else-if="confirmDeleteIndex === card.index">
+                  <span class="profile-weapon__confirm-text">Удалить лицензию?</span>
+                  <button
+                    type="button"
+                    class="profile-weapon__action"
+                    :disabled="savingWeaponIndex === card.index"
+                    @click="confirmDeleteWeapon(card.index)"
+                  >
+                    {{ savingWeaponIndex === card.index ? 'Удаление...' : 'Да' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="profile-weapon__confirm-cancel"
+                    :disabled="savingWeaponIndex === card.index"
+                    @click="cancelDeleteConfirm"
+                  >
+                    Отмена
+                  </button>
+                </template>
                 <template v-else>
                   <button
                     v-if="isWeaponDirty(card.index)"
@@ -897,7 +1078,7 @@ const hasNewWeapon = computed(() =>
                     type="button"
                     class="profile-weapon__action"
                     :disabled="savingWeaponIndex === card.index"
-                    @click="removeWeapon(card.index)"
+                    @click="requestDeleteWeapon(card.index)"
                   >
                     Удалить
                   </button>
@@ -908,6 +1089,13 @@ const hasNewWeapon = computed(() =>
           </article>
           </div>
         </div>
+
+        <p
+          v-if="!userWeaponsLoading && !weapons.length && !hasNewWeapon"
+          class="weapons-form__empty"
+        >
+          Вы еще не добавили ни одной лицензии
+        </p>
 
         <div class="weapons-form__add-wrap">
           <div class="weapons-form__add-actions">
@@ -1021,8 +1209,44 @@ const hasNewWeapon = computed(() =>
   box-sizing: border-box;
 }
 
-.weapons-form__billet :deep(.form-field) {
-  max-width: 520px;
+.weapons-form__billet-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  width: 100%;
+}
+
+.weapons-form__billet-row :deep(.form-field) {
+  /* Как одна карточка лицензии в двухколоночной сетке */
+  flex: 0 0 calc((100% - 12px) / 2);
+  width: calc((100% - 12px) / 2);
+  max-width: calc((100% - 12px) / 2);
+  min-width: 0;
+}
+
+.weapons-form__billet-action {
+  flex-shrink: 0;
+  margin-bottom: 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--wh-orange-text);
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 120%;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.weapons-form__billet-action:hover {
+  color: var(--wh-orange-600);
+}
+
+.weapons-form__billet-spinner {
+  flex-shrink: 0;
+  margin-bottom: 14px;
+  margin-left: 8px;
 }
 
 .weapons-form__list {
@@ -1159,6 +1383,36 @@ const hasNewWeapon = computed(() =>
   margin-top: 8px;
 }
 
+.profile-weapon__confirm-text {
+  color: var(--wh-gray-900);
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 120%;
+}
+
+.profile-weapon__confirm-cancel {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--wh-orange-text);
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 120%;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.profile-weapon__confirm-cancel:hover:not(:disabled) {
+  color: var(--wh-orange-600);
+}
+
+.profile-weapon__confirm-cancel:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
 .profile-weapon__action {
   padding: 0;
   border: none;
@@ -1261,6 +1515,18 @@ const hasNewWeapon = computed(() =>
   box-sizing: border-box;
 }
 
+.weapons-form__empty {
+  margin: 0 0 16px;
+  width: 100%;
+  color: var(--wh-gray-600);
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 130%;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .weapons-form__add-wrap {
   width: 100%;
   max-width: 520px;
@@ -1271,6 +1537,7 @@ const hasNewWeapon = computed(() =>
 .weapons-form__add-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 20px;
 }
 
@@ -1310,6 +1577,12 @@ const hasNewWeapon = computed(() =>
 
   .weapons-form__list {
     grid-template-columns: 1fr;
+  }
+
+  .weapons-form__billet-row :deep(.form-field) {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
   }
 
   .profile-weapon__row {
