@@ -74,16 +74,12 @@ function handleSubmit() {
       class="weapons-form"
       @submit.prevent="handleSubmit"
     >
-      <div class="weapons-form__field">
-        <label class="weapons-form__label" for="hunter-billet">Номер охот. билета</label>
-        <input
-          id="hunter-billet"
-          v-model="profile.hunter_billet_number"
-          type="text"
-          class="weapons-form__input"
-          placeholder="Добавить номер"
-        >
-      </div>
+      <CommonFormField
+        id="hunter-billet"
+        label="Номер охот. билета"
+        placeholder="Добавить номер"
+        v-model="profile.hunter_billet_number"
+      />
 
       <article
         v-for="(weapon, index) in profile.weapons"
@@ -111,24 +107,19 @@ function handleSubmit() {
         </div>
 
         <div class="profile-weapon__row">
-          <div class="weapons-form__field weapons-form__field--inline">
-            <label class="weapons-form__label">Номер</label>
-            <input
-              v-model="weapon.hunter_license_number"
-              type="text"
-              class="weapons-form__input"
-              placeholder="Добавить лицензию"
-              inputmode="numeric"
-            >
-          </div>
-          <div class="weapons-form__field weapons-form__field--inline">
-            <label class="weapons-form__label">Дата</label>
-            <input
-              v-model="weapon.hunter_license_date"
-              type="date"
-              class="weapons-form__input"
-            >
-          </div>
+          <CommonFormField
+            label="Номер"
+            placeholder="Добавить лицензию"
+            inputmode="numeric"
+            no-margin
+            v-model="weapon.hunter_license_number"
+          />
+          <CommonFormField
+            label="Дата"
+            type="date"
+            no-margin
+            v-model="weapon.hunter_license_date"
+          />
         </div>
 
         <div class="weapons-form__field">
@@ -169,9 +160,7 @@ function handleSubmit() {
       </button>
 
       <div class="weapons-form__actions">
-        <button type="submit" class="weapons-form__submit">
-          Сохранить изменения
-        </button>
+        <CommonSaveButton type="submit" />
       </div>
     </form>
   </div>
@@ -192,7 +181,7 @@ function handleSubmit() {
   max-width: 100%;
   height: 31px;
   margin-bottom: 20px;
-  padding: 0 16px;
+  padding: 0;
   box-sizing: border-box;
   background: var(--wh-white);
   border-radius: var(--wh-radius);
@@ -253,13 +242,8 @@ function handleSubmit() {
 .weapons-form__field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 16px;
-}
-
-.weapons-form__field--inline {
-  flex: 1;
-  min-width: 0;
 }
 
 .weapons-form__label {
@@ -271,35 +255,30 @@ function handleSubmit() {
   color: var(--wh-gray-600);
 }
 
-.weapons-form__input,
 .weapons-form__select {
   width: 100%;
-  padding: 12px 14px;
+  padding: 12px 36px 12px 14px;
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 10px;
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.weapons-form__input::placeholder {
-  color: var(--wh-gray-400);
-}
-
-.weapons-form__input:focus,
-.weapons-form__select:focus {
-  border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
-}
-
-.weapons-form__select {
-  appearance: none;
+  background-color: var(--wh-white);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
-  padding-right: 36px;
+  color: var(--wh-gray-900);
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  appearance: none;
+  outline: none;
   cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.weapons-form__select:focus {
+  border-color: var(--wh-orange-500);
+  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
 }
 
 .profile-weapon {
@@ -343,6 +322,7 @@ function handleSubmit() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  margin-bottom: 16px;
 }
 
 .weapons-form__add {
@@ -371,30 +351,13 @@ function handleSubmit() {
   border-top: 1px solid rgba(0, 0, 0, 0.2);
 }
 
-.weapons-form__submit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 200px;
-  padding: 14px 28px;
-  border: none;
-  border-radius: 20px;
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-.weapons-form__submit:hover {
-  background: var(--wh-orange-600);
-  transform: translateY(-1px);
-}
-
 @media (--wh-tablet) {
   .profile-page {
-    padding: 16px 20px 40px;
+    padding: 12px 8px 32px;
+  }
+
+  .profile-page__header {
+    width: 100%;
   }
 }
 
@@ -414,11 +377,6 @@ function handleSubmit() {
   .weapons-form__actions {
     border-top: none;
     padding-top: 0;
-  }
-
-  .weapons-form__submit {
-    width: 100%;
-    min-width: 0;
   }
 }
 </style>

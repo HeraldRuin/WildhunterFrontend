@@ -231,22 +231,19 @@ onMounted(() => {
 
     <form class="password-form" @submit.prevent="handleSubmit">
       <div class="password-form__fields">
-        <div class="password-form__field">
-          <label class="password-form__label" for="current-password">Текущий пароль</label>
-          <div class="password-form__input-wrap">
-            <input
-              id="current-password"
-              v-model="currentPassword"
-              :type="showCurrentPassword ? 'text' : 'password'"
-              class="password-form__input"
-              :class="{
-                'password-form__input--masked': !showCurrentPassword && currentPassword,
-                'password-form__input--error': getFieldError('current_password'),
-              }"
-              placeholder="Текущий пароль"
-              autocomplete="current-password"
-              @input="clearFieldError('current_password')"
-            >
+        <CommonFormField
+          id="current-password"
+          label="Текущий пароль"
+          placeholder="Текущий пароль"
+          autocomplete="current-password"
+          no-margin
+          :type="showCurrentPassword ? 'text' : 'password'"
+          :model-value="currentPassword"
+          :masked="!showCurrentPassword && Boolean(currentPassword)"
+          :error="getFieldError('current_password')"
+          @update:model-value="currentPassword = $event; clearFieldError('current_password')"
+        >
+          <template #trailing>
             <button
               type="button"
               class="password-form__toggle"
@@ -268,30 +265,24 @@ onMounted(() => {
                 class="password-form__password-icon password-form__password-icon--hidden"
               >
             </button>
-          </div>
-          <p v-if="getFieldError('current_password')" class="password-form__field-error">
-            {{ getFieldError('current_password') }}
-          </p>
-        </div>
+          </template>
+        </CommonFormField>
 
-        <div class="password-form__field">
-          <label class="password-form__label" for="new-password">Новый пароль</label>
-          <div class="password-form__new-row">
-            <div class="password-form__input-wrap">
-              <input
-                id="new-password"
-                v-model="newPassword"
-                :type="showNewPassword ? 'text' : 'password'"
-                class="password-form__input"
-                :class="{
-                  'password-form__input--masked': !showNewPassword && newPassword,
-                  'password-form__input--error': getFieldError('new_password'),
-                }"
-                placeholder="Новый пароль"
-                autocomplete="new-password"
-                minlength="8"
-                @input="clearFieldError('new_password')"
-              >
+        <div class="password-form__new-row">
+          <CommonFormField
+            id="new-password"
+            label="Новый пароль"
+            placeholder="Новый пароль"
+            autocomplete="new-password"
+            minlength="8"
+            no-margin
+            :type="showNewPassword ? 'text' : 'password'"
+            :model-value="newPassword"
+            :masked="!showNewPassword && Boolean(newPassword)"
+            :error="getFieldError('new_password')"
+            @update:model-value="newPassword = $event; clearFieldError('new_password')"
+          >
+            <template #trailing>
               <button
                 type="button"
                 class="password-form__toggle"
@@ -313,37 +304,31 @@ onMounted(() => {
                   class="password-form__password-icon password-form__password-icon--hidden"
                 >
               </button>
-            </div>
-            <button
-              type="button"
-              class="password-form__generate"
-              @click="handleGeneratePassword"
-            >
-              Сгенерировать
-            </button>
-          </div>
-          <p v-if="getFieldError('new_password')" class="password-form__field-error">
-            {{ getFieldError('new_password') }}
-          </p>
+            </template>
+          </CommonFormField>
+          <button
+            type="button"
+            class="password-form__generate"
+            @click="handleGeneratePassword"
+          >
+            Сгенерировать
+          </button>
         </div>
 
-        <div class="password-form__field">
-          <label class="password-form__label" for="confirm-password">Новый пароль снова</label>
-          <div class="password-form__input-wrap">
-            <input
-              id="confirm-password"
-              v-model="confirmPassword"
-              :type="showNewPassword ? 'text' : 'password'"
-              class="password-form__input"
-              :class="{
-                'password-form__input--masked': !showNewPassword && confirmPassword,
-                'password-form__input--error': getFieldError('new_password_confirmation'),
-              }"
-              placeholder="Новый пароль снова"
-              autocomplete="new-password"
-              minlength="8"
-              @input="clearFieldError('new_password_confirmation')"
-            >
+        <CommonFormField
+          id="confirm-password"
+          label="Новый пароль снова"
+          placeholder="Новый пароль снова"
+          autocomplete="new-password"
+          minlength="8"
+          no-margin
+          :type="showNewPassword ? 'text' : 'password'"
+          :model-value="confirmPassword"
+          :masked="!showNewPassword && Boolean(confirmPassword)"
+          :error="getFieldError('new_password_confirmation')"
+          @update:model-value="confirmPassword = $event; clearFieldError('new_password_confirmation')"
+        >
+          <template #trailing>
             <button
               type="button"
               class="password-form__toggle"
@@ -365,11 +350,8 @@ onMounted(() => {
                 class="password-form__password-icon password-form__password-icon--hidden"
               >
             </button>
-          </div>
-          <p v-if="getFieldError('new_password_confirmation')" class="password-form__field-error">
-            {{ getFieldError('new_password_confirmation') }}
-          </p>
-        </div>
+          </template>
+        </CommonFormField>
       </div>
 
       <p v-if="submitError" class="password-form__submit-error">
@@ -377,22 +359,11 @@ onMounted(() => {
       </p>
 
       <div class="password-form__actions">
-        <button
+        <CommonSaveButton
           type="submit"
-          class="password-form__submit"
-          :class="{ 'password-form__submit--loading': isSubmitting }"
           :disabled="isSubmitting"
-          :aria-busy="isSubmitting"
-        >
-          <CommonSpinner
-            v-if="isSubmitting"
-            variant="ring"
-            :size="22"
-            color="var(--wh-white)"
-            label="Сохранение"
-          />
-          <span v-else>Сохранить изменения</span>
-        </button>
+          :loading="isSubmitting"
+        />
         <button type="button" class="password-form__cancel" @click="handleCancel">
           Отмена
         </button>
@@ -416,7 +387,7 @@ onMounted(() => {
   max-width: 100%;
   height: 31px;
   margin-bottom: 20px;
-  padding: 0 16px;
+  padding: 0;
   box-sizing: border-box;
   background: var(--wh-white);
   border-radius: var(--wh-radius);
@@ -468,77 +439,9 @@ onMounted(() => {
   gap: 20px;
 }
 
-.password-form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.password-form__label {
-  font-family: "Inter", sans-serif;
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 120%;
-  letter-spacing: -0.05em;
-
-  color: var(--wh-gray-600);
-}
-
 .password-form__new-row {
   position: relative;
   width: 100%;
-}
-
-.password-form__input-wrap {
-  position: relative;
-  width: 100%;
-}
-
-.password-form__input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 12px 44px 12px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  letter-spacing: 0.22em;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.password-form__input--masked {
-  /* Slightly larger discs so masked width stays closer to revealed text */
-  font-size: 16px;
-  line-height: 24px;
-  letter-spacing: 0.22em;
-}
-
-.password-form__input::placeholder {
-  color: var(--wh-gray-400);
-  letter-spacing: normal;
-}
-
-.password-form__input:focus {
-  border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
-}
-
-.password-form__input--error,
-.password-form__input--error:focus {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
-}
-
-.password-form__field-error {
-  margin: 0;
-  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-  font-size: 0.875rem;
-  line-height: 1.35;
-  color: #dc2626;
 }
 
 .password-form__submit-error {
@@ -548,21 +451,6 @@ onMounted(() => {
   font-size: 0.875rem;
   line-height: 1.35;
   color: #dc2626;
-}
-
-.password-form__input:-webkit-autofill,
-.password-form__input:-webkit-autofill:hover,
-.password-form__input:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--wh-gray-900);
-  box-shadow: 0 0 0 1000px var(--wh-white) inset;
-  transition: background-color 9999s ease-out 0s;
-}
-
-.password-form__input-wrap > .password-form__toggle {
-  position: absolute;
-  top: 50%;
-  right: 12px;
-  transform: translateY(-50%);
 }
 
 .password-form__toggle {
@@ -599,7 +487,7 @@ onMounted(() => {
 
 .password-form__generate {
   position: absolute;
-  top: 50%;
+  top: calc(18px * 1.2 + 6px);
   left: calc(100% + 16px);
   padding: 0;
   border: none;
@@ -609,7 +497,7 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 500;
   font-style: normal;
-  line-height: 100%;
+  line-height: calc(12px * 2 + 18px * 1.3);
   letter-spacing: -0.05em;
   text-decoration: underline;
   text-decoration-style: solid;
@@ -618,7 +506,6 @@ onMounted(() => {
   text-decoration-skip-ink: auto;
   white-space: nowrap;
   cursor: pointer;
-  transform: translateY(-50%);
   transition: color 0.15s ease;
 }
 
@@ -638,32 +525,6 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-.password-form__submit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 200px;
-  padding: 14px 28px;
-  border: none;
-  border-radius: 20px;
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-.password-form__submit:hover:not(:disabled) {
-  background: var(--wh-orange-600);
-  transform: translateY(-1px);
-}
-
-.password-form__submit:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
 .password-form__cancel {
   padding: 0;
   border: none;
@@ -681,7 +542,12 @@ onMounted(() => {
 
 @media (--wh-tablet) {
   .profile-page {
-    padding: 16px 20px 40px;
+    padding: 12px 8px 32px;
+  }
+
+  .profile-page__header,
+  .password-form__actions {
+    width: 100%;
   }
 }
 
@@ -700,15 +566,9 @@ onMounted(() => {
 
   .password-form__generate {
     position: static;
-    transform: none;
-    align-self: flex-end;
+    display: block;
     margin-top: 8px;
-  }
-
-  .password-form__new-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    line-height: 1.2;
   }
 
   .password-form__actions {
@@ -717,11 +577,6 @@ onMounted(() => {
     margin-top: 24px;
     padding-top: 20px;
     border-top: none;
-  }
-
-  .password-form__submit {
-    width: 100%;
-    min-width: 0;
   }
 
   .password-form__cancel {

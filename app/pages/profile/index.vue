@@ -193,18 +193,17 @@ function applyValidationErrors(data: unknown) {
 
 function setProfileField(
   field: 'user_name' | 'email' | 'first_name' | 'last_name' | 'phone' | 'birthday' | 'bio',
-  event: Event,
+  value: string,
 ) {
   if (!profile.value) {
     return
   }
 
-  const target = event.target as HTMLInputElement | HTMLTextAreaElement
-  profile.value[field] = field === 'phone' ? formatPhone(target.value) : target.value
+  profile.value[field] = field === 'phone' ? formatPhone(value) : value
   clearFieldError(field)
 
   if (field === 'birthday') {
-    birthdayDate.value = parseBirthdayDate(target.value)
+    birthdayDate.value = parseBirthdayDate(value)
   }
 }
 
@@ -399,168 +398,111 @@ async function handleSubmit() {
 
         <div class="profile-form__grid">
           <div class="profile-form__column">
-            <div class="profile-form__field">
-              <label class="profile-form__label" for="nickname">Ник</label>
-              <input
-                id="nickname"
-                type="text"
-                class="profile-form__input"
-                :class="{
-                  'profile-form__value-reveal': revealValues,
-                  'profile-form__input--error': getFieldError('user_name'),
-                }"
-                :value="profile?.user_name ?? ''"
-                :readonly="isFormLoading || isSubmitting"
-                placeholder="Ник пользователя"
-                @input="setProfileField('user_name', $event)"
-              >
-              <p v-if="getFieldError('user_name')" class="profile-form__field-error">
-                {{ getFieldError('user_name') }}
-              </p>
-            </div>
+            <CommonFormField
+              id="nickname"
+              label="Ник"
+              placeholder="Ник пользователя"
+              :model-value="profile?.user_name ?? ''"
+              :error="getFieldError('user_name')"
+              :readonly="isFormLoading || isSubmitting"
+              :reveal="revealValues"
+              @update:model-value="setProfileField('user_name', $event)"
+            />
 
-            <div class="profile-form__field">
-              <label class="profile-form__label" for="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                class="profile-form__input"
-                :class="{
-                  'profile-form__value-reveal': revealValues,
-                  'profile-form__input--error': getFieldError('email'),
-                }"
-                :value="profile?.email ?? ''"
-                :readonly="isFormLoading || isSubmitting"
-                placeholder="Email"
-                @input="setProfileField('email', $event)"
-              >
-              <p v-if="getFieldError('email')" class="profile-form__field-error">
-                {{ getFieldError('email') }}
-              </p>
-            </div>
+            <CommonFormField
+              id="email"
+              label="Email"
+              type="email"
+              placeholder="Email"
+              :model-value="profile?.email ?? ''"
+              :error="getFieldError('email')"
+              :readonly="isFormLoading || isSubmitting"
+              :reveal="revealValues"
+              @update:model-value="setProfileField('email', $event)"
+            />
 
             <div class="profile-form__row">
-              <div class="profile-form__field">
-                <label class="profile-form__label" for="first-name">Имя</label>
-                <input
-                  id="first-name"
-                  type="text"
-                  class="profile-form__input"
-                  :class="{
-                    'profile-form__value-reveal': revealValues,
-                    'profile-form__input--error': getFieldError('first_name'),
-                  }"
-                  :value="profile?.first_name ?? ''"
-                  :readonly="isFormLoading || isSubmitting"
-                  placeholder="Имя"
-                  @input="setProfileField('first_name', $event)"
-                >
-                <p v-if="getFieldError('first_name')" class="profile-form__field-error">
-                  {{ getFieldError('first_name') }}
-                </p>
-              </div>
-              <div class="profile-form__field">
-                <label class="profile-form__label" for="last-name">Фамилия</label>
-                <input
-                  id="last-name"
-                  type="text"
-                  class="profile-form__input"
-                  :class="{
-                    'profile-form__value-reveal': revealValues,
-                    'profile-form__input--error': getFieldError('last_name'),
-                  }"
-                  :value="profile?.last_name ?? ''"
-                  :readonly="isFormLoading || isSubmitting"
-                  placeholder="Фамилия"
-                  @input="setProfileField('last_name', $event)"
-                >
-                <p v-if="getFieldError('last_name')" class="profile-form__field-error">
-                  {{ getFieldError('last_name') }}
-                </p>
-              </div>
+              <CommonFormField
+                id="first-name"
+                label="Имя"
+                placeholder="Имя"
+                :model-value="profile?.first_name ?? ''"
+                :error="getFieldError('first_name')"
+                :readonly="isFormLoading || isSubmitting"
+                :reveal="revealValues"
+                @update:model-value="setProfileField('first_name', $event)"
+              />
+              <CommonFormField
+                id="last-name"
+                label="Фамилия"
+                placeholder="Фамилия"
+                :model-value="profile?.last_name ?? ''"
+                :error="getFieldError('last_name')"
+                :readonly="isFormLoading || isSubmitting"
+                :reveal="revealValues"
+                @update:model-value="setProfileField('last_name', $event)"
+              />
             </div>
 
-            <div class="profile-form__field">
-              <label class="profile-form__label" for="phone">Номер телефона</label>
-              <input
-                id="phone"
-                type="tel"
-                class="profile-form__input"
-                :class="{
-                  'profile-form__value-reveal': revealValues,
-                  'profile-form__input--error': getFieldError('phone'),
-                }"
-                :value="profile?.phone ?? ''"
-                :readonly="isFormLoading || isSubmitting"
-                inputmode="numeric"
-                autocomplete="tel"
-                placeholder="+7 (___) ___-__-__"
-                @keydown="handlePhoneKeydown"
-                @paste="handlePhonePaste"
-                @input="setProfileField('phone', $event)"
-              >
-              <p v-if="getFieldError('phone')" class="profile-form__field-error">
-                {{ getFieldError('phone') }}
-              </p>
-            </div>
+            <CommonFormField
+              id="phone"
+              label="Номер телефона"
+              type="tel"
+              placeholder="+7 (___) ___-__-__"
+              inputmode="numeric"
+              autocomplete="tel"
+              :model-value="profile?.phone ?? ''"
+              :error="getFieldError('phone')"
+              :readonly="isFormLoading || isSubmitting"
+              :reveal="revealValues"
+              @keydown="handlePhoneKeydown"
+              @paste="handlePhonePaste"
+              @update:model-value="setProfileField('phone', $event)"
+            />
           </div>
 
           <div class="profile-form__column">
-            <div ref="birthdayFieldRef" class="profile-form__field profile-form__field--birthday">
-              <label class="profile-form__label" for="birthday">Дата рождения</label>
-              <input
+            <div ref="birthdayFieldRef">
+              <CommonFormField
                 id="birthday"
-                type="text"
-                class="profile-form__input"
-                :class="{
-                  'profile-form__value-reveal': revealValues,
-                  'profile-form__input--error': getFieldError('birthday'),
-                  'profile-form__input--open': isBirthdayOpen,
-                }"
-                :value="profile?.birthday ?? ''"
-                :readonly="isFormLoading || isSubmitting"
+                label="Дата рождения"
                 placeholder="ДД.ММ.ГГГГ"
                 autocomplete="bday"
+                cursor-pointer
+                :model-value="profile?.birthday ?? ''"
+                :error="getFieldError('birthday')"
+                :readonly="isFormLoading || isSubmitting"
+                :reveal="revealValues"
+                :open="isBirthdayOpen"
                 @focus="openBirthdayCalendar"
                 @click.stop="openBirthdayCalendar"
-                @input="setProfileField('birthday', $event)"
+                @update:model-value="setProfileField('birthday', $event)"
               >
-              <div
-                v-if="isBirthdayOpen"
-                class="profile-form__birthday-panel"
-                @click.stop
-              >
-                <HomeHeroSearchDatePicker
-                  v-model:start="birthdayDate"
-                  v-model:active-part="birthdayActivePart"
-                  mode="single"
-                  @select="onBirthdaySelect"
-                />
-              </div>
-              <p v-if="getFieldError('birthday')" class="profile-form__field-error">
-                {{ getFieldError('birthday') }}
-              </p>
+                <template v-if="isBirthdayOpen" #append>
+                  <div class="profile-form__birthday-panel" @click.stop>
+                    <HomeHeroSearchDatePicker
+                      v-model:start="birthdayDate"
+                      v-model:active-part="birthdayActivePart"
+                      mode="single"
+                      @select="onBirthdaySelect"
+                    />
+                  </div>
+                </template>
+              </CommonFormField>
             </div>
 
-            <div class="profile-form__field">
-              <label class="profile-form__label" for="bio">Обо мне</label>
-              <textarea
-                id="bio"
-                class="profile-form__textarea"
-                :class="{
-                  'profile-form__value-reveal': revealValues,
-                  'profile-form__input--error': getFieldError('bio'),
-                }"
-                rows="5"
-                :value="profile?.bio ?? ''"
-                :readonly="isFormLoading || isSubmitting"
-                placeholder="Расскажите о себе"
-                @input="setProfileField('bio', $event)"
-              />
-              <p v-if="getFieldError('bio')" class="profile-form__field-error">
-                {{ getFieldError('bio') }}
-              </p>
-            </div>
+            <CommonFormField
+              id="bio"
+              label="Обо мне"
+              placeholder="Расскажите о себе"
+              multiline
+              :rows="5"
+              :model-value="profile?.bio ?? ''"
+              :error="getFieldError('bio')"
+              :readonly="isFormLoading || isSubmitting"
+              :reveal="revealValues"
+              @update:model-value="setProfileField('bio', $event)"
+            />
 
             <div class="profile-form__field profile-form__field--avatar">
               <div class="profile-form__avatar-upload">
@@ -609,23 +551,11 @@ async function handleSubmit() {
       </p>
 
       <div class="profile-form__actions">
-        <button
-          type="button"
-          class="profile-form__submit"
-          :class="{ 'profile-form__submit--loading': isSubmitting }"
+        <CommonSaveButton
           :disabled="isFormLoading || isSubmitting"
-          :aria-busy="isSubmitting"
+          :loading="isSubmitting"
           @click="handleSubmit"
-        >
-          <CommonSpinner
-            v-if="isSubmitting"
-            variant="ring"
-            :size="22"
-            color="var(--wh-white)"
-            label="Сохранение"
-          />
-          <span v-else>Сохранить изменения</span>
-        </button>
+        />
       </div>
     </form>
   </div>
@@ -646,7 +576,7 @@ async function handleSubmit() {
   max-width: 100%;
   height: 31px;
   margin-bottom: 20px;
-  padding: 0 16px;
+  padding: 0;
   box-sizing: border-box;
   background: var(--wh-white);
   border-radius: var(--wh-radius);
@@ -705,7 +635,7 @@ async function handleSubmit() {
   user-select: none;
 }
 
-.profile-form--loading .profile-form__submit:disabled {
+.profile-form--loading :deep(.save-button:disabled) {
   opacity: 1;
   cursor: default;
   transform: none;
@@ -715,7 +645,8 @@ async function handleSubmit() {
   flex-shrink: 0;
 }
 
-.profile-form--reveal .profile-form__value-reveal {
+.profile-form--reveal .profile-form__value-reveal,
+.profile-form--reveal :deep(.form-field__input--reveal) {
   animation: profile-value-reveal 0.85s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -745,6 +676,7 @@ async function handleSubmit() {
 
 @media (prefers-reduced-motion: reduce) {
   .profile-form--reveal .profile-form__value-reveal,
+  .profile-form--reveal :deep(.form-field__input--reveal),
   .profile-form__avatar-preview img.profile-form__value-reveal {
     animation: none;
   }
@@ -785,32 +717,7 @@ async function handleSubmit() {
   color: var(--wh-gray-900);
 }
 
-.profile-form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.profile-form__field--birthday {
-  position: relative;
-}
-
-.profile-form__field--birthday .profile-form__input {
-  cursor: pointer;
-}
-
-.profile-form__input--open {
-  border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 2px rgb(209 101 16 / 18%);
-}
-
 .profile-form__birthday-panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 30;
   width: 100%;
   padding: 18px 20px;
   border: 1px solid var(--wh-gray);
@@ -818,11 +725,6 @@ async function handleSubmit() {
   background: var(--wh-white);
   box-shadow: 0 12px 28px rgb(28 33 28 / 12%);
   box-sizing: border-box;
-}
-
-.profile-form__field--inline {
-  flex: 1;
-  min-width: 0;
 }
 
 .profile-form__row {
@@ -840,42 +742,6 @@ async function handleSubmit() {
   color: var(--wh-gray-600);
 }
 
-.profile-form__input,
-.profile-form__textarea {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 12px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  font-family: "Inter", sans-serif;
-  font-weight: 400;
-  font-size: 18px;
-  line-height: 130%;
-  letter-spacing: -0.05em;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.profile-form__input::placeholder,
-.profile-form__textarea::placeholder {
-  font-family: "Inter", sans-serif;
-  font-weight: 400;
-  font-size: 18px;
-  line-height: 130%;
-  letter-spacing: -0.05em;
-  color: var(--wh-gray-400);
-}
-
-.profile-form__input:focus,
-.profile-form__textarea:focus {
-  border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
-}
-
-.profile-form__input--error,
-.profile-form__input--error:focus,
 .profile-form__file-btn--error {
   border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
@@ -899,9 +765,11 @@ async function handleSubmit() {
   color: #dc2626;
 }
 
-.profile-form__textarea {
-  resize: vertical;
-  min-height: 132px;
+.profile-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 
 .profile-form__field--avatar {
@@ -993,48 +861,28 @@ async function handleSubmit() {
   border-top: 1px solid rgba(0, 0, 0, 0.2);
 }
 
-.profile-form__submit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 220px;
-  padding: 14px 28px;
-  border: none;
-  border-radius: 10px;
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-.profile-form__submit:hover:not(:disabled) {
-  background: var(--wh-orange-600);
-  transform: translateY(-1px);
-}
-
-.profile-form__submit:disabled {
-  cursor: default;
-  opacity: 0.85;
-  transform: none;
-}
-
-.profile-form__submit--loading {
-  min-width: 220px;
-}
-
 @media (--wh-tablet) {
-  .profile-form__grid {
-    grid-template-columns: 1fr;
+  .profile-page {
+    padding: 12px 8px 32px;
   }
 
-  .profile-page {
-    padding: 16px 20px 40px;
+  .profile-page__header,
+  .profile-form__section,
+  .profile-form__submit-error,
+  .profile-form__actions {
+    width: 100%;
+  }
+
+  .profile-form__grid {
+    gap: 20px 24px;
   }
 }
 
 @media (--wh-mobile) {
+  .profile-form__grid {
+    grid-template-columns: 1fr;
+  }
+
   .profile-form__row {
     grid-template-columns: 1fr;
   }
