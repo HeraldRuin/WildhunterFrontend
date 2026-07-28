@@ -287,7 +287,7 @@ function closeMobile() {
   padding: 0;
   border: none;
   background: transparent;
-  color: #d64545;
+  color: var(--wh-orange-500);
   font: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
