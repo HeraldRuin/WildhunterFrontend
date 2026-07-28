@@ -3,6 +3,7 @@ import { formatMemberSince } from '~/utils/user'
 
 interface NavItem {
   label: string
+  labelShort?: string
   to: string
   iconSrc: string
 }
@@ -14,6 +15,12 @@ const { profile } = useProfile()
 const navItems: NavItem[] = [
   { label: 'Бронирования', to: '/profile/bookings', iconSrc: '/icons/iconoir_clock-solid.png' },
   { label: 'Мой профиль', to: '/profile', iconSrc: '/icons/lets-icons_setting-fill.png' },
+  {
+    label: 'Лицензия на оружие',
+    labelShort: 'Оружие',
+    to: '/profile/weapons',
+    iconSrc: '/icons/weapon-crosshair.svg',
+  },
   { label: 'Изменить пароль', to: '/profile/password', iconSrc: '/icons/boxicons_pencil-filled.png' },
 ]
 
@@ -79,7 +86,10 @@ async function handleLogout() {
           :key="item.to"
           :to="item.to"
           class="profile-sidebar__nav-link"
-          :class="{ 'profile-sidebar__nav-link--active': isActive(item.to) }"
+          :class="{
+            'profile-sidebar__nav-link--active': isActive(item.to),
+            'profile-sidebar__nav-link--compact': Boolean(item.labelShort),
+          }"
         >
           <span class="profile-sidebar__nav-icon" aria-hidden="true">
             <img
@@ -89,7 +99,13 @@ async function handleLogout() {
               height="24"
             >
           </span>
-          {{ item.label }}
+          <template v-if="item.labelShort">
+            <span class="profile-sidebar__nav-label profile-sidebar__nav-label--full">{{ item.label }}</span>
+            <span class="profile-sidebar__nav-label profile-sidebar__nav-label--short">{{ item.labelShort }}</span>
+          </template>
+          <template v-else>
+            {{ item.label }}
+          </template>
         </NuxtLink>
       </nav>
 
@@ -252,6 +268,10 @@ async function handleLogout() {
   object-fit: contain;
 }
 
+.profile-sidebar__nav-label--short {
+  display: none;
+}
+
 .profile-sidebar__footer {
   display: flex;
   flex-direction: column;
@@ -368,6 +388,14 @@ async function handleLogout() {
   .profile-sidebar__footer {
     padding-top: 12px;
   }
+
+  .profile-sidebar__nav-link--compact .profile-sidebar__nav-label--full {
+    display: none;
+  }
+
+  .profile-sidebar__nav-link--compact .profile-sidebar__nav-label--short {
+    display: inline;
+  }
 }
 
 @media (--wh-mobile) {
@@ -423,6 +451,14 @@ async function handleLogout() {
 
   .profile-sidebar__nav-link {
     padding: 12px 14px;
+  }
+
+  .profile-sidebar__nav-link--compact .profile-sidebar__nav-label--full {
+    display: inline;
+  }
+
+  .profile-sidebar__nav-link--compact .profile-sidebar__nav-label--short {
+    display: none;
   }
 }
 </style>
