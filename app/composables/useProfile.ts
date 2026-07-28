@@ -215,10 +215,30 @@ export function useProfile() {
     await request
   }
 
+  function patchCachedProfile(patch: Partial<ProfileUser>) {
+    if (!profile.value) {
+      return
+    }
+
+    const next = {
+      ...profile.value,
+      ...patch,
+    }
+
+    applyProfile(next)
+  }
+
   async function saveProfile(payload: UpdateUserPayload) {
     const response = await userApi.updateUser(payload)
 
     if ('success' in response && response.success) {
+      // Сразу пишем номер билета в кэш — не ждём ответ GET /user
+      if (profile.value && payload.hunter_billet_number != null) {
+        patchCachedProfile({
+          hunter_billet_number: String(payload.hunter_billet_number).trim(),
+        })
+      }
+
       await loadProfile(true)
     }
 
@@ -247,6 +267,7 @@ export function useProfile() {
     error,
     loadProfile,
     saveProfile,
+    patchCachedProfile,
     resetProfile,
     addWeaponRow,
   }
