@@ -8,10 +8,23 @@ useHead({
   title: 'Лицензия на оружие — WH',
 })
 
-import type { WeaponOption } from '~/types/user'
-import { formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
+import type { UserWeapon, WeaponOption } from '~/types/user'
+import { formatApiDate, formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
+import { createEmptyWeapon } from '~/utils/user'
+import {
+  readUserWeaponsCache,
+  readUserWeaponsCountCache,
+  writeUserWeaponsCache,
+} from '~/utils/userWeaponsCache'
 
-const { profile, pending, error, loadProfile, addWeaponRow } = useProfile()
+type WeaponField =
+  | 'hunter_license_number'
+  | 'hunter_license_date'
+  | 'weapon_type_id'
+  | 'caliber_id'
+
+const { profile, pending, error, loadProfile } = useProfile()
+const { user } = useAuth()
 const { weapons: weaponsApi } = useApi()
 const notifications = useNotifications()
 
@@ -24,10 +37,120 @@ const weaponTypesError = ref('')
 const calibers = ref<WeaponOption[]>([])
 const calibersLoading = ref(false)
 const calibersError = ref('')
+const weapons = ref<UserWeapon[]>([])
+const userWeaponsLoading = ref(false)
+const userWeaponsError = ref('')
+const cachedWeaponsCount = ref(0)
+
+const showWeaponPlaceholders = computed(() => false)
+
+type WeaponCardView =
+  | { key: string, index: number, loading: true }
+  | { key: string, index: number, loading: false, weapon: UserWeapon }
+
+const weaponCards = computed<WeaponCardView[]>(() => {
+  // Ключ по индексу — одни и те же блоки, без leave/enter анимации при подгрузке
+  if (weapons.value.length > 0) {
+    return weapons.value.map((weapon, index) => ({
+      key: `slot-${index}`,
+      index,
+      loading: false as const,
+      weapon,
+    }))
+  }
+
+  if (showWeaponPlaceholders.value) {
+    return Array.from({ length: cachedWeaponsCount.value }, (_, index) => ({
+      key: `slot-${index}`,
+      index,
+      loading: true as const,
+    }))
+  }
+
+  return []
+})
+
+
+function currentUserId() {
+  return user.value?.id ?? profile.value?.id ?? null
+}
+
+function persistWeaponsCache(list: UserWeapon[]) {
+  const userId = currentUserId()
+
+  if (!userId) {
+    return
+  }
+
+  writeUserWeaponsCache(userId, list)
+  cachedWeaponsCount.value = list.filter(weapon => !weapon.isNew).length
+}
+
+function applyWeaponsList(list: UserWeapon[]) {
+  weapons.value = list
+  persistWeaponsCache(list)
+
+  try {
+    rememberWeaponSnapshots(list)
+  } catch {
+    weaponSnapshots.value = {}
+  }
+}
+
+function hydrateWeaponsFromCache() {
+  const userId = currentUserId()
+
+  if (!userId) {
+    return false
+  }
+
+  const cached = readUserWeaponsCache(userId)
+
+  if (!cached) {
+    cachedWeaponsCount.value = readUserWeaponsCountCache(userId)
+    return false
+  }
+
+  weapons.value = cached
+  cachedWeaponsCount.value = cached.length
+
+  try {
+    rememberWeaponSnapshots(cached)
+  } catch {
+    weaponSnapshots.value = {}
+  }
+
+  return true
+}
+
+function deferTask(ms: number) {
+  return new Promise<void>((resolve) => {
+    if (!import.meta.client) {
+      resolve()
+      return
+    }
+
+    const idle = (window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+    }).requestIdleCallback
+
+    if (typeof idle === 'function') {
+      idle(() => resolve(), { timeout: ms })
+      return
+    }
+
+    window.setTimeout(() => resolve(), ms)
+  })
+}
 const openLicenseDateIndex = ref<number | null>(null)
 const licenseDate = ref<Date | null>(null)
 const licenseActivePart = ref<'start' | 'end' | null>('start')
 const licenseDateFieldRefs = new Map<number, HTMLElement>()
+const fieldErrors = ref<Record<string, string[]>>({})
+const submitError = ref('')
+const savingWeaponIndex = ref<number | null>(null)
+const expandedWeaponKeys = ref<string[]>([])
+const weaponSnapshots = ref<Record<number, string>>({})
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -63,6 +186,133 @@ async function loadCalibers() {
   }
 }
 
+async function loadUserWeapons(options: { force?: boolean, silent?: boolean } = {}) {
+  if (!options.silent) {
+    userWeaponsLoading.value = true
+  }
+
+  userWeaponsError.value = ''
+
+  try {
+    if (!profile.value) {
+      await loadProfile()
+    }
+
+    if (!profile.value) {
+      return
+    }
+
+    // Обычный заход — только кэш, без /user/weapons
+    if (!options.force && hydrateWeaponsFromCache()) {
+      return
+    }
+
+    const list = await weaponsApi.getUserWeaponList()
+    applyWeaponsList(list)
+  } catch {
+    if (!options.silent) {
+      if (!weapons.value.length) {
+        weapons.value = []
+        weaponSnapshots.value = {}
+      }
+      userWeaponsError.value = 'Не удалось загрузить лицензии на оружие'
+    }
+  } finally {
+    if (!options.silent) {
+      userWeaponsLoading.value = false
+    }
+  }
+}
+
+function ensureWeaponDictionaries() {
+  if (!weaponTypes.value.length && !weaponTypesLoading.value) {
+    void loadWeaponTypes()
+  }
+
+  if (!calibers.value.length && !calibersLoading.value) {
+    void loadCalibers()
+  }
+}
+
+async function bootWeaponsPage() {
+  await loadProfile()
+
+  // Есть полный кэш списка — сразу показываем, без запроса
+  if (hydrateWeaponsFromCache()) {
+    userWeaponsLoading.value = false
+    await deferTask(240)
+    ensureWeaponDictionaries()
+    return
+  }
+
+  // Только старое число блоков — плейсхолдеры, один запрос для заполнения кэша
+  cachedWeaponsCount.value = currentUserId()
+    ? readUserWeaponsCountCache(currentUserId()!)
+    : 0
+
+  if (cachedWeaponsCount.value > 0) {
+    userWeaponsLoading.value = true
+  }
+
+  await loadUserWeapons({ force: true })
+  await deferTask(240)
+  ensureWeaponDictionaries()
+}
+
+function addWeaponRow() {
+  weapons.value.push(createEmptyWeapon())
+}
+
+function snapshotWeapon(weapon: UserWeapon) {
+  return JSON.stringify({
+    hunter_license_number: weapon.hunter_license_number.trim(),
+    hunter_license_date: resolveLicenseDateForApi(weapon.hunter_license_date),
+    weapon_type_id: String(weapon.weapon_type_id),
+    caliber: String(weapon.caliber),
+  })
+}
+
+function rememberWeaponSnapshots(weapons: UserWeapon[]) {
+  const next: Record<number, string> = {}
+
+  for (const weapon of weapons) {
+    if (weapon.id != null && !weapon.isNew) {
+      next[weapon.id] = snapshotWeapon(weapon)
+    }
+  }
+
+  weaponSnapshots.value = next
+}
+
+function isWeaponDirty(index: number) {
+  const weapon = weapons.value[index]
+
+  if (!weapon || weapon.id == null || isNewWeapon(weapon)) {
+    return false
+  }
+
+  const snapshot = weaponSnapshots.value[weapon.id]
+
+  if (!snapshot) {
+    return false
+  }
+
+  return snapshot !== snapshotWeapon(weapon)
+}
+
+function showWeaponFieldErrors(weapon: UserWeapon, index: number) {
+  return isNewWeapon(weapon) || isWeaponDirty(index)
+}
+
+function buildWeaponPayload(weapon: UserWeapon) {
+  return {
+    hunter_license_number: weapon.hunter_license_number.trim(),
+    hunter_license_date: resolveLicenseDateForApi(weapon.hunter_license_date),
+    weapon_type_id: weapon.weapon_type_id ? Number(weapon.weapon_type_id) : null,
+    caliber_id: weapon.caliber ? Number(weapon.caliber) : null,
+  }
+}
+
 function setLicenseDateFieldRef(index: number, el: Element | ComponentPublicInstance | null) {
   if (el instanceof HTMLElement) {
     licenseDateFieldRefs.set(index, el)
@@ -78,7 +328,7 @@ function displayLicenseDate(value: string) {
 }
 
 function openLicenseDateCalendar(index: number) {
-  const weapon = profile.value?.weapons[index]
+  const weapon = weapons.value[index]
 
   if (!weapon) {
     return
@@ -90,7 +340,7 @@ function openLicenseDateCalendar(index: number) {
 }
 
 function onLicenseDateSelect(index: number, date: Date) {
-  const weapon = profile.value?.weapons[index]
+  const weapon = weapons.value[index]
 
   if (!weapon) {
     return
@@ -98,7 +348,88 @@ function onLicenseDateSelect(index: number, date: Date) {
 
   licenseDate.value = date
   weapon.hunter_license_date = formatBirthdayDate(date)
+  clearFieldError('hunter_license_date')
   openLicenseDateIndex.value = null
+}
+
+function getFieldError(field: WeaponField) {
+  return fieldErrors.value[field]?.[0] || ''
+}
+
+function clearFieldError(field: WeaponField) {
+  if (!fieldErrors.value[field]) {
+    return
+  }
+
+  const nextErrors = { ...fieldErrors.value }
+  delete nextErrors[field]
+  fieldErrors.value = nextErrors
+}
+
+function getApiErrorPayload(source: unknown) {
+  if (!source || typeof source !== 'object') {
+    return null
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    errors?: Record<string, string[]> | unknown[]
+    error_code?: string
+    code?: string
+  }
+
+  if (
+    payload.success === false
+    || payload.message
+    || payload.error_code
+    || payload.code
+    || payload.errors
+  ) {
+    return payload
+  }
+
+  const nestedData = (source as { data?: unknown }).data
+
+  if (nestedData && nestedData !== source) {
+    return getApiErrorPayload(nestedData)
+  }
+
+  return null
+}
+
+function applyValidationErrors(data: unknown) {
+  const response = getApiErrorPayload(data)
+
+  if (!response) {
+    return false
+  }
+
+  const normalized: Record<string, string[]> = {}
+  const rawErrors = response.errors
+
+  if (rawErrors && !Array.isArray(rawErrors)) {
+    Object.assign(normalized, rawErrors)
+  }
+
+  if (Object.keys(normalized).length > 0) {
+    fieldErrors.value = normalized
+    submitError.value = ''
+    return true
+  }
+
+  if (response.message) {
+    fieldErrors.value = {}
+    submitError.value = response.message
+    return true
+  }
+
+  return false
+}
+
+function resolveLicenseDateForApi(value: string) {
+  const parsed = parseBirthdayDate(value)
+  return parsed ? formatApiDate(parsed) : value.trim()
 }
 
 function handleLicenseDateDocumentClick(event: MouseEvent) {
@@ -116,9 +447,7 @@ function handleLicenseDateDocumentClick(event: MouseEvent) {
 }
 
 onMounted(() => {
-  loadProfile()
-  loadWeaponTypes()
-  loadCalibers()
+  void bootWeaponsPage()
   document.addEventListener('click', handleLicenseDateDocumentClick)
 })
 
@@ -147,23 +476,116 @@ watch(
 )
 
 function removeWeapon(index: number) {
-  if (!profile.value) {
-    return
-  }
-
-  profile.value.weapons.splice(index, 1)
+  weapons.value.splice(index, 1)
+  persistWeaponsCache(weapons.value)
 }
 
-function saveWeapon(index: number) {
-  const weapon = profile.value?.weapons[index]
+async function saveWeapon(index: number) {
+  const weapon = weapons.value[index]
 
-  if (!weapon) {
+  if (!weapon || savingWeaponIndex.value != null) {
     return
   }
 
-  weapon.id = weapon.id ?? Date.now()
-  weapon.isNew = false
+  savingWeaponIndex.value = index
+  fieldErrors.value = {}
+  submitError.value = ''
   stopSavePulse()
+
+  try {
+    const response = await weaponsApi.saveUserWeapon(buildWeaponPayload(weapon))
+
+    if ('success' in response && response.success) {
+      notifications.success('Лицензия на оружие сохранена')
+      await loadUserWeapons({ force: true, silent: true })
+      return
+    }
+
+    if (!applyValidationErrors(response)) {
+      submitError.value = 'Не удалось сохранить оружие'
+    }
+  } catch (error) {
+    const data = (error as { data?: unknown }).data
+
+    if (!applyValidationErrors(data)) {
+      submitError.value = 'Не удалось сохранить оружие'
+    }
+  } finally {
+    savingWeaponIndex.value = null
+  }
+}
+
+async function updateWeapon(index: number) {
+  const weapon = weapons.value[index]
+
+  if (!weapon || weapon.id == null || savingWeaponIndex.value != null) {
+    return
+  }
+
+  savingWeaponIndex.value = index
+  fieldErrors.value = {}
+  submitError.value = ''
+
+  try {
+    const response = await weaponsApi.updateUserWeapon(weapon.id, buildWeaponPayload(weapon))
+
+    if ('success' in response && response.success) {
+      notifications.success('Лицензия на оружие обновлена')
+      await loadUserWeapons({ force: true, silent: true })
+      return
+    }
+
+    if (!applyValidationErrors(response)) {
+      submitError.value = 'Не удалось обновить оружие'
+    }
+  } catch (error) {
+    const data = (error as { data?: unknown }).data
+
+    if (!applyValidationErrors(data)) {
+      submitError.value = 'Не удалось обновить оружие'
+    }
+  } finally {
+    savingWeaponIndex.value = null
+  }
+}
+
+function weaponKey(weapon: { id: number | null }, index: number) {
+  return weapon.id != null ? `id-${weapon.id}` : `new-${index}`
+}
+
+function isWeaponExpanded(index: number) {
+  const weapon = weapons.value[index]
+
+  if (!weapon) {
+    return false
+  }
+
+  if (isNewWeapon(weapon)) {
+    return true
+  }
+
+  return expandedWeaponKeys.value.includes(weaponKey(weapon, index))
+}
+
+function toggleWeapon(index: number) {
+  const weapon = weapons.value[index]
+
+  if (!weapon || isNewWeapon(weapon)) {
+    return
+  }
+
+  const key = weaponKey(weapon, index)
+
+  if (expandedWeaponKeys.value.includes(key)) {
+    expandedWeaponKeys.value = expandedWeaponKeys.value.filter(item => item !== key)
+    if (openLicenseDateIndex.value === index) {
+      openLicenseDateIndex.value = null
+    }
+    return
+  }
+
+  ensureWeaponDictionaries()
+  expandedWeaponKeys.value = [...expandedWeaponKeys.value, key]
 }
 
 function handleAddWeapon() {
@@ -177,6 +599,9 @@ function handleAddWeapon() {
   }
 
   stopSavePulse()
+  fieldErrors.value = {}
+  submitError.value = ''
+  ensureWeaponDictionaries()
   addWeaponRow()
 
   nextTick(() => {
@@ -187,15 +612,13 @@ function handleAddWeapon() {
 }
 
 function handleCancelNewWeapon() {
-  if (!profile.value) {
-    return
-  }
-
-  for (let index = profile.value.weapons.length - 1; index >= 0; index -= 1) {
-    const weapon = profile.value.weapons[index]
+  for (let index = weapons.value.length - 1; index >= 0; index -= 1) {
+    const weapon = weapons.value[index]
 
     if (weapon && isNewWeapon(weapon)) {
-      profile.value.weapons.splice(index, 1)
+      weapons.value.splice(index, 1)
+      fieldErrors.value = {}
+      submitError.value = ''
       stopSavePulse()
       return
     }
@@ -203,7 +626,7 @@ function handleCancelNewWeapon() {
 }
 
 function handleSubmit() {
-  // TODO: подключить API сохранения оружия
+  // TODO: подключить API сохранения номера охотничьего билета
 }
 
 function onHunterBilletKeydown(event: KeyboardEvent) {
@@ -216,11 +639,11 @@ function onHunterBilletKeydown(event: KeyboardEvent) {
 }
 
 function isNewWeapon(weapon: { id: number | null, isNew?: boolean }) {
-  return Boolean(weapon.isNew) || weapon.id == null
+  return Boolean(weapon.isNew)
 }
 
 const hasNewWeapon = computed(() =>
-  Boolean(profile.value?.weapons.some(weapon => isNewWeapon(weapon))),
+  weapons.value.some(weapon => isNewWeapon(weapon)),
 )
 </script>
 
@@ -244,140 +667,247 @@ const hasNewWeapon = computed(() =>
 
     <CommonPageTitle divider>Лицензия на оружие</CommonPageTitle>
 
-    <p v-if="pending" class="profile-page__status">Загрузка...</p>
-    <p v-else-if="error" class="profile-page__status profile-page__status--error">{{ error }}</p>
+    <p
+      v-if="error && !profile"
+      class="profile-page__status profile-page__status--error"
+    >
+      {{ error }}
+    </p>
 
     <form
-      v-else-if="profile"
+      v-else-if="profile || pending || userWeaponsLoading || cachedWeaponsCount > 0"
       class="weapons-form"
+      :aria-busy="userWeaponsLoading || undefined"
       @submit.prevent
     >
       <div class="weapons-form__body">
-        <CommonFormField
-          id="hunter-billet"
-          label="Номер охот. билета"
-          placeholder="Введите номер охотнического билета"
-          v-model="profile.hunter_billet_number"
-          @keydown="onHunterBilletKeydown"
-        />
+        <div class="weapons-form__billet">
+          <CommonFormField
+            v-if="profile"
+            id="hunter-billet"
+            label="Номер охот. билета"
+            placeholder="Введите номер охотничьего билета"
+            no-margin
+            v-model="profile.hunter_billet_number"
+            @keydown="onHunterBilletKeydown"
+          />
+          <CommonFormField
+            v-else
+            label="Номер охот. билета"
+            placeholder="Введите номер охотничьего билета"
+            no-margin
+            model-value=""
+            readonly
+          />
+        </div>
 
-        <article
-          v-for="(weapon, index) in profile.weapons"
-          :key="weapon.id ?? `new-${index}`"
-          class="profile-weapon"
-          :class="{ 'profile-weapon--date-open': openLicenseDateIndex === index }"
+        <p
+          v-if="userWeaponsError && !weaponCards.length"
+          class="profile-page__status profile-page__status--error"
         >
-          <div class="profile-weapon__header">
-            <h2 class="profile-weapon__title">Лицензия #{{ index + 1 }}</h2>
-          </div>
+          {{ userWeaponsError }}
+        </p>
 
-          <div
-            :ref="(el) => setLicenseDateFieldRef(index, el)"
-            class="profile-weapon__date-block"
+        <div
+          v-else-if="weaponCards.length"
+          class="weapons-form__list"
+          aria-label="Лицензии на оружие"
+        >
+          <article
+            v-for="card in weaponCards"
+            :key="card.key"
+            class="profile-weapon"
+            :class="{
+              'profile-weapon--placeholder': card.loading,
+              'profile-weapon--expanded': !card.loading && isWeaponExpanded(card.index),
+              'profile-weapon--date-open': !card.loading && openLicenseDateIndex === card.index,
+            }"
           >
-            <div class="profile-weapon__row">
-              <CommonFormField
-                label="Номер"
-                placeholder="Добавить лицензию"
-                inputmode="numeric"
-                no-margin
-                v-model="weapon.hunter_license_number"
-              />
-              <CommonFormField
-                label="Дата"
-                placeholder="дд.мм.гггг"
-                no-margin
-                cursor-pointer
-                :model-value="displayLicenseDate(weapon.hunter_license_date)"
-                :open="openLicenseDateIndex === index"
-                readonly
-                @focus="openLicenseDateCalendar(index)"
-                @click.stop="openLicenseDateCalendar(index)"
-              >
-                <template #trailing>
-                  <button
-                    type="button"
-                    class="profile-weapon__calendar-icon"
-                    aria-label="Открыть календарь"
-                    @click.stop="openLicenseDateCalendar(index)"
-                  >
-                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                      <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />
-                      <path d="M2.25 8.25h15.5" stroke="currentColor" stroke-width="1.5" />
-                      <path d="M6.5 2.25v3.25M13.5 2.25v3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                    </svg>
-                  </button>
-                </template>
-              </CommonFormField>
-            </div>
-
             <div
-              v-if="openLicenseDateIndex === index"
-              class="profile-weapon__date-panel"
-              @click.stop
+              v-if="card.loading"
+              class="profile-weapon__toggle"
             >
-              <HomeHeroSearchDatePicker
-                v-model:start="licenseDate"
-                v-model:active-part="licenseActivePart"
-                mode="single"
-                @select="onLicenseDateSelect(index, $event)"
+              <h2 class="profile-weapon__title">Лицензия #{{ card.index + 1 }}</h2>
+              <CommonSpinner
+                class="profile-weapon__spinner"
+                variant="ring"
+                color="var(--wh-orange-500)"
+                :size="16"
+                :label="card.index === 0 ? 'Загрузка лицензий' : ''"
               />
             </div>
-          </div>
 
-          <CommonSelectField
-            v-model="weapon.weapon_type_id"
-            label="Тип оружия"
-            :placeholder="weaponTypesLoading ? 'Загрузка...' : 'Добавить оружие'"
-            :options="weaponTypes"
-            :disabled="weaponTypesLoading || !weaponTypes.length"
-            :error="index === 0 ? weaponTypesError : ''"
-          />
-
-          <CommonSelectField
-            v-model="weapon.caliber"
-            label="Калибр"
-            :placeholder="calibersLoading ? 'Загрузка...' : 'Добавить калибр'"
-            :options="calibers"
-            :disabled="calibersLoading || !calibers.length"
-            :error="index === 0 ? calibersError : ''"
-          />
-
-          <div class="profile-weapon__footer">
-            <button
-              v-if="isNewWeapon(weapon)"
-              type="button"
-              class="profile-weapon__action"
-              :class="{ 'profile-weapon__action--pulse': pulseUnsavedSave }"
-              @click="saveWeapon(index)"
-            >
-              Сохранить
-            </button>
             <button
               v-else
               type="button"
-              class="profile-weapon__action"
-              @click="removeWeapon(index)"
+              class="profile-weapon__toggle"
+              :aria-expanded="isWeaponExpanded(card.index)"
+              @click="toggleWeapon(card.index)"
             >
-              Удалить
+              <h2 class="profile-weapon__title">Лицензия #{{ card.index + 1 }}</h2>
+              <svg
+                class="profile-weapon__chevron"
+                viewBox="0 0 12 8"
+                aria-hidden="true"
+              >
+                <path
+                  d="M1 2 6 6.5 11 2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+
+            <Transition v-if="!card.loading" name="weapon-content">
+              <div v-if="isWeaponExpanded(card.index)" class="profile-weapon__content">
+              <div
+                :ref="(el) => setLicenseDateFieldRef(card.index, el)"
+                class="profile-weapon__date-block"
+              >
+                <div class="profile-weapon__row">
+                  <CommonFormField
+                    label="Номер"
+                    placeholder="Добавить лицензию"
+                    digits-only
+                    no-margin
+                    :model-value="card.weapon.hunter_license_number"
+                    :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_number') : ''"
+                    :disabled="savingWeaponIndex === card.index"
+                    @update:model-value="card.weapon.hunter_license_number = $event; clearFieldError('hunter_license_number')"
+                  />
+                  <CommonFormField
+                    label="Дата"
+                    placeholder="дд.мм.гггг"
+                    no-margin
+                    cursor-pointer
+                    :model-value="displayLicenseDate(card.weapon.hunter_license_date)"
+                    :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_date') : ''"
+                    :open="openLicenseDateIndex === card.index"
+                    :disabled="savingWeaponIndex === card.index"
+                    readonly
+                    @focus="openLicenseDateCalendar(card.index)"
+                    @click.stop="openLicenseDateCalendar(card.index)"
+                  >
+                    <template #trailing>
+                      <button
+                        type="button"
+                        class="profile-weapon__calendar-icon"
+                        aria-label="Открыть календарь"
+                        :disabled="savingWeaponIndex === card.index"
+                        @click.stop="openLicenseDateCalendar(card.index)"
+                      >
+                        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                          <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />
+                          <path d="M2.25 8.25h15.5" stroke="currentColor" stroke-width="1.5" />
+                          <path d="M6.5 2.25v3.25M13.5 2.25v3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                      </button>
+                    </template>
+                  </CommonFormField>
+                </div>
+
+                <div
+                  v-if="openLicenseDateIndex === card.index"
+                  class="profile-weapon__date-panel"
+                  @click.stop
+                >
+                  <HomeHeroSearchDatePicker
+                    v-model:start="licenseDate"
+                    v-model:active-part="licenseActivePart"
+                    mode="single"
+                    @select="onLicenseDateSelect(card.index, $event)"
+                  />
+                </div>
+              </div>
+
+              <CommonSelectField
+                v-model="card.weapon.weapon_type_id"
+                label="Тип оружия"
+                :placeholder="weaponTypesLoading ? 'Загрузка...' : 'Добавить оружие'"
+                :options="weaponTypes"
+                :disabled="weaponTypesLoading || !weaponTypes.length || savingWeaponIndex === card.index"
+                :error="showWeaponFieldErrors(card.weapon, card.index)
+                  ? (getFieldError('weapon_type_id') || weaponTypesError)
+                  : ''"
+                @update:model-value="clearFieldError('weapon_type_id')"
+              />
+
+              <CommonSelectField
+                v-model="card.weapon.caliber"
+                label="Калибр"
+                :placeholder="calibersLoading ? 'Загрузка...' : 'Добавить калибр'"
+                :options="calibers"
+                :disabled="calibersLoading || !calibers.length || savingWeaponIndex === card.index"
+                :error="showWeaponFieldErrors(card.weapon, card.index)
+                  ? (getFieldError('caliber_id') || calibersError)
+                  : ''"
+                @update:model-value="clearFieldError('caliber_id')"
+              />
+
+              <p
+                v-if="showWeaponFieldErrors(card.weapon, card.index) && submitError"
+                class="profile-weapon__submit-error"
+              >
+                {{ submitError }}
+              </p>
+
+              <div class="profile-weapon__footer">
+                <button
+                  v-if="isNewWeapon(card.weapon)"
+                  type="button"
+                  class="profile-weapon__action"
+                  :class="{ 'profile-weapon__action--pulse': pulseUnsavedSave }"
+                  :disabled="savingWeaponIndex === card.index"
+                  @click="saveWeapon(card.index)"
+                >
+                  {{ savingWeaponIndex === card.index ? 'Сохранение...' : 'Сохранить' }}
+                </button>
+                <template v-else>
+                  <button
+                    v-if="isWeaponDirty(card.index)"
+                    type="button"
+                    class="profile-weapon__action"
+                    :disabled="savingWeaponIndex === card.index"
+                    @click="updateWeapon(card.index)"
+                  >
+                    {{ savingWeaponIndex === card.index ? 'Обновление...' : 'Обновить' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="profile-weapon__action"
+                    :disabled="savingWeaponIndex === card.index"
+                    @click="removeWeapon(card.index)"
+                  >
+                    Удалить
+                  </button>
+                </template>
+              </div>
+              </div>
+            </Transition>
+          </article>
+        </div>
+
+        <div class="weapons-form__add-wrap">
+          <div class="weapons-form__add-actions">
+            <CommonSaveButton
+              type="button"
+              :disabled="userWeaponsLoading"
+              @click="handleAddWeapon"
+            >
+              Добавить оружие
+            </CommonSaveButton>
+            <button
+              v-if="!userWeaponsLoading && hasNewWeapon"
+              type="button"
+              class="weapons-form__cancel"
+              @click="handleCancelNewWeapon"
+            >
+              Отмена
             </button>
           </div>
-        </article>
-      </div>
-
-      <div class="weapons-form__add-wrap">
-        <div class="weapons-form__add-actions">
-          <CommonSaveButton type="button" @click="handleAddWeapon">
-            Добавить оружие
-          </CommonSaveButton>
-          <button
-            v-if="hasNewWeapon"
-            type="button"
-            class="weapons-form__cancel"
-            @click="handleCancelNewWeapon"
-          >
-            Отмена
-          </button>
         </div>
       </div>
     </form>
@@ -459,14 +989,70 @@ const hasNewWeapon = computed(() =>
 }
 
 .weapons-form__body {
+  width: 100%;
+  max-width: 896px;
+}
+
+.weapons-form__billet {
+  width: 896px;
+  max-width: 100%;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+.weapons-form__billet :deep(.form-field) {
   max-width: 520px;
+}
+
+.weapons-form__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.weapons-form__column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.profile-weapon--placeholder {
+  pointer-events: none;
+}
+
+.profile-weapon--placeholder .profile-weapon__toggle {
+  cursor: default;
+}
+
+.profile-weapon__spinner {
+  flex-shrink: 0;
+}
+
+.weapon-list-enter-active,
+.weapon-list-leave-active {
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.weapon-list-enter-from,
+.weapon-list-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.weapon-list-move {
+  transition: transform 0.35s ease;
 }
 
 .profile-weapon {
   position: relative;
-  margin-top: 20px;
-  margin-bottom: 0;
-  padding: 20px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 12px;
   background: var(--wh-white);
@@ -478,11 +1064,17 @@ const hasNewWeapon = computed(() =>
   z-index: 40;
 }
 
-.profile-weapon__header {
+.profile-weapon__toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
 }
 
 .profile-weapon__title {
@@ -494,7 +1086,57 @@ const hasNewWeapon = computed(() =>
   color: var(--wh-gray-900);
 }
 
+.profile-weapon__chevron {
+  flex-shrink: 0;
+  width: 12px;
+  height: 8px;
+  color: #1c211c;
+  transition: transform 0.2s ease;
+}
+
+.profile-weapon--expanded .profile-weapon__chevron {
+  transform: rotate(180deg);
+}
+
+.profile-weapon__content {
+  padding: 0 20px 20px;
+}
+
+.weapon-content-enter-active,
+.weapon-content-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.weapon-content-enter-from,
+.weapon-content-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weapon-list-enter-active,
+  .weapon-list-leave-active,
+  .weapon-list-move,
+  .weapon-content-enter-active,
+  .weapon-content-leave-active,
+  .profile-weapon__chevron {
+    transition: none;
+  }
+}
+
+.profile-weapon__submit-error {
+  margin: 0 0 8px;
+  font-family: "Inter", "Manrope", system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: #dc2626;
+}
+
 .profile-weapon__footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
   margin-top: 8px;
 }
 
@@ -511,8 +1153,13 @@ const hasNewWeapon = computed(() =>
   transition: color 0.15s ease;
 }
 
-.profile-weapon__action:hover {
+.profile-weapon__action:hover:not(:disabled) {
   color: var(--wh-orange-600);
+}
+
+.profile-weapon__action:disabled {
+  opacity: 0.7;
+  cursor: default;
 }
 
 .profile-weapon__action--pulse {
@@ -569,6 +1216,11 @@ const hasNewWeapon = computed(() =>
   cursor: pointer;
 }
 
+.profile-weapon__calendar-icon:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .profile-weapon__calendar-icon svg {
   display: block;
   width: 20px;
@@ -591,11 +1243,9 @@ const hasNewWeapon = computed(() =>
 }
 
 .weapons-form__add-wrap {
-  width: 896px;
-  max-width: 100%;
-  margin-top: 32px;
-  /* padding-top: 24px; */
-  /* border-top: 1px solid rgba(0, 0, 0, 0.2); */
+  width: 100%;
+  max-width: 520px;
+  margin-top: 0;
   box-sizing: border-box;
 }
 
@@ -637,6 +1287,10 @@ const hasNewWeapon = computed(() =>
     padding: 0;
     background: transparent;
     border-radius: 0;
+  }
+
+  .weapons-form__list {
+    grid-template-columns: 1fr;
   }
 
   .profile-weapon__row {
