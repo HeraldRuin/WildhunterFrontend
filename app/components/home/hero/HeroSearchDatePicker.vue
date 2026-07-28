@@ -8,12 +8,23 @@ import {
   startOfDay,
 } from '~/utils/date'
 
+const props = withDefaults(defineProps<{
+  mode?: 'range' | 'single'
+}>(), {
+  mode: 'range',
+})
+
+const emit = defineEmits<{
+  select: [date: Date]
+}>()
+
 const start = defineModel<Date | null>('start', { default: null })
 const end = defineModel<Date | null>('end', { default: null })
 const activePart = defineModel<'start' | 'end' | null>('activePart', { default: 'start' })
 
 const viewMonth = ref(startOfDay(start.value ?? new Date()))
 const weekdays = getWeekdayNames()
+const isSingle = computed(() => props.mode === 'single')
 
 const currentMonth = computed(() => new Date(viewMonth.value.getFullYear(), viewMonth.value.getMonth(), 1))
 
@@ -34,7 +45,11 @@ function getDayState(date: Date) {
   const rangeEnd = end.value ? startOfDay(end.value) : null
 
   if (rangeStart && isSameDay(normalized, rangeStart)) {
-    return 'start'
+    return isSingle.value ? 'selected' : 'start'
+  }
+
+  if (isSingle.value) {
+    return 'default'
   }
 
   if (rangeEnd && isSameDay(normalized, rangeEnd)) {
@@ -70,6 +85,15 @@ watch(
 
 function selectDate(date: Date) {
   const normalized = startOfDay(date)
+
+  if (isSingle.value) {
+    start.value = normalized
+    end.value = null
+    activePart.value = 'start'
+    emit('select', normalized)
+    return
+  }
+
   const part = activePart.value ?? 'start'
 
   if (part === 'start') {
@@ -108,34 +132,64 @@ function goToPreviousMonth() {
 function goToNextMonth() {
   viewMonth.value = addMonths(viewMonth.value, 1)
 }
+
+function goToPreviousYear() {
+  viewMonth.value = addMonths(viewMonth.value, -12)
+}
+
+function goToNextYear() {
+  viewMonth.value = addMonths(viewMonth.value, 12)
+}
 </script>
 
 <template>
-  <div class="hero-search-calendar">
+  <div class="hero-search-calendar" :class="{ 'hero-search-calendar--single': isSingle }">
     <div class="hero-search-calendar__months">
       <section class="hero-search-calendar__month">
         <div class="hero-search-calendar__header">
-          <button
-            type="button"
-            class="hero-search-calendar__nav"
-            aria-label="Предыдущий месяц"
-            @click="goToPreviousMonth"
-          >
-            ‹
-          </button>
+          <div class="hero-search-calendar__nav-group">
+            <button
+              v-if="isSingle"
+              type="button"
+              class="hero-search-calendar__nav"
+              aria-label="Предыдущий год"
+              @click="goToPreviousYear"
+            >
+              «
+            </button>
+            <button
+              type="button"
+              class="hero-search-calendar__nav"
+              aria-label="Предыдущий месяц"
+              @click="goToPreviousMonth"
+            >
+              ‹
+            </button>
+          </div>
 
           <h3 class="hero-search-calendar__title">
             {{ month.title }}
           </h3>
 
-          <button
-            type="button"
-            class="hero-search-calendar__nav"
-            aria-label="Следующий месяц"
-            @click="goToNextMonth"
-          >
-            ›
-          </button>
+          <div class="hero-search-calendar__nav-group hero-search-calendar__nav-group--end">
+            <button
+              type="button"
+              class="hero-search-calendar__nav"
+              aria-label="Следующий месяц"
+              @click="goToNextMonth"
+            >
+              ›
+            </button>
+            <button
+              v-if="isSingle"
+              type="button"
+              class="hero-search-calendar__nav"
+              aria-label="Следующий год"
+              @click="goToNextYear"
+            >
+              »
+            </button>
+          </div>
         </div>
 
         <div class="hero-search-calendar__weekdays">
@@ -149,17 +203,24 @@ function goToNextMonth() {
             class="hero-search-calendar__cell"
             :class="{
               'hero-search-calendar__cell--outside': !day.isCurrentMonth,
-              [`hero-search-calendar__cell--${getDayState(day.date)}`]: getDayState(day.date) !== 'default',
+              [`hero-search-calendar__cell--${getDayState(day.date)}`]:
+                getDayState(day.date) !== 'default' && getDayState(day.date) !== 'selected',
             }"
           >
             <button
               type="button"
               class="hero-search-calendar__day"
               :class="{
-                'hero-search-calendar__day--selected': getDayState(day.date) === 'start' || getDayState(day.date) === 'end',
+                'hero-search-calendar__day--selected':
+                  getDayState(day.date) === 'selected'
+                  || getDayState(day.date) === 'start'
+                  || getDayState(day.date) === 'end',
                 'hero-search-calendar__day--active-target':
-                  (activePart === 'start' && getDayState(day.date) === 'start')
-                  || (activePart === 'end' && getDayState(day.date) === 'end'),
+                  !isSingle
+                  && (
+                    (activePart === 'start' && getDayState(day.date) === 'start')
+                    || (activePart === 'end' && getDayState(day.date) === 'end')
+                  ),
               }"
               @click="selectDate(day.date)"
             >
@@ -185,11 +246,23 @@ function goToNextMonth() {
 
 .hero-search-calendar__header {
   display: grid;
-  grid-template-columns: 24px 1fr 24px;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
+  gap: 4px;
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--wh-gray);
+}
+
+.hero-search-calendar__nav-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 24px;
+}
+
+.hero-search-calendar__nav-group--end {
+  justify-content: flex-end;
 }
 
 .hero-search-calendar__title {
