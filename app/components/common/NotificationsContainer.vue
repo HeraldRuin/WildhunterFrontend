@@ -88,7 +88,8 @@ const icons: Record<NotificationType, { path: string, viewBox?: string }> = {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 340px;
+  width: 440px;
+  max-width: calc(100vw - 40px);
   pointer-events: none;
 }
 
