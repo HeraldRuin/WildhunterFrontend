@@ -173,20 +173,24 @@ export function normalizeWeaponOptions(value: unknown): WeaponOption[] {
     .filter(option => option.value && option.label)
 }
 
-function normalizeWeapons(value: unknown): UserWeapon[] {
+export function normalizeWeapons(value: unknown): UserWeapon[] {
   if (!Array.isArray(value)) {
     return []
   }
 
   return value.map((item) => {
     const source = asRecord(item)
+    const parsedDate = parseBirthdayDate(String(source.hunter_license_date ?? ''))
 
     return {
       id: typeof source.id === 'number' ? source.id : source.id ? Number(source.id) : null,
       hunter_license_number: String(source.hunter_license_number ?? ''),
-      hunter_license_date: String(source.hunter_license_date ?? ''),
+      hunter_license_date: parsedDate
+        ? formatBirthdayDate(parsedDate)
+        : String(source.hunter_license_date ?? ''),
       weapon_type_id: String(source.weapon_type_id ?? ''),
-      caliber: String(source.caliber ?? ''),
+      caliber: String(source.caliber_id ?? source.caliber ?? ''),
+      isNew: false,
     }
   })
 }
@@ -204,11 +208,13 @@ export function normalizeUserProfile(data: unknown): ProfileUser {
     birthday: formatBirthdayDisplay(source.birthday),
     bio: String(source.bio ?? ''),
     avatar: extractAvatarUrl(source),
-    hunter_billet_number: String(source.hunter_billet_number ?? ''),
+    hunter_billet_number: String(source.hunter_billet_number ?? '').trim(),
     role_name: extractRoleName(source),
     role_code: extractRoleCode(source),
     created_at: extractCreatedAt(source),
-    weapons: normalizeWeapons(source.user_weapons ?? source.userWeapons ?? source.weapons_list),
+    weapons: normalizeWeapons(
+      source.user_weapons ?? source.userWeapons ?? source.weapons_list ?? source.weapons,
+    ),
     weapon_types: normalizeWeaponOptions(source.weapon_types ?? source.weapons_types ?? source.weapons),
     calibers: normalizeWeaponOptions(source.calibers),
   }
