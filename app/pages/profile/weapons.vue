@@ -901,6 +901,7 @@ const hasNewWeapon = computed(() =>
               'profile-weapon--placeholder': card.loading,
               'profile-weapon--expanded': !card.loading && isWeaponExpanded(card.index),
               'profile-weapon--date-open': !card.loading && openLicenseDateIndex === card.index,
+              'profile-weapon--saving': !card.loading && savingWeaponIndex === card.index,
             }"
           >
             <div
@@ -1043,7 +1044,7 @@ const hasNewWeapon = computed(() =>
                   :disabled="savingWeaponIndex === card.index"
                   @click="saveWeapon(card.index)"
                 >
-                  {{ savingWeaponIndex === card.index ? 'Сохранение...' : 'Сохранить' }}
+                  Сохранить
                 </button>
                 <template v-else-if="confirmDeleteIndex === card.index">
                   <span class="profile-weapon__confirm-text">Удалить лицензию?</span>
@@ -1053,7 +1054,7 @@ const hasNewWeapon = computed(() =>
                     :disabled="savingWeaponIndex === card.index"
                     @click="confirmDeleteWeapon(card.index)"
                   >
-                    {{ savingWeaponIndex === card.index ? 'Удаление...' : 'Да' }}
+                    Да
                   </button>
                   <button
                     type="button"
@@ -1072,7 +1073,7 @@ const hasNewWeapon = computed(() =>
                     :disabled="savingWeaponIndex === card.index"
                     @click="updateWeapon(card.index)"
                   >
-                    {{ savingWeaponIndex === card.index ? 'Обновление...' : 'Обновить' }}
+                    Обновить
                   </button>
                   <button
                     type="button"
@@ -1086,6 +1087,19 @@ const hasNewWeapon = computed(() =>
               </div>
               </div>
             </Transition>
+
+            <div
+              v-if="!card.loading && savingWeaponIndex === card.index"
+              class="profile-weapon__saving-overlay"
+              aria-hidden="true"
+            >
+              <CommonSpinner
+                variant="ring"
+                color="var(--wh-orange-500)"
+                :size="28"
+                label="Сохранение лицензии"
+              />
+            </div>
           </article>
           </div>
         </div>
@@ -1301,6 +1315,29 @@ const hasNewWeapon = computed(() =>
   background: var(--wh-white);
   box-sizing: border-box;
   overflow: visible;
+}
+
+.profile-weapon--saving {
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+.profile-weapon--saving .profile-weapon__toggle,
+.profile-weapon--saving .profile-weapon__content {
+  filter: blur(2px);
+  opacity: 0.55;
+}
+
+.profile-weapon__saving-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  pointer-events: none;
 }
 
 .profile-weapon--date-open {
