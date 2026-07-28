@@ -326,6 +326,7 @@ async function handleLogout() {
     flex: 1 1 0;
     flex-direction: row;
     align-items: center;
+    justify-content: center;
     gap: 16px;
     padding: 0 28px 0 0;
     margin-right: 28px;
@@ -335,14 +336,9 @@ async function handleLogout() {
   }
 
   .profile-sidebar__avatar {
-    width: 96px;
-    height: 96px;
+    width: 120px;
+    height: 120px;
     margin-bottom: 0;
-  }
-
-  .profile-sidebar__avatar svg {
-    width: 48px;
-    height: 48px;
   }
 
   .profile-sidebar__meta {
@@ -354,14 +350,11 @@ async function handleLogout() {
   .profile-sidebar__role {
     order: 3;
     margin-top: 10px;
-    padding: 8px 12px;
-    font-size: 16px;
   }
 
   .profile-sidebar__name {
     order: 1;
     margin: 0 0 4px;
-    font-size: 18px;
   }
 
   .profile-sidebar__since {
@@ -370,23 +363,35 @@ async function handleLogout() {
   }
 
   .profile-sidebar__menu {
-    flex: 1 1 0;
-    justify-content: flex-start;
+    flex: 0 0 auto;
+    align-items: flex-start;
+    justify-content: center;
     min-width: 0;
   }
 
   .profile-sidebar__nav {
     flex: 0 0 auto;
+    align-items: flex-start;
     padding: 0 0 12px;
   }
 
   .profile-sidebar__nav-link {
-    padding: 10px 12px;
-    font-size: 16px;
+    width: fit-content;
+    max-width: 100%;
+    padding: 8px 12px;
+    font-size: 15px;
   }
 
   .profile-sidebar__footer {
+    align-items: flex-start;
     padding-top: 12px;
+  }
+
+  .profile-sidebar__footer-link {
+    width: fit-content;
+    max-width: 100%;
+    padding: 8px 12px;
+    font-size: 15px;
   }
 
   .profile-sidebar__nav-link--compact .profile-sidebar__nav-label--full {
@@ -402,6 +407,8 @@ async function handleLogout() {
   .profile-sidebar {
     flex-direction: column;
     align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
     padding: 24px 20px 20px;
   }
 
@@ -418,6 +425,8 @@ async function handleLogout() {
   }
 
   .profile-sidebar__avatar {
+    width: 120px;
+    height: 120px;
     margin-bottom: 12px;
   }
 
@@ -429,11 +438,14 @@ async function handleLogout() {
   .profile-sidebar__role {
     order: 0;
     margin-top: 0;
+    padding: 10px;
+    font-size: 20px;
   }
 
   .profile-sidebar__name {
     order: 0;
     margin: 14px 0 4px;
+    font-size: 20px;
   }
 
   .profile-sidebar__since {
@@ -443,14 +455,30 @@ async function handleLogout() {
 
   .profile-sidebar__menu {
     flex: 0 0 auto;
+    align-items: stretch;
+    width: 100%;
   }
 
   .profile-sidebar__nav {
+    width: 100%;
     padding: 12px 0;
   }
 
   .profile-sidebar__nav-link {
+    width: 100%;
     padding: 12px 14px;
+    font-size: 16px;
+  }
+
+  .profile-sidebar__footer {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .profile-sidebar__footer-link {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 16px;
   }
 
   .profile-sidebar__nav-link--compact .profile-sidebar__nav-label--full {

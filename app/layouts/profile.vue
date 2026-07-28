@@ -17,7 +17,7 @@ onMounted(() => {
 
 <style scoped>
 .profile-layout {
-  --profile-sidebar-width: 280px;
+  --profile-sidebar-width: 340px;
   --profile-sidebar-gap: 16px;
 
   min-height: 100vh;
