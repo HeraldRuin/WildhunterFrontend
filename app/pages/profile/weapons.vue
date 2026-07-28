@@ -20,6 +20,9 @@ const pulseNotificationId = ref<string | null>(null)
 const weaponTypes = ref<WeaponOption[]>([])
 const weaponTypesLoading = ref(false)
 const weaponTypesError = ref('')
+const calibers = ref<WeaponOption[]>([])
+const calibersLoading = ref(false)
+const calibersError = ref('')
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -41,9 +44,24 @@ async function loadWeaponTypes() {
   }
 }
 
+async function loadCalibers() {
+  calibersLoading.value = true
+  calibersError.value = ''
+
+  try {
+    calibers.value = await weaponsApi.getCaliberOptions()
+  } catch {
+    calibers.value = []
+    calibersError.value = 'Не удалось загрузить калибры'
+  } finally {
+    calibersLoading.value = false
+  }
+}
+
 onMounted(() => {
   loadProfile()
   loadWeaponTypes()
+  loadCalibers()
 })
 
 function stopSavePulse() {
@@ -215,19 +233,14 @@ const hasNewWeapon = computed(() =>
             :error="index === 0 ? weaponTypesError : ''"
           />
 
-          <div class="weapons-form__field">
-            <label class="weapons-form__label">Калибр</label>
-            <select v-model="weapon.caliber" class="weapons-form__select">
-              <option value="" disabled hidden>Добавить калибр</option>
-              <option
-                v-for="caliber in profile.calibers"
-                :key="caliber.value"
-                :value="caliber.value"
-              >
-                {{ caliber.label }}
-              </option>
-            </select>
-          </div>
+          <CommonSelectField
+            v-model="weapon.caliber"
+            label="Калибр"
+            :placeholder="calibersLoading ? 'Загрузка...' : 'Добавить калибр'"
+            :options="calibers"
+            :disabled="calibersLoading || !calibers.length"
+            :error="index === 0 ? calibersError : ''"
+          />
 
           <div class="profile-weapon__footer">
             <button
@@ -348,61 +361,6 @@ const hasNewWeapon = computed(() =>
   max-width: 520px;
 }
 
-.weapons-form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.weapons-form__label {
-  font-family: "Inter", sans-serif;
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 120%;
-  letter-spacing: -0.05em;
-  color: var(--wh-gray-600);
-}
-
-.weapons-form__select {
-  width: 100%;
-  padding: 12px 36px 12px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
-  background-color: var(--wh-white);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  color: var(--wh-gray-900);
-  font-family: "Inter", sans-serif;
-  font-size: 18px;
-  line-height: 130%;
-  letter-spacing: -0.05em;
-  appearance: none;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  box-sizing: border-box;
-}
-
-.weapons-form__select:focus {
-  border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
-}
-
-.weapons-form__select:disabled {
-  opacity: 0.7;
-  cursor: default;
-}
-
-.weapons-form__field-hint {
-  margin: 0;
-  font-family: "Inter", "Manrope", system-ui, sans-serif;
-  font-size: 0.875rem;
-  line-height: 1.35;
-  color: #dc2626;
-}
-
 .profile-weapon {
   position: relative;
   margin-top: 20px;
@@ -482,10 +440,6 @@ const hasNewWeapon = computed(() =>
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-bottom: 16px;
-}
-
-.profile-weapon .weapons-form__field:last-of-type {
-  margin-bottom: 12px;
 }
 
 .weapons-form__add-wrap {
