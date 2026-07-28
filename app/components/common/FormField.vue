@@ -26,6 +26,10 @@ const props = withDefaults(defineProps<{
   reveal?: boolean
   /** убрать нижний отступ (когда gap задаёт родитель) */
   noMargin?: boolean
+  /** разрешить только цифры */
+  digitsOnly?: boolean
+  /** скелетон вместо лейбла и инпута */
+  skeleton?: boolean
 }>(), {
   placeholder: '',
   modelValue: '',
@@ -42,6 +46,8 @@ const props = withDefaults(defineProps<{
   cursorPointer: false,
   reveal: false,
   noMargin: false,
+  digitsOnly: false,
+  skeleton: false,
 })
 
 const emit = defineEmits<{
@@ -60,9 +66,83 @@ const fieldId = computed(() => props.id || generatedId)
 const hasIcon = computed(() => Boolean(props.icon) || Boolean(slots.icon))
 const hasTrailing = computed(() => Boolean(slots.trailing))
 
+const inputAttrs = computed(() => ({
+  ...attrs,
+  ...(props.digitsOnly ? { inputmode: 'numeric' } : {}),
+}))
+
+/** Пустое / пробельное значение → '', чтобы браузер показал placeholder */
+const displayValue = computed(() => {
+  const value = props.modelValue ?? ''
+  return value.trim() === '' ? '' : value
+})
+
+function toDigits(value: string) {
+  return value.replace(/\D/g, '')
+}
+
 function onInput(event: Event) {
   const target = event.target as HTMLInputElement | HTMLTextAreaElement
-  emit('update:modelValue', target.value)
+  const nextValue = props.digitsOnly ? toDigits(target.value) : target.value
+
+  if (props.digitsOnly && target.value !== nextValue) {
+    target.value = nextValue
+  }
+
+  emit('update:modelValue', nextValue)
+}
+
+function onKeydown(event: KeyboardEvent) {
+  emit('keydown', event)
+
+  if (!props.digitsOnly || event.defaultPrevented || props.multiline) {
+    return
+  }
+
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return
+  }
+
+  const allowedKeys = [
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Escape',
+    'Enter',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+  ]
+
+  if (allowedKeys.includes(event.key) || /^\d$/.test(event.key)) {
+    return
+  }
+
+  event.preventDefault()
+}
+
+function onPaste(event: ClipboardEvent) {
+  emit('paste', event)
+
+  if (!props.digitsOnly || event.defaultPrevented || props.multiline) {
+    return
+  }
+
+  event.preventDefault()
+
+  const target = event.target as HTMLInputElement
+  const pasted = toDigits(event.clipboardData?.getData('text') ?? '')
+  const start = target.selectionStart ?? target.value.length
+  const end = target.selectionEnd ?? target.value.length
+  const nextValue = toDigits(
+    `${target.value.slice(0, start)}${pasted}${target.value.slice(end)}`,
+  )
+
+  target.value = nextValue
+  emit('update:modelValue', nextValue)
 }
 </script>
 
@@ -70,75 +150,84 @@ function onInput(event: Event) {
   <div
     class="form-field"
     :class="{ 'form-field--no-margin': noMargin }"
+    :aria-busy="skeleton || undefined"
+    :aria-label="skeleton ? label : undefined"
   >
-    <label class="form-field__label" :for="fieldId">{{ label }}</label>
+    <template v-if="skeleton">
+      <div class="form-field__skeleton form-field__skeleton--label" />
+      <div class="form-field__skeleton form-field__skeleton--input" />
+    </template>
 
-    <div class="form-field__control">
-      <span v-if="hasIcon" class="form-field__icon" aria-hidden="true">
-        <slot name="icon">
-          <img v-if="icon" :src="icon" alt="">
-        </slot>
-      </span>
+    <template v-else>
+      <label class="form-field__label" :for="fieldId">{{ label }}</label>
 
-      <textarea
-        v-if="multiline"
-        :id="fieldId"
-        class="form-field__input form-field__input--textarea"
-        :class="{
-          'form-field__input--error': error,
-          'form-field__input--with-icon': hasIcon,
-          'form-field__input--with-trailing': hasTrailing,
-          'form-field__input--reveal': reveal,
-        }"
-        :value="modelValue"
-        :placeholder="placeholder"
-        :disabled="disabled"
-        :readonly="readonly"
-        :rows="rows"
-        v-bind="attrs"
-        @input="onInput"
-        @focus="emit('focus', $event)"
-        @blur="emit('blur', $event)"
-        @keydown="emit('keydown', $event)"
-        @paste="emit('paste', $event)"
-      />
-      <input
-        v-else
-        :id="fieldId"
-        class="form-field__input"
-        :class="{
-          'form-field__input--error': error,
-          'form-field__input--with-icon': hasIcon,
-          'form-field__input--with-trailing': hasTrailing,
-          'form-field__input--masked': masked,
-          'form-field__input--open': open,
-          'form-field__input--pointer': cursorPointer,
-          'form-field__input--reveal': reveal,
-        }"
-        :type="type"
-        :value="modelValue"
-        :placeholder="placeholder"
-        :disabled="disabled"
-        :readonly="readonly"
-        v-bind="attrs"
-        @input="onInput"
-        @focus="emit('focus', $event)"
-        @blur="emit('blur', $event)"
-        @click="emit('click', $event)"
-        @keydown="emit('keydown', $event)"
-        @paste="emit('paste', $event)"
-      >
+      <div class="form-field__control">
+        <span v-if="hasIcon" class="form-field__icon" aria-hidden="true">
+          <slot name="icon">
+            <img v-if="icon" :src="icon" alt="">
+          </slot>
+        </span>
 
-      <div v-if="hasTrailing" class="form-field__trailing">
-        <slot name="trailing" />
+        <textarea
+          v-if="multiline"
+          :id="fieldId"
+          class="form-field__input form-field__input--textarea"
+          :class="{
+            'form-field__input--error': error,
+            'form-field__input--with-icon': hasIcon,
+            'form-field__input--with-trailing': hasTrailing,
+            'form-field__input--reveal': reveal,
+          }"
+          :value="displayValue"
+          :placeholder="placeholder"
+          :disabled="disabled"
+          :readonly="readonly"
+          :rows="rows"
+          v-bind="attrs"
+          @input="onInput"
+          @focus="emit('focus', $event)"
+          @blur="emit('blur', $event)"
+          @keydown="onKeydown"
+          @paste="onPaste"
+        />
+        <input
+          v-else
+          :id="fieldId"
+          class="form-field__input"
+          :class="{
+            'form-field__input--error': error,
+            'form-field__input--with-icon': hasIcon,
+            'form-field__input--with-trailing': hasTrailing,
+            'form-field__input--masked': masked,
+            'form-field__input--open': open,
+            'form-field__input--pointer': cursorPointer,
+            'form-field__input--reveal': reveal,
+          }"
+          :type="type"
+          :value="displayValue"
+          :placeholder="placeholder"
+          :disabled="disabled"
+          :readonly="readonly"
+          v-bind="inputAttrs"
+          @input="onInput"
+          @focus="emit('focus', $event)"
+          @blur="emit('blur', $event)"
+          @click="emit('click', $event)"
+          @keydown="onKeydown"
+          @paste="onPaste"
+        >
+
+        <div v-if="hasTrailing" class="form-field__trailing">
+          <slot name="trailing" />
+        </div>
+
+        <div v-if="$slots.append" class="form-field__append">
+          <slot name="append" />
+        </div>
       </div>
 
-      <div v-if="$slots.append" class="form-field__append">
-        <slot name="append" />
-      </div>
-    </div>
-
-    <p v-if="error" class="form-field__error">{{ error }}</p>
+      <p v-if="error" class="form-field__error">{{ error }}</p>
+    </template>
   </div>
 </template>
 
@@ -153,6 +242,43 @@ function onInput(event: Event) {
 
 .form-field--no-margin {
   margin-bottom: 0;
+}
+
+.form-field__skeleton {
+  border-radius: 8px;
+  background: linear-gradient(90deg, #d9d9d9 0%, #ececec 45%, #d9d9d9 100%);
+  background-size: 200% 100%;
+  animation: form-field-skeleton-shine 1.4s ease-in-out infinite;
+}
+
+.form-field__skeleton--label {
+  width: 180px;
+  height: 22px;
+}
+
+.form-field__skeleton--input {
+  width: 100%;
+  height: 49px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  box-sizing: border-box;
+  background-color: #e0e0e0;
+}
+
+@keyframes form-field-skeleton-shine {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .form-field__skeleton {
+    animation: none;
+  }
 }
 
 .form-field__label {
