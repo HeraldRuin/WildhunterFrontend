@@ -530,6 +530,7 @@ onMounted(() => {
 
 .password-form__input {
   width: 100%;
+  box-sizing: border-box;
   padding: 12px 44px 12px 14px;
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 10px;
@@ -537,15 +538,17 @@ onMounted(() => {
   color: var(--wh-gray-900);
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 16px;
-  line-height: 1.4;
-  letter-spacing: 0.14em;
+  line-height: 24px;
+  letter-spacing: 0.22em;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .password-form__input--masked {
-  font-size: 13px;
-  letter-spacing: 0.28em;
+  /* Slightly larger discs so masked width stays closer to revealed text */
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.22em;
 }
 
 .password-form__input::placeholder {
