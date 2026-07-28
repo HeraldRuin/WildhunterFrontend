@@ -16,15 +16,21 @@ export type UserWeaponsResponse =
   | ApiErrorResponse
 
 export interface SaveUserWeaponPayload {
-  hunter_license_number: string
-  hunter_license_date: string
-  weapon_type_id: number | null
-  caliber_id: number | null
+  hunter_billet_number?: string | null
+  hunter_license_number?: string | null
+  hunter_license_date?: string | null
+  weapon_type_id?: number | null
+  caliber_id?: number | null
 }
 
 export type SaveUserWeaponResponse =
   | ApiSuccessResponse<unknown>
   | ApiErrorResponse
+
+export interface UserWeaponsBundle {
+  weapons: UserWeapon[]
+  hunterBilletNumber: string
+}
 
 async function mapOptionsResponse(response: WeaponsResponse | CalibersResponse) {
   if (!('success' in response) || !response.success) {
@@ -32,6 +38,34 @@ async function mapOptionsResponse(response: WeaponsResponse | CalibersResponse) 
   }
 
   return normalizeWeaponOptions(response.data)
+}
+
+function unwrapWeaponsList(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) {
+    return payload
+  }
+
+  if (payload && typeof payload === 'object' && Array.isArray((payload as { data?: unknown[] }).data)) {
+    return (payload as { data: unknown[] }).data
+  }
+
+  return []
+}
+
+function extractHunterBilletNumber(list: unknown[]): string {
+  for (const item of list) {
+    if (!item || typeof item !== 'object') {
+      continue
+    }
+
+    const value = (item as { hunter_billet_number?: unknown }).hunter_billet_number
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+
+  return ''
 }
 
 export function useWeaponsApi() {
@@ -63,6 +97,12 @@ export function useWeaponsApi() {
     })
   }
 
+  function deleteUserWeapon(id: number) {
+    return apiFetch<SaveUserWeaponResponse>(`/user/weapons/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   async function getWeaponTypeOptions(): Promise<WeaponOption[]> {
     return mapOptionsResponse(await getWeapons())
   }
@@ -71,7 +111,7 @@ export function useWeaponsApi() {
     return mapOptionsResponse(await getCalibers())
   }
 
-  async function getUserWeaponList(): Promise<UserWeapon[]> {
+  async function getUserWeaponsBundle(): Promise<UserWeaponsBundle> {
     const response = await getUserWeapons()
 
     if (!('success' in response) || !response.success) {
@@ -80,14 +120,17 @@ export function useWeaponsApi() {
       )
     }
 
-    const payload = response.data
-    const list = Array.isArray(payload)
-      ? payload
-      : Array.isArray((payload as { data?: unknown[] })?.data)
-        ? (payload as { data: unknown[] }).data
-        : []
+    const list = unwrapWeaponsList(response.data)
 
-    return normalizeWeapons(list)
+    return {
+      weapons: normalizeWeapons(list),
+      hunterBilletNumber: extractHunterBilletNumber(list),
+    }
+  }
+
+  async function getUserWeaponList(): Promise<UserWeapon[]> {
+    const bundle = await getUserWeaponsBundle()
+    return bundle.weapons
   }
 
   return {
@@ -96,8 +139,10 @@ export function useWeaponsApi() {
     getUserWeapons,
     saveUserWeapon,
     updateUserWeapon,
+    deleteUserWeapon,
     getWeaponTypeOptions,
     getCaliberOptions,
     getUserWeaponList,
+    getUserWeaponsBundle,
   }
 }
