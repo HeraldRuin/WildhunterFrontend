@@ -157,6 +157,30 @@ const totalCount = computed(() => filteredOffers.value.length)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / perPage)))
 const countReady = computed(() => !hotelsPending.value && totalCount.value > 0)
 
+const hasActiveFilters = computed(() => {
+  const bounds = priceBounds.value
+  const priceChanged = (
+    filters.value.priceMin > bounds.min
+    || filters.value.priceMax < bounds.max
+  )
+
+  return (
+    priceChanged
+    || filters.value.ratings.length > 0
+    || filters.value.amenities.length > 0
+    || filters.value.hasMeals !== ''
+    || filters.value.sort !== DEFAULT_SEARCH_FILTERS.sort
+  )
+})
+
+const emptyStateText = computed(() => {
+  if (hasActiveFilters.value) {
+    return 'По выбранным фильтрам отели не найдены'
+  }
+
+  return 'Нет ни одного отеля в этой локации'
+})
+
 const offerItems = computed(() => {
   const page = Math.min(currentPage.value, totalPages.value)
   const start = (page - 1) * perPage
@@ -260,7 +284,7 @@ function handleFiltersReset() {
               v-else-if="!offerItems.length"
               class="location-page__state location-page__state--empty"
             >
-              Нет ни одного отеля в этой локации
+              {{ emptyStateText }}
             </div>
 
             <template v-else>
@@ -309,7 +333,8 @@ function handleFiltersReset() {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 16px;
-  min-height: 1.75em;
+  /* Keep title row height so filters don't jump when count goes to 0. */
+  min-height: calc(32px * 1.3);
 }
 
 .location-page__title {
