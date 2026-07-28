@@ -75,6 +75,13 @@ const weaponCards = computed<WeaponCardView[]>(() => {
   return []
 })
 
+/** Левая колонка: 1, 2… — раскрытие #1 просто опускает #2, без перескока к #3 */
+const weaponCardColumns = computed(() => {
+  const cards = weaponCards.value
+  const leftCount = Math.ceil(cards.length / 2)
+
+  return [cards.slice(0, leftCount), cards.slice(leftCount)] as const
+})
 
 function currentUserId() {
   return user.value?.id ?? profile.value?.id ?? null
@@ -719,8 +726,13 @@ const hasNewWeapon = computed(() =>
           :aria-busy="showWeaponPlaceholders || undefined"
           aria-label="Лицензии на оружие"
         >
+          <div
+            v-for="(column, columnIndex) in weaponCardColumns"
+            :key="`weapon-col-${columnIndex}`"
+            class="weapons-form__column"
+          >
           <article
-            v-for="card in weaponCards"
+            v-for="card in column"
             :key="card.key"
             class="profile-weapon"
             :class="{
@@ -894,6 +906,7 @@ const hasNewWeapon = computed(() =>
               </div>
             </Transition>
           </article>
+          </div>
         </div>
 
         <div class="weapons-form__add-wrap">
@@ -1018,6 +1031,13 @@ const hasNewWeapon = computed(() =>
   align-items: start;
   gap: 12px;
   margin-bottom: 24px;
+}
+
+.weapons-form__column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
 .profile-weapon--placeholder {
