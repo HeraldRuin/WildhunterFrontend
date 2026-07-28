@@ -9,6 +9,7 @@ useHead({
 })
 
 import type { WeaponOption } from '~/types/user'
+import { formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
 
 const { profile, pending, error, loadProfile, addWeaponRow } = useProfile()
 const { weapons: weaponsApi } = useApi()
@@ -23,6 +24,10 @@ const weaponTypesError = ref('')
 const calibers = ref<WeaponOption[]>([])
 const calibersLoading = ref(false)
 const calibersError = ref('')
+const openLicenseDateIndex = ref<number | null>(null)
+const licenseDate = ref<Date | null>(null)
+const licenseActivePart = ref<'start' | 'end' | null>('start')
+const licenseDateFieldRefs = new Map<number, HTMLElement>()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -58,10 +63,67 @@ async function loadCalibers() {
   }
 }
 
+function setLicenseDateFieldRef(index: number, el: Element | ComponentPublicInstance | null) {
+  if (el instanceof HTMLElement) {
+    licenseDateFieldRefs.set(index, el)
+    return
+  }
+
+  licenseDateFieldRefs.delete(index)
+}
+
+function displayLicenseDate(value: string) {
+  const parsed = parseBirthdayDate(value)
+  return parsed ? formatBirthdayDate(parsed) : value
+}
+
+function openLicenseDateCalendar(index: number) {
+  const weapon = profile.value?.weapons[index]
+
+  if (!weapon) {
+    return
+  }
+
+  openLicenseDateIndex.value = index
+  licenseDate.value = parseBirthdayDate(weapon.hunter_license_date)
+  licenseActivePart.value = 'start'
+}
+
+function onLicenseDateSelect(index: number, date: Date) {
+  const weapon = profile.value?.weapons[index]
+
+  if (!weapon) {
+    return
+  }
+
+  licenseDate.value = date
+  weapon.hunter_license_date = formatBirthdayDate(date)
+  openLicenseDateIndex.value = null
+}
+
+function handleLicenseDateDocumentClick(event: MouseEvent) {
+  const index = openLicenseDateIndex.value
+
+  if (index == null) {
+    return
+  }
+
+  const field = licenseDateFieldRefs.get(index)
+
+  if (!field?.contains(event.target as Node)) {
+    openLicenseDateIndex.value = null
+  }
+}
+
 onMounted(() => {
   loadProfile()
   loadWeaponTypes()
   loadCalibers()
+  document.addEventListener('click', handleLicenseDateDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleLicenseDateDocumentClick)
 })
 
 function stopSavePulse() {
@@ -203,25 +265,55 @@ const hasNewWeapon = computed(() =>
           v-for="(weapon, index) in profile.weapons"
           :key="weapon.id ?? `new-${index}`"
           class="profile-weapon"
+          :class="{ 'profile-weapon--date-open': openLicenseDateIndex === index }"
         >
           <div class="profile-weapon__header">
             <h2 class="profile-weapon__title">Лицензия #{{ index + 1 }}</h2>
           </div>
 
-          <div class="profile-weapon__row">
-            <CommonFormField
-              label="Номер"
-              placeholder="Добавить лицензию"
-              inputmode="numeric"
-              no-margin
-              v-model="weapon.hunter_license_number"
-            />
-            <CommonFormField
-              label="Дата"
-              type="date"
-              no-margin
-              v-model="weapon.hunter_license_date"
-            />
+          <div
+            :ref="(el) => setLicenseDateFieldRef(index, el)"
+            class="profile-weapon__date-block"
+          >
+            <div class="profile-weapon__row">
+              <CommonFormField
+                label="Номер"
+                placeholder="Добавить лицензию"
+                inputmode="numeric"
+                no-margin
+                v-model="weapon.hunter_license_number"
+              />
+              <CommonFormField
+                label="Дата"
+                placeholder="ДД.ММ.ГГГГ"
+                no-margin
+                cursor-pointer
+                :model-value="displayLicenseDate(weapon.hunter_license_date)"
+                :open="openLicenseDateIndex === index"
+                readonly
+                @focus="openLicenseDateCalendar(index)"
+                @click.stop="openLicenseDateCalendar(index)"
+              >
+                <template #trailing>
+                  <span class="profile-weapon__calendar-icon" aria-hidden="true">
+                    <img src="/icons/calendar.svg" alt="">
+                  </span>
+                </template>
+              </CommonFormField>
+            </div>
+
+            <div
+              v-if="openLicenseDateIndex === index"
+              class="profile-weapon__date-panel"
+              @click.stop
+            >
+              <HomeHeroSearchDatePicker
+                v-model:start="licenseDate"
+                v-model:active-part="licenseActivePart"
+                mode="single"
+                @select="onLicenseDateSelect(index, $event)"
+              />
+            </div>
           </div>
 
           <CommonSelectField
@@ -373,6 +465,10 @@ const hasNewWeapon = computed(() =>
   overflow: visible;
 }
 
+.profile-weapon--date-open {
+  z-index: 40;
+}
+
 .profile-weapon__header {
   display: flex;
   align-items: center;
@@ -435,11 +531,50 @@ const hasNewWeapon = computed(() =>
   }
 }
 
+.profile-weapon__date-block {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 16px;
+}
+
+.profile-weapon--date-open .profile-weapon__date-block {
+  z-index: 60;
+}
+
 .profile-weapon__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-bottom: 16px;
+}
+
+.profile-weapon__calendar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.profile-weapon__calendar-icon img {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.profile-weapon__date-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  width: 100%;
+  padding: 18px 20px;
+  border: 1px solid var(--wh-gray);
+  border-radius: 0;
+  background: var(--wh-white);
+  box-shadow: 0 12px 28px rgb(28 33 28 / 12%);
+  box-sizing: border-box;
 }
 
 .weapons-form__add-wrap {
