@@ -84,18 +84,24 @@ function toggle(value: string) {
 }
 
 .search-filters-rating__checkmark {
+  position: relative;
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid #bfbfbf;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #bfbfbf;
   border-radius: 4px;
   background: var(--wh-white);
-  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.search-filters-rating__option input:checked + .search-filters-rating__checkmark {
-  border-color: var(--wh-orange-500);
+.search-filters-rating__option input:checked + .search-filters-rating__checkmark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
   background: var(--wh-orange-500);
-  box-shadow: inset 0 0 0 3px var(--wh-white);
+  transform: translate(-50%, -50%);
 }
 </style>
