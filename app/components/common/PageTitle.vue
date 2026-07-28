@@ -40,6 +40,10 @@ withDefaults(defineProps<{
   .page-title {
     font-size: 28px;
   }
+
+  .page-title--divider {
+    width: 100%;
+  }
 }
 
 @media (--wh-mobile) {

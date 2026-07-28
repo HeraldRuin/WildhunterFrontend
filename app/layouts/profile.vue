@@ -34,10 +34,12 @@ onMounted(() => {
 
 @media (--wh-tablet) {
   .profile-layout {
+    --profile-sidebar-gap: 8px;
+
     display: flex;
     flex-direction: column;
     gap: var(--profile-sidebar-gap);
-    padding: var(--profile-sidebar-gap);
+    padding: 8px;
     box-sizing: border-box;
   }
 

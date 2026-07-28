@@ -90,7 +90,7 @@ const emptyText = computed(() =>
   max-width: 100%;
   height: 31px;
   margin-bottom: 20px;
-  padding: 0 16px;
+  padding: 0;
   box-sizing: border-box;
   background: var(--wh-white);
   border-radius: var(--wh-radius);
@@ -176,7 +176,12 @@ const emptyText = computed(() =>
 
 @media (--wh-tablet) {
   .bookings-page {
-    padding: 16px 20px 40px;
+    padding: 12px 8px 32px;
+  }
+
+  .bookings-page__header,
+  .bookings-page__tabs {
+    width: 100%;
   }
 
   .bookings-page__tabs {
