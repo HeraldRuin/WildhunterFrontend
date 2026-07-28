@@ -1,11 +1,12 @@
 import type { Role } from '~/types/api'
+import type { UpdateUserPayload } from '~/api/user'
 import type { ProfileUser } from '~/types/user'
 import { createEmptyWeapon, normalizeUserProfile, resolveRoleLabel, unwrapProfilePayload } from '~/utils/user'
 
 export function useProfile() {
   const { user } = useAuth()
   const { user: userApi, roles: rolesApi } = useApi()
-  const { updateUser } = useAuthToken()
+  const { updateUser: updateAuthUser } = useAuthToken()
 
   const profile = useState<ProfileUser | null>('profile_user', () => null)
   const pending = useState('profile_pending', () => false)
@@ -66,7 +67,7 @@ export function useProfile() {
       const normalized = applyRoleLabel(normalizeUserProfile(response.data), source, roles)
       profile.value = normalized
 
-      updateUser({
+      updateAuthUser({
         id: normalized.id,
         first_name: normalized.first_name,
         last_name: normalized.last_name,
@@ -81,6 +82,16 @@ export function useProfile() {
     } finally {
       pending.value = false
     }
+  }
+
+  async function saveProfile(payload: UpdateUserPayload) {
+    const response = await userApi.updateUser(payload)
+
+    if ('success' in response && response.success) {
+      await loadProfile(true)
+    }
+
+    return response
   }
 
   function resetProfile() {
@@ -101,6 +112,7 @@ export function useProfile() {
     pending,
     error,
     loadProfile,
+    saveProfile,
     resetProfile,
     addWeaponRow,
   }

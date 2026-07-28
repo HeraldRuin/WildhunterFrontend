@@ -19,4 +19,6 @@ export type {
   ChangePasswordPayload,
   ChangePasswordResponse,
   CurrentPasswordResponse,
+  UpdateUserPayload,
+  UpdateUserResponse,
 } from './user'
