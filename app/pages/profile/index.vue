@@ -519,14 +519,20 @@ function setProfileField(
   line-height: 130%;
   letter-spacing: -0.05em;
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    font-weight 0.2s ease;
   box-sizing: border-box;
 }
 
 .profile-form__file-btn:hover,
 .profile-form__file-btn:focus-within {
   border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+  font-weight: 600;
 }
 
 .profile-form__avatar-preview {
