@@ -9,6 +9,8 @@ const props = defineProps<{
 }>()
 
 const COLLAPSED_THUMB_COUNT = 4
+/** Limit parallel large downloads so thumbs/main medium stay snappy */
+const PREFETCH_CONCURRENCY = 2
 
 const visibleImages = computed(() => props.images.filter(image => isValidGalleryImage(image)))
 const isEmpty = computed(() => !props.placeholder && visibleImages.value.length === 0)
@@ -17,6 +19,10 @@ const activeIndex = ref(0)
 const expanded = ref(false)
 /** large URLs already in browser cache — allows instant swap after medium preview */
 const readyLargeUrls = ref(new Set<string>())
+/** Painted main src — keep previous frame until the next URL is decoded */
+const paintedMainSrc = ref('')
+/** Thumb URLs that finished loading — avoids dark "more" scrim on empty gray */
+const loadedThumbUrls = ref(new Set<string>())
 
 const thumbImages = computed(() => {
   const rest = visibleImages.value.slice(1)
@@ -49,6 +55,38 @@ const mainImage = computed(() => {
   return medium || large
 })
 
+function thumbSrc(image: HotelGalleryImage) {
+  return image.thumb || image.medium || image.large || ''
+}
+
+function isThumbLoaded(image: HotelGalleryImage) {
+  const src = thumbSrc(image)
+  return Boolean(src && loadedThumbUrls.value.has(src))
+}
+
+function markThumbLoaded(event: Event) {
+  const img = event.target as HTMLImageElement | null
+  const src = img?.currentSrc || img?.src
+  if (!src || loadedThumbUrls.value.has(src)) {
+    return
+  }
+
+  const next = new Set(loadedThumbUrls.value)
+  next.add(src)
+  loadedThumbUrls.value = next
+}
+
+function bindThumbImg(el: Element | null) {
+  if (!(el instanceof HTMLImageElement)) {
+    return
+  }
+
+  // Cached images may skip @load if complete before the listener is attached.
+  if (el.complete && el.naturalWidth > 0) {
+    markThumbLoaded({ target: el } as Event)
+  }
+}
+
 function markLargeReady(url: string) {
   if (!url || readyLargeUrls.value.has(url)) {
     return
@@ -59,27 +97,179 @@ function markLargeReady(url: string) {
   readyLargeUrls.value = next
 }
 
-function prefetchLarge(url: string) {
+type PrefetchPriority = 'high' | 'normal'
+
+const prefetchQueued = new Set<string>()
+const prefetchInFlight = new Set<string>()
+const prefetchQueue: Array<{ url: string, priority: PrefetchPriority }> = []
+let idlePrefetchHandle: number | null = null
+
+function clearPrefetchQueue() {
+  prefetchQueue.length = 0
+  prefetchQueued.clear()
+  prefetchInFlight.clear()
+
+  if (idlePrefetchHandle != null && import.meta.client) {
+    if (typeof cancelIdleCallback === 'function') {
+      cancelIdleCallback(idlePrefetchHandle)
+    }
+    else {
+      clearTimeout(idlePrefetchHandle)
+    }
+    idlePrefetchHandle = null
+  }
+}
+
+function pumpPrefetchQueue() {
+  while (prefetchInFlight.size < PREFETCH_CONCURRENCY && prefetchQueue.length > 0) {
+    const next = prefetchQueue.shift()
+    if (!next) {
+      break
+    }
+
+    const { url } = next
+    if (readyLargeUrls.value.has(url) || prefetchInFlight.has(url)) {
+      prefetchQueued.delete(url)
+      continue
+    }
+
+    prefetchInFlight.add(url)
+
+    const img = new Image()
+    img.decoding = 'async'
+    let settled = false
+
+    const finish = () => {
+      if (settled) {
+        return
+      }
+      settled = true
+      prefetchInFlight.delete(url)
+      prefetchQueued.delete(url)
+      markLargeReady(url)
+      pumpPrefetchQueue()
+    }
+
+    img.onload = finish
+    img.onerror = finish
+    img.src = url
+
+    if (img.complete) {
+      finish()
+    }
+  }
+}
+
+function prefetchLarge(url: string, priority: PrefetchPriority = 'normal') {
   if (!url || readyLargeUrls.value.has(url) || !import.meta.client) {
     return
   }
 
-  const img = new Image()
-  img.decoding = 'async'
-  img.onload = () => markLargeReady(url)
-  img.onerror = () => markLargeReady(url)
-  img.src = url
+  if (prefetchInFlight.has(url)) {
+    return
+  }
 
-  if (img.complete) {
-    markLargeReady(url)
+  if (prefetchQueued.has(url)) {
+    if (priority !== 'high') {
+      return
+    }
+
+    const index = prefetchQueue.findIndex(item => item.url === url)
+    if (index >= 0) {
+      prefetchQueue.splice(index, 1)
+    }
+  }
+
+  prefetchQueued.add(url)
+
+  if (priority === 'high') {
+    prefetchQueue.unshift({ url, priority })
+  }
+  else {
+    prefetchQueue.push({ url, priority })
+  }
+
+  pumpPrefetchQueue()
+}
+
+function scheduleIdlePrefetch(urls: string[]) {
+  if (!import.meta.client || !urls.length) {
+    return
+  }
+
+  const run = () => {
+    idlePrefetchHandle = null
+    for (const url of urls) {
+      prefetchLarge(url, 'normal')
+    }
+  }
+
+  if (typeof requestIdleCallback === 'function') {
+    idlePrefetchHandle = requestIdleCallback(run, { timeout: 2500 })
+  }
+  else {
+    idlePrefetchHandle = window.setTimeout(run, 600)
   }
 }
 
-function prefetchGalleryLarge(images: HotelGalleryImage[]) {
+function prefetchVisibleLarges(images: HotelGalleryImage[]) {
+  const visibleCount = Math.min(images.length, 1 + COLLAPSED_THUMB_COUNT)
+
+  for (let index = 0; index < visibleCount; index += 1) {
+    const large = images[index]?.large
+    if (large) {
+      prefetchLarge(large, index === 0 ? 'high' : 'normal')
+    }
+  }
+
+  const deferred = images
+    .slice(visibleCount)
+    .map(image => image.large)
+    .filter((url): url is string => Boolean(url))
+
+  scheduleIdlePrefetch(deferred)
+}
+
+function prefetchGalleryLarge(images: HotelGalleryImage[], priority: PrefetchPriority = 'normal') {
   for (const image of images) {
     if (image.large) {
-      prefetchLarge(image.large)
+      prefetchLarge(image.large, priority)
     }
+  }
+}
+
+async function paintMainSrc(url: string) {
+  if (!url || url === paintedMainSrc.value) {
+    return
+  }
+
+  if (!import.meta.client) {
+    paintedMainSrc.value = url
+    return
+  }
+
+  // First paint: let the <img> load normally (better LCP). Later swaps wait for decode.
+  if (!paintedMainSrc.value) {
+    paintedMainSrc.value = url
+    return
+  }
+
+  // Keep current frame visible while the next URL downloads/decodes.
+  const img = new Image()
+  img.decoding = 'async'
+  img.src = url
+
+  try {
+    if (!img.complete) {
+      await img.decode()
+    }
+  }
+  catch {
+    // decode can reject on error; still attempt to show src
+  }
+
+  if (mainImage.value === url) {
+    paintedMainSrc.value = url
   }
 }
 
@@ -89,16 +279,41 @@ watch(
     activeIndex.value = 0
     expanded.value = false
     readyLargeUrls.value = new Set()
-    prefetchGalleryLarge(images)
+    loadedThumbUrls.value = new Set()
+    clearPrefetchQueue()
+    paintedMainSrc.value = ''
+    prefetchVisibleLarges(images)
+  },
+  { immediate: true },
+)
+
+watch(
+  mainImage,
+  (url) => {
+    void paintMainSrc(url)
   },
   { immediate: true },
 )
 
 function selectImage(index: number) {
-  activeIndex.value = index
   const item = visibleImages.value[index]
-  if (item?.large) {
-    prefetchLarge(item.large)
+  if (!item) {
+    return
+  }
+
+  const switching = index !== activeIndex.value
+  activeIndex.value = index
+
+  // Instant frame from the thumb grid cache; watch(mainImage) upgrades to medium/large.
+  if (switching) {
+    const instant = item.thumb || item.medium || item.large || ''
+    if (instant) {
+      paintedMainSrc.value = instant
+    }
+  }
+
+  if (item.large) {
+    prefetchLarge(item.large, 'high')
   }
 }
 
@@ -109,7 +324,7 @@ function handleThumbClick(thumbIndex: number) {
 
   if (isMoreButton) {
     expanded.value = true
-    prefetchGalleryLarge(visibleImages.value)
+    prefetchGalleryLarge(visibleImages.value, 'normal')
     return
   }
 
@@ -119,7 +334,7 @@ function handleThumbClick(thumbIndex: number) {
 function handleThumbHover(thumbIndex: number) {
   const item = visibleImages.value[thumbIndex + 1]
   if (item?.large) {
-    prefetchLarge(item.large)
+    prefetchLarge(item.large, 'high')
   }
 }
 
@@ -273,7 +488,7 @@ function resetLightboxZoom() {
 function openLightbox() {
   const item = activeImage.value
   if (item?.large) {
-    prefetchLarge(item.large)
+    prefetchLarge(item.large, 'high')
   }
 
   resetLightboxZoom()
@@ -434,6 +649,7 @@ onBeforeUnmount(() => {
     return
   }
 
+  clearPrefetchQueue()
   document.body.style.overflow = ''
   window.removeEventListener('keydown', handleLightboxKeydown)
 })
@@ -472,9 +688,12 @@ onBeforeUnmount(() => {
   >
     <div class="hotel-gallery__main">
       <img
-        :src="mainImage"
+        v-if="paintedMainSrc"
+        :src="paintedMainSrc"
         :alt="`${title} — фото ${activeIndex + 1}`"
         loading="eager"
+        decoding="async"
+        fetchpriority="high"
       >
 
       <button
@@ -505,7 +724,7 @@ onBeforeUnmount(() => {
     <div class="hotel-gallery__thumbs">
       <button
         v-for="(image, index) in thumbImages"
-        :key="`${image.medium}-${index}`"
+        :key="`${thumbSrc(image)}-${index}`"
         type="button"
         class="hotel-gallery__thumb"
         :class="{ 'hotel-gallery__thumb--active': index + 1 === activeIndex }"
@@ -519,14 +738,19 @@ onBeforeUnmount(() => {
         @focus="handleThumbHover(index)"
       >
         <img
-          :src="image.medium || image.thumb"
+          :ref="bindThumbImg"
+          :src="thumbSrc(image)"
           :alt="`${title} — фото ${index + 2}`"
-          loading="lazy"
+          :loading="expanded ? 'lazy' : 'eager'"
+          decoding="async"
+          :fetchpriority="index < 2 ? 'high' : 'auto'"
+          @load="markThumbLoaded"
         >
 
         <span
           v-if="!expanded && hasMore && index === thumbImages.length - 1"
           class="hotel-gallery__more"
+          :class="{ 'hotel-gallery__more--ready': isThumbLoaded(image) }"
         >
           Показать еще
         </span>
@@ -830,10 +1054,16 @@ onBeforeUnmount(() => {
   z-index: 1;
   display: grid;
   place-items: center;
-  background: rgba(17, 24, 39, 0.45);
-  color: var(--wh-white);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--wh-gray-700);
   font-size: 1rem;
   font-weight: 700;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.hotel-gallery__more--ready {
+  background: rgba(17, 24, 39, 0.45);
+  color: var(--wh-white);
 }
 
 @media (--wh-tablet) {
