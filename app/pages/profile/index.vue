@@ -8,14 +8,45 @@ useHead({
   title: 'Мой профиль — WH',
 })
 
+const { user } = useAuth()
 const { profile, pending, error, loadProfile } = useProfile()
 
 const notificationCount = 2
+const revealValues = ref(false)
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
   { label: 'Мой профиль' },
 ]
+
+const isFormLoading = computed(() => pending.value && !profile.value)
+const showForm = computed(() => Boolean(profile.value) || pending.value)
+
+const profileId = computed(() => {
+  const id = profile.value?.id || user.value?.id
+  return id && Number(id) > 0 ? Number(id) : null
+})
+
+watch(
+  profile,
+  (next, prev) => {
+    if (!next) {
+      revealValues.value = false
+      return
+    }
+
+    if (!prev) {
+      revealValues.value = false
+      nextTick(() => {
+        revealValues.value = true
+      })
+      return
+    }
+
+    revealValues.value = true
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   loadProfile()
@@ -23,6 +54,18 @@ onMounted(() => {
 
 function handleSubmit() {
   // TODO: подключить API сохранения профиля
+}
+
+function setProfileField(
+  field: 'user_name' | 'email' | 'first_name' | 'last_name' | 'phone' | 'birthday' | 'bio',
+  event: Event,
+) {
+  if (!profile.value) {
+    return
+  }
+
+  const target = event.target as HTMLInputElement | HTMLTextAreaElement
+  profile.value[field] = target.value
 }
 </script>
 
@@ -46,19 +89,39 @@ function handleSubmit() {
 
     <CommonPageTitle divider>Настройки</CommonPageTitle>
 
-    <p v-if="pending" class="profile-page__status">Загрузка профиля...</p>
-    <p v-else-if="error" class="profile-page__status profile-page__status--error">{{ error }}</p>
+    <p v-if="error && !showForm" class="profile-page__status profile-page__status--error">{{ error }}</p>
 
     <form
-      v-else-if="profile"
+      v-else-if="showForm"
       class="profile-form"
+      :class="{
+        'profile-form--loading': isFormLoading,
+        'profile-form--reveal': revealValues,
+      }"
+      :aria-busy="isFormLoading"
       @submit.prevent="handleSubmit"
     >
       <section class="profile-form__section">
         <h2 class="profile-form__section-title">
           Личная информация
-          <span class="profile-form__user-id">ID: {{ profile.id }}</span>
+          <CommonSpinner
+            v-if="isFormLoading"
+            class="profile-form__title-spinner"
+            variant="ring"
+            color="var(--wh-orange-500)"
+            :size="18"
+            label="Загрузка профиля"
+          />
+          <span
+            v-else-if="profileId"
+            class="profile-form__user-id"
+            :class="{ 'profile-form__value-reveal': revealValues }"
+          >
+            ID: {{ profileId }}
+          </span>
         </h2>
+
+        <p v-if="error" class="profile-page__status profile-page__status--error">{{ error }}</p>
 
         <div class="profile-form__grid">
           <div class="profile-form__column">
@@ -66,10 +129,13 @@ function handleSubmit() {
               <label class="profile-form__label" for="nickname">Ник</label>
               <input
                 id="nickname"
-                v-model="profile.user_name"
                 type="text"
                 class="profile-form__input"
+                :class="{ 'profile-form__value-reveal': revealValues }"
+                :value="profile?.user_name ?? ''"
+                :readonly="isFormLoading"
                 placeholder="Ник пользователя"
+                @input="setProfileField('user_name', $event)"
               >
             </div>
 
@@ -77,10 +143,13 @@ function handleSubmit() {
               <label class="profile-form__label" for="email">Email</label>
               <input
                 id="email"
-                v-model="profile.email"
                 type="email"
                 class="profile-form__input"
+                :class="{ 'profile-form__value-reveal': revealValues }"
+                :value="profile?.email ?? ''"
+                :readonly="isFormLoading"
                 placeholder="Email"
+                @input="setProfileField('email', $event)"
               >
             </div>
 
@@ -89,20 +158,26 @@ function handleSubmit() {
                 <label class="profile-form__label" for="first-name">Имя</label>
                 <input
                   id="first-name"
-                  v-model="profile.first_name"
                   type="text"
                   class="profile-form__input"
+                  :class="{ 'profile-form__value-reveal': revealValues }"
+                  :value="profile?.first_name ?? ''"
+                  :readonly="isFormLoading"
                   placeholder="Имя"
+                  @input="setProfileField('first_name', $event)"
                 >
               </div>
               <div class="profile-form__field">
                 <label class="profile-form__label" for="last-name">Фамилия</label>
                 <input
                   id="last-name"
-                  v-model="profile.last_name"
                   type="text"
                   class="profile-form__input"
+                  :class="{ 'profile-form__value-reveal': revealValues }"
+                  :value="profile?.last_name ?? ''"
+                  :readonly="isFormLoading"
                   placeholder="Фамилия"
+                  @input="setProfileField('last_name', $event)"
                 >
               </div>
             </div>
@@ -111,10 +186,13 @@ function handleSubmit() {
               <label class="profile-form__label" for="phone">Номер телефона</label>
               <input
                 id="phone"
-                v-model="profile.phone"
                 type="tel"
                 class="profile-form__input"
+                :class="{ 'profile-form__value-reveal': revealValues }"
+                :value="profile?.phone ?? ''"
+                :readonly="isFormLoading"
                 placeholder="+7 (999) 999-99-99"
+                @input="setProfileField('phone', $event)"
               >
             </div>
           </div>
@@ -124,10 +202,13 @@ function handleSubmit() {
               <label class="profile-form__label" for="birthday">Дата рождения</label>
               <input
                 id="birthday"
-                v-model="profile.birthday"
                 type="text"
                 class="profile-form__input"
+                :class="{ 'profile-form__value-reveal': revealValues }"
+                :value="profile?.birthday ?? ''"
+                :readonly="isFormLoading"
                 placeholder="ДД.ММ.ГГГГ"
+                @input="setProfileField('birthday', $event)"
               >
             </div>
 
@@ -135,31 +216,40 @@ function handleSubmit() {
               <label class="profile-form__label" for="bio">Обо мне</label>
               <textarea
                 id="bio"
-                v-model="profile.bio"
                 class="profile-form__textarea"
+                :class="{ 'profile-form__value-reveal': revealValues }"
                 rows="5"
+                :value="profile?.bio ?? ''"
+                :readonly="isFormLoading"
                 placeholder="Расскажите о себе"
+                @input="setProfileField('bio', $event)"
               />
             </div>
 
-            <div class="profile-form__field">
-              <label class="profile-form__label">Аватар</label>
+            <div class="profile-form__field profile-form__field--avatar">
               <div class="profile-form__avatar-upload">
-                <div class="profile-form__avatar-preview">
+                <div
+                  class="profile-form__avatar-preview"
+                  :class="{ 'profile-form__avatar-preview--default': !profile?.avatar }"
+                >
                   <img
-                    v-if="profile.avatar"
+                    v-if="profile?.avatar"
                     :src="profile.avatar"
                     alt="Аватар"
+                    :class="{ 'profile-form__value-reveal': revealValues }"
                   >
                   <svg v-else viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="12" cy="8" r="4" fill="currentColor" />
                     <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="currentColor" />
                   </svg>
                 </div>
-                <label class="profile-form__file-btn">
-                  Прикрепить файл
-                  <input type="file" accept="image/*" hidden>
-                </label>
+                <div class="profile-form__avatar-controls">
+                  <span class="profile-form__label">Аватар</span>
+                  <label class="profile-form__file-btn">
+                    Прикрепить файл
+                    <input type="file" accept="image/*" hidden :disabled="isFormLoading">
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -167,7 +257,7 @@ function handleSubmit() {
       </section>
 
       <div class="profile-form__actions">
-        <button type="submit" class="profile-form__submit">
+        <button type="submit" class="profile-form__submit" :disabled="isFormLoading">
           Сохранить изменения
         </button>
       </div>
@@ -244,6 +334,56 @@ function handleSubmit() {
   color: #dc2626;
 }
 
+.profile-form--loading {
+  pointer-events: none;
+  user-select: none;
+}
+
+.profile-form--loading .profile-form__submit:disabled {
+  opacity: 1;
+  cursor: default;
+  transform: none;
+}
+
+.profile-form__title-spinner {
+  flex-shrink: 0;
+}
+
+.profile-form--reveal .profile-form__value-reveal {
+  animation: profile-value-reveal 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.profile-form__avatar-preview img.profile-form__value-reveal {
+  animation: profile-value-fade 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes profile-value-reveal {
+  from {
+    color: transparent;
+  }
+
+  to {
+    color: var(--wh-gray-900);
+  }
+}
+
+@keyframes profile-value-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-form--reveal .profile-form__value-reveal,
+  .profile-form__avatar-preview img.profile-form__value-reveal {
+    animation: none;
+  }
+}
+
 .profile-form__section {
   width: 896px;
   max-width: 100%;
@@ -262,18 +402,21 @@ function handleSubmit() {
 
 .profile-form__section-title {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   margin: 0 0 20px;
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
   color: var(--wh-gray-900);
 }
 
 .profile-form__user-id {
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--wh-gray-500);
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+  color: var(--wh-gray-900);
 }
 
 .profile-form__field {
@@ -295,25 +438,39 @@ function handleSubmit() {
 }
 
 .profile-form__label {
-  font-size: 0.82rem;
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
   font-weight: 500;
+  line-height: 120%;
+  letter-spacing: -0.05em;
   color: var(--wh-gray-600);
 }
 
 .profile-form__input,
 .profile-form__textarea {
   width: 100%;
+  box-sizing: border-box;
   padding: 12px 14px;
-  border: 1px solid var(--wh-gray-200);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 10px;
   background: var(--wh-white);
   color: var(--wh-gray-900);
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .profile-form__input::placeholder,
 .profile-form__textarea::placeholder {
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
   color: var(--wh-gray-400);
 }
 
@@ -328,42 +485,66 @@ function handleSubmit() {
   min-height: 132px;
 }
 
+.profile-form__field--avatar {
+  margin-bottom: 0;
+}
+
 .profile-form__avatar-upload {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.profile-form__avatar-controls {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
 .profile-form__file-btn {
   display: inline-flex;
-  flex: 1;
   align-items: center;
-  min-width: 0;
+  width: 100%;
   min-height: 48px;
   padding: 12px 14px;
-  border: 1px solid var(--wh-gray-200);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 10px;
   background: var(--wh-white);
   color: var(--wh-gray-400);
-  font-size: 0.9rem;
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
 }
 
-.profile-form__file-btn:hover {
-  border-color: var(--wh-gray-300);
+.profile-form__file-btn:hover,
+.profile-form__file-btn:focus-within {
+  border-color: var(--wh-orange-500);
+  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
 }
 
 .profile-form__avatar-preview {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 78px;
+  height: 78px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #e8eaee;
   overflow: hidden;
+}
+
+.profile-form__avatar-preview--default {
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: var(--wh-white);
 }
 
 .profile-form__avatar-preview img,
@@ -374,8 +555,8 @@ function handleSubmit() {
 }
 
 .profile-form__avatar-preview svg {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   color: var(--wh-gray-400);
 }
 
