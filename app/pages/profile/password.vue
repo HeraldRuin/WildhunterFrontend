@@ -469,8 +469,22 @@ onMounted(() => {
   font-weight: 400;
   line-height: 130%;
   letter-spacing: -0.03em;
+  text-transform: uppercase;
 
   color: var(--wh-gray-900);
+}
+
+@media (max-width: 1024px) {
+  .profile-page__title.profile-page__title--divider {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-page__title.profile-page__title--divider {
+    font-size: 24px;
+    letter-spacing: 0.02em;
+  }
 }
 
 .profile-page__title--divider {
@@ -713,12 +727,6 @@ onMounted(() => {
     padding: 0;
     background: transparent;
     border-radius: 0;
-  }
-
-  .profile-page__title {
-    font-size: clamp(1.25rem, 5vw, 1.75rem);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
   }
 
   .password-form__generate {
