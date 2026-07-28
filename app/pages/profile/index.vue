@@ -479,13 +479,19 @@ async function handleSubmit() {
                 @update:model-value="setProfileField('birthday', $event)"
               >
                 <template #trailing>
-                  <span class="profile-form__calendar-icon" aria-hidden="true">
-                    <svg viewBox="0 0 20 20" fill="none">
+                  <button
+                    type="button"
+                    class="profile-form__calendar-icon"
+                    aria-label="Открыть календарь"
+                    :disabled="isFormLoading || isSubmitting"
+                    @click.stop="openBirthdayCalendar"
+                  >
+                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
                       <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />
                       <path d="M2.25 8.25h15.5" stroke="currentColor" stroke-width="1.5" />
                       <path d="M6.5 2.25v3.25M13.5 2.25v3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                     </svg>
-                  </span>
+                  </button>
                 </template>
                 <template v-if="isBirthdayOpen" #append>
                   <div class="profile-form__birthday-panel" @click.stop>
@@ -730,10 +736,18 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
   color: var(--wh-gray-400);
-  pointer-events: none;
+  cursor: pointer;
+}
+
+.profile-form__calendar-icon:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .profile-form__calendar-icon svg {

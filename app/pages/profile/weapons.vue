@@ -295,13 +295,18 @@ const hasNewWeapon = computed(() =>
                 @click.stop="openLicenseDateCalendar(index)"
               >
                 <template #trailing>
-                  <span class="profile-weapon__calendar-icon" aria-hidden="true">
-                    <svg viewBox="0 0 20 20" fill="none">
+                  <button
+                    type="button"
+                    class="profile-weapon__calendar-icon"
+                    aria-label="Открыть календарь"
+                    @click.stop="openLicenseDateCalendar(index)"
+                  >
+                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
                       <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />
                       <path d="M2.25 8.25h15.5" stroke="currentColor" stroke-width="1.5" />
                       <path d="M6.5 2.25v3.25M13.5 2.25v3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                     </svg>
-                  </span>
+                  </button>
                 </template>
               </CommonFormField>
             </div>
@@ -555,10 +560,13 @@ const hasNewWeapon = computed(() =>
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
   color: var(--wh-gray-400);
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .profile-weapon__calendar-icon svg {
