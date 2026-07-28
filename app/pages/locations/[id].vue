@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { LocationItem, OfferItem, SearchFiltersState } from '~/types/api'
-import { DEFAULT_SEARCH_FILTERS } from '~/utils/search'
+import { DEFAULT_SEARCH_FILTERS, matchesReviewRatingFilter } from '~/utils/search'
 
 definePageMeta({
   layout: 'home',
@@ -142,15 +142,11 @@ const filteredOffers = computed(() => {
       return false
     }
 
-    if (filters.value.ratings.length) {
-      const matchesRating = filters.value.ratings.some((rating) => {
-        const min = Number(rating)
-        return Number.isFinite(min) && item.rating >= min
-      })
-
-      if (!matchesRating) {
-        return false
-      }
+    if (
+      filters.value.ratings.length
+      && !matchesReviewRatingFilter(item.rating, filters.value.ratings)
+    ) {
+      return false
     }
 
     return true

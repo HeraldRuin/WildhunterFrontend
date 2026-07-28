@@ -122,6 +122,37 @@ export const MOCK_SEARCH_ITEMS: BookableItem[] = [
 const MOCK_RATINGS = [9.8, 9.2, 8.7, 9.5, 8.9, 9.1, 8.4, 9.0, 8.6, 9.3, 8.8, 9.4]
 const MOCK_REVIEWS = [32, 18, 45, 27, 51, 14, 38, 22, 29, 16, 41, 33]
 
+/** Buckets from GET /reviews/ratings → ranges for OfferItem.rating (star_rate, 0–5). */
+const REVIEW_RATING_RANGES: Record<string, { min: number, max: number }> = {
+  excellent: { min: 4.5, max: 5 },
+  very_good: { min: 4, max: 4.5 },
+  average: { min: 3, max: 4 },
+  poor: { min: 2, max: 3 },
+  terrible: { min: 0, max: 2 },
+}
+
+/** Client-side match for qualitative keys (`excellent`) or numeric thresholds (`"4"`). */
+export function matchesReviewRatingFilter(score: number, selected: string[]): boolean {
+  if (!selected.length || !Number.isFinite(score) || score <= 0) {
+    return !selected.length
+  }
+
+  return selected.some((key) => {
+    const asNumber = Number(key)
+    if (Number.isFinite(asNumber) && key.trim() !== '') {
+      return score >= asNumber
+    }
+
+    const range = REVIEW_RATING_RANGES[key]
+    if (!range) {
+      return false
+    }
+
+    const isTopBucket = range.max >= 5
+    return score >= range.min && (isTopBucket ? score <= range.max : score < range.max)
+  })
+}
+
 export function toOfferItem(item: BookableItem, index = 0): OfferItem {
   return {
     id: item.id,
