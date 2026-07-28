@@ -1,0 +1,298 @@
+<script setup lang="ts">
+defineOptions({ inheritAttrs: false })
+
+const attrs = useAttrs()
+
+const props = withDefaults(defineProps<{
+  label: string
+  placeholder?: string
+  modelValue?: string
+  type?: string
+  error?: string
+  /** URL иконки слева внутри инпута */
+  icon?: string
+  id?: string
+  disabled?: boolean
+  readonly?: boolean
+  rows?: number
+  /** textarea вместо input */
+  multiline?: boolean
+  /** стиль маски пароля (letter-spacing) */
+  masked?: boolean
+  /** состояние «открыт» (календарь и т.п.) */
+  open?: boolean
+  cursorPointer?: boolean
+  /** плавное появление значения (профиль) */
+  reveal?: boolean
+  /** убрать нижний отступ (когда gap задаёт родитель) */
+  noMargin?: boolean
+}>(), {
+  placeholder: '',
+  modelValue: '',
+  type: 'text',
+  error: '',
+  icon: '',
+  id: undefined,
+  disabled: false,
+  readonly: false,
+  rows: 4,
+  multiline: false,
+  masked: false,
+  open: false,
+  cursorPointer: false,
+  reveal: false,
+  noMargin: false,
+})
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  focus: [event: FocusEvent]
+  blur: [event: FocusEvent]
+  click: [event: MouseEvent]
+  keydown: [event: KeyboardEvent]
+  paste: [event: ClipboardEvent]
+}>()
+
+const slots = useSlots()
+const generatedId = useId()
+const fieldId = computed(() => props.id || generatedId)
+
+const hasIcon = computed(() => Boolean(props.icon) || Boolean(slots.icon))
+const hasTrailing = computed(() => Boolean(slots.trailing))
+
+function onInput(event: Event) {
+  const target = event.target as HTMLInputElement | HTMLTextAreaElement
+  emit('update:modelValue', target.value)
+}
+</script>
+
+<template>
+  <div
+    class="form-field"
+    :class="{ 'form-field--no-margin': noMargin }"
+  >
+    <label class="form-field__label" :for="fieldId">{{ label }}</label>
+
+    <div class="form-field__control">
+      <span v-if="hasIcon" class="form-field__icon" aria-hidden="true">
+        <slot name="icon">
+          <img v-if="icon" :src="icon" alt="">
+        </slot>
+      </span>
+
+      <textarea
+        v-if="multiline"
+        :id="fieldId"
+        class="form-field__input form-field__input--textarea"
+        :class="{
+          'form-field__input--error': error,
+          'form-field__input--with-icon': hasIcon,
+          'form-field__input--with-trailing': hasTrailing,
+          'form-field__input--reveal': reveal,
+        }"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :readonly="readonly"
+        :rows="rows"
+        v-bind="attrs"
+        @input="onInput"
+        @focus="emit('focus', $event)"
+        @blur="emit('blur', $event)"
+        @keydown="emit('keydown', $event)"
+        @paste="emit('paste', $event)"
+      />
+      <input
+        v-else
+        :id="fieldId"
+        class="form-field__input"
+        :class="{
+          'form-field__input--error': error,
+          'form-field__input--with-icon': hasIcon,
+          'form-field__input--with-trailing': hasTrailing,
+          'form-field__input--masked': masked,
+          'form-field__input--open': open,
+          'form-field__input--pointer': cursorPointer,
+          'form-field__input--reveal': reveal,
+        }"
+        :type="type"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :readonly="readonly"
+        v-bind="attrs"
+        @input="onInput"
+        @focus="emit('focus', $event)"
+        @blur="emit('blur', $event)"
+        @click="emit('click', $event)"
+        @keydown="emit('keydown', $event)"
+        @paste="emit('paste', $event)"
+      >
+
+      <div v-if="hasTrailing" class="form-field__trailing">
+        <slot name="trailing" />
+      </div>
+
+      <div v-if="$slots.append" class="form-field__append">
+        <slot name="append" />
+      </div>
+    </div>
+
+    <p v-if="error" class="form-field__error">{{ error }}</p>
+  </div>
+</template>
+
+<style scoped>
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.form-field--no-margin {
+  margin-bottom: 0;
+}
+
+.form-field__label {
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+  color: var(--wh-gray-900);
+}
+
+.form-field__control {
+  position: relative;
+  width: 100%;
+  z-index: 0;
+}
+
+.form-field__icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.form-field__icon img,
+.form-field__icon :deep(img),
+.form-field__icon :deep(svg) {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.form-field__trailing {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  transform: translateY(-50%);
+}
+
+.form-field__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  background: var(--wh-white);
+  color: var(--wh-gray-900);
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-field__input--with-icon {
+  padding-left: 44px;
+}
+
+.form-field__input--with-trailing {
+  padding-right: 44px;
+}
+
+.form-field__input--textarea {
+  resize: vertical;
+  min-height: 132px;
+}
+
+.form-field__input--pointer {
+  cursor: pointer;
+}
+
+.form-field__input--masked {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.22em;
+}
+
+.form-field__input::placeholder {
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-gray-400);
+}
+
+.form-field__input--masked::placeholder {
+  letter-spacing: normal;
+}
+
+.form-field__input:focus,
+.form-field__input--open {
+  border-color: var(--wh-orange-500);
+  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
+}
+
+.form-field__input--open {
+  box-shadow: 0 0 0 2px rgb(209 101 16 / 18%);
+}
+
+.form-field__input--error,
+.form-field__input--error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.form-field__input:-webkit-autofill,
+.form-field__input:-webkit-autofill:hover,
+.form-field__input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--wh-gray-900);
+  box-shadow: 0 0 0 1000px var(--wh-white) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
+.form-field__append {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+}
+
+.form-field__error {
+  margin: 0;
+  font-family: "Inter", "Manrope", system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: #dc2626;
+}
+</style>
