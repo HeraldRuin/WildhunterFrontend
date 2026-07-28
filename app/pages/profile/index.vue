@@ -466,7 +466,7 @@ async function handleSubmit() {
               <CommonFormField
                 id="birthday"
                 label="Дата рождения"
-                placeholder="ДД.ММ.ГГГГ"
+                placeholder="дд.мм.гггг"
                 autocomplete="bday"
                 cursor-pointer
                 :model-value="profile?.birthday ?? ''"
@@ -480,7 +480,11 @@ async function handleSubmit() {
               >
                 <template #trailing>
                   <span class="profile-form__calendar-icon" aria-hidden="true">
-                    <img src="/icons/calendar.svg" alt="">
+                    <svg viewBox="0 0 20 20" fill="none">
+                      <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />
+                      <path d="M2.25 8.25h15.5" stroke="currentColor" stroke-width="1.5" />
+                      <path d="M6.5 2.25v3.25M13.5 2.25v3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
                   </span>
                 </template>
                 <template v-if="isBirthdayOpen" #append>
@@ -728,10 +732,11 @@ async function handleSubmit() {
   justify-content: center;
   width: 20px;
   height: 20px;
+  color: var(--wh-gray-400);
   pointer-events: none;
 }
 
-.profile-form__calendar-icon img {
+.profile-form__calendar-icon svg {
   display: block;
   width: 20px;
   height: 20px;

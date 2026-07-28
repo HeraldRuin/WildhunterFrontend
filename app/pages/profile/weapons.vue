@@ -285,7 +285,7 @@ const hasNewWeapon = computed(() =>
               />
               <CommonFormField
                 label="Дата"
-                placeholder="ДД.ММ.ГГГГ"
+                placeholder="дд.мм.гггг"
                 no-margin
                 cursor-pointer
                 :model-value="displayLicenseDate(weapon.hunter_license_date)"
@@ -296,7 +296,11 @@ const hasNewWeapon = computed(() =>
               >
                 <template #trailing>
                   <span class="profile-weapon__calendar-icon" aria-hidden="true">
-                    <img src="/icons/calendar.svg" alt="">
+                    <svg viewBox="0 0 20 20" fill="none">
+                      <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />
+                      <path d="M2.25 8.25h15.5" stroke="currentColor" stroke-width="1.5" />
+                      <path d="M6.5 2.25v3.25M13.5 2.25v3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
                   </span>
                 </template>
               </CommonFormField>
@@ -553,10 +557,11 @@ const hasNewWeapon = computed(() =>
   justify-content: center;
   width: 20px;
   height: 20px;
+  color: var(--wh-gray-400);
   pointer-events: none;
 }
 
-.profile-weapon__calendar-icon img {
+.profile-weapon__calendar-icon svg {
   display: block;
   width: 20px;
   height: 20px;
