@@ -579,6 +579,11 @@ onMounted(() => {
     border-top: none;
   }
 
+  .password-form__actions :deep(.save-button) {
+    width: 346px;
+    min-width: 346px;
+  }
+
   .password-form__cancel {
     display: none;
   }

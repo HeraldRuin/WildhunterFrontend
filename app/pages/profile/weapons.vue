@@ -379,4 +379,11 @@ function handleSubmit() {
     padding-top: 0;
   }
 }
+
+@media (--wh-mobile) {
+  .weapons-form__actions :deep(.save-button) {
+    width: 346px;
+    min-width: 346px;
+  }
+}
 </style>

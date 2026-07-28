@@ -52,11 +52,11 @@ const buttonStyle = computed(() => ({
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--save-button-width);
-  min-width: var(--save-button-width);
+  width: var(--save-button-width, 288px);
+  min-width: var(--save-button-width, 288px);
   padding: 14px 28px;
   border: none;
-  border-radius: var(--save-button-radius);
+  border-radius: var(--save-button-radius, var(--wh-radius-lg));
   background: var(--wh-orange-500);
   color: var(--wh-white);
   font-size: 0.95rem;
@@ -77,10 +77,11 @@ const buttonStyle = computed(() => ({
   transform: none;
 }
 
-@media (--wh-mobile) {
+@media (max-width: 640px) {
   .save-button {
-    width: var(--save-button-mobile-width);
-    min-width: var(--save-button-mobile-width);
+    display: flex;
+    width: var(--save-button-mobile-width, 346px);
+    min-width: var(--save-button-mobile-width, 346px);
   }
 }
 </style>
