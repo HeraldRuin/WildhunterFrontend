@@ -478,6 +478,11 @@ async function handleSubmit() {
                 @click.stop="openBirthdayCalendar"
                 @update:model-value="setProfileField('birthday', $event)"
               >
+                <template #trailing>
+                  <span class="profile-form__calendar-icon" aria-hidden="true">
+                    <img src="/icons/calendar.svg" alt="">
+                  </span>
+                </template>
                 <template v-if="isBirthdayOpen" #append>
                   <div class="profile-form__birthday-panel" @click.stop>
                     <HomeHeroSearchDatePicker
@@ -715,6 +720,21 @@ async function handleSubmit() {
   line-height: 120%;
   letter-spacing: -0.05em;
   color: var(--wh-gray-900);
+}
+
+.profile-form__calendar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.profile-form__calendar-icon img {
+  display: block;
+  width: 20px;
+  height: 20px;
 }
 
 .profile-form__birthday-panel {
