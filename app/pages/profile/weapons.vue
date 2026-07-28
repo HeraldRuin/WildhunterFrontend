@@ -42,7 +42,12 @@ const userWeaponsLoading = ref(false)
 const userWeaponsError = ref('')
 const cachedWeaponsCount = ref(0)
 
-const showWeaponPlaceholders = computed(() => false)
+/** Свёрнутые блоки с названием; данные ещё грузятся — вместо шеврона спиннер */
+const showWeaponPlaceholders = computed(() =>
+  userWeaponsLoading.value
+  && weapons.value.length === 0
+  && cachedWeaponsCount.value > 0,
+)
 
 type WeaponCardView =
   | { key: string, index: number, loading: true }
@@ -711,6 +716,7 @@ const hasNewWeapon = computed(() =>
         <div
           v-else-if="weaponCards.length"
           class="weapons-form__list"
+          :aria-busy="showWeaponPlaceholders || undefined"
           aria-label="Лицензии на оружие"
         >
           <article
@@ -1012,13 +1018,6 @@ const hasNewWeapon = computed(() =>
   align-items: start;
   gap: 12px;
   margin-bottom: 24px;
-}
-
-.weapons-form__column {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
 }
 
 .profile-weapon--placeholder {
