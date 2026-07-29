@@ -19,7 +19,7 @@ const navItems: NavItem[] = [
     label: 'Лицензия на оружие',
     labelShort: 'Оружие',
     to: '/profile/weapons',
-    iconSrc: '/icons/weapon-crosshair.svg',
+    iconSrc: '/icons/material-symbols_license-rounded.png',
   },
   { label: 'Изменить пароль', to: '/profile/password', iconSrc: '/icons/boxicons_pencil-filled.png' },
 ]
