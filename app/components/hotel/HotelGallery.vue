@@ -1098,39 +1098,138 @@ onBeforeUnmount(() => {
 
 @media (--wh-tablet) {
   .hotel-gallery {
-    grid-template-columns: 1fr;
-    height: auto;
+    grid-template-columns: 360px 360px;
+    grid-template-rows: 176px 176px;
+    gap: 8px;
+    width: fit-content;
+    max-width: 100%;
+    height: 360px;
+    margin-inline: auto;
+  }
+
+  .hotel-gallery--placeholder {
+    grid-template-columns: 360px 360px;
+    grid-template-rows: 176px 176px;
+    width: fit-content;
+    max-width: 100%;
+    height: 360px;
+    margin-inline: auto;
+  }
+
+  .hotel-gallery--placeholder .hotel-gallery__main {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 360px;
+    height: 360px;
+    min-height: 360px;
+  }
+
+  .hotel-gallery--placeholder .hotel-gallery__thumbs {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    grid-template-columns: repeat(2, 176px);
+    grid-template-rows: 176px 176px;
+    gap: 8px;
+    width: 360px;
+    height: 360px;
+    min-height: 360px;
+  }
+
+  .hotel-gallery--placeholder .hotel-gallery__thumb:first-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .hotel-gallery--placeholder .hotel-gallery__thumb:nth-child(n + 4) {
+    display: none;
   }
 
   .hotel-gallery--empty {
-    height: auto;
+    height: 360px;
   }
 
   .hotel-gallery--empty .hotel-gallery__main {
-    height: auto;
-    min-height: 0;
-    aspect-ratio: 3 / 2;
+    width: 360px;
+    height: 360px;
+    min-height: 360px;
+    margin-inline: auto;
+    aspect-ratio: auto;
   }
 
   .hotel-gallery__main {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 360px;
+    height: 360px;
+    aspect-ratio: auto;
+  }
+
+  .hotel-gallery__thumbs {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    grid-template-columns: repeat(2, 176px);
+    grid-template-rows: 176px 176px;
+    gap: 8px;
+    width: 360px;
+    height: 360px;
+    min-height: 360px;
+  }
+
+  .hotel-gallery__thumb:first-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: 360px;
+    height: 176px;
+    aspect-ratio: auto;
+  }
+
+  .hotel-gallery__thumb:not(:first-child) {
+    width: 176px;
+    height: 176px;
+    aspect-ratio: auto;
+  }
+
+  .hotel-gallery:not(.hotel-gallery--expanded) .hotel-gallery__thumb:nth-child(n + 4) {
+    display: none;
+  }
+
+  .hotel-gallery--expanded {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    width: 100%;
+    height: auto;
+  }
+
+  .hotel-gallery--expanded .hotel-gallery__main {
+    grid-column: auto;
+    grid-row: auto;
     width: 100%;
     height: auto;
     aspect-ratio: 3 / 2;
   }
 
-  .hotel-gallery__thumbs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: none;
-    height: auto;
-  }
-
   .hotel-gallery--expanded .hotel-gallery__thumbs {
+    grid-column: auto;
+    grid-row: auto;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: none;
+    width: 100%;
+    height: auto;
     max-height: 360px;
+    overflow-y: auto;
   }
 
-  .hotel-gallery__thumb {
+  .hotel-gallery--expanded .hotel-gallery__thumb:first-child,
+  .hotel-gallery--expanded .hotel-gallery__thumb:not(:first-child) {
+    width: 100%;
+    height: auto;
     aspect-ratio: 1 / 1;
+  }
+
+  .hotel-gallery--expanded .hotel-gallery__thumb:nth-child(n + 4) {
+    display: block;
   }
 }
 
