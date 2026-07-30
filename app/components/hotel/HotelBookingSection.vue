@@ -101,4 +101,20 @@ function handleBook() {
     gap: 48px;
   }
 }
+
+@media (--wh-mobile) {
+  .hotel-booking-section {
+    width: 100% !important;
+  }
+
+  .hotel-booking-section__card {
+    padding: 16px 12px;
+    gap: 20px;
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-booking-section__blocks {
+    gap: 32px;
+  }
+}
 </style>
