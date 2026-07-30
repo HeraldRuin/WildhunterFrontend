@@ -376,9 +376,12 @@ function handleSubmit() {
 .hotel-animals-search__title {
   width: min(100%, var(--hotel-booking-blocks-width, 100%));
   margin: 0;
-  font-size: clamp(1.1rem, 2vw, 1.35rem);
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-family: 'UNCAGE', 'Manrope', system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
   text-align: center;
   text-transform: uppercase;
   color: var(--wh-gray-900);
@@ -662,6 +665,10 @@ function handleSubmit() {
 }
 
 @media (--wh-tablet) {
+  .hotel-animals-search__title {
+    font-size: 28px;
+  }
+
   .hotel-animals-search__form {
     flex-direction: column;
     gap: 2px;
@@ -697,6 +704,10 @@ function handleSubmit() {
 }
 
 @media (--wh-mobile) {
+  .hotel-animals-search__title {
+    font-size: 24px;
+  }
+
   .hotel-animals-search__form {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
