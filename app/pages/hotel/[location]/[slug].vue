@@ -3,6 +3,7 @@ import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
 import { createMockHotelDetail } from '~/utils/hotel'
 import { formatReviewsCount } from '~/utils/pluralize'
+import HotelBookingSection from '~/components/hotel/HotelBookingSection.vue'
 
 definePageMeta({
   layout: 'home',
@@ -230,13 +231,16 @@ async function handleFavoriteClick() {
               </div>
             </div>
           </section>
+        </div>
 
-          <HotelGallery
-            :images="displayHotel.gallery"
-            :title="displayHotel.title"
-            :placeholder="isHotelLoading"
-          />
+        <HotelGallery
+          class="hotel-page__gallery"
+          :images="displayHotel.gallery"
+          :title="displayHotel.title"
+          :placeholder="isHotelLoading"
+        />
 
+        <div class="hotel-page__hero-inner">
           <section
             v-if="displayHotel.content"
             class="hotel-page__description"
@@ -245,6 +249,10 @@ async function handleFavoriteClick() {
               class="hotel-page__description-content"
               v-html="displayHotel.content"
             />
+          </section>
+
+          <section class="hotel-page__booking">
+            <HotelBookingSection width="90%" />
           </section>
         </div>
       </section>
@@ -280,6 +288,12 @@ async function handleFavoriteClick() {
 
 .hotel-page__header :deep(.hero-header) {
   width: min(100%, calc(100vw - 160px));
+  border: 1px solid var(--wh-gray-400);
+  border-top: none;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--wh-shadow);
 }
 
 .hotel-page__body {
@@ -291,7 +305,7 @@ async function handleFavoriteClick() {
   user-select: none;
 }
 
-.hotel-page__body--loading .hotel-page__hero-inner > :not(.hotel-gallery) {
+.hotel-page__body--loading .hotel-page__hero-inner {
   filter: blur(5px);
   opacity: 0.55;
 }
@@ -308,7 +322,15 @@ async function handleFavoriteClick() {
 }
 
 .hotel-page__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   padding: 28px 0 72px;
+}
+
+.hotel-page__gallery {
+  width: min(100% - 48px, calc(100vw - 220px));
+  margin-inline: auto;
 }
 
 .hotel-page__hero-inner {
@@ -436,6 +458,10 @@ async function handleFavoriteClick() {
   margin-bottom: 0;
 }
 
+.hotel-page__booking {
+  margin-top: 40px;
+}
+
 .hotel-page__address {
   margin: 0 0 18px;
   font-size: 1rem;
@@ -474,14 +500,41 @@ async function handleFavoriteClick() {
     width: calc(100% - 24px);
   }
 
-  .hotel-page__hero-inner {
+  .hotel-page__hero-inner,
+  .hotel-page__gallery {
     width: min(100% - 32px, calc(100vw - 48px));
   }
 }
 
 @media (--wh-mobile) {
+  .hotel-page__header {
+    padding: 0;
+  }
+
+  .hotel-page__header :deep(.hero-header) {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
+    border-left: none;
+    border-right: none;
+    border-radius: 0 0 12px 12px;
+  }
+
   .hotel-page__hero {
     padding-top: 20px;
+    overflow-x: clip;
+  }
+
+  .hotel-page__hero-inner {
+    width: 100%;
+    padding-inline: 16px;
+    box-sizing: border-box;
+  }
+
+  .hotel-page__gallery {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
   }
 
   .hotel-page__title-row {
@@ -491,11 +544,15 @@ async function handleFavoriteClick() {
 
   .hotel-page__amenities-row {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
   }
 
   .hotel-page__amenities-row .hotel-amenities {
     gap: 8px 12px;
+  }
+
+  .hotel-page__rating {
+    align-self: flex-start;
   }
 }
 </style>
