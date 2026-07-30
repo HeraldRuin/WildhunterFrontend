@@ -1391,12 +1391,12 @@ onBeforeUnmount(() => {
     gap: 8px;
     width: 100%;
     height: 345px;
-    padding-left: 16px;
+    padding-left: 0;
     padding-right: 0;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
-    scroll-padding-left: 16px;
+    scroll-padding-left: 0;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }

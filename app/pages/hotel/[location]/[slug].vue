@@ -521,9 +521,10 @@ async function handleFavoriteClick() {
   }
 
   .hotel-page__hero-inner > :deep(.hotel-page__gallery) {
-    width: calc(100% + 32px);
+    width: calc(100% + 16px);
     max-width: none;
-    margin-inline: -16px;
+    margin-left: 0;
+    margin-right: -16px;
   }
 
   .hotel-page__title-row {
@@ -542,6 +543,11 @@ async function handleFavoriteClick() {
 
   .hotel-page__rating {
     align-self: flex-start;
+  }
+
+  .hotel-page__booking {
+    width: calc(100% + 32px);
+    margin-inline: -16px;
   }
 }
 </style>
