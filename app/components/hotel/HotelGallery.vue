@@ -311,6 +311,7 @@ watch(
     clearPrefetchQueue()
     paintedMainSrc.value = ''
     prefetchVisibleLarges(images)
+    nextTick(() => scrollCarouselToIndex(0))
   },
   { immediate: true },
 )
@@ -366,6 +367,83 @@ function handleThumbHover(thumbIndex: number) {
     prefetchLarge(item.large, 'high')
   }
 }
+
+const carouselTrackRef = ref<HTMLElement | null>(null)
+const carouselScrollLock = ref(false)
+let carouselScrollRaf = 0
+
+function carouselSlideSrc(image: HotelGalleryImage) {
+  return image.medium || image.thumb || image.large || ''
+}
+
+function scrollCarouselToIndex(index: number, behavior: ScrollBehavior = 'auto') {
+  const track = carouselTrackRef.value
+  if (!track) {
+    return
+  }
+
+  const slide = track.children[index] as HTMLElement | undefined
+  if (!slide) {
+    return
+  }
+
+  track.scrollTo({ left: slide.offsetLeft, behavior })
+}
+
+function handleCarouselScroll() {
+  cancelAnimationFrame(carouselScrollRaf)
+  carouselScrollRaf = requestAnimationFrame(() => {
+    const track = carouselTrackRef.value
+    if (!track || carouselScrollLock.value) {
+      return
+    }
+
+    const scrollLeft = track.scrollLeft
+    let closestIndex = 0
+    let closestDistance = Infinity
+
+    Array.from(track.children).forEach((child, index) => {
+      const slide = child as HTMLElement
+      const distance = Math.abs(slide.offsetLeft - scrollLeft)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestIndex = index
+      }
+    })
+
+    if (closestIndex === activeIndex.value) {
+      return
+    }
+
+    const item = visibleImages.value[closestIndex]
+    if (!item) {
+      return
+    }
+
+    carouselScrollLock.value = true
+    activeIndex.value = closestIndex
+    failedMainUrls.value = new Set()
+
+    const instant = item.thumb || item.medium || item.large || ''
+    if (instant) {
+      paintedMainSrc.value = instant
+    }
+
+    if (item.large) {
+      prefetchLarge(item.large, 'high')
+    }
+
+    carouselScrollLock.value = false
+  })
+}
+
+watch(activeIndex, (index) => {
+  if (carouselScrollLock.value || !import.meta.client) {
+    return
+  }
+
+  nextTick(() => scrollCarouselToIndex(index, 'smooth'))
+})
 
 const lightboxOpen = ref(false)
 const lightboxZoom = ref(1)
@@ -718,6 +796,7 @@ onBeforeUnmount(() => {
     <div class="hotel-gallery__main">
       <img
         v-if="paintedMainSrc"
+        class="hotel-gallery__main-image"
         :src="paintedMainSrc"
         :alt="`${title} — фото ${activeIndex + 1}`"
         loading="eager"
@@ -725,6 +804,25 @@ onBeforeUnmount(() => {
         fetchpriority="high"
         @error="handleMainImageError"
       >
+
+      <div
+        ref="carouselTrackRef"
+        class="hotel-gallery__carousel-track"
+        @scroll.passive="handleCarouselScroll"
+      >
+        <div
+          v-for="(image, index) in visibleImages"
+          :key="`${carouselSlideSrc(image)}-${index}`"
+          class="hotel-gallery__carousel-slide"
+        >
+          <img
+            :src="carouselSlideSrc(image)"
+            :alt="`${title} — фото ${index + 1}`"
+            :loading="index === 0 ? 'eager' : 'lazy'"
+            decoding="async"
+          >
+        </div>
+      </div>
 
       <button
         type="button"
@@ -982,15 +1080,32 @@ onBeforeUnmount(() => {
 }
 
 .hotel-gallery__main img,
-.hotel-gallery__thumb img {
+.hotel-gallery__carousel-slide img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
 }
 
+.hotel-gallery__carousel-track {
+  display: none;
+}
+
+.hotel-gallery__carousel-slide {
+  overflow: hidden;
+  border-radius: var(--wh-radius);
+  background: var(--wh-gray-100);
+}
+
 .hotel-gallery__thumb:hover img {
   transform: scale(1.02);
+}
+
+.hotel-gallery__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
 .hotel-gallery__expand {
@@ -1234,9 +1349,70 @@ onBeforeUnmount(() => {
 }
 
 @media (--wh-mobile) {
+  .hotel-gallery,
+  .hotel-gallery--placeholder,
+  .hotel-gallery--expanded {
+    display: block;
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    height: auto;
+  }
+
+  .hotel-gallery--placeholder .hotel-gallery__thumbs,
   .hotel-gallery__thumbs,
   .hotel-gallery--expanded .hotel-gallery__thumbs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: none;
+  }
+
+  .hotel-gallery--placeholder .hotel-gallery__main,
+  .hotel-gallery--empty .hotel-gallery__main,
+  .hotel-gallery__main,
+  .hotel-gallery--expanded .hotel-gallery__main {
+    grid-column: auto;
+    grid-row: auto;
+    width: 100%;
+    height: 345px;
+    aspect-ratio: auto;
+    overflow: visible;
+    background: transparent;
+  }
+
+  .hotel-gallery--empty {
+    height: auto;
+  }
+
+  .hotel-gallery__main-image {
+    display: none;
+  }
+
+  .hotel-gallery__carousel-track {
+    display: flex;
+    gap: 8px;
+    height: 345px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: max(16px, env(safe-area-inset-left, 0px));
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hotel-gallery__carousel-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hotel-gallery__carousel-slide {
+    flex: 0 0 345px;
+    width: 345px;
+    height: 345px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .hotel-gallery__expand {
+    display: none;
   }
 }
 </style>
