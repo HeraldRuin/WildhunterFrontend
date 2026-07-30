@@ -21,6 +21,8 @@ const expanded = ref(false)
 const readyLargeUrls = ref(new Set<string>())
 /** Painted main src — keep previous frame until the next URL is decoded */
 const paintedMainSrc = ref('')
+/** Main URLs that failed to load — skip when falling back */
+const failedMainUrls = ref(new Set<string>())
 /** Thumb URLs that finished loading — avoids dark "more" scrim on empty gray */
 const loadedThumbUrls = ref(new Set<string>())
 
@@ -44,16 +46,39 @@ const mainImage = computed(() => {
     return ''
   }
 
-  const large = item.large || item.medium || ''
-  const medium = item.medium || item.thumb || large
+  const large = item.large || ''
+  const medium = item.medium || ''
+  const thumb = item.thumb || ''
 
   // Show cached medium immediately; promote to large once prefetched/loaded.
   if (large && readyLargeUrls.value.has(large)) {
     return large
   }
 
-  return medium || large
+  return medium || thumb || large
 })
+
+function handleMainImageError() {
+  const item = activeImage.value
+  if (!item) {
+    return
+  }
+
+  const current = paintedMainSrc.value
+  if (current) {
+    const failed = new Set(failedMainUrls.value)
+    failed.add(current)
+    failedMainUrls.value = failed
+  }
+
+  const candidates = [item.thumb, item.medium, item.large]
+    .filter((url): url is string => Boolean(url))
+
+  const next = candidates.find(url => !failedMainUrls.value.has(url))
+  if (next) {
+    paintedMainSrc.value = next
+  }
+}
 
 function thumbSrc(image: HotelGalleryImage) {
   return image.thumb || image.medium || image.large || ''
@@ -139,23 +164,25 @@ function pumpPrefetchQueue() {
     img.decoding = 'async'
     let settled = false
 
-    const finish = () => {
+    const finish = (loaded: boolean) => {
       if (settled) {
         return
       }
       settled = true
       prefetchInFlight.delete(url)
       prefetchQueued.delete(url)
-      markLargeReady(url)
+      if (loaded) {
+        markLargeReady(url)
+      }
       pumpPrefetchQueue()
     }
 
-    img.onload = finish
-    img.onerror = finish
+    img.onload = () => finish(true)
+    img.onerror = () => finish(false)
     img.src = url
 
     if (img.complete) {
-      finish()
+      finish(img.naturalWidth > 0)
     }
   }
 }
@@ -265,10 +292,10 @@ async function paintMainSrc(url: string) {
     }
   }
   catch {
-    // decode can reject on error; still attempt to show src
+    // decode can reject on error — keep the current frame
   }
 
-  if (mainImage.value === url) {
+  if (mainImage.value === url && img.naturalWidth > 0) {
     paintedMainSrc.value = url
   }
 }
@@ -279,6 +306,7 @@ watch(
     activeIndex.value = 0
     expanded.value = false
     readyLargeUrls.value = new Set()
+    failedMainUrls.value = new Set()
     loadedThumbUrls.value = new Set()
     clearPrefetchQueue()
     paintedMainSrc.value = ''
@@ -303,6 +331,7 @@ function selectImage(index: number) {
 
   const switching = index !== activeIndex.value
   activeIndex.value = index
+  failedMainUrls.value = new Set()
 
   // Instant frame from the thumb grid cache; watch(mainImage) upgrades to medium/large.
   if (switching) {
@@ -694,6 +723,7 @@ onBeforeUnmount(() => {
         loading="eager"
         decoding="async"
         fetchpriority="high"
+        @error="handleMainImageError"
       >
 
       <button
