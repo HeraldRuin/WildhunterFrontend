@@ -436,12 +436,18 @@ async function handleFavoriteClick() {
 }
 
 .hotel-page__description-content {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.05em;
   color: var(--wh-gray-600);
-  line-height: 1.65;
 }
 
 .hotel-page__description-content :deep(p) {
   margin: 0 0 14px;
+  font: inherit;
+  letter-spacing: inherit;
 }
 
 .hotel-page__description-content :deep(p:last-child) {
@@ -453,10 +459,12 @@ async function handleFavoriteClick() {
 }
 
 .hotel-page__address {
-  margin: 0 0 18px;
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.4;
+  margin: -16px 0 18px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.05em;
   color: var(--wh-gray-600);
 }
 
@@ -484,6 +492,7 @@ async function handleFavoriteClick() {
   height: 28px;
   object-fit: contain;
 }
+
 
 @media (--wh-tablet) {
   .hotel-page__header :deep(.hero-header) {
