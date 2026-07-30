@@ -230,7 +230,8 @@ function handleSubmit() {
       </div>
 
       <button type="submit" class="hotel-dates-guests__submit">
-        Проверить наличие
+        <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--desktop">Проверить наличие</span>
+        <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--mobile">Искать</span>
       </button>
     </form>
   </div>
@@ -450,6 +451,10 @@ function handleSubmit() {
   background: var(--wh-orange-600);
 }
 
+.hotel-dates-guests__submit-label--mobile {
+  display: none;
+}
+
 @media (--wh-tablet) {
   .hotel-dates-guests__form {
     flex-direction: column;
@@ -481,6 +486,54 @@ function handleSubmit() {
     width: 100%;
     min-height: 72px;
     height: auto;
+  }
+}
+
+@media (--wh-mobile) {
+  .hotel-dates-guests__form {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 2px;
+    height: auto;
+  }
+
+  .hotel-dates-guests__panel {
+    display: contents;
+  }
+
+  .hotel-dates-guests__field--dates {
+    grid-column: 1 / -1;
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-dates-guests__field--guests {
+    grid-column: 1;
+    grid-row: 2;
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-dates-guests__field--guests .hotel-dates-guests__dropdown:not(.hotel-dates-guests__dropdown--calendar) {
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-dates-guests__dropdown--calendar {
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-dates-guests__submit {
+    grid-column: 2;
+    grid-row: 2;
+    width: auto;
+    min-height: 81px;
+    height: 81px;
+  }
+
+  .hotel-dates-guests__submit-label--desktop {
+    display: none;
+  }
+
+  .hotel-dates-guests__submit-label--mobile {
+    display: inline;
   }
 }
 </style>
