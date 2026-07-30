@@ -9,8 +9,49 @@ const props = defineProps<{
 }>()
 
 const COLLAPSED_THUMB_COUNT = 4
+const TABLET_THUMB_TIER_WIDE = 6
+const TABLET_THUMB_TIER_MEDIUM = 4
+const TABLET_THUMB_TIER_NARROW = 2
 /** Limit parallel large downloads so thumbs/main medium stay snappy */
 const PREFETCH_CONCURRENCY = 2
+
+const collapsedThumbCount = ref(COLLAPSED_THUMB_COUNT)
+
+function syncCollapsedThumbCount() {
+  if (!import.meta.client) {
+    return
+  }
+
+  const width = window.innerWidth
+
+  if (width <= 640 || width > 1024) {
+    collapsedThumbCount.value = COLLAPSED_THUMB_COUNT
+    return
+  }
+
+  if (width >= 901) {
+    collapsedThumbCount.value = TABLET_THUMB_TIER_WIDE
+    return
+  }
+
+  if (width >= 769) {
+    collapsedThumbCount.value = TABLET_THUMB_TIER_MEDIUM
+    return
+  }
+
+  collapsedThumbCount.value = TABLET_THUMB_TIER_NARROW
+}
+
+const galleryLayoutClass = computed(() => ({
+  'hotel-gallery--expanded': expanded.value,
+  [`hotel-gallery--thumbs-${collapsedThumbCount.value}`]: !expanded.value,
+}))
+
+let tabletMediaQuery: MediaQueryList | null = null
+
+function handleTabletMediaChange() {
+  syncCollapsedThumbCount()
+}
 
 const visibleImages = computed(() => props.images.filter(image => isValidGalleryImage(image)))
 const isEmpty = computed(() => !props.placeholder && visibleImages.value.length === 0)
@@ -33,10 +74,10 @@ const thumbImages = computed(() => {
     return rest
   }
 
-  return rest.slice(0, COLLAPSED_THUMB_COUNT)
+  return rest.slice(0, collapsedThumbCount.value)
 })
 
-const hasMore = computed(() => visibleImages.value.length > 1 + COLLAPSED_THUMB_COUNT)
+const hasMore = computed(() => visibleImages.value.length > 1 + collapsedThumbCount.value)
 
 const activeImage = computed(() => visibleImages.value[activeIndex.value] ?? visibleImages.value[0])
 
@@ -240,7 +281,7 @@ function scheduleIdlePrefetch(urls: string[]) {
 }
 
 function prefetchVisibleLarges(images: HotelGalleryImage[]) {
-  const visibleCount = Math.min(images.length, 1 + COLLAPSED_THUMB_COUNT)
+  const visibleCount = Math.min(images.length, 1 + collapsedThumbCount.value)
 
   for (let index = 0; index < visibleCount; index += 1) {
     const large = images[index]?.large
@@ -299,6 +340,15 @@ async function paintMainSrc(url: string) {
     paintedMainSrc.value = url
   }
 }
+
+watch(
+  collapsedThumbCount,
+  () => {
+    if (!expanded.value && visibleImages.value.length) {
+      prefetchVisibleLarges(visibleImages.value)
+    }
+  },
+)
 
 watch(
   () => visibleImages.value,
@@ -751,11 +801,25 @@ watch(lightboxOpen, (isOpen) => {
   }
 })
 
+onMounted(() => {
+  if (!import.meta.client) {
+    return
+  }
+
+  syncCollapsedThumbCount()
+  tabletMediaQuery = window.matchMedia('(max-width: 1024px)')
+  tabletMediaQuery.addEventListener('change', handleTabletMediaChange)
+  window.addEventListener('resize', handleTabletMediaChange, { passive: true })
+})
+
 onBeforeUnmount(() => {
   if (!import.meta.client) {
     return
   }
 
+  window.removeEventListener('resize', handleTabletMediaChange)
+  tabletMediaQuery?.removeEventListener('change', handleTabletMediaChange)
+  tabletMediaQuery = null
   clearPrefetchQueue()
   document.body.style.overflow = ''
   window.removeEventListener('keydown', handleLightboxKeydown)
@@ -766,12 +830,13 @@ onBeforeUnmount(() => {
   <div
     v-if="placeholder"
     class="hotel-gallery hotel-gallery--placeholder"
+    :class="galleryLayoutClass"
     aria-hidden="true"
   >
     <div class="hotel-gallery__main hotel-gallery__skeleton" />
     <div class="hotel-gallery__thumbs">
       <div
-        v-for="index in 4"
+        v-for="index in 6"
         :key="index"
         class="hotel-gallery__thumb hotel-gallery__skeleton"
       />
@@ -791,7 +856,7 @@ onBeforeUnmount(() => {
   <div
     v-else
     class="hotel-gallery"
-    :class="{ 'hotel-gallery--expanded': expanded }"
+    :class="galleryLayoutClass"
   >
     <div class="hotel-gallery__main">
       <img
@@ -1038,6 +1103,10 @@ onBeforeUnmount(() => {
   min-height: 0;
 }
 
+.hotel-gallery--placeholder .hotel-gallery__thumb:nth-child(n + 5) {
+  display: none;
+}
+
 .hotel-gallery--empty {
   display: block;
   height: 520px;
@@ -1211,140 +1280,144 @@ onBeforeUnmount(() => {
   color: var(--wh-white);
 }
 
-@media (--wh-tablet) {
-  .hotel-gallery {
-    grid-template-columns: 360px 360px;
-    grid-template-rows: 176px 176px;
-    gap: 8px;
-    width: fit-content;
-    max-width: 100%;
-    height: 360px;
-    margin-inline: auto;
-  }
-
+@media (max-width: 1024px) and (min-width: 641px) {
+  .hotel-gallery,
   .hotel-gallery--placeholder {
-    grid-template-columns: 360px 360px;
-    grid-template-rows: 176px 176px;
-    width: fit-content;
-    max-width: 100%;
-    height: 360px;
-    margin-inline: auto;
-  }
-
-  .hotel-gallery--placeholder .hotel-gallery__main {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-    width: 360px;
-    height: 360px;
-    min-height: 360px;
-  }
-
-  .hotel-gallery--placeholder .hotel-gallery__thumbs {
     display: grid;
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    grid-template-columns: repeat(2, 176px);
-    grid-template-rows: 176px 176px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    width: 360px;
-    height: 360px;
-    min-height: 360px;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 2 / 1;
+    height: auto;
+    margin-inline: 0;
   }
 
-  .hotel-gallery--placeholder .hotel-gallery__thumb:first-child {
-    grid-column: 1 / -1;
-    grid-row: 1;
-  }
-
-  .hotel-gallery--placeholder .hotel-gallery__thumb:nth-child(n + 4) {
-    display: none;
-  }
-
-  .hotel-gallery--empty {
-    height: 360px;
-  }
-
-  .hotel-gallery--empty .hotel-gallery__main {
-    width: 360px;
-    height: 360px;
-    min-height: 360px;
-    margin-inline: auto;
-    aspect-ratio: auto;
-  }
-
+  .hotel-gallery--placeholder .hotel-gallery__main,
   .hotel-gallery__main {
     grid-column: 1;
     grid-row: 1 / span 2;
-    width: 360px;
-    height: 360px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
     aspect-ratio: auto;
   }
 
+  .hotel-gallery--placeholder .hotel-gallery__thumbs,
   .hotel-gallery__thumbs {
     display: grid;
     grid-column: 2;
     grid-row: 1 / span 2;
-    grid-template-columns: repeat(2, 176px);
-    grid-template-rows: 176px 176px;
     gap: 8px;
-    width: 360px;
-    height: 360px;
-    min-height: 360px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
-  .hotel-gallery__thumb:first-child {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    width: 360px;
-    height: 176px;
+  .hotel-gallery--placeholder .hotel-gallery__thumb,
+  .hotel-gallery:not(.hotel-gallery--expanded) .hotel-gallery__thumb {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
     aspect-ratio: auto;
   }
 
-  .hotel-gallery__thumb:not(:first-child) {
-    width: 176px;
-    height: 176px;
-    aspect-ratio: auto;
+  .hotel-gallery:not(.hotel-gallery--expanded).hotel-gallery--thumbs-6 .hotel-gallery__thumbs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
   }
 
-  .hotel-gallery:not(.hotel-gallery--expanded) .hotel-gallery__thumb:nth-child(n + 4) {
+  .hotel-gallery:not(.hotel-gallery--expanded).hotel-gallery--thumbs-4 .hotel-gallery__thumbs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+
+  .hotel-gallery:not(.hotel-gallery--expanded).hotel-gallery--thumbs-2 .hotel-gallery__thumbs {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+
+  .hotel-gallery--placeholder.hotel-gallery--thumbs-6 .hotel-gallery__thumb:nth-child(n + 5) {
+    display: block;
+  }
+
+  .hotel-gallery--placeholder.hotel-gallery--thumbs-4 .hotel-gallery__thumb:nth-child(n + 5),
+  .hotel-gallery--placeholder.hotel-gallery--thumbs-2 .hotel-gallery__thumb:nth-child(n + 5) {
     display: none;
   }
 
-  .hotel-gallery--expanded {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    width: 100%;
+  .hotel-gallery--placeholder.hotel-gallery--thumbs-2 .hotel-gallery__thumb:nth-child(n + 3) {
+    display: none;
+  }
+
+  .hotel-gallery--empty {
+    display: block;
+    aspect-ratio: auto;
     height: auto;
+  }
+
+  .hotel-gallery--empty .hotel-gallery__main {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    min-height: 0;
+    margin-inline: 0;
+  }
+
+  .hotel-gallery--expanded {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 2 / 1;
+    height: auto;
+    margin-inline: 0;
+    overflow: hidden;
   }
 
   .hotel-gallery--expanded .hotel-gallery__main {
-    grid-column: auto;
-    grid-row: auto;
+    grid-column: 1;
+    grid-row: 1 / span 2;
     width: 100%;
-    height: auto;
-    aspect-ratio: 3 / 2;
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
   }
 
   .hotel-gallery--expanded .hotel-gallery__thumbs {
-    grid-column: auto;
-    grid-row: auto;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-rows: none;
+    grid-auto-rows: max-content;
+    align-content: start;
+    gap: 8px;
     width: 100%;
-    height: auto;
-    max-height: 360px;
+    height: 100%;
+    min-height: 0;
     overflow-y: auto;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .hotel-gallery--expanded .hotel-gallery__thumb:first-child,
-  .hotel-gallery--expanded .hotel-gallery__thumb:not(:first-child) {
+  .hotel-gallery--expanded .hotel-gallery__thumb {
     width: 100%;
     height: auto;
+    min-height: 0;
     aspect-ratio: 1 / 1;
+    overflow: hidden;
+    padding: 0;
   }
 
-  .hotel-gallery--expanded .hotel-gallery__thumb:nth-child(n + 4) {
+  .hotel-gallery--expanded .hotel-gallery__thumb img {
     display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 }
 
