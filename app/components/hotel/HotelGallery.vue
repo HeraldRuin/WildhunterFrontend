@@ -1389,12 +1389,14 @@ onBeforeUnmount(() => {
   .hotel-gallery__carousel-track {
     display: flex;
     gap: 8px;
+    width: 100%;
     height: 345px;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-left: 16px;
+    padding-right: 0;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
-    scroll-padding-left: max(16px, env(safe-area-inset-left, 0px));
+    scroll-padding-left: 16px;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }

@@ -231,16 +231,14 @@ async function handleFavoriteClick() {
               </div>
             </div>
           </section>
-        </div>
 
-        <HotelGallery
-          class="hotel-page__gallery"
-          :images="displayHotel.gallery"
-          :title="displayHotel.title"
-          :placeholder="isHotelLoading"
-        />
+          <HotelGallery
+            class="hotel-page__gallery"
+            :images="displayHotel.gallery"
+            :title="displayHotel.title"
+            :placeholder="isHotelLoading"
+          />
 
-        <div class="hotel-page__hero-inner">
           <section
             v-if="displayHotel.content"
             class="hotel-page__description"
@@ -305,7 +303,7 @@ async function handleFavoriteClick() {
   user-select: none;
 }
 
-.hotel-page__body--loading .hotel-page__hero-inner {
+.hotel-page__body--loading .hotel-page__hero-inner > :not(.hotel-gallery) {
   filter: blur(5px);
   opacity: 0.55;
 }
@@ -322,22 +320,14 @@ async function handleFavoriteClick() {
 }
 
 .hotel-page__hero {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
   padding: 28px 0 72px;
-}
-
-.hotel-page__gallery {
-  width: min(100% - 48px, calc(100vw - 220px));
-  margin-inline: auto;
 }
 
 .hotel-page__hero-inner {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  width: min(100% - 48px, calc(100vw - 220px));
+  width: min(calc(100% - 48px), calc(100vw - 220px));
   margin-inline: auto;
 }
 
@@ -500,9 +490,8 @@ async function handleFavoriteClick() {
     width: calc(100% - 24px);
   }
 
-  .hotel-page__hero-inner,
-  .hotel-page__gallery {
-    width: min(100% - 32px, calc(100vw - 48px));
+  .hotel-page__hero-inner {
+    width: min(calc(100% - 32px), calc(100vw - 48px));
   }
 }
 
@@ -531,10 +520,10 @@ async function handleFavoriteClick() {
     box-sizing: border-box;
   }
 
-  .hotel-page__gallery {
-    width: 100%;
+  .hotel-page__hero-inner > :deep(.hotel-page__gallery) {
+    width: calc(100% + 32px);
     max-width: none;
-    margin-inline: 0;
+    margin-inline: -16px;
   }
 
   .hotel-page__title-row {
