@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
-import { createMockHotelDetail, formatHotelPrice } from '~/utils/hotel'
+import { createMockHotelDetail } from '~/utils/hotel'
 import { formatReviewsCount } from '~/utils/pluralize'
 
 definePageMeta({
@@ -72,10 +72,6 @@ const reviewsLabel = computed(() => formatReviewsCount(reviewsCount.value))
 
 const amenitiesGroup = computed(() => {
   return displayHotel.value.terms.find(group => /услуг/i.test(group.title)) ?? null
-})
-
-const otherTermGroups = computed(() => {
-  return displayHotel.value.terms.filter(group => group.id !== amenitiesGroup.value?.id)
 })
 
 function getErrorMessage(error: unknown) {
@@ -240,60 +236,16 @@ async function handleFavoriteClick() {
             :title="displayHotel.title"
             :placeholder="isHotelLoading"
           />
-        </div>
-      </section>
-
-      <section class="hotel-page__content">
-        <div class="hotel-page__main">
-          <section v-if="displayHotel.content" class="hotel-section">
-            <h2 class="hotel-section__title">Описание</h2>
-            <div class="hotel-section__content hotel-section__content--html" v-html="displayHotel.content" />
-          </section>
 
           <section
-            v-for="group in otherTermGroups"
-            :key="group.id"
-            class="hotel-section"
+            v-if="displayHotel.content"
+            class="hotel-page__description"
           >
-            <h2 class="hotel-section__title">{{ group.title }}</h2>
-            <ul class="hotel-amenities">
-              <li
-                v-for="term in group.terms"
-                :key="term.id"
-                class="hotel-amenities__item"
-              >
-                <img
-                  class="hotel-amenities__icon"
-                  src="/icons/carbon_checkmark-filled.png"
-                  alt=""
-                  width="28"
-                  height="28"
-                  aria-hidden="true"
-                >
-                {{ term.title }}
-              </li>
-            </ul>
+            <div
+              class="hotel-page__description-content"
+              v-html="displayHotel.content"
+            />
           </section>
-
-          <section v-if="displayHotel.animals.length" class="hotel-section">
-            <h2 class="hotel-section__title">Доступная дичь</h2>
-            <div class="hotel-animals">
-              <article
-                v-for="animal in displayHotel.animals"
-                :key="animal.id"
-                class="hotel-animals__item"
-              >
-                <div>
-                  <h3 class="hotel-animals__name">{{ animal.title }}</h3>
-                  <p v-if="animal.season" class="hotel-animals__season">{{ animal.season }}</p>
-                </div>
-                <p v-if="animal.price" class="hotel-animals__price">
-                  от {{ formatHotelPrice(animal.price) }} ₽
-                </p>
-              </article>
-            </div>
-          </section>
-
         </div>
       </section>
 
@@ -344,11 +296,6 @@ async function handleFavoriteClick() {
   opacity: 0.55;
 }
 
-.hotel-page__body--loading .hotel-page__content {
-  filter: blur(5px);
-  opacity: 0.55;
-}
-
 .hotel-page__loading-overlay {
   position: absolute;
   inset: 0;
@@ -361,7 +308,7 @@ async function handleFavoriteClick() {
 }
 
 .hotel-page__hero {
-  padding: 28px 0 12px;
+  padding: 28px 0 72px;
 }
 
 .hotel-page__hero-inner {
@@ -476,17 +423,17 @@ async function handleFavoriteClick() {
   white-space: nowrap;
 }
 
-.hotel-page__content {
-  padding: 24px 0 72px;
+.hotel-page__description-content {
+  color: var(--wh-gray-600);
+  line-height: 1.65;
 }
 
-.hotel-page__main {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-  width: min(100% - 48px, calc(100vw - 220px));
-  min-width: 0;
-  margin-inline: auto;
+.hotel-page__description-content :deep(p) {
+  margin: 0 0 14px;
+}
+
+.hotel-page__description-content :deep(p:last-child) {
+  margin-bottom: 0;
 }
 
 .hotel-page__address {
@@ -495,28 +442,6 @@ async function handleFavoriteClick() {
   font-weight: 500;
   line-height: 1.4;
   color: var(--wh-gray-600);
-}
-
-.hotel-section__title {
-  margin: 0 0 18px;
-  font-size: clamp(1.1rem, 2vw, 1.35rem);
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--wh-gray-900);
-}
-
-.hotel-section__content {
-  color: var(--wh-gray-600);
-  line-height: 1.65;
-}
-
-.hotel-section__content--html :deep(p) {
-  margin: 0 0 14px;
-}
-
-.hotel-section__content--html :deep(p:last-child) {
-  margin-bottom: 0;
 }
 
 .hotel-amenities {
@@ -544,52 +469,12 @@ async function handleFavoriteClick() {
   object-fit: contain;
 }
 
-.hotel-animals {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.hotel-animals__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 18px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: var(--wh-radius);
-  background: var(--wh-gray-100);
-}
-
-.hotel-animals__name {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--wh-gray-900);
-}
-
-.hotel-animals__season {
-  margin: 4px 0 0;
-  font-size: 0.875rem;
-  color: var(--wh-gray-500);
-}
-
-.hotel-animals__price {
-  margin: 0;
-  flex-shrink: 0;
-  font-size: 0.98rem;
-  font-weight: 700;
-  color: var(--wh-gray-900);
-  white-space: nowrap;
-}
-
 @media (--wh-tablet) {
   .hotel-page__header :deep(.hero-header) {
     width: calc(100% - 24px);
   }
 
-  .hotel-page__hero-inner,
-  .hotel-page__main {
+  .hotel-page__hero-inner {
     width: min(100% - 32px, calc(100vw - 48px));
   }
 }
@@ -611,11 +496,6 @@ async function handleFavoriteClick() {
 
   .hotel-page__amenities-row .hotel-amenities {
     gap: 8px 12px;
-  }
-
-  .hotel-animals__item {
-    align-items: flex-start;
-    flex-direction: column;
   }
 }
 </style>
