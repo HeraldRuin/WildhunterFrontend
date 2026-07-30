@@ -185,13 +185,13 @@ function nightsLabel(count: number) {
 }
 
 .booking-table__base-link {
-  color: var(--wh-green-700);
+  color: var(--wh-green);
   font-weight: 600;
   transition: color 0.15s ease;
 }
 
 .booking-table__base-link:hover {
-  color: var(--wh-green-600);
+  color: var(--wh-green);
 }
 
 .booking-table__type {
@@ -300,13 +300,13 @@ function nightsLabel(count: number) {
 }
 
 .booking-table__action--success {
-  border-color: var(--wh-green-600);
-  background: var(--wh-green-600);
+  border-color: var(--wh-green);
+  background: var(--wh-green);
   color: var(--wh-white);
 }
 
 .booking-table__action--success:hover {
-  background: var(--wh-green-700);
-  border-color: var(--wh-green-700);
+  background: var(--wh-green);
+  border-color: var(--wh-green);
 }
 </style>

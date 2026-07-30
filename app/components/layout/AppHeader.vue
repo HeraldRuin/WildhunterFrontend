@@ -100,7 +100,7 @@ const navItems = [
 
 .header__link:hover,
 .header__link.router-link-active {
-  color: var(--wh-green-800);
+  color: var(--wh-green);
 }
 
 .header__actions {

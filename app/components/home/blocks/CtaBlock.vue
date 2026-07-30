@@ -15,7 +15,7 @@
 <style scoped>
 .cta-block {
   padding-block: 56px;
-  background: var(--wh-green-800);
+  background: var(--wh-green);
   color: var(--wh-white);
 }
 

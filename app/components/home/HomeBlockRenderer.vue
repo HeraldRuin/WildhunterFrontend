@@ -229,7 +229,7 @@ const featuredItems = computed(() => (model.value.list_item as Array<Record<stri
   height: 44px;
   margin-bottom: 16px;
   border-radius: 12px;
-  background: var(--wh-green-800);
+  background: var(--wh-green);
   color: var(--wh-white);
   font-weight: 700;
 }
@@ -246,7 +246,7 @@ const featuredItems = computed(() => (model.value.list_item as Array<Record<stri
 
 .cta {
   padding-block: 56px;
-  background: var(--wh-green-800);
+  background: var(--wh-green);
   color: var(--wh-white);
 }
 
@@ -283,7 +283,7 @@ const featuredItems = computed(() => (model.value.list_item as Array<Record<stri
   background-size: cover;
   background-position: center;
   color: var(--wh-white);
-  background-color: var(--wh-green-700);
+  background-color: var(--wh-green);
 }
 
 .offer__tag {
