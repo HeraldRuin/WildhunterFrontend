@@ -357,7 +357,8 @@ function handleSubmit() {
       </div>
 
       <button type="submit" class="hotel-animals-search__submit">
-        Проверить доступность
+        <span class="hotel-animals-search__submit-label hotel-animals-search__submit-label--desktop">Проверить доступность</span>
+        <span class="hotel-animals-search__submit-label hotel-animals-search__submit-label--mobile">Искать</span>
       </button>
     </form>
   </div>
@@ -656,6 +657,10 @@ function handleSubmit() {
   background: var(--wh-orange-600);
 }
 
+.hotel-animals-search__submit-label--mobile {
+  display: none;
+}
+
 @media (--wh-tablet) {
   .hotel-animals-search__form {
     flex-direction: column;
@@ -688,6 +693,61 @@ function handleSubmit() {
     width: 100%;
     min-height: 72px;
     height: auto;
+  }
+}
+
+@media (--wh-mobile) {
+  .hotel-animals-search__form {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 2px;
+    height: auto;
+  }
+
+  .hotel-animals-search__panel {
+    display: contents;
+  }
+
+  .hotel-animals-search__field--dates {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-animals-search__field--animal {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-animals-search__field--hunters {
+    grid-column: 1;
+    grid-row: 3;
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-animals-search__submit {
+    grid-column: 2;
+    grid-row: 3;
+    width: auto;
+    min-height: 81px;
+    height: 81px;
+  }
+
+  .hotel-animals-search__field--animal .hotel-animals-search__dropdown-list {
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-animals-search__dropdown--calendar {
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-animals-search__submit-label--desktop {
+    display: none;
+  }
+
+  .hotel-animals-search__submit-label--mobile {
+    display: inline;
   }
 }
 </style>
