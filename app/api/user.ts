@@ -27,7 +27,18 @@ export interface UpdateUserPayload {
   hunter_billet_number?: string
   bio?: string
   avatar?: File | null
+  avatar_id?: number | null
 }
+
+export interface AvatarHistoryItem {
+  id: number
+  url: string
+  created_at?: string | null
+}
+
+export type AvatarHistoryResponse =
+  | ApiSuccessResponse<AvatarHistoryItem[]>
+  | ApiErrorResponse
 
 export type UpdateUserResponse =
   | ApiSuccessResponse<unknown>
@@ -75,6 +86,8 @@ export function useUserApi() {
 
     if (payload.avatar instanceof File) {
       body.append('avatar', payload.avatar)
+    } else if (payload.avatar_id != null) {
+      body.append('avatar_id', String(payload.avatar_id))
     }
 
     return apiFetch<UpdateUserResponse>('/user', {
@@ -83,10 +96,15 @@ export function useUserApi() {
     })
   }
 
+  function getAvatarHistory() {
+    return apiFetch<AvatarHistoryResponse>('/user/avatars')
+  }
+
   return {
     getUser,
     getCurrentPassword,
     changePassword,
     updateUser,
+    getAvatarHistory,
   }
 }
