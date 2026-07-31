@@ -525,7 +525,19 @@ const bookingsLink = '/profile/bookings'
   }
 
   .booking-confirmation__summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    height: auto;
+    gap: 8px 8px;
+    padding: 16px 12px;
+  }
+
+  .booking-confirmation__summary-label {
+    margin-bottom: 2px;
+  }
+
+  .booking-confirmation__summary-label,
+  .booking-confirmation__summary-value {
+    font-size: 15px;
   }
 
   .booking-confirmation__summary-row {
