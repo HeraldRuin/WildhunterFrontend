@@ -96,79 +96,83 @@ const bookingsLink = '/profile/bookings'
           <article class="booking-confirmation__card">
             <h2 class="booking-confirmation__card-title">Ваше проживание</h2>
 
-            <div class="booking-confirmation__card-content">
-              <div class="booking-confirmation__card-media">
-                <div
-                  class="booking-confirmation__card-placeholder"
-                  :class="{ 'booking-confirmation__card-placeholder--image': booking.hotelImage }"
-                >
-                  <img
-                    v-if="booking.hotelImage"
-                    :src="booking.hotelImage"
-                    :alt="booking.hotelTitle"
-                    loading="lazy"
-                    decoding="async"
+            <div class="booking-confirmation__card-panel">
+              <div class="booking-confirmation__card-content">
+                <div class="booking-confirmation__card-media">
+                  <div
+                    class="booking-confirmation__card-placeholder"
+                    :class="{ 'booking-confirmation__card-placeholder--image': booking.hotelImage }"
                   >
+                    <img
+                      v-if="booking.hotelImage"
+                      :src="booking.hotelImage"
+                      :alt="booking.hotelTitle"
+                      loading="lazy"
+                      decoding="async"
+                    >
+                  </div>
+                  <p class="booking-confirmation__card-caption">{{ booking.hotelTitle }}</p>
                 </div>
-                <p class="booking-confirmation__card-caption">{{ booking.hotelTitle }}</p>
-              </div>
 
-              <dl class="booking-confirmation__details">
-                <div class="booking-confirmation__detail-row">
-                  <dt>Заезд</dt>
-                  <dd>{{ booking.checkIn }}</dd>
-                </div>
-                <div class="booking-confirmation__detail-row">
-                  <dt>Выезд</dt>
-                  <dd>{{ booking.checkOut }}</dd>
-                </div>
-                <div class="booking-confirmation__detail-row">
-                  <dt>Ночи</dt>
-                  <dd>{{ booking.nights }}</dd>
-                </div>
-                <div class="booking-confirmation__detail-row">
-                  <dt>Взрослые</dt>
-                  <dd>{{ booking.adults }}</dd>
-                </div>
-                <div class="booking-confirmation__detail-row">
-                  <dt>{{ booking.roomLabel }}</dt>
-                  <dd>{{ formatHotelPrice(booking.accommodationTotal) }} ₽</dd>
-                </div>
-                <div class="booking-confirmation__detail-row booking-confirmation__detail-row--total">
-                  <dt>Всего:</dt>
-                  <dd>{{ formatHotelPrice(booking.accommodationTotal) }} ₽</dd>
-                </div>
-              </dl>
+                <dl class="booking-confirmation__details">
+                  <div class="booking-confirmation__detail-row">
+                    <dt>Заезд</dt>
+                    <dd>{{ booking.checkIn }}</dd>
+                  </div>
+                  <div class="booking-confirmation__detail-row">
+                    <dt>Выезд</dt>
+                    <dd>{{ booking.checkOut }}</dd>
+                  </div>
+                  <div class="booking-confirmation__detail-row">
+                    <dt>Ночи</dt>
+                    <dd>{{ booking.nights }}</dd>
+                  </div>
+                  <div class="booking-confirmation__detail-row booking-confirmation__detail-row--divider">
+                    <dt>Взрослые</dt>
+                    <dd>{{ booking.adults }}</dd>
+                  </div>
+                  <div class="booking-confirmation__detail-row booking-confirmation__detail-row--divider booking-confirmation__detail-row--room">
+                    <dt>{{ booking.roomLabel }}</dt>
+                    <dd>{{ formatHotelPrice(booking.accommodationTotal) }} ₽</dd>
+                  </div>
+                  <div class="booking-confirmation__detail-row booking-confirmation__detail-row--total">
+                    <dt>Всего:</dt>
+                    <dd>{{ formatHotelPrice(booking.accommodationTotal) }} ₽</dd>
+                  </div>
+                </dl>
+              </div>
             </div>
           </article>
 
           <article class="booking-confirmation__card">
             <h2 class="booking-confirmation__card-title">Ваша охота</h2>
 
-            <div class="booking-confirmation__card-content">
-              <div class="booking-confirmation__card-media">
-                <div class="booking-confirmation__card-placeholder" aria-hidden="true" />
-                <p class="booking-confirmation__card-caption">{{ booking.animalTitle }}</p>
-              </div>
+            <div class="booking-confirmation__card-panel">
+              <div class="booking-confirmation__card-content">
+                <div class="booking-confirmation__card-media">
+                  <div class="booking-confirmation__card-placeholder" aria-hidden="true" />
+                  <p class="booking-confirmation__card-caption">{{ booking.animalTitle }}</p>
+                </div>
 
-              <dl class="booking-confirmation__details">
-                <div class="booking-confirmation__detail-row">
-                  <dt>Дата охоты</dt>
-                  <dd>{{ booking.huntDate }}</dd>
-                </div>
-                <div class="booking-confirmation__detail-row">
-                  <dt>Количество охотников</dt>
-                  <dd>{{ booking.hunters }}</dd>
-                </div>
-                <div class="booking-confirmation__detail-row">
-                  <dt>Организация охоты</dt>
-                  <dd>{{ formatHotelPrice(booking.organizationFee) }} ₽</dd>
-                </div>
-                <div class="booking-confirmation__detail-row">
-                  <dt>Трофей</dt>
-                  <dd>{{ formatHotelPrice(booking.trophyFee) }} ₽</dd>
-                </div>
-              </dl>
+                <dl class="booking-confirmation__details">
+                  <div class="booking-confirmation__detail-row">
+                    <dt>Дата охоты</dt>
+                    <dd>{{ booking.huntDate }}</dd>
+                  </div>
+                  <div class="booking-confirmation__detail-row">
+                    <dt>Количество охотников</dt>
+                    <dd>{{ booking.hunters }}</dd>
+                  </div>
+                  <div class="booking-confirmation__detail-row">
+                    <dt>Организация охоты</dt>
+                    <dd>{{ formatHotelPrice(booking.organizationFee) }} ₽</dd>
+                  </div>
+                  <div class="booking-confirmation__detail-row">
+                    <dt>Трофей</dt>
+                    <dd>{{ formatHotelPrice(booking.trophyFee) }} ₽</dd>
+                  </div>
+                </dl>
+              </div>
             </div>
           </article>
         </div>
@@ -354,18 +358,30 @@ const bookingsLink = '/profile/bookings'
 }
 
 .booking-confirmation__card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.booking-confirmation__card-title {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
+}
+
+.booking-confirmation__card-panel {
+  height: 256px;
   padding: 20px;
   border: 1px solid var(--wh-gray-200);
   border-radius: var(--wh-radius-lg);
   background: var(--wh-white);
-}
-
-.booking-confirmation__card-title {
-  margin: 0 0 16px;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--wh-green-900);
+  box-sizing: border-box;
 }
 
 .booking-confirmation__card-content {
@@ -374,16 +390,17 @@ const bookingsLink = '/profile/bookings'
 }
 
 .booking-confirmation__card-media {
-  flex: 0 0 132px;
-  width: 132px;
+  flex: 0 0 287px;
+  width: 287px;
 }
 
 .booking-confirmation__card-placeholder {
   display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  border-radius: var(--wh-radius);
-  background: var(--wh-gray-200);
+  width: 287px;
+  height: 191px;
+  border-radius: 12px;
+  background: var(--wh-gray-300);
+  overflow: hidden;
 }
 
 .booking-confirmation__card-placeholder--image img {
@@ -396,9 +413,13 @@ const bookingsLink = '/profile/bookings'
 
 .booking-confirmation__card-caption {
   margin: 8px 0 0;
-  font-size: 0.8125rem;
-  line-height: 1.35;
-  color: var(--wh-gray-600);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
 }
 
 .booking-confirmation__details {
@@ -413,26 +434,50 @@ const bookingsLink = '/profile/bookings'
   justify-content: space-between;
   gap: 16px;
   padding: 6px 0;
-  border-bottom: 1px solid var(--wh-gray-100);
   font-size: 0.875rem;
   line-height: 1.4;
 }
 
-.booking-confirmation__detail-row:last-child {
-  border-bottom: none;
+.booking-confirmation__detail-row--divider {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.booking-confirmation__detail-row--room {
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
 
 .booking-confirmation__detail-row dt {
   margin: 0;
-  color: var(--wh-gray-600);
-  font-weight: 400;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
 }
 
 .booking-confirmation__detail-row dd {
   margin: 0;
   text-align: right;
-  color: var(--wh-gray-900);
-  font-weight: 500;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
+}
+
+.booking-confirmation__detail-row--total dt {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
 }
 
 .booking-confirmation__detail-row--total dd {
@@ -484,6 +529,11 @@ const bookingsLink = '/profile/bookings'
   .booking-confirmation__cards {
     grid-template-columns: 1fr;
   }
+
+  .booking-confirmation__card-panel {
+    height: auto;
+    min-height: 256px;
+  }
 }
 
 @media (--wh-mobile) {
@@ -520,7 +570,13 @@ const bookingsLink = '/profile/bookings'
 
   .booking-confirmation__card-media {
     width: 100%;
+    max-width: 287px;
     flex-basis: auto;
+  }
+
+  .booking-confirmation__card-placeholder {
+    width: 100%;
+    max-width: 287px;
   }
 }
 </style>
