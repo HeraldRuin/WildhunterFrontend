@@ -162,6 +162,8 @@ const licenseDateFieldRefs = new Map<number, HTMLElement>()
 const fieldErrors = ref<Record<string, string[]>>({})
 const submitError = ref('')
 const savingWeaponIndex = ref<number | null>(null)
+const savingWeaponOverlayIndex = ref<number | null>(null)
+const reloadWeaponsAfterSaving = ref(false)
 const confirmDeleteIndex = ref<number | null>(null)
 const expandedWeaponKeys = ref<string[]>([])
 const weaponSnapshots = ref<Record<number, string>>({})
@@ -561,6 +563,32 @@ function cancelDeleteConfirm() {
   confirmDeleteIndex.value = null
 }
 
+function beginWeaponSaving(index: number) {
+  if (openLicenseDateIndex.value === index) {
+    openLicenseDateIndex.value = null
+  }
+
+  savingWeaponIndex.value = index
+  savingWeaponOverlayIndex.value = index
+}
+
+function finishWeaponSavingOverlay() {
+  savingWeaponOverlayIndex.value = null
+}
+
+function clearWeaponSavingState() {
+  savingWeaponIndex.value = null
+
+  if (reloadWeaponsAfterSaving.value) {
+    reloadWeaponsAfterSaving.value = false
+    void loadUserWeapons({ force: true, silent: true })
+  }
+}
+
+function markWeaponsReloadAfterSaving() {
+  reloadWeaponsAfterSaving.value = true
+}
+
 async function confirmDeleteWeapon(index: number) {
   const weapon = weapons.value[index]
 
@@ -568,7 +596,7 @@ async function confirmDeleteWeapon(index: number) {
     return
   }
 
-  savingWeaponIndex.value = index
+  beginWeaponSaving(index)
   submitError.value = ''
 
   try {
@@ -577,7 +605,7 @@ async function confirmDeleteWeapon(index: number) {
     if ('success' in response && response.success) {
       confirmDeleteIndex.value = null
       notifications.success('Лицензия на оружие удалена')
-      await loadUserWeapons({ force: true, silent: true })
+      markWeaponsReloadAfterSaving()
       return
     }
 
@@ -586,7 +614,7 @@ async function confirmDeleteWeapon(index: number) {
   } catch {
     submitError.value = 'Не удалось удалить оружие'
   } finally {
-    savingWeaponIndex.value = null
+    finishWeaponSavingOverlay()
   }
 }
 
@@ -597,17 +625,17 @@ async function saveWeapon(index: number) {
     return
   }
 
-  savingWeaponIndex.value = index
-  fieldErrors.value = {}
-  submitError.value = ''
+  beginWeaponSaving(index)
   stopSavePulse()
 
   try {
     const response = await weaponsApi.saveUserWeapon(buildWeaponPayload(weapon))
 
     if ('success' in response && response.success) {
+      fieldErrors.value = {}
+      submitError.value = ''
       notifications.success('Лицензия на оружие сохранена')
-      await loadUserWeapons({ force: true, silent: true })
+      markWeaponsReloadAfterSaving()
       return
     }
 
@@ -621,7 +649,7 @@ async function saveWeapon(index: number) {
       submitError.value = 'Не удалось сохранить оружие'
     }
   } finally {
-    savingWeaponIndex.value = null
+    finishWeaponSavingOverlay()
   }
 }
 
@@ -632,16 +660,16 @@ async function updateWeapon(index: number) {
     return
   }
 
-  savingWeaponIndex.value = index
-  fieldErrors.value = {}
-  submitError.value = ''
+  beginWeaponSaving(index)
 
   try {
     const response = await weaponsApi.updateUserWeapon(weapon.id, buildWeaponPayload(weapon))
 
     if ('success' in response && response.success) {
+      fieldErrors.value = {}
+      submitError.value = ''
       notifications.success('Лицензия на оружие обновлена')
-      await loadUserWeapons({ force: true, silent: true })
+      markWeaponsReloadAfterSaving()
       return
     }
 
@@ -655,7 +683,7 @@ async function updateWeapon(index: number) {
       submitError.value = 'Не удалось обновить оружие'
     }
   } finally {
-    savingWeaponIndex.value = null
+    finishWeaponSavingOverlay()
   }
 }
 
@@ -745,8 +773,6 @@ async function saveHunterBillet() {
   }
 
   savingHunterBillet.value = true
-  clearFieldError('hunter_billet_number')
-  submitError.value = ''
 
   const wasUpdate = Boolean(hunterBilletSnapshot.value)
   const trimmed = profile.value.hunter_billet_number.trim()
@@ -758,6 +784,8 @@ async function saveHunterBillet() {
     })
 
     if ('success' in response && response.success) {
+      clearFieldError('hunter_billet_number')
+      submitError.value = ''
       // Актуальные данные — из GET /user/weapons (+ кэш списка/билета)
       await loadUserWeapons({ force: true, silent: true })
       // Если лицензий ещё нет, GET не вернёт billet — фиксируем отправленное значение
@@ -966,7 +994,6 @@ const hasNewWeapon = computed(() =>
                     no-margin
                     :model-value="card.weapon.hunter_license_number"
                     :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_number') : ''"
-                    :disabled="savingWeaponIndex === card.index"
                     @update:model-value="card.weapon.hunter_license_number = $event; clearFieldError('hunter_license_number')"
                   />
                   <CommonFormField
@@ -977,7 +1004,6 @@ const hasNewWeapon = computed(() =>
                     :model-value="displayLicenseDate(card.weapon.hunter_license_date)"
                     :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_date') : ''"
                     :open="openLicenseDateIndex === card.index"
-                    :disabled="savingWeaponIndex === card.index"
                     readonly
                     @focus="openLicenseDateCalendar(card.index)"
                     @click.stop="openLicenseDateCalendar(card.index)"
@@ -987,7 +1013,6 @@ const hasNewWeapon = computed(() =>
                         type="button"
                         class="profile-weapon__calendar-icon"
                         aria-label="Открыть календарь"
-                        :disabled="savingWeaponIndex === card.index"
                         @click.stop="openLicenseDateCalendar(card.index)"
                       >
                         <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -1019,7 +1044,7 @@ const hasNewWeapon = computed(() =>
                 label="Тип оружия"
                 :placeholder="weaponTypesLoading ? 'Загрузка...' : 'Добавить оружие'"
                 :options="weaponTypes"
-                :disabled="weaponTypesLoading || !weaponTypes.length || savingWeaponIndex === card.index"
+                :disabled="weaponTypesLoading || !weaponTypes.length"
                 :error="showWeaponFieldErrors(card.weapon, card.index)
                   ? (getFieldError('weapon_type_id') || weaponTypesError)
                   : ''"
@@ -1031,7 +1056,7 @@ const hasNewWeapon = computed(() =>
                 label="Калибр"
                 :placeholder="calibersLoading ? 'Загрузка...' : 'Добавить калибр'"
                 :options="calibers"
-                :disabled="calibersLoading || !calibers.length || savingWeaponIndex === card.index"
+                :disabled="calibersLoading || !calibers.length"
                 :error="showWeaponFieldErrors(card.weapon, card.index)
                   ? (getFieldError('caliber_id') || calibersError)
                   : ''"
@@ -1098,18 +1123,20 @@ const hasNewWeapon = computed(() =>
               </div>
             </Transition>
 
-            <div
-              v-if="!card.loading && savingWeaponIndex === card.index"
-              class="profile-weapon__saving-overlay"
-              aria-hidden="true"
-            >
-              <CommonSpinner
-                variant="ring"
-                color="var(--wh-orange-500)"
-                :size="28"
-                label="Сохранение лицензии"
-              />
-            </div>
+            <Transition name="weapon-saving-fade" @after-leave="clearWeaponSavingState">
+              <div
+                v-if="!card.loading && savingWeaponOverlayIndex === card.index"
+                class="profile-weapon__saving-overlay"
+                aria-hidden="true"
+              >
+                <CommonSpinner
+                  variant="ring"
+                  color="var(--wh-orange-500)"
+                  :size="28"
+                  label="Сохранение лицензии"
+                />
+              </div>
+            </Transition>
           </article>
           </div>
         </div>
@@ -1330,13 +1357,6 @@ const hasNewWeapon = computed(() =>
 .profile-weapon--saving {
   pointer-events: none;
   user-select: none;
-  overflow: hidden;
-}
-
-.profile-weapon--saving .profile-weapon__toggle,
-.profile-weapon--saving .profile-weapon__content {
-  filter: blur(2px);
-  opacity: 0.55;
 }
 
 .profile-weapon__saving-overlay {
@@ -1348,6 +1368,21 @@ const hasNewWeapon = computed(() =>
   justify-content: center;
   border-radius: 12px;
   pointer-events: none;
+  background: rgba(255, 255, 255, 0.72);
+  will-change: opacity;
+}
+
+.weapon-saving-fade-enter-active {
+  transition: opacity 0.2s ease;
+}
+
+.weapon-saving-fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+
+.weapon-saving-fade-enter-from,
+.weapon-saving-fade-leave-to {
+  opacity: 0;
 }
 
 .profile-weapon--date-open {
