@@ -6,15 +6,18 @@ interface NavItem {
   labelShort?: string
   to: string
   iconSrc: string
+  showChevron?: boolean
+  children?: Array<{ label: string, to: string }>
 }
 
 const route = useRoute()
 const { user, logout } = useAuth()
 const { profile } = useProfile()
+const { isBaseAdmin } = useUserRole()
 
-const navItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   { label: 'Бронирования', to: '/profile/bookings', iconSrc: '/icons/iconoir_clock-solid.png' },
-  { label: 'Мой профиль', to: '/profile', iconSrc: '/icons/lets-icons_setting-fill.png' },
+  { label: 'Мой профиль', to: '/profile', iconSrc: '/icons/user-profile.svg' },
   {
     label: 'Лицензия на оружие',
     labelShort: 'Оружие',
@@ -23,6 +26,120 @@ const navItems: NavItem[] = [
   },
   { label: 'Изменить пароль', to: '/profile/password', iconSrc: '/icons/boxicons_pencil-filled.png' },
 ]
+
+const servicesNavChildren = [
+  { label: 'Организация охоты', to: '/profile/services/hunting' },
+  { label: 'Трофеи и штрафы', to: '/profile/services/trophies' },
+  { label: 'Доп услуги', to: '/profile/services/extra' },
+]
+
+const timerNavChildren = [
+  { label: 'Таймер сбора', to: '/profile/timers/collection' },
+  { label: 'Таймер койко-мест', to: '/profile/timers/beds' },
+  { label: 'Таймер предоплаты', to: '/profile/timers/prepayment' },
+]
+
+const settingsSubNavItems: NavItem[] = [
+  {
+    label: 'Управление базой',
+    labelShort: 'База',
+    to: '/profile/base',
+    iconSrc: '/icons/base-building.svg',
+    showChevron: false,
+  },
+  {
+    label: 'Животные',
+    to: '/profile/animals',
+    iconSrc: '/icons/animal-face.svg',
+    showChevron: false,
+  },
+  {
+    label: 'Услуги',
+    to: '/profile/services',
+    iconSrc: '/icons/services.svg',
+    children: servicesNavChildren,
+  },
+  {
+    label: 'Таймеры',
+    to: '/profile/timers',
+    iconSrc: '/icons/iconoir_clock-solid.png',
+    children: timerNavChildren,
+  },
+]
+
+const settingsSectionPaths = [
+  ...settingsSubNavItems.map(item => item.to),
+  ...servicesNavChildren.map(item => item.to),
+  ...timerNavChildren.map(item => item.to),
+]
+
+const isSettingsRoute = computed(() =>
+  settingsSectionPaths.some(path => route.path === path || route.path.startsWith(`${path}/`)),
+)
+
+const settingsMenuOpen = ref(false)
+const openSubmenus = ref<Record<string, boolean>>({})
+
+watch(
+  isSettingsRoute,
+  (onSettingsRoute) => {
+    if (onSettingsRoute) {
+      settingsMenuOpen.value = true
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => route.path,
+  (path) => {
+    for (const item of settingsSubNavItems) {
+      if (!item.children?.length) {
+        continue
+      }
+
+      const onItemRoute = path === item.to
+        || path.startsWith(`${item.to}/`)
+        || item.children.some(child => path === child.to || path.startsWith(`${child.to}/`))
+
+      if (onItemRoute) {
+        openSubmenus.value[item.to] = true
+      }
+    }
+  },
+  { immediate: true },
+)
+
+const showSettingsMenu = computed(() => isBaseAdmin.value && settingsMenuOpen.value)
+
+const navItems = computed<NavItem[]>(() => {
+  if (showSettingsMenu.value) {
+    return settingsSubNavItems
+  }
+
+  return baseNavItems
+})
+
+function openSettingsMenu() {
+  settingsMenuOpen.value = true
+}
+
+async function closeSettingsMenu() {
+  settingsMenuOpen.value = false
+  openSubmenus.value = {}
+
+  if (isSettingsRoute.value) {
+    await navigateTo('/profile')
+  }
+}
+
+function isSubmenuOpen(to: string) {
+  return Boolean(openSubmenus.value[to])
+}
+
+function toggleSubmenu(to: string) {
+  openSubmenus.value[to] = !openSubmenus.value[to]
+}
 
 const displayName = computed(() => {
   const profileUser = profile.value
@@ -61,7 +178,7 @@ function isActive(to: string) {
     return route.path === '/profile' || route.path === '/profile/'
   }
 
-  return route.path.startsWith(to)
+  return route.path === to || route.path.startsWith(`${to}/`)
 }
 
 async function handleLogout() {
@@ -99,32 +216,141 @@ async function handleLogout() {
 
     <div class="profile-sidebar__menu">
       <nav class="profile-sidebar__nav">
-        <NuxtLink
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
+        <button
+          v-if="showSettingsMenu"
+          type="button"
+          class="profile-sidebar__nav-link profile-sidebar__nav-link--back"
+          @click="closeSettingsMenu"
+        >
+          <span class="profile-sidebar__nav-icon" aria-hidden="true">←</span>
+          Назад
+        </button>
+
+        <template v-for="item in navItems" :key="item.to">
+          <button
+            v-if="showSettingsMenu && item.children?.length"
+            type="button"
+            class="profile-sidebar__nav-link profile-sidebar__nav-link--sub"
+            :class="{
+              'profile-sidebar__nav-link--active': isActive(item.to),
+              'profile-sidebar__nav-link--compact': Boolean(item.labelShort),
+              'profile-sidebar__nav-link--open': isSubmenuOpen(item.to),
+            }"
+            @click="toggleSubmenu(item.to)"
+          >
+            <span class="profile-sidebar__nav-icon" aria-hidden="true">
+              <img
+                :src="item.iconSrc"
+                :alt="''"
+                width="24"
+                height="24"
+              >
+            </span>
+            <span class="profile-sidebar__nav-text">
+              <template v-if="item.labelShort">
+                <span class="profile-sidebar__nav-label profile-sidebar__nav-label--full">{{ item.label }}</span>
+                <span class="profile-sidebar__nav-label profile-sidebar__nav-label--short">{{ item.labelShort }}</span>
+              </template>
+              <template v-else>
+                {{ item.label }}
+              </template>
+            </span>
+            <svg class="profile-sidebar__chevron" viewBox="0 0 12 8" aria-hidden="true">
+              <path
+                d="M1 2 6 6.5 11 2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+
+          <NuxtLink
+            v-else
+            :to="item.to"
+            class="profile-sidebar__nav-link"
+            :class="{
+              'profile-sidebar__nav-link--active': isActive(item.to),
+              'profile-sidebar__nav-link--compact': Boolean(item.labelShort),
+              'profile-sidebar__nav-link--sub': showSettingsMenu,
+              'profile-sidebar__nav-link--open': showSettingsMenu && isActive(item.to),
+            }"
+          >
+            <span class="profile-sidebar__nav-icon" aria-hidden="true">
+              <img
+                :src="item.iconSrc"
+                :alt="''"
+                width="24"
+                height="24"
+              >
+            </span>
+            <span class="profile-sidebar__nav-text">
+              <template v-if="item.labelShort">
+                <span class="profile-sidebar__nav-label profile-sidebar__nav-label--full">{{ item.label }}</span>
+                <span class="profile-sidebar__nav-label profile-sidebar__nav-label--short">{{ item.labelShort }}</span>
+              </template>
+              <template v-else>
+                {{ item.label }}
+              </template>
+            </span>
+            <svg
+              v-if="showSettingsMenu && item.showChevron !== false"
+              class="profile-sidebar__chevron"
+              viewBox="0 0 12 8"
+              aria-hidden="true"
+            >
+              <path
+                d="M1 2 6 6.5 11 2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </NuxtLink>
+
+          <template v-if="showSettingsMenu && item.children?.length && isSubmenuOpen(item.to)">
+            <NuxtLink
+              v-for="child in item.children"
+              :key="child.to"
+              :to="child.to"
+              class="profile-sidebar__nav-link profile-sidebar__nav-link--nested"
+              :class="{ 'profile-sidebar__nav-link--active': isActive(child.to) }"
+            >
+              {{ child.label }}
+            </NuxtLink>
+          </template>
+        </template>
+
+        <button
+          v-if="isBaseAdmin && !showSettingsMenu"
+          type="button"
           class="profile-sidebar__nav-link"
-          :class="{
-            'profile-sidebar__nav-link--active': isActive(item.to),
-            'profile-sidebar__nav-link--compact': Boolean(item.labelShort),
-          }"
+          @click="openSettingsMenu"
         >
           <span class="profile-sidebar__nav-icon" aria-hidden="true">
             <img
-              :src="item.iconSrc"
-              :alt="''"
+              src="/icons/lets-icons_setting-fill.png"
+              alt=""
               width="24"
               height="24"
             >
           </span>
-          <template v-if="item.labelShort">
-            <span class="profile-sidebar__nav-label profile-sidebar__nav-label--full">{{ item.label }}</span>
-            <span class="profile-sidebar__nav-label profile-sidebar__nav-label--short">{{ item.labelShort }}</span>
-          </template>
-          <template v-else>
-            {{ item.label }}
-          </template>
-        </NuxtLink>
+          <span class="profile-sidebar__nav-text">Настройки</span>
+          <svg class="profile-sidebar__chevron" viewBox="0 0 12 8" aria-hidden="true">
+            <path
+              d="M1 2 6 6.5 11 2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </nav>
 
       <div class="profile-sidebar__footer">
@@ -245,17 +471,25 @@ async function handleLogout() {
   gap: 2px;
   padding: 10px 0;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .profile-sidebar__nav-link {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   padding: 12px 14px;
+  border: none;
   border-radius: 10px;
+  background: transparent;
   color: rgba(255, 255, 255, 0.9);
+  font: inherit;
   font-size: 18px;
   font-weight: 500;
+  text-align: left;
+  cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
@@ -266,6 +500,41 @@ async function handleLogout() {
 .profile-sidebar__nav-link--active {
   background: rgba(255, 255, 255, 0.12);
   color: var(--wh-white);
+}
+
+.profile-sidebar__nav-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-sidebar__chevron {
+  flex-shrink: 0;
+  width: 12px;
+  height: 8px;
+  margin-left: auto;
+  color: var(--wh-white);
+  transform: rotate(-90deg);
+  transition: transform 0.2s ease;
+}
+
+.profile-sidebar__nav-link--open .profile-sidebar__chevron {
+  transform: rotate(0deg);
+}
+
+.profile-sidebar__nav-link--back {
+  margin-bottom: 4px;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+.profile-sidebar__nav-link--nested {
+  padding-left: 48px;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.profile-sidebar__nav-link--sub {
+  padding-left: 22px;
 }
 
 .profile-sidebar__nav-icon {
