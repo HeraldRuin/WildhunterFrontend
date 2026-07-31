@@ -224,7 +224,7 @@ const bookingsLink = '/profile/bookings'
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .booking-confirmation__success-icon {
@@ -234,19 +234,25 @@ const bookingsLink = '/profile/bookings'
 
 .booking-confirmation__title {
   margin: 0;
-  font-size: clamp(1.125rem, 2vw, 1.5rem);
-  font-weight: 800;
-  line-height: 1.25;
-  letter-spacing: 0.02em;
-  color: var(--wh-green-900);
+  font-family: 'UNCAGE', 'Manrope', system-ui, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 32px;
+  line-height: 130%;
+  letter-spacing: -0.03em;
+  color: var(--wh-black-text);
   text-transform: uppercase;
 }
 
 .booking-confirmation__subtitle {
-  margin: 0 0 24px;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: var(--wh-gray-600);
+  margin: -12px 0 24px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
 }
 
 .booking-confirmation__summary-row {
