@@ -384,12 +384,12 @@ function onPaste(event: ClipboardEvent) {
 
 .form-field__input:focus,
 .form-field__input--open {
-  border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
+  border-color: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
 }
 
 .form-field__input--open {
-  box-shadow: 0 0 0 2px rgb(209 101 16 / 18%);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
 }
 
 .form-field__input--error,

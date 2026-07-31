@@ -619,8 +619,8 @@ onUnmounted(() => {
 }
 
 .register-modal__input:focus {
-  border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(209, 101, 16, 0.15);
+  border-color: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
 }
 
 .register-modal__password-wrap {
@@ -717,8 +717,8 @@ onUnmounted(() => {
 
 .register-modal__dropdown-trigger--open,
 .register-modal__dropdown-trigger:focus-visible {
-  border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(209, 101, 16, 0.15);
+  border-color: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
 }
 
 .register-modal__dropdown-trigger:disabled {

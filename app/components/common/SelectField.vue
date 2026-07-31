@@ -185,8 +185,8 @@ onUnmounted(() => {
 
 .select-field__trigger:focus-visible,
 .select-field--open .select-field__trigger {
-  border-color: var(--wh-orange-500);
-  box-shadow: 0 0 0 3px rgba(238, 154, 60, 0.15);
+  border-color: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
   outline: none;
 }
 
