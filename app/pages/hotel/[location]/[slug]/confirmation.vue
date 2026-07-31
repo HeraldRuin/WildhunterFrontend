@@ -631,13 +631,15 @@ const bookingsLink = '/profile/bookings'
 
   .booking-confirmation__card-media {
     width: 100%;
-    max-width: 287px;
-    flex-basis: auto;
+    max-width: none;
+    flex: none;
   }
 
   .booking-confirmation__card-placeholder {
     width: 100%;
-    max-width: 287px;
+    max-width: none;
+    height: auto;
+    aspect-ratio: 287 / 191;
   }
 }
 </style>
