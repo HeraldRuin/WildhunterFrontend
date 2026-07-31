@@ -1,7 +1,15 @@
 import type { Role } from '~/types/api'
 import type { UpdateUserPayload } from '~/api/user'
 import type { ProfileUser } from '~/types/user'
-import { createEmptyWeapon, normalizeUserProfile, resolveRoleLabel, unwrapProfilePayload } from '~/utils/user'
+import {
+  createEmptyWeapon,
+  extractAvatarUrl,
+  isBrokenMediaAvatarUrl,
+  normalizeUserProfile,
+  resolveAvatarUrl,
+  resolveRoleLabel,
+  unwrapProfilePayload,
+} from '~/utils/user'
 import { clearUserWeaponsCache } from '~/utils/userWeaponsCache'
 
 const PROFILE_CACHE_PREFIX = 'wh_profile_user'
@@ -57,9 +65,12 @@ function profileCacheKey(userId: number | string) {
 }
 
 export function useProfile() {
+  const config = useRuntimeConfig()
   const { user } = useAuth()
-  const { user: userApi, roles: rolesApi } = useApi()
+  const { user: userApi, roles: rolesApi, auth: authApi } = useApi()
   const { updateUser: updateAuthUser } = useAuthToken()
+
+  const uploadsOrigin = new URL(config.public.apiBase as string).origin
 
   const profile = useState<ProfileUser | null>('profile_user', () => null)
   const pending = useState('profile_pending', () => false)
@@ -131,26 +142,115 @@ export function useProfile() {
     }
   }
 
-  function applyProfile(profileData: ProfileUser) {
-    profile.value = profileData
-    writeCachedProfile(profileData)
+  function avatarFallbacks(userId?: number | null) {
+    return [
+      profile.value?.avatar,
+      userId ? readCachedProfile(userId)?.avatar : null,
+      user.value?.avatar,
+    ]
+  }
 
-    updateAuthUser({
+  function withPreservedAvatar(profileData: ProfileUser, fallbacks: Array<string | null | undefined>): ProfileUser {
+    const avatar = profileData.avatar ?? resolveAvatarUrl({}, fallbacks, uploadsOrigin)
+
+    if (avatar === profileData.avatar) {
+      return profileData
+    }
+
+    return {
+      ...profileData,
+      avatar,
+    }
+  }
+
+  async function syncAvatarFromMe(): Promise<string | null> {
+    try {
+      const response = await authApi.getMe() as { success?: boolean, data?: unknown }
+      const payload = response.success === false ? null : (response.data ?? response)
+      const source = unwrapProfilePayload(payload)
+
+      return extractAvatarUrl(source, uploadsOrigin)
+    } catch {
+      return null
+    }
+  }
+
+  async function ensureProfileAvatar(userId: number) {
+    if (profile.value?.avatar) {
+      return
+    }
+
+    const meAvatar = await syncAvatarFromMe()
+
+    if (!meAvatar) {
+      return
+    }
+
+    if (profile.value) {
+      patchCachedProfile({ avatar: meAvatar })
+      return
+    }
+
+    const cached = readCachedProfile(userId)
+
+    if (cached) {
+      applyProfile(withPreservedAvatar(cached, [meAvatar, user.value?.avatar]))
+    }
+  }
+
+  function applyProfile(profileData: ProfileUser) {
+    const merged = withPreservedAvatar(profileData, avatarFallbacks(profileData.id))
+    profile.value = merged
+    writeCachedProfile(merged)
+
+    const authPatch: Parameters<typeof updateAuthUser>[0] = {
       id: profileData.id,
-      first_name: profileData.first_name,
-      last_name: profileData.last_name,
-      email: profileData.email,
-      avatar: profileData.avatar,
-      role: profileData.role_code || user.value?.role || null,
-      role_name: profileData.role_name || null,
-      created_at: profileData.created_at || null,
-    })
+      first_name: merged.first_name,
+      last_name: merged.last_name,
+      email: merged.email,
+      role: merged.role_code || user.value?.role || null,
+      role_name: merged.role_name || null,
+      created_at: merged.created_at || null,
+    }
+
+    if (merged.avatar) {
+      authPatch.avatar = merged.avatar
+    }
+
+    updateAuthUser(authPatch)
+  }
+
+  function cacheNeedsAvatarRefresh(userId: number) {
+    const cached = readCachedProfile(userId)
+
+    if (!cached) {
+      return false
+    }
+
+    if (isBrokenMediaAvatarUrl(cached.avatar) || isBrokenMediaAvatarUrl(user.value?.avatar ?? null)) {
+      return true
+    }
+
+    return !cached.avatar && !user.value?.avatar
   }
 
   function hydrateFromCache(userId: number) {
     if (profile.value) {
       hydrateRolesFromCache()
-      return true
+
+      if (profile.value.avatar || user.value?.avatar) {
+        return true
+      }
+
+      const cached = readCachedProfile(userId)
+
+      if (cached?.avatar) {
+        profile.value = withPreservedAvatar(profile.value, [cached.avatar])
+        writeCachedProfile(profile.value)
+        return true
+      }
+
+      return false
     }
 
     const cached = readCachedProfile(userId)
@@ -159,7 +259,12 @@ export function useProfile() {
       return false
     }
 
-    profile.value = cached
+    const hydrated = withPreservedAvatar(cached, avatarFallbacks(userId))
+    profile.value = hydrated
+
+    if (hydrated.avatar && hydrated.avatar !== cached.avatar) {
+      writeCachedProfile(hydrated)
+    }
     hydrateRolesFromCache()
     return true
   }
@@ -171,12 +276,18 @@ export function useProfile() {
       return
     }
 
-    // Обычный заход: только кэш, без запросов к /user и /roles
-    if (!force && hydrateFromCache(userId)) {
+    const shouldUseCacheOnly = !force && !cacheNeedsAvatarRefresh(userId)
+
+    // Обычный заход: кэш без запроса, но если в кэше нет аватара — идём в API
+    if (shouldUseCacheOnly && hydrateFromCache(userId)) {
       return
     }
 
-    if (loadProfilePromise && !force) {
+    if (!profile.value) {
+      hydrateFromCache(userId)
+    }
+
+    if (loadProfilePromise && !force && !cacheNeedsAvatarRefresh(userId)) {
       await loadProfilePromise
       return
     }
@@ -194,14 +305,21 @@ export function useProfile() {
 
         if (!response.success) {
           error.value = response.message || 'Не удалось загрузить профиль'
+          await ensureProfileAvatar(userId)
           return
         }
 
         const source = unwrapProfilePayload(response.data)
-        const normalized = applyRoleLabel(normalizeUserProfile(response.data), source, roles)
+        const normalized = applyRoleLabel(
+          normalizeUserProfile(response.data, uploadsOrigin),
+          source,
+          roles,
+        )
         applyProfile(normalized)
+        await ensureProfileAvatar(userId)
       } catch {
         error.value = 'Не удалось загрузить профиль'
+        await ensureProfileAvatar(userId)
       } finally {
         pending.value = false
 
@@ -229,9 +347,21 @@ export function useProfile() {
   }
 
   async function saveProfile(payload: UpdateUserPayload) {
+    const previousAvatar = profile.value?.avatar ?? user.value?.avatar ?? null
+    const uploadedNewAvatar = payload.avatar instanceof File
+    const selectedExistingAvatar = payload.avatar_id != null
     const response = await userApi.updateUser(payload)
 
     if ('success' in response && response.success) {
+      const responseAvatar = extractAvatarUrl(
+        unwrapProfilePayload('data' in response ? response.data : response),
+        uploadsOrigin,
+      )
+
+      if (responseAvatar) {
+        patchCachedProfile({ avatar: responseAvatar })
+      }
+
       // Сразу пишем номер билета в кэш — не ждём ответ GET /user
       if (profile.value && payload.hunter_billet_number != null) {
         patchCachedProfile({
@@ -240,9 +370,22 @@ export function useProfile() {
       }
 
       await loadProfile(true)
+
+      // После POST /user API иногда не возвращает avatar_url — не затираем старый аватар
+      if (!uploadedNewAvatar && !selectedExistingAvatar && profile.value && !profile.value.avatar && previousAvatar) {
+        patchCachedProfile({ avatar: previousAvatar })
+      } else if ((uploadedNewAvatar || selectedExistingAvatar) && responseAvatar && profile.value && !profile.value.avatar) {
+        patchCachedProfile({ avatar: responseAvatar })
+      }
     }
 
     return response
+  }
+
+  function invalidateProfileCache(userId?: number | null) {
+    clearCachedProfile(userId ?? profile.value?.id ?? user.value?.id ?? null)
+    profile.value = null
+    error.value = null
   }
 
   function resetProfile() {
@@ -268,6 +411,7 @@ export function useProfile() {
     loadProfile,
     saveProfile,
     patchCachedProfile,
+    invalidateProfileCache,
     resetProfile,
     addWeaponRow,
   }
