@@ -165,7 +165,7 @@ onUnmounted(() => {
   width: 100%;
   box-sizing: border-box;
   padding: 12px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--wh-field-border);
   border-radius: 10px;
   background: var(--wh-white);
   color: var(--wh-gray-900);
@@ -185,14 +185,20 @@ onUnmounted(() => {
 
 .select-field__trigger:focus-visible,
 .select-field--open .select-field__trigger {
-  border-color: rgba(0, 0, 0, 0.45);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+  border-color: var(--wh-field-border-active);
+  box-shadow: 0 0 0 3px var(--wh-field-focus-ring);
   outline: none;
 }
 
 .select-field--error .select-field__trigger {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  border-color: var(--wh-field-border-error);
+  box-shadow: 0 0 0 3px var(--wh-field-focus-ring-error);
+}
+
+.select-field--error.select-field--open .select-field__trigger,
+.select-field--error .select-field__trigger:focus-visible {
+  border-color: var(--wh-field-border-error-focus);
+  box-shadow: 0 0 0 3px var(--wh-field-focus-ring-error-focus);
 }
 
 .select-field__trigger:disabled {
@@ -293,6 +299,6 @@ onUnmounted(() => {
   font-family: "Inter", "Manrope", system-ui, sans-serif;
   font-size: 0.875rem;
   line-height: 1.35;
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 </style>

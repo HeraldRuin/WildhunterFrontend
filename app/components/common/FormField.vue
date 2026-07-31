@@ -4,7 +4,8 @@ defineOptions({ inheritAttrs: false })
 const attrs = useAttrs()
 
 const props = withDefaults(defineProps<{
-  label: string
+  /** Пустой label — только placeholder (модалки и т.п.) */
+  label?: string
   placeholder?: string
   modelValue?: string
   type?: string
@@ -30,7 +31,10 @@ const props = withDefaults(defineProps<{
   digitsOnly?: boolean
   /** скелетон вместо лейбла и инпута */
   skeleton?: boolean
+  /** Широкий trailing (сгенерировать + глаз) */
+  trailingWide?: boolean
 }>(), {
+  label: '',
   placeholder: '',
   modelValue: '',
   type: 'text',
@@ -48,6 +52,7 @@ const props = withDefaults(defineProps<{
   noMargin: false,
   digitsOnly: false,
   skeleton: false,
+  trailingWide: false,
 })
 
 const emit = defineEmits<{
@@ -159,7 +164,7 @@ function onPaste(event: ClipboardEvent) {
     </template>
 
     <template v-else>
-      <label class="form-field__label" :for="fieldId">{{ label }}</label>
+      <label v-if="label" class="form-field__label" :for="fieldId">{{ label }}</label>
 
       <div class="form-field__control">
         <span v-if="hasIcon" class="form-field__icon" aria-hidden="true">
@@ -176,6 +181,7 @@ function onPaste(event: ClipboardEvent) {
             'form-field__input--error': error,
             'form-field__input--with-icon': hasIcon,
             'form-field__input--with-trailing': hasTrailing,
+            'form-field__input--with-trailing-wide': trailingWide,
             'form-field__input--reveal': reveal,
           }"
           :value="displayValue"
@@ -183,6 +189,7 @@ function onPaste(event: ClipboardEvent) {
           :disabled="disabled"
           :readonly="readonly"
           :rows="rows"
+          :aria-label="label || placeholder || undefined"
           v-bind="attrs"
           @input="onInput"
           @focus="emit('focus', $event)"
@@ -198,6 +205,7 @@ function onPaste(event: ClipboardEvent) {
             'form-field__input--error': error,
             'form-field__input--with-icon': hasIcon,
             'form-field__input--with-trailing': hasTrailing,
+            'form-field__input--with-trailing-wide': trailingWide,
             'form-field__input--masked': masked,
             'form-field__input--open': open,
             'form-field__input--pointer': cursorPointer,
@@ -208,6 +216,7 @@ function onPaste(event: ClipboardEvent) {
           :placeholder="placeholder"
           :disabled="disabled"
           :readonly="readonly"
+          :aria-label="label || placeholder || undefined"
           v-bind="inputAttrs"
           @input="onInput"
           @focus="emit('focus', $event)"
@@ -333,7 +342,7 @@ function onPaste(event: ClipboardEvent) {
   width: 100%;
   box-sizing: border-box;
   padding: 12px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--wh-field-border);
   border-radius: 10px;
   background: var(--wh-white);
   color: var(--wh-gray-900);
@@ -352,6 +361,10 @@ function onPaste(event: ClipboardEvent) {
 
 .form-field__input--with-trailing {
   padding-right: 44px;
+}
+
+.form-field__input--with-trailing-wide {
+  padding-right: 168px;
 }
 
 .form-field__input--textarea {
@@ -384,18 +397,22 @@ function onPaste(event: ClipboardEvent) {
 
 .form-field__input:focus,
 .form-field__input--open {
-  border-color: rgba(0, 0, 0, 0.45);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+  border-color: var(--wh-field-border-active);
+  box-shadow: 0 0 0 3px var(--wh-field-focus-ring);
 }
 
 .form-field__input--open {
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 0 2px var(--wh-field-focus-ring);
 }
 
-.form-field__input--error,
+.form-field__input--error {
+  border-color: var(--wh-field-border-error);
+  box-shadow: 0 0 0 3px var(--wh-field-focus-ring-error);
+}
+
 .form-field__input--error:focus {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  border-color: var(--wh-field-border-error-focus);
+  box-shadow: 0 0 0 3px var(--wh-field-focus-ring-error-focus);
 }
 
 .form-field__input:-webkit-autofill,
@@ -419,6 +436,6 @@ function onPaste(event: ClipboardEvent) {
   font-family: "Inter", "Manrope", system-ui, sans-serif;
   font-size: 0.875rem;
   line-height: 1.35;
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 </style>
