@@ -544,10 +544,20 @@ const bookingsLink = '/profile/bookings'
     grid-template-columns: 1fr;
   }
 
+  .booking-confirmation__cta-wrap {
+    justify-content: flex-start;
+    height: auto;
+  }
+
   .booking-confirmation__cta {
-    width: 100%;
-    max-width: none;
-    min-height: 56px;
+    width: 360px;
+    min-width: 360px;
+    max-width: 100%;
+    height: 48px;
+    min-height: 48px;
+    padding: 0 28px;
+    font-size: 16px;
+    white-space: nowrap;
   }
 
   .booking-confirmation__cards {
