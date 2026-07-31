@@ -108,39 +108,39 @@ watch(isOpen, (open) => {
           <h2 id="login-modal-title" class="login-modal__title">Вход</h2>
 
           <form class="login-modal__form" @submit.prevent="handleSubmit">
-            <input
-              v-model="email"
-              type="email"
-              class="login-modal__input"
+            <CommonFormField
+              id="login-email"
               placeholder="Адрес Email"
+              type="email"
               autocomplete="email"
               required
-              @input="clearFieldError('email')"
+              no-margin
+              :model-value="email"
+              :error="getFieldError('email')"
+              :disabled="isSubmitting"
+              @update:model-value="email = $event; clearFieldError('email')"
             />
 
-            <input
-              v-model="password"
-              type="password"
-              class="login-modal__input"
+            <CommonFormField
+              id="login-password"
               placeholder="Пароль"
+              type="password"
               autocomplete="current-password"
               required
-              @input="clearFieldError('password')"
+              no-margin
+              :model-value="password"
+              :error="getFieldError('password')"
+              :disabled="isSubmitting"
+              @update:model-value="password = $event; clearFieldError('password')"
             />
 
-            <p v-if="getFieldError('email')" class="login-modal__error">
-              {{ getFieldError('email') }}
-            </p>
-            <p v-if="getFieldError('password')" class="login-modal__error">
-              {{ getFieldError('password') }}
-            </p>
             <p v-if="submitError" class="login-modal__error">
               {{ submitError }}
             </p>
 
             <div class="login-modal__options">
               <label class="login-modal__remember">
-                <input v-model="rememberMe" type="checkbox" class="login-modal__checkbox" />
+                <input v-model="rememberMe" type="checkbox" class="login-modal__checkbox">
                 <span>Запомнить меня</span>
               </label>
 
@@ -205,27 +205,6 @@ watch(isOpen, (open) => {
   gap: 16px;
 }
 
-.login-modal__input {
-  width: 100%;
-  min-height: 48px;
-  padding: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.login-modal__input::placeholder {
-  color: var(--wh-gray-400);
-}
-
-.login-modal__input:focus {
-  border-color: rgba(0, 0, 0, 0.45);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
-}
-
 .login-modal__options {
   display: flex;
   align-items: center;
@@ -249,7 +228,7 @@ watch(isOpen, (open) => {
   width: 16px;
   height: 16px;
   margin: 0;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--wh-field-border);
   border-radius: 3px;
   background: var(--wh-white);
   appearance: none;
@@ -312,9 +291,9 @@ watch(isOpen, (open) => {
 }
 
 .login-modal__error {
-  margin: -8px 0 0;
+  margin: 0;
   font-size: 0.82rem;
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 
 .login-modal__footer {
