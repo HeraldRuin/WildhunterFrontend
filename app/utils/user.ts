@@ -83,10 +83,78 @@ export function extractRoleName(source: Record<string, unknown>): string {
   return extractRoleCode(source)
 }
 
-export function extractAvatarUrl(source: Record<string, unknown>): string | null {
+export function isBrokenMediaAvatarUrl(url: string | null | undefined): boolean {
+  if (!url) {
+    return false
+  }
+
+  return /\/media\/\d+\/(?:medium|thumb|large|max_large)(?:\?|$)/.test(url)
+}
+
+export function normalizeAvatarUrl(
+  value: string | null | undefined,
+  uploadsOrigin = '',
+): string | null {
+  if (!value || typeof value !== 'string') {
+    return null
+  }
+
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    return null
+  }
+
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+    return isBrokenMediaAvatarUrl(trimmed) ? null : trimmed
+  }
+
+  if (trimmed.startsWith('//')) {
+    return `https:${trimmed}`
+  }
+
+  const origin = uploadsOrigin.replace(/\/$/, '')
+
+  if (!origin) {
+    return trimmed
+  }
+
+  return trimmed.startsWith('/') ? `${origin}${trimmed}` : `${origin}/${trimmed}`
+}
+
+export function extractAvatarUrl(
+  source: Record<string, unknown>,
+  uploadsOrigin = '',
+): string | null {
   const avatar = source.avatar ?? source.avatar_url ?? source.avatar_thumb_url
 
-  return typeof avatar === 'string' && avatar.length > 0 ? avatar : null
+  if (typeof avatar !== 'string' || avatar.length === 0) {
+    return null
+  }
+
+  return normalizeAvatarUrl(avatar, uploadsOrigin)
+}
+
+export function resolveAvatarUrl(
+  source: Record<string, unknown>,
+  fallbacks: Array<string | null | undefined> = [],
+  uploadsOrigin = '',
+): string | null {
+  const fromSource = extractAvatarUrl(source, uploadsOrigin)
+
+  if (fromSource) {
+    return fromSource
+  }
+
+  for (const fallback of fallbacks) {
+    const normalized = normalizeAvatarUrl(fallback, uploadsOrigin)
+
+    if (normalized) {
+      return normalized
+    }
+  }
+
+  return null
 }
 
 export function resolveRoleLabel(roleName: string, roleCode: string, roles: Role[]): string {
@@ -195,7 +263,7 @@ export function normalizeWeapons(value: unknown): UserWeapon[] {
   })
 }
 
-export function normalizeUserProfile(data: unknown): ProfileUser {
+export function normalizeUserProfile(data: unknown, uploadsOrigin = ''): ProfileUser {
   const source = unwrapProfilePayload(data)
 
   return {
@@ -207,7 +275,7 @@ export function normalizeUserProfile(data: unknown): ProfileUser {
     phone: formatPhone(String(source.phone ?? '')),
     birthday: formatBirthdayDisplay(source.birthday),
     bio: String(source.bio ?? ''),
-    avatar: extractAvatarUrl(source),
+    avatar: extractAvatarUrl(source, uploadsOrigin),
     hunter_billet_number: String(source.hunter_billet_number ?? '').trim(),
     role_name: extractRoleName(source),
     role_code: extractRoleCode(source),
