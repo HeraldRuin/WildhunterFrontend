@@ -39,7 +39,20 @@ const displayName = computed(() => {
   return [user.value.first_name, user.value.last_name].filter(Boolean).join(' ') || user.value.email
 })
 
+const SIDEBAR_AVATAR_PLACEHOLDER = '/images/Frame%20145423.png'
+
 const avatarUrl = computed(() => profile.value?.avatar ?? user.value?.avatar ?? null)
+const avatarLoadFailed = ref(false)
+
+watch(avatarUrl, () => {
+  avatarLoadFailed.value = false
+})
+
+const showAvatarImage = computed(() => Boolean(avatarUrl.value) && !avatarLoadFailed.value)
+
+function handleAvatarError() {
+  avatarLoadFailed.value = true
+}
 const roleName = computed(() => profile.value?.role_name || user.value?.role_name || '')
 const memberSince = computed(() => formatMemberSince(profile.value?.created_at ?? user.value?.created_at ?? ''))
 
@@ -62,14 +75,19 @@ async function handleLogout() {
     <div class="profile-sidebar__user">
       <div class="profile-sidebar__avatar">
         <img
-          v-if="avatarUrl"
-          :src="avatarUrl"
-          :alt="displayName"
+          v-if="showAvatarImage"
+          :src="avatarUrl!"
+          alt=""
+          class="profile-sidebar__avatar-photo"
+          @error="handleAvatarError"
         >
-        <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="8" r="4" fill="currentColor" />
-          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="currentColor" />
-        </svg>
+        <img
+          v-else
+          :src="SIDEBAR_AVATAR_PLACEHOLDER"
+          alt=""
+          class="profile-sidebar__avatar-placeholder"
+          aria-hidden="true"
+        >
       </div>
 
       <div class="profile-sidebar__meta">
@@ -172,17 +190,15 @@ async function handleLogout() {
   flex-shrink: 0;
 }
 
-.profile-sidebar__avatar img,
-.profile-sidebar__avatar svg {
+.profile-sidebar__avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.profile-sidebar__avatar svg {
-  width: 64px;
-  height: 64px;
-  color: rgba(255, 255, 255, 0.85);
+.profile-sidebar__avatar-placeholder {
+  object-fit: contain;
+  background: var(--wh-white);
 }
 
 .profile-sidebar__role {

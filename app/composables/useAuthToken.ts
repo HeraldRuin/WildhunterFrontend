@@ -1,4 +1,5 @@
 import type { AuthSession, AuthUser } from '~/types/auth'
+import { normalizeAvatarUrl, resolveAvatarUrl, unwrapProfilePayload } from '~/utils/user'
 
 const TOKEN_KEY = 'wh_auth_token'
 const TOKEN_TYPE_KEY = 'wh_auth_token_type'
@@ -19,14 +20,16 @@ function readUser(raw: string | null): AuthUser | null {
   }
 }
 
-function pickUserForStorage(user: AuthUser | null | undefined): AuthUser | null {
+function pickUserForStorage(
+  user: AuthUser | null | undefined,
+  uploadsOrigin = '',
+): AuthUser | null {
   if (!user) {
     return null
   }
 
-  const avatar = user.avatar
-    ?? (user as AuthUser & { avatar_url?: string | null }).avatar_url
-    ?? null
+  const source = unwrapProfilePayload(user)
+  const avatar = resolveAvatarUrl(source, [user.avatar], uploadsOrigin)
 
   return {
     id: user.id,
@@ -62,7 +65,7 @@ function readBrowserStorage(): AuthSession | null {
   return null
 }
 
-function persistBrowserStorage(session: AuthSession, remember: boolean) {
+function persistBrowserStorage(session: AuthSession, remember: boolean, uploadsOrigin = '') {
   if (!import.meta.client) {
     return
   }
@@ -73,7 +76,7 @@ function persistBrowserStorage(session: AuthSession, remember: boolean) {
   storage.setItem(TOKEN_KEY, session.token)
   storage.setItem(TOKEN_TYPE_KEY, session.token_type || 'Bearer')
 
-  const compactUser = pickUserForStorage(session.user)
+  const compactUser = pickUserForStorage(session.user, uploadsOrigin)
 
   if (compactUser) {
     storage.setItem(USER_KEY, JSON.stringify(compactUser))
@@ -99,6 +102,9 @@ function clearBrowserStorage() {
 }
 
 export function useAuthToken() {
+  const config = useRuntimeConfig()
+  const uploadsOrigin = new URL(config.public.apiBase as string).origin
+
   const tokenCookie = useCookie<string | null>('wh_auth_token', {
     default: () => null,
     sameSite: 'lax',
@@ -143,7 +149,7 @@ export function useAuthToken() {
       return readUser(userJson.value)
     },
     set(value) {
-      const compactUser = pickUserForStorage(value)
+      const compactUser = pickUserForStorage(value, uploadsOrigin)
       userJson.value = compactUser ? JSON.stringify(compactUser) : null
     },
   })
@@ -159,7 +165,7 @@ export function useAuthToken() {
   })
 
   function applySession(session: AuthSession, remember = true) {
-    const compactUser = pickUserForStorage(session.user)
+    const compactUser = pickUserForStorage(session.user, uploadsOrigin)
 
     token.value = session.token
     tokenType.value = session.token_type || 'Bearer'
@@ -175,7 +181,7 @@ export function useAuthToken() {
       token: session.token,
       token_type: session.token_type,
       user: compactUser,
-    }, remember)
+    }, remember, uploadsOrigin)
   }
 
   function setSession(session: AuthSession, remember = true) {
@@ -199,10 +205,17 @@ export function useAuthToken() {
       return
     }
 
-    user.value = {
+    const { avatar, ...rest } = nextUser
+    const merged: AuthUser = {
       ...current,
-      ...nextUser,
+      ...rest,
     }
+
+    if (avatar) {
+      merged.avatar = normalizeAvatarUrl(avatar, uploadsOrigin) ?? avatar
+    }
+
+    user.value = merged
 
     const stored = readBrowserStorage()
 
@@ -210,7 +223,7 @@ export function useAuthToken() {
       persistBrowserStorage({
         ...stored,
         user: user.value,
-      }, Boolean(localStorage.getItem(TOKEN_KEY)))
+      }, Boolean(localStorage.getItem(TOKEN_KEY)), uploadsOrigin)
     }
   }
 
