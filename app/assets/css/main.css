@@ -29,6 +29,38 @@
   --wh-radius-lg: 20px;
   --wh-container: 1240px;
   --wh-auth-modal-width: 440px;
+
+  /* Обводка полей: default / active (focus, open) / кольцо фокуса */
+  --wh-field-border: rgba(0, 0, 0, 0.2);
+  --wh-field-border-active: rgba(0, 0, 0, 0.45);
+  --wh-field-focus-ring: rgba(0, 0, 0, 0.06);
+
+  /* Валидация: цвет текста ошибки и (опционально) окантовки */
+  --wh-field-error: #dc2626;
+  --wh-field-error-ring: rgb(220 38 38 / 12%);
+  /* 1 — красить окантовку при ошибке, 0 — только текст под полем */
+  --wh-field-error-border-enabled: 0;
+
+  --wh-field-border-error: color-mix(
+    in srgb,
+    var(--wh-field-error) calc(100% * var(--wh-field-error-border-enabled)),
+    var(--wh-field-border)
+  );
+  --wh-field-border-error-focus: color-mix(
+    in srgb,
+    var(--wh-field-error) calc(100% * var(--wh-field-error-border-enabled)),
+    var(--wh-field-border-active)
+  );
+  --wh-field-focus-ring-error: color-mix(
+    in srgb,
+    var(--wh-field-error-ring) calc(100% * var(--wh-field-error-border-enabled)),
+    transparent
+  );
+  --wh-field-focus-ring-error-focus: color-mix(
+    in srgb,
+    var(--wh-field-error-ring) calc(100% * var(--wh-field-error-border-enabled)),
+    var(--wh-field-focus-ring)
+  );
 }
 
 *,
