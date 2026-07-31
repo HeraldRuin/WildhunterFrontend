@@ -27,8 +27,13 @@ const confirmPassword = ref('')
 const showCurrentPassword = ref(false)
 const showNewPassword = ref(false)
 const isSubmitting = ref(false)
+const showSubmittingOverlay = ref(false)
 const submitError = ref('')
 const fieldErrors = ref<Record<string, string[]>>({})
+
+const hasValidationFeedback = computed(() =>
+  Boolean(submitError.value) || Object.keys(fieldErrors.value).length > 0,
+)
 
 type PasswordField = 'current_password' | 'new_password' | 'new_password_confirmation'
 
@@ -160,10 +165,87 @@ function handleGeneratePassword() {
   clearFieldError('new_password_confirmation')
 }
 
-async function handleSubmit() {
-  isSubmitting.value = true
-  submitError.value = ''
+type PendingSubmitResult =
+  | { kind: 'success', message: string }
+  | { kind: 'validation', data: unknown }
+  | { kind: 'fail', message: string }
+
+const pendingSubmitResult = ref<PendingSubmitResult | null>(null)
+
+function finishSubmittingOverlay() {
+  showSubmittingOverlay.value = false
+}
+
+async function applySuccess(message: string) {
   fieldErrors.value = {}
+  submitError.value = ''
+  notifications.success(message)
+  resetFormFields()
+  currentPassword.value = (await refreshCurrentPassword()) || ''
+}
+
+function applyFail(message: string) {
+  fieldErrors.value = {}
+  submitError.value = message
+}
+
+function applySubmitResult(result: PendingSubmitResult) {
+  if (result.kind === 'success') {
+    void applySuccess(result.message)
+    return
+  }
+
+  if (result.kind === 'validation') {
+    if (!applyValidationErrors(result.data)) {
+      applyFail('Не удалось изменить пароль')
+    }
+    return
+  }
+
+  applyFail(result.message)
+}
+
+function clearSubmittingState() {
+  isSubmitting.value = false
+
+  const result = pendingSubmitResult.value
+  pendingSubmitResult.value = null
+
+  if (result) {
+    applySubmitResult(result)
+  }
+}
+
+function resolveErrorResult(data: unknown): PendingSubmitResult {
+  if (getApiErrorPayload(data)) {
+    return { kind: 'validation', data }
+  }
+
+  return { kind: 'fail', message: 'Не удалось изменить пароль' }
+}
+
+function settleSubmitResult(result: PendingSubmitResult, useOverlay: boolean) {
+  if (useOverlay) {
+    pendingSubmitResult.value = result
+    return
+  }
+
+  applySubmitResult(result)
+}
+
+async function handleSubmit() {
+  if (isSubmitting.value) {
+    return
+  }
+
+  isSubmitting.value = true
+
+  // Повторный сабмит с уже показанными ошибками — не трогаем DOM до конца оверлея
+  const useOverlay = hasValidationFeedback.value
+
+  if (useOverlay) {
+    showSubmittingOverlay.value = true
+  }
 
   try {
     const response = await userApi.changePassword({
@@ -173,23 +255,24 @@ async function handleSubmit() {
     })
 
     if ('success' in response && response.success) {
-      notifications.success(response.message || 'Пароль успешно изменён')
-      resetFormFields()
-      currentPassword.value = (await refreshCurrentPassword()) || ''
+      settleSubmitResult({
+        kind: 'success',
+        message: response.message || 'Пароль успешно изменён',
+      }, useOverlay)
       return
     }
 
-    if (!applyValidationErrors(response)) {
-      submitError.value = 'Не удалось изменить пароль'
-    }
+    settleSubmitResult(resolveErrorResult(response), useOverlay)
   } catch (error) {
     const data = (error as { data?: unknown }).data
-
-    if (!applyValidationErrors(data)) {
-      submitError.value = 'Не удалось изменить пароль'
-    }
+    settleSubmitResult(resolveErrorResult(data), useOverlay)
   } finally {
-    isSubmitting.value = false
+    if (useOverlay) {
+      finishSubmittingOverlay()
+    }
+    else {
+      clearSubmittingState()
+    }
   }
 }
 
@@ -229,7 +312,12 @@ onMounted(() => {
 
     <CommonPageTitle divider>Изменить пароль</CommonPageTitle>
 
-    <form class="password-form" @submit.prevent="handleSubmit">
+    <form
+      class="password-form"
+      :class="{ 'password-form--submitting': isSubmitting }"
+      :aria-busy="isSubmitting || undefined"
+      @submit.prevent="handleSubmit"
+    >
       <div class="password-form__fields">
         <CommonFormField
           id="current-password"
@@ -362,12 +450,26 @@ onMounted(() => {
         <CommonSaveButton
           type="submit"
           :disabled="isSubmitting"
-          :loading="isSubmitting"
         />
         <button type="button" class="password-form__cancel" @click="handleCancel">
           Отмена
         </button>
       </div>
+
+      <Transition name="password-saving-fade" @after-leave="clearSubmittingState">
+        <div
+          v-if="showSubmittingOverlay"
+          class="password-form__saving-overlay"
+          aria-hidden="true"
+        >
+          <CommonSpinner
+            variant="ring"
+            color="var(--wh-green)"
+            :size="28"
+            label="Сохранение пароля"
+          />
+        </div>
+      </Transition>
     </form>
   </div>
 </template>
@@ -430,6 +532,43 @@ onMounted(() => {
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
+}
+
+.password-form {
+  position: relative;
+  max-width: 896px;
+}
+
+.password-form--submitting {
+  pointer-events: none;
+  user-select: none;
+}
+
+.password-form__saving-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(1px);
+  will-change: opacity;
+}
+
+.password-saving-fade-enter-active {
+  transition: opacity 0.25s ease-out;
+}
+
+.password-saving-fade-leave-active {
+  transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.password-saving-fade-enter-from,
+.password-saving-fade-leave-to {
+  opacity: 0;
 }
 
 .password-form__fields {
