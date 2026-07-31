@@ -273,20 +273,17 @@ watch(isOpen, (open) => {
 
           <form class="forgot-password-modal__form" novalidate @submit.prevent="handleSubmit">
             <template v-if="step === 'email'">
-              <div class="forgot-password-modal__field">
-                <input
-                  v-model="email"
-                  type="email"
-                  class="forgot-password-modal__input"
-                  :class="{ 'forgot-password-modal__input--error': getFieldError('email') }"
-                  placeholder="Адрес Email"
-                  autocomplete="email"
-                  @input="clearFieldError('email')"
-                />
-                <p v-if="getFieldError('email')" class="forgot-password-modal__field-error">
-                  {{ getFieldError('email') }}
-                </p>
-              </div>
+              <CommonFormField
+                id="forgot-email"
+                placeholder="Адрес Email"
+                type="email"
+                autocomplete="email"
+                no-margin
+                :model-value="email"
+                :error="getFieldError('email')"
+                :disabled="isSubmitting"
+                @update:model-value="email = $event; clearFieldError('email')"
+              />
             </template>
 
             <template v-else>
@@ -294,34 +291,32 @@ watch(isOpen, (open) => {
                 {{ resetStepHint }}
               </p>
 
-              <div class="forgot-password-modal__field">
-                <input
-                  v-model="code"
-                  type="text"
-                  class="forgot-password-modal__input"
-                  :class="{ 'forgot-password-modal__input--error': getFieldError('code') }"
-                  placeholder="Код из письма"
-                  autocomplete="one-time-code"
-                  inputmode="numeric"
-                  @input="clearFieldError('code')"
-                />
-                <p v-if="getFieldError('code')" class="forgot-password-modal__field-error">
-                  {{ getFieldError('code') }}
-                </p>
-              </div>
+              <CommonFormField
+                id="forgot-code"
+                placeholder="Код из письма"
+                autocomplete="one-time-code"
+                inputmode="numeric"
+                no-margin
+                :model-value="code"
+                :error="getFieldError('code')"
+                :disabled="isSubmitting"
+                @update:model-value="code = $event; clearFieldError('code')"
+              />
 
-              <div class="forgot-password-modal__field">
-                <div class="forgot-password-modal__password-wrap">
-                  <input
-                    v-model="password"
-                    :type="showPassword ? 'text' : 'password'"
-                    class="forgot-password-modal__input forgot-password-modal__input--password"
-                    :class="{ 'forgot-password-modal__input--error': getFieldError('password') }"
-                    placeholder="Новый пароль"
-                    autocomplete="new-password"
-                    @input="clearFieldError('password')"
-                  />
-
+              <CommonFormField
+                id="forgot-password"
+                placeholder="Новый пароль"
+                autocomplete="new-password"
+                no-margin
+                trailing-wide
+                :type="showPassword ? 'text' : 'password'"
+                :masked="!showPassword && Boolean(password)"
+                :model-value="password"
+                :error="getFieldError('password')"
+                :disabled="isSubmitting"
+                @update:model-value="password = $event; clearFieldError('password')"
+              >
+                <template #trailing>
                   <div class="forgot-password-modal__password-actions">
                     <button
                       type="button"
@@ -330,7 +325,6 @@ watch(isOpen, (open) => {
                     >
                       Сгенерировать
                     </button>
-
                     <button
                       type="button"
                       class="forgot-password-modal__toggle-password"
@@ -343,36 +337,31 @@ watch(isOpen, (open) => {
                         alt=""
                         aria-hidden="true"
                         class="forgot-password-modal__password-icon"
-                      />
+                      >
                       <img
                         v-else
                         src="/icons/weui_eyes-off-filled.png"
                         alt=""
                         aria-hidden="true"
                         class="forgot-password-modal__password-icon forgot-password-modal__password-icon--hidden"
-                      />
+                      >
                     </button>
                   </div>
-                </div>
-                <p v-if="getFieldError('password')" class="forgot-password-modal__field-error">
-                  {{ getFieldError('password') }}
-                </p>
-              </div>
+                </template>
+              </CommonFormField>
 
-              <div class="forgot-password-modal__field">
-                <input
-                  v-model="passwordConfirmation"
-                  :type="showPassword ? 'text' : 'password'"
-                  class="forgot-password-modal__input"
-                  :class="{ 'forgot-password-modal__input--error': getFieldError('password_confirmation') }"
-                  placeholder="Подтверждение пароля"
-                  autocomplete="new-password"
-                  @input="clearFieldError('password_confirmation')"
-                />
-                <p v-if="getFieldError('password_confirmation')" class="forgot-password-modal__field-error">
-                  {{ getFieldError('password_confirmation') }}
-                </p>
-              </div>
+              <CommonFormField
+                id="forgot-password-confirmation"
+                placeholder="Подтверждение пароля"
+                autocomplete="new-password"
+                no-margin
+                :type="showPassword ? 'text' : 'password'"
+                :masked="!showPassword && Boolean(passwordConfirmation)"
+                :model-value="passwordConfirmation"
+                :error="getFieldError('password_confirmation')"
+                :disabled="isSubmitting"
+                @update:model-value="passwordConfirmation = $event; clearFieldError('password_confirmation')"
+              />
             </template>
 
             <p v-if="submitError" class="forgot-password-modal__error">
@@ -440,12 +429,6 @@ watch(isOpen, (open) => {
   gap: 16px;
 }
 
-.forgot-password-modal__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .forgot-password-modal__hint {
   margin: 0;
   font-size: 0.88rem;
@@ -453,48 +436,10 @@ watch(isOpen, (open) => {
   color: var(--wh-gray-600);
 }
 
-.forgot-password-modal__input {
-  width: 100%;
-  min-height: 48px;
-  padding: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.forgot-password-modal__input::placeholder {
-  color: var(--wh-gray-400);
-}
-
-.forgot-password-modal__input:focus {
-  border-color: rgba(0, 0, 0, 0.45);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
-}
-
-.forgot-password-modal__input--error,
-.forgot-password-modal__input--error:focus {
-  border-color: #dc2626;
-}
-
-.forgot-password-modal__password-wrap {
-  position: relative;
-}
-
-.forgot-password-modal__input--password {
-  padding-right: 168px;
-}
-
 .forgot-password-modal__password-actions {
-  position: absolute;
-  top: 50%;
-  right: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
-  transform: translateY(-50%);
 }
 
 .forgot-password-modal__generate {
@@ -547,11 +492,10 @@ watch(isOpen, (open) => {
   height: 26px;
 }
 
-.forgot-password-modal__field-error,
 .forgot-password-modal__error {
   margin: 0;
   font-size: 0.82rem;
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 
 .forgot-password-modal__submit {
@@ -628,16 +572,16 @@ watch(isOpen, (open) => {
     padding: 32px 24px 24px;
   }
 
-  .forgot-password-modal__input--password {
-    padding-right: 148px;
-  }
-
   .forgot-password-modal__generate {
     font-size: 0.76rem;
   }
 
   .forgot-password-modal__submit {
     font-size: 0.92rem;
+  }
+
+  .forgot-password-modal__form :deep(.form-field__input--with-trailing-wide) {
+    padding-right: 148px;
   }
 }
 </style>
