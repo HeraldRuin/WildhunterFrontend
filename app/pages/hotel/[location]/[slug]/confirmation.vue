@@ -285,16 +285,24 @@ const bookingsLink = '/profile/bookings'
 
 .booking-confirmation__summary-label {
   display: block;
-  margin-bottom: 4px;
-  font-size: 0.8125rem;
-  line-height: 1.3;
-  color: rgb(255 255 255 / 72%);
+  margin-bottom: 8px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+  color: var(--wh-white);
 }
 
 .booking-confirmation__summary-value {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  line-height: 1.3;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  opacity: 0.8;
 }
 
 .booking-confirmation__status {
@@ -304,9 +312,12 @@ const bookingsLink = '/profile/bookings'
   padding: 4px 12px;
   border-radius: 999px;
   background: var(--wh-orange-500);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  line-height: 1.2;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 120%;
+  letter-spacing: -0.05em;
 }
 
 .booking-confirmation__cta {
@@ -320,9 +331,12 @@ const bookingsLink = '/profile/bookings'
   border-radius: var(--wh-radius-lg);
   background: var(--wh-orange-500);
   color: var(--wh-white);
-  font-size: 0.9375rem;
-  font-weight: 700;
-  line-height: 1.2;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 100%;
+  letter-spacing: -0.05em;
   text-align: center;
   text-decoration: none;
   transition: background 0.15s ease;
