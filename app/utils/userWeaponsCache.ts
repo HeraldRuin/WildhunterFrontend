@@ -2,6 +2,7 @@ import type { UserWeapon } from '~/types/user'
 
 const WEAPONS_LIST_CACHE_PREFIX = 'wh_user_weapons_list'
 const WEAPONS_COUNT_CACHE_PREFIX = 'wh_user_weapons_count'
+const HUNTER_BILLET_CACHE_PREFIX = 'wh_user_hunter_billet'
 
 function listKey(userId: number | string) {
   return `${WEAPONS_LIST_CACHE_PREFIX}:${userId}`
@@ -9,6 +10,10 @@ function listKey(userId: number | string) {
 
 function countKey(userId: number | string) {
   return `${WEAPONS_COUNT_CACHE_PREFIX}:${userId}`
+}
+
+function billetKey(userId: number | string) {
+  return `${HUNTER_BILLET_CACHE_PREFIX}:${userId}`
 }
 
 function readJson<T>(key: string): T | null {
@@ -104,6 +109,22 @@ export function readUserWeaponsCountCache(userId: number): number {
   return Math.min(count, 40)
 }
 
+export function readHunterBilletCache(userId: number): string | null {
+  const raw = readJson<string>(billetKey(userId))
+
+  if (typeof raw !== 'string') {
+    return null
+  }
+
+  const trimmed = raw.trim()
+
+  return trimmed || null
+}
+
+export function writeHunterBilletCache(userId: number, value: string) {
+  writeJson(billetKey(userId), value.trim())
+}
+
 export function clearUserWeaponsCache(userId?: number | null) {
   if (!userId) {
     return
@@ -111,4 +132,5 @@ export function clearUserWeaponsCache(userId?: number | null) {
 
   removeKey(listKey(userId))
   removeKey(countKey(userId))
+  removeKey(billetKey(userId))
 }

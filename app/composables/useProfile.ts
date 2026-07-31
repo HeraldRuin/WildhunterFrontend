@@ -10,7 +10,11 @@ import {
   resolveRoleLabel,
   unwrapProfilePayload,
 } from '~/utils/user'
-import { clearUserWeaponsCache } from '~/utils/userWeaponsCache'
+import {
+  clearUserWeaponsCache,
+  readHunterBilletCache,
+  writeHunterBilletCache,
+} from '~/utils/userWeaponsCache'
 
 const PROFILE_CACHE_PREFIX = 'wh_profile_user'
 const ROLES_CACHE_KEY = 'wh_profile_roles'
@@ -198,10 +202,30 @@ export function useProfile() {
     }
   }
 
+  function resolveHunterBilletNumber(profileData: ProfileUser): string {
+    const fromPayload = profileData.hunter_billet_number.trim()
+    const fromMemory = profile.value?.id === profileData.id
+      ? profile.value.hunter_billet_number.trim()
+      : ''
+    const fromProfileCache = readCachedProfile(profileData.id)?.hunter_billet_number.trim() ?? ''
+    const fromBilletCache = readHunterBilletCache(profileData.id) ?? ''
+
+    return fromPayload || fromMemory || fromProfileCache || fromBilletCache
+  }
+
   function applyProfile(profileData: ProfileUser) {
-    const merged = withPreservedAvatar(profileData, avatarFallbacks(profileData.id))
+    const preservedBillet = resolveHunterBilletNumber(profileData)
+
+    const merged = withPreservedAvatar({
+      ...profileData,
+      hunter_billet_number: preservedBillet,
+    }, avatarFallbacks(profileData.id))
     profile.value = merged
     writeCachedProfile(merged)
+
+    if (preservedBillet) {
+      writeHunterBilletCache(profileData.id, preservedBillet)
+    }
 
     const authPatch: Parameters<typeof updateAuthUser>[0] = {
       id: profileData.id,
@@ -259,12 +283,15 @@ export function useProfile() {
       return false
     }
 
-    const hydrated = withPreservedAvatar(cached, avatarFallbacks(userId))
+    const hydrated = withPreservedAvatar(
+      {
+        ...cached,
+        hunter_billet_number: resolveHunterBilletNumber(cached),
+      },
+      avatarFallbacks(userId),
+    )
     profile.value = hydrated
-
-    if (hydrated.avatar && hydrated.avatar !== cached.avatar) {
-      writeCachedProfile(hydrated)
-    }
+    writeCachedProfile(hydrated)
     hydrateRolesFromCache()
     return true
   }

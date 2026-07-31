@@ -14,6 +14,8 @@ import { createEmptyWeapon } from '~/utils/user'
 import {
   readUserWeaponsCache,
   readUserWeaponsCountCache,
+  readHunterBilletCache,
+  writeHunterBilletCache,
   writeUserWeaponsCache,
 } from '~/utils/userWeaponsCache'
 
@@ -245,9 +247,10 @@ async function loadUserWeapons(options: { force?: boolean, silent?: boolean } = 
     const { weapons: list, hunterBilletNumber } = await weaponsApi.getUserWeaponsBundle()
     applyWeaponsList(list)
 
-    // Номер билета приходит в /user/weapons — кладём в профиль и кэш
     if (hunterBilletNumber) {
       applyHunterBilletFromApi(hunterBilletNumber)
+    } else {
+      hydrateHunterBilletFromCache()
     }
   } catch {
     if (!options.silent) {
@@ -285,20 +288,58 @@ function applyHunterBilletFromApi(value: string) {
     return
   }
 
+  const userId = currentUserId()
+
+  if (userId && trimmed) {
+    writeHunterBilletCache(userId, trimmed)
+  }
+
   patchCachedProfile({ hunter_billet_number: trimmed })
   syncHunterBilletSnapshot()
 }
 
+function hydrateHunterBilletFromCache() {
+  const userId = currentUserId()
+
+  if (!userId || !profile.value || profile.value.hunter_billet_number.trim()) {
+    return
+  }
+
+  const cached = readHunterBilletCache(userId)
+
+  if (!cached) {
+    return
+  }
+
+  patchCachedProfile({ hunter_billet_number: cached })
+}
+
 async function ensureHunterBilletLoaded() {
+  hydrateHunterBilletFromCache()
+
   if (profile.value?.hunter_billet_number.trim()) {
     return
   }
 
   await loadUserWeapons({ force: true, silent: true })
+  hydrateHunterBilletFromCache()
+}
+
+async function refreshHunterBilletOnPageEnter() {
+  hydrateHunterBilletFromCache()
+
+  if (profile.value?.hunter_billet_number.trim()) {
+    syncHunterBilletSnapshot()
+    return
+  }
+
+  await ensureHunterBilletLoaded()
+  syncHunterBilletSnapshot()
 }
 
 async function bootWeaponsPage() {
   await loadProfile()
+  await refreshHunterBilletOnPageEnter()
 
   // Есть полный кэш списка — сразу показываем, но номер билета всё равно подтягиваем при необходимости
   if (hydrateWeaponsFromCache()) {
@@ -515,6 +556,10 @@ function handleLicenseDateDocumentClick(event: MouseEvent) {
 onMounted(() => {
   void bootWeaponsPage()
   document.addEventListener('click', handleLicenseDateDocumentClick)
+})
+
+onActivated(() => {
+  void refreshHunterBilletOnPageEnter()
 })
 
 onBeforeUnmount(() => {
@@ -786,10 +831,12 @@ async function saveHunterBillet() {
     if ('success' in response && response.success) {
       clearFieldError('hunter_billet_number')
       submitError.value = ''
-      // Актуальные данные — из GET /user/weapons (+ кэш списка/билета)
-      await loadUserWeapons({ force: true, silent: true })
-      // Если лицензий ещё нет, GET не вернёт billet — фиксируем отправленное значение
+      // Сначала фиксируем в профиле и localStorage — GET может вернуть пусто (старый API / кэш auth)
       applyHunterBilletFromApi(trimmed)
+      await loadUserWeapons({ force: true, silent: true })
+      if (!profile.value?.hunter_billet_number.trim()) {
+        applyHunterBilletFromApi(trimmed)
+      }
 
       notifications.success(
         wasUpdate
