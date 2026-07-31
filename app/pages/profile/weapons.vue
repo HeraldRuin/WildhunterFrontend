@@ -1167,21 +1167,21 @@ const hasNewWeapon = computed(() =>
                   </button>
                 </template>
               </div>
-              </div>
-            </Transition>
 
-            <Transition name="weapon-saving-fade" @after-leave="clearWeaponSavingState">
-              <div
-                v-if="!card.loading && savingWeaponOverlayIndex === card.index"
-                class="profile-weapon__saving-overlay"
-                aria-hidden="true"
-              >
-                <CommonSpinner
-                  variant="ring"
-                  color="var(--wh-green)"
-                  :size="28"
-                  label="Сохранение лицензии"
-                />
+              <Transition name="weapon-saving-fade" @after-leave="clearWeaponSavingState">
+                <div
+                  v-if="savingWeaponOverlayIndex === card.index"
+                  class="profile-weapon__saving-overlay"
+                  aria-hidden="true"
+                >
+                  <CommonSpinner
+                    variant="ring"
+                    color="var(--wh-green)"
+                    :size="28"
+                    label="Сохранение лицензии"
+                  />
+                </div>
+              </Transition>
               </div>
             </Transition>
           </article>
@@ -1413,9 +1413,9 @@ const hasNewWeapon = computed(() =>
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 0 0 12px 12px;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.5);
   will-change: opacity;
 }
 
@@ -1471,6 +1471,7 @@ const hasNewWeapon = computed(() =>
 }
 
 .profile-weapon__content {
+  position: relative;
   padding: 0 20px 20px;
 }
 

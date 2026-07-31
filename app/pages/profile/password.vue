@@ -566,8 +566,7 @@ onMounted(() => {
   justify-content: center;
   border-radius: 12px;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(1px);
+  background: rgba(255, 255, 255, 0.5);
   will-change: opacity;
 }
 
