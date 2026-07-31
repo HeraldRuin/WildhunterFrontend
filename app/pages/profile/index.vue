@@ -14,9 +14,11 @@ import {
   parseBirthdayDate,
 } from '~/utils/date'
 import { extractPhoneDigits, formatPhone } from '~/utils/phone'
+import { useUserApi, type AvatarHistoryItem } from '~/api/user'
 
 const { user } = useAuth()
 const { profile, pending, error, loadProfile, saveProfile } = useProfile()
+const { getAvatarHistory } = useUserApi()
 const notifications = useNotifications()
 
 const notificationCount = 2
@@ -26,6 +28,13 @@ const submitError = ref('')
 const fieldErrors = ref<Record<string, string[]>>({})
 const avatarFile = ref<File | null>(null)
 const avatarObjectUrl = ref<string | null>(null)
+const selectedAvatarId = ref<number | null>(null)
+const selectedHistoryUrl = ref<string | null>(null)
+const isAvatarHistoryOpen = ref(false)
+const avatarHistoryRef = ref<HTMLElement | null>(null)
+const avatarHistory = ref<AvatarHistoryItem[]>([])
+const avatarHistoryLoading = ref(false)
+const avatarHistoryError = ref('')
 const isBirthdayOpen = ref(false)
 const birthdayFieldRef = ref<HTMLElement | null>(null)
 const birthdayDate = ref<Date | null>(null)
@@ -55,7 +64,22 @@ const profileId = computed(() => {
   return id && Number(id) > 0 ? Number(id) : null
 })
 
-const avatarPreview = computed(() => avatarObjectUrl.value || profile.value?.avatar || null)
+const FORM_AVATAR_PLACEHOLDER = '/images/input%20field.png'
+
+const avatarPreview = computed(() =>
+  avatarObjectUrl.value || selectedHistoryUrl.value || profile.value?.avatar || null,
+)
+const avatarPreviewFailed = ref(false)
+
+watch(avatarPreview, () => {
+  avatarPreviewFailed.value = false
+})
+
+const showAvatarPreview = computed(() => Boolean(avatarPreview.value) && !avatarPreviewFailed.value)
+
+function handleAvatarPreviewError() {
+  avatarPreviewFailed.value = true
+}
 
 watch(
   profile,
@@ -84,6 +108,10 @@ watch(
 function handleBirthdayDocumentClick(event: MouseEvent) {
   if (!birthdayFieldRef.value?.contains(event.target as Node)) {
     isBirthdayOpen.value = false
+  }
+
+  if (!avatarHistoryRef.value?.contains(event.target as Node)) {
+    isAvatarHistoryOpen.value = false
   }
 }
 
@@ -276,6 +304,77 @@ function resolveBirthdayForApi(value: string) {
   return parsed ? formatApiDate(parsed) : value.trim()
 }
 
+function clearSelectedHistoryAvatar() {
+  selectedAvatarId.value = null
+  selectedHistoryUrl.value = null
+}
+
+function unwrapAvatarHistoryItems(payload: unknown): AvatarHistoryItem[] {
+  if (Array.isArray(payload)) {
+    return payload.filter((item): item is AvatarHistoryItem =>
+      Boolean(item && typeof item === 'object' && typeof item.url === 'string' && item.url),
+    )
+  }
+
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return unwrapAvatarHistoryItems((payload as { data: unknown }).data)
+  }
+
+  return []
+}
+
+async function loadAvatarHistory() {
+  avatarHistoryLoading.value = true
+  avatarHistoryError.value = ''
+
+  try {
+    const response = await getAvatarHistory()
+
+    if ('success' in response && response.success) {
+      avatarHistory.value = unwrapAvatarHistoryItems(response.data)
+      return
+    }
+
+    avatarHistory.value = []
+    avatarHistoryError.value = 'Не удалось загрузить историю'
+  } catch (error) {
+    avatarHistory.value = []
+    const status = (error as { statusCode?: number }).statusCode
+
+    avatarHistoryError.value = status === 404
+      ? 'История аватаров пока недоступна на сервере'
+      : 'Не удалось загрузить историю'
+  } finally {
+    avatarHistoryLoading.value = false
+  }
+}
+
+async function toggleAvatarHistory() {
+  if (isSubmitting.value) {
+    return
+  }
+
+  const willOpen = !isAvatarHistoryOpen.value
+  isAvatarHistoryOpen.value = willOpen
+
+  if (willOpen) {
+    await loadAvatarHistory()
+  }
+}
+
+function selectHistoryAvatar(item: AvatarHistoryItem) {
+  if (avatarObjectUrl.value) {
+    URL.revokeObjectURL(avatarObjectUrl.value)
+    avatarObjectUrl.value = null
+  }
+
+  avatarFile.value = null
+  selectedAvatarId.value = item.id
+  selectedHistoryUrl.value = item.url
+  isAvatarHistoryOpen.value = false
+  clearFieldError('avatar')
+}
+
 function handleAvatarChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0] || null
@@ -285,6 +384,7 @@ function handleAvatarChange(event: Event) {
     avatarObjectUrl.value = null
   }
 
+  clearSelectedHistoryAvatar()
   avatarFile.value = file
   clearFieldError('avatar')
 
@@ -313,11 +413,15 @@ async function handleSubmit() {
       bio: profile.value.bio,
       hunter_billet_number: profile.value.hunter_billet_number,
       avatar: avatarFile.value,
+      avatar_id: selectedAvatarId.value,
     })
 
     if ('success' in response && response.success) {
       notifications.success(response.message || 'Данные профиля сохранены')
       avatarFile.value = null
+      clearSelectedHistoryAvatar()
+      avatarHistory.value = []
+      avatarHistoryError.value = ''
 
       if (avatarObjectUrl.value) {
         URL.revokeObjectURL(avatarObjectUrl.value)
@@ -523,22 +627,86 @@ async function handleSubmit() {
               <div class="profile-form__avatar-upload">
                 <div
                   class="profile-form__avatar-preview"
-                  :class="{ 'profile-form__avatar-preview--default': !avatarPreview }"
+                  :class="{ 'profile-form__avatar-preview--default': !showAvatarPreview }"
                 >
                   <img
-                    v-if="avatarPreview"
-                    :src="avatarPreview"
-                    alt="Аватар"
+                    v-if="showAvatarPreview"
+                    :src="avatarPreview!"
+                    alt=""
+                    class="profile-form__avatar-photo"
                     :class="{ 'profile-form__value-reveal': revealValues }"
+                    @error="handleAvatarPreviewError"
                   >
-                  <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="8" r="4" fill="currentColor" />
-                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="currentColor" />
-                  </svg>
+                  <img
+                    v-else
+                    :src="FORM_AVATAR_PLACEHOLDER"
+                    alt=""
+                    class="profile-form__avatar-placeholder"
+                    aria-hidden="true"
+                  >
                 </div>
-                <div class="profile-form__avatar-controls">
-                  <span class="profile-form__label">Аватар</span>
+                <div ref="avatarHistoryRef" class="profile-form__avatar-controls">
+                  <div class="profile-form__avatar-label-row">
+                    <span class="profile-form__label">Аватар</span>
+                    <button
+                      type="button"
+                      class="profile-form__avatar-history-btn"
+                      :class="{ 'profile-form__avatar-history-btn--active': isAvatarHistoryOpen }"
+                      title="Ранее загруженные"
+                      aria-label="Выбрать из ранее загруженных"
+                      :aria-expanded="isAvatarHistoryOpen"
+                      :disabled="isSubmitting"
+                      @click="toggleAvatarHistory"
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <circle cx="10" cy="10" r="7.25" stroke="currentColor" stroke-width="1.5" />
+                        <path
+                          d="M10 6.25V10L12.75 11.75"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <div
+                    v-if="isAvatarHistoryOpen"
+                    class="profile-form__avatar-history"
+                  >
+                    <p v-if="avatarHistoryLoading" class="profile-form__avatar-history-message">
+                      Загрузка...
+                    </p>
+                    <p
+                      v-else-if="avatarHistoryError"
+                      class="profile-form__avatar-history-message profile-form__avatar-history-message--error"
+                    >
+                      {{ avatarHistoryError }}
+                    </p>
+                    <p
+                      v-else-if="avatarHistory.length === 0"
+                      class="profile-form__avatar-history-message"
+                    >
+                      Нет сохранённых фото
+                    </p>
+                    <div v-else class="profile-form__avatar-history-grid">
+                      <button
+                        v-for="item in avatarHistory"
+                        :key="item.id"
+                        type="button"
+                        class="profile-form__avatar-history-item"
+                        :class="{
+                          'profile-form__avatar-history-item--active': selectedAvatarId === item.id,
+                        }"
+                        :title="`Фото #${item.id}`"
+                        @click="selectHistoryAvatar(item)"
+                      >
+                        <img :src="item.url" alt="">
+                      </button>
+                    </div>
+                  </div>
                   <label
+                    v-else
                     class="profile-form__file-btn"
                     :class="{ 'profile-form__file-btn--error': getFieldError('avatar') }"
                   >
@@ -822,11 +990,121 @@ async function handleSubmit() {
 }
 
 .profile-form__avatar-controls {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+}
+
+.profile-form__avatar-label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-form__avatar-history-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 8px;
+  background: var(--wh-white);
+  color: var(--wh-gray-600);
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.profile-form__avatar-history-btn:hover:not(:disabled),
+.profile-form__avatar-history-btn:focus-visible:not(:disabled) {
+  border-color: var(--wh-orange-500);
+  background: rgba(209, 101, 16, 0.08);
+  color: var(--wh-orange-500);
+}
+
+.profile-form__avatar-history-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.profile-form__avatar-history-btn--active {
+  border-color: var(--wh-orange-500);
+  background: rgba(209, 101, 16, 0.08);
+  color: var(--wh-orange-500);
+}
+
+.profile-form__avatar-history-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.profile-form__avatar-history {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 48px;
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  background: var(--wh-white);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.profile-form__avatar-history-message {
+  margin: 0;
+  color: var(--wh-gray-400);
+  font-size: 14px;
+  line-height: 130%;
+}
+
+.profile-form__avatar-history-message--error {
+  color: #dc2626;
+}
+
+.profile-form__avatar-history-grid {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.profile-form__avatar-history-item {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: #e8eaee;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.profile-form__avatar-history-item:hover,
+.profile-form__avatar-history-item:focus-visible {
+  border-color: var(--wh-orange-500);
+}
+
+.profile-form__avatar-history-item--active {
+  border-color: var(--wh-orange-500);
+}
+
+.profile-form__avatar-history-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-form__file-btn {
@@ -868,6 +1146,7 @@ async function handleSubmit() {
   width: 78px;
   height: 78px;
   flex-shrink: 0;
+  margin-top: 8px;
   border-radius: 12px;
   background: #e8eaee;
   overflow: hidden;
@@ -875,21 +1154,17 @@ async function handleSubmit() {
 
 .profile-form__avatar-preview--default {
   box-sizing: border-box;
-  border: 1px solid rgba(0, 0, 0, 0.2);
   background: var(--wh-white);
 }
 
-.profile-form__avatar-preview img,
-.profile-form__avatar-preview svg {
+.profile-form__avatar-preview img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.profile-form__avatar-preview svg {
-  width: 40px;
-  height: 40px;
-  color: var(--wh-gray-400);
+.profile-form__avatar-placeholder {
+  object-fit: contain;
 }
 
 .profile-form__actions {
