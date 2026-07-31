@@ -566,7 +566,11 @@ async function handleSubmit() {
           </div>
 
           <div class="profile-form__column">
-            <div ref="birthdayFieldRef">
+            <div
+              ref="birthdayFieldRef"
+              class="profile-form__birthday"
+              :class="{ 'profile-form__birthday--open': isBirthdayOpen }"
+            >
               <CommonFormField
                 id="birthday"
                 label="Дата рождения"
@@ -924,7 +928,18 @@ async function handleSubmit() {
   height: 20px;
 }
 
+.profile-form__birthday {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-form__birthday--open {
+  z-index: 40;
+}
+
 .profile-form__birthday-panel {
+  position: relative;
+  z-index: 50;
   width: 100%;
   padding: 18px 20px;
   border: 1px solid var(--wh-gray);
