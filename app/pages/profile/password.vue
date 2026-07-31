@@ -318,57 +318,104 @@ onMounted(() => {
       :aria-busy="isSubmitting || undefined"
       @submit.prevent="handleSubmit"
     >
-      <div class="password-form__fields">
-        <CommonFormField
-          id="current-password"
-          label="Текущий пароль"
-          placeholder="Текущий пароль"
-          autocomplete="current-password"
-          no-margin
-          :type="showCurrentPassword ? 'text' : 'password'"
-          :model-value="currentPassword"
-          :masked="!showCurrentPassword && Boolean(currentPassword)"
-          :error="getFieldError('current_password')"
-          @update:model-value="currentPassword = $event; clearFieldError('current_password')"
-        >
-          <template #trailing>
+      <div class="password-form__body">
+        <div class="password-form__fields">
+          <CommonFormField
+            id="current-password"
+            label="Текущий пароль"
+            placeholder="Текущий пароль"
+            autocomplete="current-password"
+            no-margin
+            :type="showCurrentPassword ? 'text' : 'password'"
+            :model-value="currentPassword"
+            :masked="!showCurrentPassword && Boolean(currentPassword)"
+            :error="getFieldError('current_password')"
+            @update:model-value="currentPassword = $event; clearFieldError('current_password')"
+          >
+            <template #trailing>
+              <button
+                type="button"
+                class="password-form__toggle"
+                :aria-label="showCurrentPassword ? 'Скрыть пароль' : 'Показать пароль'"
+                @click="showCurrentPassword = !showCurrentPassword"
+              >
+                <img
+                  v-if="showCurrentPassword"
+                  src="/icons/Group.png"
+                  alt=""
+                  aria-hidden="true"
+                  class="password-form__password-icon"
+                >
+                <img
+                  v-else
+                  src="/icons/weui_eyes-off-filled.png"
+                  alt=""
+                  aria-hidden="true"
+                  class="password-form__password-icon password-form__password-icon--hidden"
+                >
+              </button>
+            </template>
+          </CommonFormField>
+
+          <div class="password-form__new-row">
+            <CommonFormField
+              id="new-password"
+              label="Новый пароль"
+              placeholder="Новый пароль"
+              autocomplete="new-password"
+              minlength="8"
+              no-margin
+              :type="showNewPassword ? 'text' : 'password'"
+              :model-value="newPassword"
+              :masked="!showNewPassword && Boolean(newPassword)"
+              :error="getFieldError('new_password')"
+              @update:model-value="newPassword = $event; clearFieldError('new_password')"
+            >
+              <template #trailing>
+                <button
+                  type="button"
+                  class="password-form__toggle"
+                  :aria-label="showNewPassword ? 'Скрыть пароль' : 'Показать пароль'"
+                  @click="showNewPassword = !showNewPassword"
+                >
+                  <img
+                    v-if="showNewPassword"
+                    src="/icons/Group.png"
+                    alt=""
+                    aria-hidden="true"
+                    class="password-form__password-icon"
+                  >
+                  <img
+                    v-else
+                    src="/icons/weui_eyes-off-filled.png"
+                    alt=""
+                    aria-hidden="true"
+                    class="password-form__password-icon password-form__password-icon--hidden"
+                  >
+                </button>
+              </template>
+            </CommonFormField>
             <button
               type="button"
-              class="password-form__toggle"
-              :aria-label="showCurrentPassword ? 'Скрыть пароль' : 'Показать пароль'"
-              @click="showCurrentPassword = !showCurrentPassword"
+              class="password-form__generate"
+              @click="handleGeneratePassword"
             >
-              <img
-                v-if="showCurrentPassword"
-                src="/icons/Group.png"
-                alt=""
-                aria-hidden="true"
-                class="password-form__password-icon"
-              >
-              <img
-                v-else
-                src="/icons/weui_eyes-off-filled.png"
-                alt=""
-                aria-hidden="true"
-                class="password-form__password-icon password-form__password-icon--hidden"
-              >
+              Сгенерировать
             </button>
-          </template>
-        </CommonFormField>
+          </div>
 
-        <div class="password-form__new-row">
           <CommonFormField
-            id="new-password"
-            label="Новый пароль"
-            placeholder="Новый пароль"
+            id="confirm-password"
+            label="Новый пароль снова"
+            placeholder="Новый пароль снова"
             autocomplete="new-password"
             minlength="8"
             no-margin
             :type="showNewPassword ? 'text' : 'password'"
-            :model-value="newPassword"
-            :masked="!showNewPassword && Boolean(newPassword)"
-            :error="getFieldError('new_password')"
-            @update:model-value="newPassword = $event; clearFieldError('new_password')"
+            :model-value="confirmPassword"
+            :masked="!showNewPassword && Boolean(confirmPassword)"
+            :error="getFieldError('new_password_confirmation')"
+            @update:model-value="confirmPassword = $event; clearFieldError('new_password_confirmation')"
           >
             <template #trailing>
               <button
@@ -394,57 +441,27 @@ onMounted(() => {
               </button>
             </template>
           </CommonFormField>
-          <button
-            type="button"
-            class="password-form__generate"
-            @click="handleGeneratePassword"
-          >
-            Сгенерировать
-          </button>
         </div>
 
-        <CommonFormField
-          id="confirm-password"
-          label="Новый пароль снова"
-          placeholder="Новый пароль снова"
-          autocomplete="new-password"
-          minlength="8"
-          no-margin
-          :type="showNewPassword ? 'text' : 'password'"
-          :model-value="confirmPassword"
-          :masked="!showNewPassword && Boolean(confirmPassword)"
-          :error="getFieldError('new_password_confirmation')"
-          @update:model-value="confirmPassword = $event; clearFieldError('new_password_confirmation')"
-        >
-          <template #trailing>
-            <button
-              type="button"
-              class="password-form__toggle"
-              :aria-label="showNewPassword ? 'Скрыть пароль' : 'Показать пароль'"
-              @click="showNewPassword = !showNewPassword"
-            >
-              <img
-                v-if="showNewPassword"
-                src="/icons/Group.png"
-                alt=""
-                aria-hidden="true"
-                class="password-form__password-icon"
-              >
-              <img
-                v-else
-                src="/icons/weui_eyes-off-filled.png"
-                alt=""
-                aria-hidden="true"
-                class="password-form__password-icon password-form__password-icon--hidden"
-              >
-            </button>
-          </template>
-        </CommonFormField>
-      </div>
+        <p v-if="submitError" class="password-form__submit-error">
+          {{ submitError }}
+        </p>
 
-      <p v-if="submitError" class="password-form__submit-error">
-        {{ submitError }}
-      </p>
+        <Transition name="password-saving-fade" @after-leave="clearSubmittingState">
+          <div
+            v-if="showSubmittingOverlay"
+            class="password-form__saving-overlay"
+            aria-hidden="true"
+          >
+            <CommonSpinner
+              variant="ring"
+              color="var(--wh-green)"
+              :size="28"
+              label="Сохранение пароля"
+            />
+          </div>
+        </Transition>
+      </div>
 
       <div class="password-form__actions">
         <CommonSaveButton
@@ -455,21 +472,6 @@ onMounted(() => {
           Отмена
         </button>
       </div>
-
-      <Transition name="password-saving-fade" @after-leave="clearSubmittingState">
-        <div
-          v-if="showSubmittingOverlay"
-          class="password-form__saving-overlay"
-          aria-hidden="true"
-        >
-          <CommonSpinner
-            variant="ring"
-            color="var(--wh-green)"
-            :size="28"
-            label="Сохранение пароля"
-          />
-        </div>
-      </Transition>
     </form>
   </div>
 </template>
@@ -535,13 +537,24 @@ onMounted(() => {
 }
 
 .password-form {
-  position: relative;
   max-width: 896px;
 }
 
-.password-form--submitting {
+.password-form__body {
+  position: relative;
+}
+
+.password-form--submitting .password-form__body {
   pointer-events: none;
   user-select: none;
+}
+
+.password-form--submitting .password-form__actions {
+  pointer-events: none;
+}
+
+.password-form--submitting :deep(.save-button:disabled) {
+  opacity: 1;
 }
 
 .password-form__saving-overlay {
