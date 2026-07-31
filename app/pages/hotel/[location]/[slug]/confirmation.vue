@@ -524,6 +524,10 @@ const bookingsLink = '/profile/bookings'
     width: min(calc(100% - 32px), calc(100vw - 48px));
   }
 
+  .booking-confirmation__title {
+    font-size: 28px;
+  }
+
   .booking-confirmation__summary {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     height: auto;
