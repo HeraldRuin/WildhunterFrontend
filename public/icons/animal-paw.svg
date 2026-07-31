@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+  <!-- 4 toes -->
+  <ellipse cx="5.5" cy="8" rx="2" ry="2.5" transform="rotate(-22 5.5 8)"/>
+  <ellipse cx="9.2" cy="5.2" rx="2" ry="2.5" transform="rotate(-8 9.2 5.2)"/>
+  <ellipse cx="14.8" cy="5.2" rx="2" ry="2.5" transform="rotate(8 14.8 5.2)"/>
+  <ellipse cx="18.5" cy="8" rx="2" ry="2.5" transform="rotate(22 18.5 8)"/>
+  <!-- main pad -->
+  <path d="M12 10.4c-2.7 0-5.2 1.7-5.2 4.3 0 1.5.8 2.7 2 3.3.9.5 2 .7 3.2.7s2.3-.2 3.2-.7c1.2-.6 2-1.8 2-3.3 0-2.6-2.5-4.3-5.2-4.3z"/>
+</svg>
