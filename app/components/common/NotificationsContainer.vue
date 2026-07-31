@@ -110,8 +110,8 @@ const icons: Record<NotificationType, { path: string, viewBox?: string }> = {
 }
 
 .notif--error .notif__aside {
-  color: #dc2626;
-  background: rgba(220, 38, 38, 0.08);
+  color: var(--wh-field-error);
+  background: color-mix(in srgb, var(--wh-field-error) 8%, transparent);
 }
 
 .notif--warning .notif__aside {

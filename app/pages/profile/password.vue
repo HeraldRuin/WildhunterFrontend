@@ -601,7 +601,7 @@ onMounted(() => {
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 0.875rem;
   line-height: 1.35;
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 
 .password-form__toggle {

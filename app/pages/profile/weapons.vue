@@ -1285,7 +1285,7 @@ const hasNewWeapon = computed(() =>
 }
 
 .profile-page__status--error {
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 
 .weapons-form {
@@ -1394,11 +1394,16 @@ const hasNewWeapon = computed(() =>
   min-width: 0;
   margin: 0;
   padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--wh-field-border);
   border-radius: 12px;
   background: var(--wh-white);
   box-sizing: border-box;
   overflow: visible;
+  transition: border-color 0.15s ease;
+}
+
+.profile-weapon--expanded {
+  border-color: var(--wh-field-border-active);
 }
 
 .profile-weapon--saving {
@@ -1502,7 +1507,7 @@ const hasNewWeapon = computed(() =>
   font-family: "Inter", "Manrope", system-ui, sans-serif;
   font-size: 0.875rem;
   line-height: 1.35;
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 
 .profile-weapon__footer {

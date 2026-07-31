@@ -814,7 +814,7 @@ async function handleSubmit() {
 }
 
 .profile-page__status--error {
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 
 .profile-form--loading {
@@ -965,8 +965,8 @@ async function handleSubmit() {
 }
 
 .profile-form__file-btn--error {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  border-color: var(--wh-field-border-error);
+  box-shadow: 0 0 0 3px var(--wh-field-focus-ring-error);
 }
 
 .profile-form__field-error {
@@ -974,7 +974,7 @@ async function handleSubmit() {
   font-family: "Inter", "Manrope", system-ui, sans-serif;
   font-size: 0.875rem;
   line-height: 1.35;
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 
 .profile-form__submit-error {
@@ -984,7 +984,7 @@ async function handleSubmit() {
   font-family: "Inter", "Manrope", system-ui, sans-serif;
   font-size: 0.875rem;
   line-height: 1.35;
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 
 .profile-form__field {
@@ -1067,7 +1067,7 @@ async function handleSubmit() {
   width: 100%;
   height: 48px;
   padding: 6px 10px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--wh-field-border);
   border-radius: 10px;
   background: var(--wh-white);
   box-sizing: border-box;
@@ -1082,7 +1082,7 @@ async function handleSubmit() {
 }
 
 .profile-form__avatar-history-message--error {
-  color: #dc2626;
+  color: var(--wh-field-error);
 }
 
 .profile-form__avatar-history-grid {
@@ -1128,7 +1128,7 @@ async function handleSubmit() {
   width: 100%;
   min-height: 48px;
   padding: 12px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--wh-field-border);
   border-radius: 10px;
   background: var(--wh-white);
   color: var(--wh-gray-400);
