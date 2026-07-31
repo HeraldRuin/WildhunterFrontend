@@ -292,10 +292,44 @@ function quantityOptions(max: number) {
 
 @media (--wh-tablet) {
   .hotel-room-selection__card {
-    flex-direction: column;
-    gap: 16px;
+     gap: 16px;
     height: auto;
     min-height: 212px;
+  }
+
+  .hotel-room-selection__media {
+    flex: 0 0 min(240px, 38%);
+    width: min(240px, 38%);
+    height: auto;
+    aspect-ratio: 288 / 172;
+  }
+
+  .hotel-room-selection__body {
+    flex: 1;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    height: auto;
+    min-height: 0;
+  }
+
+  .hotel-room-selection__booking {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  .hotel-room-selection__quantity {
+    width: 172px;
+    max-width: none;
+    margin-inline: 0;
+  }
+}
+
+@media (--wh-mobile) {
+  .hotel-room-selection__card {
+    flex-direction: column;
+    gap: 16px;
   }
 
   .hotel-room-selection__media {
@@ -310,7 +344,7 @@ function quantityOptions(max: number) {
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
-    height: auto;
+    width: 100%;
   }
 
   .hotel-room-selection__booking {
@@ -323,7 +357,6 @@ function quantityOptions(max: number) {
   .hotel-room-selection__quantity {
     width: 100%;
     max-width: 172px;
-    height: 46px;
     margin-inline: auto;
   }
 }

@@ -13,13 +13,27 @@ const emit = defineEmits<{
   book: []
 }>()
 
+const route = useRoute()
+
 const sectionStyle = computed(() => ({
   width: props.width,
   '--hotel-booking-blocks-width': props.blocksWidth,
 }))
 
+const confirmationPath = computed(() => {
+  const location = String(route.params.location || '')
+  const slug = String(route.params.slug || '')
+
+  if (!location || !slug) {
+    return '/'
+  }
+
+  return `/hotel/${location}/${slug}/confirmation`
+})
+
 function handleBook() {
   emit('book')
+  void navigateTo(confirmationPath.value)
 }
 </script>
 

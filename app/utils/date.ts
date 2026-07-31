@@ -154,3 +154,35 @@ export function getCalendarDays(year: number, month: number): CalendarDay[] {
 
   return days
 }
+
+/** Дата для экрана подтверждения брони: 10.04.2026 */
+export function formatBookingDate(date: Date) {
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+
+  return `${day}.${month}.${year}`
+}
+
+export function formatBookingDateFromDisplay(value: string) {
+  const parsed = parseDisplayDate(value)
+
+  if (!parsed) {
+    return value
+  }
+
+  return formatBookingDate(parsed)
+}
+
+export function countNightsBetween(checkIn: Date, checkOut: Date) {
+  const start = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate())
+  const end = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate())
+  const diff = end.getTime() - start.getTime()
+
+  if (diff <= 0) {
+    return 1
+  }
+
+  return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)))
+}
+

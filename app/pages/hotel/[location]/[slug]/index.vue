@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
-import { createMockHotelDetail } from '~/utils/hotel'
+import { createMockHotelDetail, getHotelPath } from '~/utils/hotel'
 import { formatReviewsCount } from '~/utils/pluralize'
 import HotelBookingSection from '~/components/hotel/HotelBookingSection.vue'
 
@@ -157,6 +157,10 @@ async function handleFavoriteClick() {
     isFavoriteLoading.value = false
   }
 }
+
+function handleBook() {
+  void navigateTo(`${getHotelPath(hotelParams.value.locationSlug, hotelParams.value.hotelSlug)}/confirmation`)
+}
 </script>
 
 <template>
@@ -250,7 +254,7 @@ async function handleFavoriteClick() {
           </section>
 
           <section class="hotel-page__booking">
-            <HotelBookingSection width="90%" />
+            <HotelBookingSection width="90%" @book="handleBook" />
           </section>
         </div>
       </section>
