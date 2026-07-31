@@ -378,9 +378,12 @@ const bookingsLink = '/profile/bookings'
 .booking-confirmation__card-panel {
   height: 256px;
   padding: 20px;
-  border: 1px solid var(--wh-gray-200);
+  border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius-lg);
-  background: var(--wh-white);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--wh-shadow);
   box-sizing: border-box;
 }
 
@@ -487,20 +490,29 @@ const bookingsLink = '/profile/bookings'
 
 .booking-confirmation__requirements-title {
   margin: 0 0 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--wh-green-900);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
 }
 
 .booking-confirmation__requirements-field {
-  min-height: 56px;
+  height: 70px;
+  min-height: 70px;
   padding: 16px 18px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: var(--wh-radius-lg);
-  background: var(--wh-white);
+  border: 1px solid var(--wh-gray-400);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--wh-shadow);
   color: var(--wh-gray-600);
   font-size: 0.9375rem;
   line-height: 1.5;
+  box-sizing: border-box;
 }
 
 @media (--wh-tablet) {
