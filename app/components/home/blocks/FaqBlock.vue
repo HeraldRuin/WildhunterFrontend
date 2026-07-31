@@ -108,7 +108,7 @@ function toggleItem(id: number) {
 
 <style scoped>
 .faq-block {
-  padding-block: 72px 88px;
+  padding-block: 48px 64px;
   background: var(--wh-white);
 }
 

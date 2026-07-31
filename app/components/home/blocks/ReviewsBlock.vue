@@ -71,7 +71,7 @@ function scrollBy(direction: 'prev' | 'next') {
 
 <style scoped>
 .reviews-block {
-  padding-block: 72px 88px;
+  padding-block: 48px 64px;
   background: var(--wh-white);
 }
 

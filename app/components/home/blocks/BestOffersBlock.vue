@@ -73,7 +73,7 @@ function scrollBy(direction: 'prev' | 'next') {
 
 <style scoped>
 .best-offers {
-  padding-block: 72px 80px;
+  padding-block: 48px 56px;
   background: var(--wh-white);
 }
 

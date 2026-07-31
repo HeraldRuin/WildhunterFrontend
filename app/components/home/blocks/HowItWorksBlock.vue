@@ -97,7 +97,7 @@ const steps = [
 
 <style scoped>
 .how-it-works {
-  padding-block: 72px 88px;
+  padding-block: 48px 64px;
   background: var(--wh-white);
 }
 
@@ -272,7 +272,7 @@ const steps = [
 
 @media (--wh-mobile) {
   .how-it-works {
-    padding-block: 48px 56px;
+    padding-block: 24px 32px;
   }
 
   .how-it-works__inner {
