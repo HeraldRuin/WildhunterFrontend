@@ -191,7 +191,7 @@ const socials = [
 }
 
 .footer__bottom {
-  //border-top: 1px solid var(--wh-black-text);
+  /* border-top: 1px solid var(--wh-black-text); */
 }
 
 .footer__bottom-inner {
