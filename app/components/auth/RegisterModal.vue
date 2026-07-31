@@ -19,8 +19,6 @@ const acceptTerms = ref(false)
 const roles = ref<Role[]>([])
 const rolesLoading = ref(false)
 const rolesError = ref('')
-const isRoleOpen = ref(false)
-const roleFieldRef = ref<HTMLElement | null>(null)
 const isSubmitting = ref(false)
 const submitError = ref('')
 const fieldErrors = ref<Record<string, string[]>>({})
@@ -93,7 +91,6 @@ function resetForm() {
   submitError.value = ''
   fieldErrors.value = {}
   isSubmitting.value = false
-  isRoleOpen.value = false
 }
 
 const phone = computed({
@@ -105,55 +102,24 @@ const phone = computed({
   },
 })
 
-const selectedRole = computed(() => roles.value.find((item) => item.code === role.value) ?? null)
+const roleOptions = computed(() =>
+  roles.value.map(item => ({
+    value: item.code,
+    label: item.name,
+  })),
+)
 
-const roleLabel = computed(() => {
+const rolePlaceholder = computed(() => {
   if (rolesLoading.value) {
     return 'Загрузка ролей...'
   }
 
-  if (selectedRole.value) {
-    return selectedRole.value.name
+  if (rolesError.value) {
+    return 'Роль недоступна'
   }
 
   return 'Выберите роль'
 })
-
-function toggleRoleDropdown() {
-  if (rolesLoading.value || rolesError.value) {
-    return
-  }
-
-  isRoleOpen.value = !isRoleOpen.value
-}
-
-function selectRole(item: Role) {
-  role.value = item.code
-  clearFieldError('role')
-  isRoleOpen.value = false
-  clearRoleHover()
-}
-
-const hoveredRoleCode = ref<string | null>(null)
-
-function clearRoleHover() {
-  hoveredRoleCode.value = null
-}
-
-function setRoleHover(code: string) {
-  hoveredRoleCode.value = code
-}
-
-function closeRoleDropdown() {
-  isRoleOpen.value = false
-  clearRoleHover()
-}
-
-function handleDocumentClick(event: MouseEvent) {
-  if (!roleFieldRef.value?.contains(event.target as Node)) {
-    closeRoleDropdown()
-  }
-}
 
 function handlePhoneKeydown(event: KeyboardEvent) {
   if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -191,11 +157,13 @@ function handlePhoneKeydown(event: KeyboardEvent) {
 function handlePhonePaste(event: ClipboardEvent) {
   event.preventDefault()
   phoneDigits.value = extractPhoneDigits(event.clipboardData?.getData('text') ?? '')
+  clearFieldError('phone')
 }
 
 function handleGeneratePassword() {
   password.value = generatePassword()
   showPassword.value = true
+  clearFieldError('password')
 }
 
 function togglePasswordVisibility() {
@@ -262,16 +230,10 @@ function switchToLogin() {
 watch(isOpen, (open) => {
   if (open) {
     loadRoles()
-    document.addEventListener('click', handleDocumentClick)
     return
   }
 
-  document.removeEventListener('click', handleDocumentClick)
   resetForm()
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleDocumentClick)
 })
 </script>
 
@@ -302,172 +264,112 @@ onUnmounted(() => {
 
           <form class="register-modal__form" novalidate @submit.prevent="handleSubmit">
             <div class="register-modal__row">
-              <div class="register-modal__field">
-                <input
-                  v-model="firstName"
-                  type="text"
-                  class="register-modal__input"
-                  :class="{ 'register-modal__input--error': getFieldError('first_name') }"
-                  placeholder="Имя"
-                  autocomplete="given-name"
-                  @input="clearFieldError('first_name')"
-                />
-                <p v-if="getFieldError('first_name')" class="register-modal__field-error">
-                  {{ getFieldError('first_name') }}
-                </p>
-              </div>
-              <div class="register-modal__field">
-                <input
-                  v-model="lastName"
-                  type="text"
-                  class="register-modal__input"
-                  :class="{ 'register-modal__input--error': getFieldError('last_name') }"
-                  placeholder="Фамилия"
-                  autocomplete="family-name"
-                  @input="clearFieldError('last_name')"
-                />
-                <p v-if="getFieldError('last_name')" class="register-modal__field-error">
-                  {{ getFieldError('last_name') }}
-                </p>
-              </div>
+              <CommonFormField
+                id="register-first-name"
+                placeholder="Имя"
+                autocomplete="given-name"
+                no-margin
+                :model-value="firstName"
+                :error="getFieldError('first_name')"
+                :disabled="isSubmitting"
+                @update:model-value="firstName = $event; clearFieldError('first_name')"
+              />
+              <CommonFormField
+                id="register-last-name"
+                placeholder="Фамилия"
+                autocomplete="family-name"
+                no-margin
+                :model-value="lastName"
+                :error="getFieldError('last_name')"
+                :disabled="isSubmitting"
+                @update:model-value="lastName = $event; clearFieldError('last_name')"
+              />
             </div>
 
-            <div
-              ref="roleFieldRef"
-              class="register-modal__field register-modal__field--role"
-            >
-              <button
-                type="button"
-                class="register-modal__dropdown-trigger"
-                :class="{
-                  'register-modal__dropdown-trigger--placeholder': !selectedRole,
-                  'register-modal__dropdown-trigger--open': isRoleOpen,
-                  'register-modal__input--error': getFieldError('role'),
-                }"
-                :disabled="rolesLoading || !!rolesError"
-                @click="toggleRoleDropdown"
-              >
-                <span class="register-modal__dropdown-value">{{ roleLabel }}</span>
-              </button>
-              <svg class="register-modal__dropdown-chevron" width="12" height="8" viewBox="0 0 12 8" aria-hidden="true">
-                <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+            <CommonSelectField
+              v-model="role"
+              no-margin
+              :placeholder="rolePlaceholder"
+              :options="roleOptions"
+              :disabled="rolesLoading || !!rolesError || isSubmitting"
+              :error="getFieldError('role') || rolesError"
+              @update:model-value="clearFieldError('role')"
+            />
 
-              <ul
-                v-if="isRoleOpen && roles.length"
-                class="register-modal__dropdown-list"
-                @pointerleave="clearRoleHover"
-              >
-                <li v-for="item in roles" :key="item.id">
+            <CommonFormField
+              id="register-phone"
+              type="tel"
+              placeholder="+7 (___) ___-__-__"
+              autocomplete="tel"
+              inputmode="numeric"
+              maxlength="18"
+              no-margin
+              :model-value="phone"
+              :error="getFieldError('phone')"
+              :disabled="isSubmitting"
+              @update:model-value="phone = $event; clearFieldError('phone')"
+              @keydown="handlePhoneKeydown"
+              @paste="handlePhonePaste"
+            />
+
+            <CommonFormField
+              id="register-email"
+              placeholder="Адрес Email"
+              autocomplete="email"
+              inputmode="email"
+              no-margin
+              :model-value="email"
+              :error="getFieldError('email')"
+              :disabled="isSubmitting"
+              @update:model-value="email = $event; clearFieldError('email')"
+            />
+
+            <CommonFormField
+              id="register-password"
+              placeholder="Пароль"
+              autocomplete="new-password"
+              no-margin
+              trailing-wide
+              :type="showPassword ? 'text' : 'password'"
+              :masked="!showPassword && Boolean(password)"
+              :model-value="password"
+              :error="getFieldError('password')"
+              :disabled="isSubmitting"
+              @update:model-value="password = $event; clearFieldError('password')"
+            >
+              <template #trailing>
+                <div class="register-modal__password-actions">
                   <button
                     type="button"
-                    class="register-modal__dropdown-option"
-                    :data-role-code="item.code"
-                    :class="{
-                      'register-modal__dropdown-option--active': item.code === role,
-                      'register-modal__dropdown-option--hovered': hoveredRoleCode === item.code,
-                    }"
-                    @pointerenter="setRoleHover(item.code)"
-                    @click="selectRole(item)"
+                    class="register-modal__generate"
+                    @click="handleGeneratePassword"
                   >
-                    <span class="register-modal__dropdown-option-dot" aria-hidden="true" />
-                    <span class="register-modal__dropdown-option-label">{{ item.name }}</span>
+                    Сгенерировать
                   </button>
-                </li>
-              </ul>
-
-              <p v-if="getFieldError('role')" class="register-modal__field-error">
-                {{ getFieldError('role') }}
-              </p>
-            </div>
-
-            <p v-if="rolesError" class="register-modal__error">
-              {{ rolesError }}
-            </p>
-
-            <div class="register-modal__field">
-              <input
-                v-model="phone"
-                type="tel"
-                class="register-modal__input"
-                :class="{ 'register-modal__input--error': getFieldError('phone') }"
-                placeholder="+7 (___) ___-__-__"
-                autocomplete="tel"
-                inputmode="numeric"
-                maxlength="18"
-                @input="clearFieldError('phone')"
-                @keydown="handlePhoneKeydown"
-                @paste="handlePhonePaste"
-              />
-              <p v-if="getFieldError('phone')" class="register-modal__field-error">
-                {{ getFieldError('phone') }}
-              </p>
-            </div>
-
-            <div class="register-modal__field">
-              <input
-                v-model="email"
-                type="text"
-                class="register-modal__input"
-                :class="{ 'register-modal__input--error': getFieldError('email') }"
-                placeholder="Адрес Email"
-                autocomplete="email"
-                inputmode="email"
-                @input="clearFieldError('email')"
-              />
-              <p v-if="getFieldError('email')" class="register-modal__field-error">
-                {{ getFieldError('email') }}
-              </p>
-            </div>
-
-            <div class="register-modal__field">
-              <div class="register-modal__password-wrap">
-                <input
-                  v-model="password"
-                  :type="showPassword ? 'text' : 'password'"
-                  class="register-modal__input register-modal__input--password"
-                  :class="{ 'register-modal__input--error': getFieldError('password') }"
-                  placeholder="Пароль"
-                  autocomplete="new-password"
-                  @input="clearFieldError('password')"
-                />
-
-              <div class="register-modal__password-actions">
-                <button
-                  type="button"
-                  class="register-modal__generate"
-                  @click="handleGeneratePassword"
-                >
-                  Сгенерировать
-                </button>
-
-                <button
-                  type="button"
-                  class="register-modal__toggle-password"
-                  :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'"
-                  @click="togglePasswordVisibility"
-                >
-                  <img
-                    v-if="showPassword"
-                    src="/icons/Group.png"
-                    alt=""
-                    aria-hidden="true"
-                    class="register-modal__password-icon"
-                  />
-                  <img
-                    v-else
-                    src="/icons/weui_eyes-off-filled.png"
-                    alt=""
-                    aria-hidden="true"
-                    class="register-modal__password-icon register-modal__password-icon--hidden"
-                  />
-                </button>
-              </div>
-            </div>
-              <p v-if="getFieldError('password')" class="register-modal__field-error">
-                {{ getFieldError('password') }}
-              </p>
-            </div>
+                  <button
+                    type="button"
+                    class="register-modal__toggle-password"
+                    :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'"
+                    @click="togglePasswordVisibility"
+                  >
+                    <img
+                      v-if="showPassword"
+                      src="/icons/Group.png"
+                      alt=""
+                      aria-hidden="true"
+                      class="register-modal__password-icon"
+                    >
+                    <img
+                      v-else
+                      src="/icons/weui_eyes-off-filled.png"
+                      alt=""
+                      aria-hidden="true"
+                      class="register-modal__password-icon register-modal__password-icon--hidden"
+                    >
+                  </button>
+                </div>
+              </template>
+            </CommonFormField>
 
             <label class="register-modal__terms">
               <input
@@ -475,7 +377,7 @@ onUnmounted(() => {
                 type="checkbox"
                 class="register-modal__checkbox"
                 @change="clearFieldError('term')"
-              />
+              >
               <span>
                 Мною прочитаны и принимаются
                 <NuxtLink to="/terms" class="register-modal__terms-link" @click="close">
@@ -582,63 +484,10 @@ onUnmounted(() => {
   gap: 12px;
 }
 
-.register-modal__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.register-modal__field-error {
-  margin: 0;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  color: #dc2626;
-}
-
-.register-modal__input--error,
-.register-modal__input--error:focus,
-.register-modal__dropdown-trigger.register-modal__input--error,
-.register-modal__dropdown-trigger.register-modal__input--error:focus-visible {
-  border-color: #dc2626;
-}
-
-.register-modal__input {
-  width: 100%;
-  min-height: 48px;
-  padding: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.register-modal__input::placeholder {
-  color: var(--wh-gray-400);
-}
-
-.register-modal__input:focus {
-  border-color: rgba(0, 0, 0, 0.45);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
-}
-
-.register-modal__password-wrap {
-  position: relative;
-}
-
-.register-modal__input--password {
-  padding-right: 168px;
-}
-
 .register-modal__password-actions {
-  position: absolute;
-  top: 50%;
-  right: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
-  transform: translateY(-50%);
 }
 
 .register-modal__generate {
@@ -691,127 +540,12 @@ onUnmounted(() => {
   height: 26px;
 }
 
-.register-modal__field--role {
-  position: relative;
-  z-index: 3;
-}
-
-.register-modal__dropdown-trigger {
-  width: 100%;
-  min-height: 48px;
-  padding: 12px 40px 12px 12px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.register-modal__dropdown-trigger--placeholder .register-modal__dropdown-value {
-  color: var(--wh-gray-400);
-}
-
-.register-modal__dropdown-trigger--open,
-.register-modal__dropdown-trigger:focus-visible {
-  border-color: rgba(0, 0, 0, 0.45);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
-}
-
-.register-modal__dropdown-trigger:disabled {
-  cursor: not-allowed;
-  background: var(--wh-gray-100);
-  color: var(--wh-gray-400);
-}
-
-.register-modal__dropdown-value {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.register-modal__dropdown-chevron {
-  position: absolute;
-  top: 24px;
-  right: 16px;
-  color: var(--wh-gray-900);
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-
-.register-modal__dropdown-list {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 20;
-  margin: 0;
-  padding: 6px 8px;
-  list-style: none;
-  border: 1px solid var(--wh-gray);
-  border-radius: 14px;
-  background: var(--wh-white);
-  color: var(--wh-black-text);
-  overflow: hidden;
-}
-
-.register-modal__dropdown-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 14px;
-  border: none;
-  border-radius: 10px;
-  appearance: none;
-  -webkit-appearance: none;
-  background-color: transparent;
-  color: var(--wh-black-text);
-  font: inherit;
-  font-size: 0.98rem;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.register-modal__dropdown-option-dot {
-  flex-shrink: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: transparent;
-}
-
-.register-modal__dropdown-option-label {
-  min-width: 0;
-}
-
-.register-modal__dropdown-option:hover,
-.register-modal__dropdown-option--hovered,
-.register-modal__dropdown-option:focus-visible {
-  background-color: #e8883a;
-  color: #ffffff;
-}
-
-.register-modal__dropdown-option--active .register-modal__dropdown-option-dot {
-  background-color: #d16510;
-}
-
-.register-modal__dropdown-option--active:hover .register-modal__dropdown-option-dot,
-.register-modal__dropdown-option--active.register-modal__dropdown-option--hovered .register-modal__dropdown-option-dot,
-.register-modal__dropdown-option--active:focus-visible .register-modal__dropdown-option-dot {
-  background-color: #ffffff;
-}
-
+.register-modal__field-error,
 .register-modal__error {
-  margin: -4px 0 0;
+  margin: 0;
   font-size: 0.82rem;
-  color: #dc2626;
+  line-height: 1.35;
+  color: var(--wh-field-error);
 }
 
 .register-modal__terms {
@@ -830,7 +564,7 @@ onUnmounted(() => {
   width: 16px;
   height: 16px;
   margin-top: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--wh-field-border);
   border-radius: 3px;
   background: var(--wh-white);
   appearance: none;
@@ -939,12 +673,12 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 
-  .register-modal__input--password {
-    padding-right: 148px;
-  }
-
   .register-modal__generate {
     font-size: 0.76rem;
+  }
+
+  .register-modal__form :deep(.form-field__input--with-trailing-wide) {
+    padding-right: 148px;
   }
 }
 </style>
