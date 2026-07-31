@@ -602,6 +602,29 @@ const bookingsLink = '/profile/bookings'
     align-items: flex-start;
   }
 
+  .booking-confirmation__title {
+    font-size: 24px;
+  }
+
+  .booking-confirmation__subtitle {
+    font-size: 16px;
+  }
+
+  .booking-confirmation__card-title,
+  .booking-confirmation__requirements-title {
+    font-size: 22px;
+  }
+
+  .booking-confirmation__summary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-confirmation__cta {
+    width: 100%;
+    height: 56px;
+    min-height: 56px;
+  }
+
   .booking-confirmation__card-content {
     flex-direction: column;
   }
