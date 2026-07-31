@@ -249,7 +249,7 @@ const bookingsLink = '/profile/bookings'
 }
 
 .booking-confirmation__subtitle {
-  margin: -12px 0 24px;
+  margin: -12px 0 0;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 400;
   font-style: normal;
@@ -376,7 +376,8 @@ const bookingsLink = '/profile/bookings'
 }
 
 .booking-confirmation__card-panel {
-  height: 256px;
+  min-height: 256px;
+  height: auto;
   padding: 20px;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius-lg);
@@ -389,7 +390,9 @@ const bookingsLink = '/profile/bookings'
 
 .booking-confirmation__card-content {
   display: flex;
-  gap: 20px;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
 }
 
 .booking-confirmation__card-media {
@@ -399,8 +402,9 @@ const bookingsLink = '/profile/bookings'
 
 .booking-confirmation__card-placeholder {
   display: block;
-  width: 287px;
-  height: 191px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 287 / 191;
   border-radius: 12px;
   background: var(--wh-gray-300);
   overflow: hidden;
@@ -435,7 +439,7 @@ const bookingsLink = '/profile/bookings'
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
   padding: 6px 0;
   font-size: 0.875rem;
   line-height: 1.4;
@@ -513,6 +517,73 @@ const bookingsLink = '/profile/bookings'
   font-size: 0.9375rem;
   line-height: 1.5;
   box-sizing: border-box;
+}
+
+/* Узкий десктоп: уменьшаем фото и кнопку, зелёной плашке больше места */
+@media (max-width: 1440px) and (min-width: 1025px) {
+  .booking-confirmation__summary {
+    gap: 10px 12px;
+    padding: 16px 18px;
+  }
+
+  .booking-confirmation__summary-label,
+  .booking-confirmation__summary-value {
+    font-size: 15px;
+  }
+
+  .booking-confirmation__cta {
+    min-width: 260px;
+    width: 260px;
+    padding: 0 16px;
+    font-size: 16px;
+  }
+
+  .booking-confirmation__card-media {
+    flex: 0 0 180px;
+    width: 180px;
+  }
+
+  .booking-confirmation__card-caption {
+    font-size: 16px;
+  }
+
+  .booking-confirmation__detail-row dt,
+  .booking-confirmation__detail-row dd {
+    font-size: 15px;
+  }
+
+  .booking-confirmation__detail-row--total dt {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 1280px) and (min-width: 1025px) {
+  .booking-confirmation__summary {
+    gap: 8px 8px;
+    padding: 14px 14px;
+  }
+
+  .booking-confirmation__summary-label,
+  .booking-confirmation__summary-value {
+    font-size: 14px;
+  }
+
+  .booking-confirmation__cta {
+    min-width: 200px;
+    width: 200px;
+    height: 64px;
+    padding: 0 12px;
+    font-size: 15px;
+  }
+
+  .booking-confirmation__card-media {
+    flex: 0 0 140px;
+    width: 140px;
+  }
+
+  .booking-confirmation__card-content {
+    gap: 12px;
+  }
 }
 
 @media (--wh-tablet) {
