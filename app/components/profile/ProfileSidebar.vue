@@ -79,6 +79,8 @@ const isSettingsRoute = computed(() =>
 
 const settingsMenuOpen = ref(false)
 const openSubmenus = ref<Record<string, boolean>>({})
+/** Планшет / мобильный: сайдбар ≤1024px */
+const isCompactSidebar = ref(false)
 
 watch(
   isSettingsRoute,
@@ -103,7 +105,12 @@ watch(
         || item.children.some(child => path === child.to || path.startsWith(`${child.to}/`))
 
       if (onItemRoute) {
-        openSubmenus.value[item.to] = true
+        if (isCompactSidebar.value) {
+          openSubmenus.value = { [item.to]: true }
+        }
+        else {
+          openSubmenus.value[item.to] = true
+        }
       }
     }
   },
@@ -111,6 +118,17 @@ watch(
 )
 
 const showSettingsMenu = computed(() => isBaseAdmin.value && settingsMenuOpen.value)
+
+/** На компактном сайдбаре — drill-down: только дети раскрытого пункта */
+const compactDrilldownItem = computed(() => {
+  if (!isCompactSidebar.value || !showSettingsMenu.value) {
+    return null
+  }
+
+  return settingsSubNavItems.find(item =>
+    Boolean(item.children?.length) && isSubmenuOpen(item.to),
+  ) ?? null
+})
 
 const navItems = computed<NavItem[]>(() => {
   if (showSettingsMenu.value) {
@@ -138,8 +156,41 @@ function isSubmenuOpen(to: string) {
 }
 
 function toggleSubmenu(to: string) {
-  openSubmenus.value[to] = !openSubmenus.value[to]
+  const willOpen = !openSubmenus.value[to]
+
+  if (isCompactSidebar.value && willOpen) {
+    openSubmenus.value = { [to]: true }
+    return
+  }
+
+  openSubmenus.value[to] = willOpen
 }
+
+async function handleSettingsBack() {
+  if (compactDrilldownItem.value) {
+    openSubmenus.value = {}
+    return
+  }
+
+  await closeSettingsMenu()
+}
+
+let compactMedia: MediaQueryList | null = null
+
+function syncCompactSidebar() {
+  isCompactSidebar.value = Boolean(compactMedia?.matches)
+}
+
+onMounted(() => {
+  compactMedia = window.matchMedia('(max-width: 1024px)')
+  syncCompactSidebar()
+  compactMedia.addEventListener('change', syncCompactSidebar)
+})
+
+onUnmounted(() => {
+  compactMedia?.removeEventListener('change', syncCompactSidebar)
+  compactMedia = null
+})
 
 const displayName = computed(() => {
   const profileUser = profile.value
@@ -215,113 +266,131 @@ async function handleLogout() {
     </div>
 
     <div class="profile-sidebar__menu">
-      <nav class="profile-sidebar__nav">
+      <nav
+        class="profile-sidebar__nav"
+        :class="{ 'profile-sidebar__nav--drilldown': Boolean(compactDrilldownItem) }"
+      >
         <button
           v-if="showSettingsMenu"
           type="button"
           class="profile-sidebar__nav-link profile-sidebar__nav-link--back"
-          @click="closeSettingsMenu"
+          @click="handleSettingsBack"
         >
           <span class="profile-sidebar__nav-icon" aria-hidden="true">←</span>
-          Назад
+          <span class="profile-sidebar__nav-text">Назад</span>
         </button>
 
-        <template v-for="item in navItems" :key="item.to">
-          <button
-            v-if="showSettingsMenu && item.children?.length"
-            type="button"
-            class="profile-sidebar__nav-link profile-sidebar__nav-link--sub"
-            :class="{
-              'profile-sidebar__nav-link--active': isActive(item.to),
-              'profile-sidebar__nav-link--compact': Boolean(item.labelShort),
-              'profile-sidebar__nav-link--open': isSubmenuOpen(item.to),
-            }"
-            @click="toggleSubmenu(item.to)"
-          >
-            <span class="profile-sidebar__nav-icon" aria-hidden="true">
-              <img
-                :src="item.iconSrc"
-                :alt="''"
-                width="24"
-                height="24"
-              >
-            </span>
-            <span class="profile-sidebar__nav-text">
-              <template v-if="item.labelShort">
-                <span class="profile-sidebar__nav-label profile-sidebar__nav-label--full">{{ item.label }}</span>
-                <span class="profile-sidebar__nav-label profile-sidebar__nav-label--short">{{ item.labelShort }}</span>
-              </template>
-              <template v-else>
-                {{ item.label }}
-              </template>
-            </span>
-            <svg class="profile-sidebar__chevron" viewBox="0 0 12 8" aria-hidden="true">
-              <path
-                d="M1 2 6 6.5 11 2"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-
+        <!-- Планшет/мобила: только подпункты раскрытого «Услуги» / «Таймеры» -->
+        <template v-if="compactDrilldownItem?.children?.length">
           <NuxtLink
-            v-else
-            :to="item.to"
-            class="profile-sidebar__nav-link"
-            :class="{
-              'profile-sidebar__nav-link--active': isActive(item.to),
-              'profile-sidebar__nav-link--compact': Boolean(item.labelShort),
-              'profile-sidebar__nav-link--sub': showSettingsMenu,
-              'profile-sidebar__nav-link--open': showSettingsMenu && isActive(item.to),
-            }"
+            v-for="child in compactDrilldownItem.children"
+            :key="child.to"
+            :to="child.to"
+            class="profile-sidebar__nav-link profile-sidebar__nav-link--drilldown"
+            :class="{ 'profile-sidebar__nav-link--active': isActive(child.to) }"
           >
-            <span class="profile-sidebar__nav-icon" aria-hidden="true">
-              <img
-                :src="item.iconSrc"
-                :alt="''"
-                width="24"
-                height="24"
-              >
-            </span>
-            <span class="profile-sidebar__nav-text">
-              <template v-if="item.labelShort">
-                <span class="profile-sidebar__nav-label profile-sidebar__nav-label--full">{{ item.label }}</span>
-                <span class="profile-sidebar__nav-label profile-sidebar__nav-label--short">{{ item.labelShort }}</span>
-              </template>
-              <template v-else>
-                {{ item.label }}
-              </template>
-            </span>
-            <svg
-              v-if="showSettingsMenu && item.showChevron !== false"
-              class="profile-sidebar__chevron"
-              viewBox="0 0 12 8"
-              aria-hidden="true"
-            >
-              <path
-                d="M1 2 6 6.5 11 2"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+            <span class="profile-sidebar__nav-icon" aria-hidden="true" />
+            <span class="profile-sidebar__nav-text">{{ child.label }}</span>
           </NuxtLink>
+        </template>
 
-          <template v-if="showSettingsMenu && item.children?.length && isSubmenuOpen(item.to)">
-            <NuxtLink
-              v-for="child in item.children"
-              :key="child.to"
-              :to="child.to"
-              class="profile-sidebar__nav-link profile-sidebar__nav-link--nested"
-              :class="{ 'profile-sidebar__nav-link--active': isActive(child.to) }"
+        <template v-else>
+          <template v-for="item in navItems" :key="item.to">
+            <button
+              v-if="showSettingsMenu && item.children?.length"
+              type="button"
+              class="profile-sidebar__nav-link"
+              :class="{
+                'profile-sidebar__nav-link--active': isActive(item.to),
+                'profile-sidebar__nav-link--compact': Boolean(item.labelShort),
+                'profile-sidebar__nav-link--open': isSubmenuOpen(item.to),
+              }"
+              @click="toggleSubmenu(item.to)"
             >
-              {{ child.label }}
+              <span class="profile-sidebar__nav-icon" aria-hidden="true">
+                <img
+                  :src="item.iconSrc"
+                  :alt="''"
+                  width="24"
+                  height="24"
+                >
+              </span>
+              <span class="profile-sidebar__nav-text">
+                <template v-if="item.labelShort">
+                  <span class="profile-sidebar__nav-label profile-sidebar__nav-label--full">{{ item.label }}</span>
+                  <span class="profile-sidebar__nav-label profile-sidebar__nav-label--short">{{ item.labelShort }}</span>
+                </template>
+                <template v-else>
+                  {{ item.label }}
+                </template>
+              </span>
+              <svg class="profile-sidebar__chevron" viewBox="0 0 12 8" aria-hidden="true">
+                <path
+                  d="M1 2 6 6.5 11 2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+
+            <NuxtLink
+              v-else
+              :to="item.to"
+              class="profile-sidebar__nav-link"
+              :class="{
+                'profile-sidebar__nav-link--active': isActive(item.to),
+                'profile-sidebar__nav-link--compact': Boolean(item.labelShort),
+                'profile-sidebar__nav-link--open': showSettingsMenu && isActive(item.to),
+              }"
+            >
+              <span class="profile-sidebar__nav-icon" aria-hidden="true">
+                <img
+                  :src="item.iconSrc"
+                  :alt="''"
+                  width="24"
+                  height="24"
+                >
+              </span>
+              <span class="profile-sidebar__nav-text">
+                <template v-if="item.labelShort">
+                  <span class="profile-sidebar__nav-label profile-sidebar__nav-label--full">{{ item.label }}</span>
+                  <span class="profile-sidebar__nav-label profile-sidebar__nav-label--short">{{ item.labelShort }}</span>
+                </template>
+                <template v-else>
+                  {{ item.label }}
+                </template>
+              </span>
+              <svg
+                v-if="showSettingsMenu && item.showChevron !== false"
+                class="profile-sidebar__chevron"
+                viewBox="0 0 12 8"
+                aria-hidden="true"
+              >
+                <path
+                  d="M1 2 6 6.5 11 2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
             </NuxtLink>
+
+            <template v-if="showSettingsMenu && item.children?.length && isSubmenuOpen(item.to)">
+              <NuxtLink
+                v-for="child in item.children"
+                :key="child.to"
+                :to="child.to"
+                class="profile-sidebar__nav-link profile-sidebar__nav-link--nested"
+                :class="{ 'profile-sidebar__nav-link--active': isActive(child.to) }"
+              >
+                {{ child.label }}
+              </NuxtLink>
+            </template>
           </template>
         </template>
 
@@ -480,6 +549,7 @@ async function handleLogout() {
   align-items: center;
   gap: 10px;
   width: 100%;
+  min-height: 48px;
   padding: 12px 14px;
   border: none;
   border-radius: 10px;
@@ -490,6 +560,7 @@ async function handleLogout() {
   font-weight: 500;
   text-align: left;
   cursor: pointer;
+  box-sizing: border-box;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
@@ -523,18 +594,15 @@ async function handleLogout() {
 
 .profile-sidebar__nav-link--back {
   margin-bottom: 4px;
-  font-weight: 600;
+  font-weight: 500;
   opacity: 0.95;
 }
 
+/* Вложенные пункты только на десктопе (раскрытие в том же списке) */
 .profile-sidebar__nav-link--nested {
   padding-left: 48px;
   font-size: 16px;
   font-weight: 400;
-}
-
-.profile-sidebar__nav-link--sub {
-  padding-left: 22px;
 }
 
 .profile-sidebar__nav-icon {
@@ -648,35 +716,60 @@ async function handleLogout() {
   }
 
   .profile-sidebar__menu {
-    flex: 0 0 auto;
-    align-items: flex-start;
+    flex: 0 0 280px;
+    align-items: stretch;
     justify-content: center;
-    min-width: 0;
+    width: 280px;
+    min-width: 280px;
   }
 
   .profile-sidebar__nav {
     flex: 0 0 auto;
-    align-items: flex-start;
+    align-items: stretch;
+    width: 100%;
     padding: 0 0 12px;
   }
 
   .profile-sidebar__nav-link {
-    width: fit-content;
-    max-width: 100%;
+    width: 100%;
+    max-width: none;
+    min-height: 40px;
     padding: 8px 12px;
     font-size: 15px;
+    font-weight: 500;
+    box-sizing: border-box;
+  }
+
+  /* Настройки = тот же стиль, что основное меню (без лишних отступов) */
+  .profile-sidebar__nav-link--back,
+  .profile-sidebar__nav-link--nested,
+  .profile-sidebar__nav-link--drilldown {
+    margin-bottom: 0;
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  /* 3 подпункта + «Назад» ≈ высота меню из 4–5 пунктов */
+  .profile-sidebar__nav--drilldown .profile-sidebar__nav-link {
+    min-height: 50px;
+    padding-top: 12px;
+    padding-bottom: 12px;
   }
 
   .profile-sidebar__footer {
-    align-items: flex-start;
+    align-items: stretch;
+    width: 100%;
     padding-top: 12px;
   }
 
   .profile-sidebar__footer-link {
-    width: fit-content;
-    max-width: 100%;
+    width: 100%;
+    max-width: none;
     padding: 8px 12px;
     font-size: 15px;
+    box-sizing: border-box;
   }
 
   .profile-sidebar__nav-link--compact .profile-sidebar__nav-label--full {
@@ -751,8 +844,26 @@ async function handleLogout() {
 
   .profile-sidebar__nav-link {
     width: 100%;
+    min-height: 48px;
     padding: 12px 14px;
     font-size: 16px;
+    font-weight: 500;
+  }
+
+  .profile-sidebar__nav-link--back,
+  .profile-sidebar__nav-link--nested,
+  .profile-sidebar__nav-link--drilldown {
+    margin-bottom: 0;
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .profile-sidebar__nav--drilldown .profile-sidebar__nav-link {
+    min-height: 60px;
+    padding-top: 18px;
+    padding-bottom: 18px;
   }
 
   .profile-sidebar__footer {
