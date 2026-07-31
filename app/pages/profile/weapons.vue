@@ -287,12 +287,21 @@ function applyHunterBilletFromApi(value: string) {
   syncHunterBilletSnapshot()
 }
 
+async function ensureHunterBilletLoaded() {
+  if (profile.value?.hunter_billet_number.trim()) {
+    return
+  }
+
+  await loadUserWeapons({ force: true, silent: true })
+}
+
 async function bootWeaponsPage() {
   await loadProfile()
-  syncHunterBilletSnapshot()
 
-  // Есть полный кэш списка — сразу показываем, без запроса
+  // Есть полный кэш списка — сразу показываем, но номер билета всё равно подтягиваем при необходимости
   if (hydrateWeaponsFromCache()) {
+    await ensureHunterBilletLoaded()
+    syncHunterBilletSnapshot()
     userWeaponsLoading.value = false
     await deferTask(240)
     ensureWeaponDictionaries()
@@ -309,6 +318,7 @@ async function bootWeaponsPage() {
   }
 
   await loadUserWeapons({ force: true })
+  syncHunterBilletSnapshot()
   await deferTask(240)
   ensureWeaponDictionaries()
 }

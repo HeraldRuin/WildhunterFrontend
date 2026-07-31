@@ -45,23 +45,55 @@ function unwrapWeaponsList(payload: unknown): unknown[] {
     return payload
   }
 
-  if (payload && typeof payload === 'object' && Array.isArray((payload as { data?: unknown[] }).data)) {
-    return (payload as { data: unknown[] }).data
+  if (payload && typeof payload === 'object') {
+    const source = payload as Record<string, unknown>
+
+    if (Array.isArray(source.weapons)) {
+      return source.weapons
+    }
+
+    if (Array.isArray(source.data)) {
+      return source.data
+    }
+
+    if (source.data && typeof source.data === 'object') {
+      return unwrapWeaponsList(source.data)
+    }
   }
 
   return []
 }
 
-function extractHunterBilletNumber(list: unknown[]): string {
+function extractHunterBilletNumber(payload: unknown, list: unknown[]): string {
+  const readBillet = (value: unknown) =>
+    typeof value === 'string' && value.trim() ? value.trim() : ''
+
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    const root = payload as Record<string, unknown>
+    const fromRoot = readBillet(root.hunter_billet_number)
+
+    if (fromRoot) {
+      return fromRoot
+    }
+
+    if (root.data && typeof root.data === 'object' && !Array.isArray(root.data)) {
+      const fromData = readBillet((root.data as Record<string, unknown>).hunter_billet_number)
+
+      if (fromData) {
+        return fromData
+      }
+    }
+  }
+
   for (const item of list) {
     if (!item || typeof item !== 'object') {
       continue
     }
 
-    const value = (item as { hunter_billet_number?: unknown }).hunter_billet_number
+    const fromItem = readBillet((item as { hunter_billet_number?: unknown }).hunter_billet_number)
 
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim()
+    if (fromItem) {
+      return fromItem
     }
   }
 
@@ -124,7 +156,7 @@ export function useWeaponsApi() {
 
     return {
       weapons: normalizeWeapons(list),
-      hunterBilletNumber: extractHunterBilletNumber(list),
+      hunterBilletNumber: extractHunterBilletNumber(response.data, list),
     }
   }
 
