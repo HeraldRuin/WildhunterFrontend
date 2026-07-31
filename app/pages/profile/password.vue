@@ -455,7 +455,6 @@ onMounted(() => {
           >
             <CommonSpinner
               variant="ring"
-              color="var(--wh-green)"
               :size="28"
               label="Сохранение пароля"
             />

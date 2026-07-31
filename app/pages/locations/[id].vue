@@ -275,7 +275,6 @@ function handleFiltersReset() {
             >
               <CommonSpinner
                 variant="ring"
-                color="var(--wh-orange-500)"
                 size="lg"
               />
             </div>

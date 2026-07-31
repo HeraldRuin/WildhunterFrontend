@@ -937,7 +937,6 @@ const hasNewWeapon = computed(() =>
               v-if="savingHunterBillet"
               class="weapons-form__billet-spinner"
               variant="ring"
-              color="var(--wh-green)"
               :size="18"
               :label="hunterBilletSnapshot ? 'Обновление номера билета' : 'Сохранение номера билета'"
             />
@@ -997,7 +996,6 @@ const hasNewWeapon = computed(() =>
               <CommonSpinner
                 class="profile-weapon__spinner"
                 variant="ring"
-                color="var(--wh-green)"
                 :size="16"
                 :label="card.index === 0 ? 'Загрузка лицензий' : ''"
               />
@@ -1176,7 +1174,6 @@ const hasNewWeapon = computed(() =>
                 >
                   <CommonSpinner
                     variant="ring"
-                    color="var(--wh-green)"
                     :size="28"
                     label="Сохранение лицензии"
                   />

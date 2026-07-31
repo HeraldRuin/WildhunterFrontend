@@ -485,7 +485,6 @@ async function handleSubmit() {
             v-if="isFormLoading"
             class="profile-form__title-spinner"
             variant="ring"
-            color="var(--wh-orange-500)"
             :size="18"
             label="Загрузка профиля"
           />

@@ -255,7 +255,7 @@ watch(isOpen, (open) => {
             class="register-modal__loader"
             aria-hidden="true"
           >
-            <span class="register-modal__spinner" />
+            <CommonSpinner variant="ring" size="lg" label="Регистрация" />
           </div>
 
           <CommonModalCloseButton :disabled="isSubmitting" @click="close" />
@@ -443,23 +443,6 @@ watch(isOpen, (open) => {
   border-radius: inherit;
   background: transparent;
   pointer-events: all;
-}
-
-.register-modal__spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--wh-gray-200);
-  border-top-color: var(--wh-orange-500);
-  border-radius: 50%;
-  background: var(--wh-white);
-  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.12);
-  animation: register-modal-spin 0.75s linear infinite;
-}
-
-@keyframes register-modal-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .register-modal__title {

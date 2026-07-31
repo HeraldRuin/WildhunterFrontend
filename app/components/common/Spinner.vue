@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{
   label?: string
 }>(), {
   variant: 'ring',
-  color: 'var(--wh-orange-500)',
+  color: 'var(--wh-green)',
   size: 'md',
   label: 'Загрузка',
 })
@@ -67,7 +67,7 @@ const rootStyle = computed(() => ({
 <style scoped>
 .spinner {
   --spinner-size: 32px;
-  --spinner-color: var(--wh-orange-500);
+  --spinner-color: var(--wh-green);
 
   display: inline-flex;
   align-items: center;
