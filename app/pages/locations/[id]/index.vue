@@ -254,12 +254,13 @@ function handleFiltersReset() {
               Фильтры
             </button>
 
-            <span
+            <NuxtLink
               v-if="countReady"
+              to="/locations"
               class="location-page__toolbar-link location-page__locations-label"
             >
               Все локации
-            </span>
+            </NuxtLink>
 
             <h1
               v-if="countReady"
