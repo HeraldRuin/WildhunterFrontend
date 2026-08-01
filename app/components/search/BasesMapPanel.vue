@@ -1016,6 +1016,7 @@ async function searchMeasurePoint() {
 }
 
 .bases-map-page__list-dot {
+  flex-shrink: 0;
   width: 8px;
   height: 8px;
   padding: 0;
@@ -1025,14 +1026,12 @@ async function searchMeasurePoint() {
   cursor: pointer;
   transition:
     background 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
+    border-color 0.2s ease;
 }
 
 .bases-map-page__list-dot--active {
   border-color: #e8883a;
   background: #e8883a;
-  transform: scale(1.15);
 }
 
 .bases-map-page__list-dot:hover:not(.bases-map-page__list-dot--active) {
