@@ -279,12 +279,24 @@ function setMeasureTarget(lat: number, lng: number) {
   syncMeasureGraphics()
 }
 
+/** With a single base, auto-pick it as the measure end after placing origin. */
+function applySingleBaseTargetIfNeeded() {
+  if (props.markers.length !== 1) {
+    return
+  }
+
+  const hotel = props.markers[0]
+  setMeasureTarget(hotel.lat, hotel.lng)
+  emit('select', hotel.id)
+}
+
 function onMapClick(event: { latlng: LatLng }) {
   if (!props.measureMode) {
     return
   }
 
   setMeasureOrigin(event.latlng)
+  applySingleBaseTargetIfNeeded()
 }
 
 function syncMarkers() {
@@ -490,6 +502,7 @@ watch(
     }
 
     setMeasureOrigin(leaflet.latLng(point.lat, point.lng), true)
+    applySingleBaseTargetIfNeeded()
   },
 )
 
