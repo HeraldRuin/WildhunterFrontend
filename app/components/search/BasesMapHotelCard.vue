@@ -108,10 +108,11 @@ function formatRating(value: number) {
 
 .map-hotel-card--compact {
   grid-template-columns: 1fr;
-  grid-template-rows: auto;
+  grid-template-rows: auto auto;
   align-items: stretch;
+  align-self: start;
   gap: 8px;
-  min-height: 0;
+  min-height: min-content;
   padding: 8px;
 }
 
@@ -152,7 +153,7 @@ function formatRating(value: number) {
   width: 100%;
   height: auto;
   min-width: 0;
-  min-height: 0;
+  min-height: auto;
   aspect-ratio: 1 / 1;
 }
 

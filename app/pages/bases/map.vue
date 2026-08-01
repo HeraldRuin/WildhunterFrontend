@@ -190,6 +190,17 @@ function updateListPages() {
   listPageIndex.value = getListPageIndex(el, pages)
 }
 
+/** Recompute after layout/aspect-ratio settle (compact grid especially). */
+function scheduleListPagesUpdate() {
+  void nextTick(() => {
+    updateListPages()
+    requestAnimationFrame(() => {
+      updateListPages()
+      requestAnimationFrame(updateListPages)
+    })
+  })
+}
+
 function onListScroll() {
   const el = listEl.value
   if (!el) {
@@ -220,21 +231,16 @@ function scrollListToPage(index: number) {
 
 watch(
   hotels,
-  async () => {
+  () => {
     selectedId.value = null
     fitVersion.value += 1
-    await nextTick()
-    updateListPages()
-    // Recalculate after images affect scrollHeight.
-    requestAnimationFrame(() => updateListPages())
+    scheduleListPagesUpdate()
   },
   { deep: true },
 )
 
-watch([isGridList, isGridMulti, isListCollapsed], async () => {
-  await nextTick()
-  updateListPages()
-  requestAnimationFrame(() => updateListPages())
+watch([isGridList, isGridMulti, isListCollapsed], () => {
+  scheduleListPagesUpdate()
 })
 
 watch(listEl, (el) => {
@@ -850,10 +856,12 @@ async function handleSearch(payload: Record<string, string>) {
 
 .bases-map-page__list--grid {
   grid-template-columns: 1fr;
+  grid-auto-rows: max-content;
 }
 
 .bases-map-page__list--grid-multi {
   grid-template-columns: 1fr 1fr;
+  align-items: start;
 }
 
 .bases-map-page__list--collapsed {
