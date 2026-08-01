@@ -1,4 +1,5 @@
 import type { OfferItem } from '~/types/api'
+import { toMediaImageSize } from '~/utils/image'
 
 /** Default map center (central Russia) when no hotels are selected. */
 export const DEFAULT_MAP_CENTER = {
@@ -32,7 +33,7 @@ export function offerToMapHotel(item: OfferItem): MapHotelItem | null {
     title: item.title,
     location: item.location,
     price: item.price,
-    image: item.image,
+    image: toMediaImageSize(item.image, 'medium'),
     lat,
     lng,
     rating: item.rating,
