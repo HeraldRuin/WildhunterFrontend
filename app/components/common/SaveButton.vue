@@ -72,9 +72,14 @@ const buttonStyle = computed(() => ({
 }
 
 .save-button:disabled {
-  cursor: default;
-  opacity: 0.85;
+  cursor: not-allowed;
+  opacity: 0.45;
   transform: none;
+}
+
+.save-button--loading:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 @media (max-width: 640px) {

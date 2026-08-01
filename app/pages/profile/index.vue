@@ -15,6 +15,7 @@ import {
 } from '~/utils/date'
 import { extractPhoneDigits, formatPhone } from '~/utils/phone'
 import { useUserApi, type AvatarHistoryItem } from '~/api/user'
+import type { ProfileUser } from '~/types/user'
 
 const { user } = useAuth()
 const { profile, pending, error, loadProfile, saveProfile } = useProfile()
@@ -39,6 +40,7 @@ const isBirthdayOpen = ref(false)
 const birthdayFieldRef = ref<HTMLElement | null>(null)
 const birthdayDate = ref<Date | null>(null)
 const birthdayActivePart = ref<'start' | 'end' | null>('start')
+const profileSnapshot = ref<string | null>(null)
 
 type ProfileField =
   | 'user_name'
@@ -58,6 +60,34 @@ const breadcrumbs = [
 
 const isFormLoading = computed(() => pending.value && !profile.value)
 const showForm = computed(() => Boolean(profile.value) || pending.value)
+
+function snapshotProfile(data: ProfileUser) {
+  return JSON.stringify({
+    user_name: data.user_name.trim(),
+    email: data.email.trim(),
+    first_name: data.first_name.trim(),
+    last_name: data.last_name.trim(),
+    phone: extractPhoneDigits(data.phone),
+    birthday: resolveBirthdayForApi(data.birthday),
+    bio: data.bio.trim(),
+  })
+}
+
+function rememberProfileSnapshot(data: ProfileUser | null | undefined) {
+  profileSnapshot.value = data ? snapshotProfile(data) : null
+}
+
+const hasProfileChanges = computed(() => {
+  if (!profile.value || !profileSnapshot.value) {
+    return false
+  }
+
+  if (avatarFile.value || selectedAvatarId.value != null) {
+    return true
+  }
+
+  return profileSnapshot.value !== snapshotProfile(profile.value)
+})
 
 const profileId = computed(() => {
   const id = profile.value?.id || user.value?.id
@@ -87,10 +117,12 @@ watch(
     if (!next) {
       revealValues.value = false
       birthdayDate.value = null
+      rememberProfileSnapshot(null)
       return
     }
 
     birthdayDate.value = parseBirthdayDate(next.birthday)
+    rememberProfileSnapshot(next)
 
     if (!prev) {
       revealValues.value = false
@@ -394,7 +426,7 @@ function handleAvatarChange(event: Event) {
 }
 
 async function handleSubmit() {
-  if (!profile.value || isFormLoading.value || isSubmitting.value) {
+  if (!profile.value || isFormLoading.value || isSubmitting.value || !hasProfileChanges.value) {
     return
   }
 
@@ -738,7 +770,7 @@ async function handleSubmit() {
 
       <div class="profile-form__actions">
         <CommonSaveButton
-          :disabled="isFormLoading || isSubmitting"
+          :disabled="isFormLoading || isSubmitting || !hasProfileChanges"
           :loading="isSubmitting"
           @click="handleSubmit"
         />
