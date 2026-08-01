@@ -78,7 +78,7 @@ function formatRating(value: number) {
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 118px;
+  min-height: 122px;
   height: auto;
   padding: 11px;
   border: 1px solid var(--wh-field-border);

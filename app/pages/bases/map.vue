@@ -658,7 +658,7 @@ async function handleSearch(payload: Record<string, string>) {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 100%;
+  align-self: stretch;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
@@ -732,6 +732,10 @@ async function handleSearch(payload: Record<string, string>) {
   grid-template-columns: 8px minmax(0, 1fr);
 }
 
+.bases-map-page__layout--collapsed .bases-map-page__list-wrap {
+  width: 100%;
+}
+
 .bases-map-page__controls-spacer {
   width: 8px;
 }
@@ -782,23 +786,19 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .bases-map-page__list-wrap {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
+  display: flex;
+  align-items: stretch;
   gap: 8px;
-  flex: 1 1 auto;
-  height: 100%;
+  /* basis 0 so the wrap is capped by the sidebar, not by card content */
+  flex: 1 1 0;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
 }
 
-.bases-map-page__list-wrap--with-dots {
-  grid-template-columns: 8px minmax(0, 1fr);
-}
-
 .bases-map-page__list-dots {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -837,10 +837,12 @@ async function handleSearch(payload: Record<string, string>) {
   grid-template-columns: 1fr;
   gap: 12px;
   align-content: start;
-  height: 100%;
+  flex: 1 1 0;
+  min-width: 0;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
   transition: grid-template-columns 0.7s cubic-bezier(0.16, 1, 0.3, 1);
