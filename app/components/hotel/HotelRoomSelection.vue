@@ -181,7 +181,7 @@ function quantityOptions(max: number) {
 .hotel-room-selection__price {
   margin: 0;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 500;
   line-height: 1.2;
   letter-spacing: -0.05em;
