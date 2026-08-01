@@ -73,18 +73,26 @@ function quantityOptions(max: number) {
 
           <div class="hotel-room-selection__meta">
             <span class="hotel-room-selection__badge">
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <rect x="2" y="2" width="12" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.25" />
-              </svg>
+              <img
+                class="hotel-room-selection__badge-icon"
+                src="/icons/wordpress_square.png"
+                alt=""
+                width="16"
+                height="16"
+                aria-hidden="true"
+              >
               {{ room.area }}
             </span>
 
             <span class="hotel-room-selection__badge">
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <circle cx="5.5" cy="5" r="2" fill="none" stroke="currentColor" stroke-width="1.25" />
-                <circle cx="10.5" cy="5" r="2" fill="none" stroke="currentColor" stroke-width="1.25" />
-                <path d="M2.5 13c.8-2.2 2.4-3.5 5-3.5s4.2 1.3 5 3.5" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" />
-              </svg>
+              <img
+                class="hotel-room-selection__badge-icon"
+                src="/icons/mdi_people.png"
+                alt=""
+                width="16"
+                height="16"
+                aria-hidden="true"
+              >
               x{{ room.capacity }}
             </span>
           </div>
@@ -229,10 +237,12 @@ function quantityOptions(max: number) {
   white-space: nowrap;
 }
 
-.hotel-room-selection__badge svg {
+.hotel-room-selection__badge-icon {
+  display: block;
   flex-shrink: 0;
   width: 16px;
   height: 16px;
+  object-fit: contain;
 }
 
 .hotel-room-selection__quantity {
