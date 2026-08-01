@@ -43,6 +43,7 @@ const CLUSTER_PIXEL_DISTANCE = 32
 const mapEl = ref<HTMLElement | null>(null)
 let map: LeafletMap | null = null
 let leaflet: typeof import('leaflet').default | null = null
+let mapResizeObserver: ResizeObserver | null = null
 const clusterLayers: Marker[] = []
 
 function escapeHtml(value: string) {
@@ -265,6 +266,11 @@ onMounted(async () => {
 
   syncMarkers()
 
+  mapResizeObserver = new ResizeObserver(() => {
+    map?.invalidateSize({ animate: false })
+  })
+  mapResizeObserver.observe(mapEl.value)
+
   requestAnimationFrame(() => {
     map?.invalidateSize()
     if (props.activeId == null) {
@@ -307,6 +313,8 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  mapResizeObserver?.disconnect()
+  mapResizeObserver = null
   map?.off('zoomend', syncMarkers)
   map?.off('moveend', syncMarkers)
   clearClusterLayers()
