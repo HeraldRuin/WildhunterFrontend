@@ -268,6 +268,10 @@ async function handleFavoriteClick(event: MouseEvent) {
   color: #e53935;
 }
 
+.offer-card__favorite--active:hover:not(:disabled) {
+  transform: scale(1.13);
+}
+
 .offer-card__favorite svg {
   display: block;
   width: 24px;
