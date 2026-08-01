@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { DivIcon, Map as LeafletMap, Marker } from 'leaflet'
-import { DEFAULT_MAP_CENTER } from '~/utils/map'
+import type { DivIcon, LatLng, Map as LeafletMap, Marker, Polyline } from 'leaflet'
+import { DEFAULT_MAP_CENTER, formatMapDistance } from '~/utils/map'
 import { formatBasesCount } from '~/utils/pluralize'
 
 export interface BasesMapMarker {
@@ -25,6 +25,10 @@ const props = withDefaults(defineProps<{
   activeId?: number | null
   /** Increment to fit all markers into view. */
   fitVersion?: number
+  /** Click map for origin point, then a base to see distance. */
+  measureMode?: boolean
+  /** External origin from address/coords search. */
+  measureOriginPoint?: { lat: number, lng: number, key?: number } | null
 }>(), {
   lat: DEFAULT_MAP_CENTER.lat,
   lng: DEFAULT_MAP_CENTER.lng,
@@ -32,6 +36,8 @@ const props = withDefaults(defineProps<{
   markers: () => [],
   activeId: null,
   fitVersion: 0,
+  measureMode: false,
+  measureOriginPoint: null,
 })
 
 const emit = defineEmits<{
@@ -45,6 +51,12 @@ let map: LeafletMap | null = null
 let leaflet: typeof import('leaflet').default | null = null
 let mapResizeObserver: ResizeObserver | null = null
 const clusterLayers: Marker[] = []
+
+let measureOrigin: LatLng | null = null
+let measureTarget: LatLng | null = null
+let measureOriginMarker: Marker | null = null
+let measureLine: Polyline | null = null
+let measureLabelMarker: Marker | null = null
 
 function escapeHtml(value: string) {
   return value
@@ -76,6 +88,32 @@ function createPinIcon(count: number, isActive: boolean): DivIcon {
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     html: inner,
+  })
+}
+
+function createMeasureOriginIcon(): DivIcon {
+  if (!leaflet) {
+    throw new Error('Leaflet is not initialized')
+  }
+
+  return leaflet.divIcon({
+    className: 'bases-map-measure-origin',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    html: '<span class="bases-map-measure-origin__dot" aria-hidden="true"></span>',
+  })
+}
+
+function createMeasureLabelIcon(text: string): DivIcon {
+  if (!leaflet) {
+    throw new Error('Leaflet is not initialized')
+  }
+
+  return leaflet.divIcon({
+    className: 'bases-map-measure-label',
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+    html: `<span class="bases-map-measure-label__text">${escapeHtml(text)}</span>`,
   })
 }
 
@@ -157,6 +195,96 @@ function clearClusterLayers() {
   clusterLayers.length = 0
 }
 
+function clearMeasureGraphics() {
+  measureOriginMarker?.remove()
+  measureOriginMarker = null
+  measureLine?.remove()
+  measureLine = null
+  measureLabelMarker?.remove()
+  measureLabelMarker = null
+}
+
+function resetMeasure() {
+  measureOrigin = null
+  measureTarget = null
+  clearMeasureGraphics()
+}
+
+function syncMeasureGraphics() {
+  if (!map || !leaflet) {
+    return
+  }
+
+  clearMeasureGraphics()
+
+  if (!props.measureMode || !measureOrigin) {
+    return
+  }
+
+  const L = leaflet
+
+  measureOriginMarker = L.marker(measureOrigin, {
+    icon: createMeasureOriginIcon(),
+    interactive: false,
+    keyboard: false,
+    zIndexOffset: 200,
+  }).addTo(map)
+
+  if (!measureTarget) {
+    return
+  }
+
+  measureLine = L.polyline([measureOrigin, measureTarget], {
+    color: '#e8883a',
+    weight: 2.5,
+    opacity: 0.9,
+    dashArray: '6 6',
+    interactive: false,
+  }).addTo(map)
+
+  const meters = measureOrigin.distanceTo(measureTarget)
+  const label = formatMapDistance(meters)
+  const mid = L.latLng(
+    (measureOrigin.lat + measureTarget.lat) / 2,
+    (measureOrigin.lng + measureTarget.lng) / 2,
+  )
+
+  measureLabelMarker = L.marker(mid, {
+    icon: createMeasureLabelIcon(label),
+    interactive: false,
+    keyboard: false,
+    zIndexOffset: 250,
+  }).addTo(map)
+}
+
+function setMeasureOrigin(latlng: LatLng, fly = false) {
+  measureOrigin = latlng
+  syncMeasureGraphics()
+
+  if (fly && map) {
+    map.flyTo(latlng, Math.max(map.getZoom(), 11), {
+      duration: 0.55,
+    })
+  }
+}
+
+function setMeasureTarget(lat: number, lng: number) {
+  if (!leaflet) {
+    return
+  }
+
+  measureTarget = leaflet.latLng(lat, lng)
+  syncMeasureGraphics()
+}
+
+function onMapClick(event: { latlng: LatLng }) {
+  if (!props.measureMode) {
+    return
+  }
+
+  setMeasureOrigin(event.latlng)
+}
+
 function syncMarkers() {
   if (!map || !leaflet) {
     return
@@ -199,6 +327,15 @@ function syncMarkers() {
 
       const item = cluster.items[0]
 
+      if (props.measureMode) {
+        if (measureOrigin) {
+          setMeasureTarget(item.lat, item.lng)
+        }
+
+        emit('select', item.id)
+        return
+      }
+
       if (props.activeId === item.id) {
         map?.flyTo([item.lat, item.lng], props.zoom, {
           duration: 0.6,
@@ -214,7 +351,7 @@ function syncMarkers() {
 }
 
 function focusActive() {
-  if (!map || props.activeId == null) {
+  if (!map || props.activeId == null || props.measureMode) {
     return
   }
 
@@ -237,6 +374,15 @@ function fitAllMarkers() {
     maxZoom: 10,
     duration: 0.65,
   })
+}
+
+function syncMeasureModeCursor() {
+  const container = map?.getContainer()
+  if (!container) {
+    return
+  }
+
+  container.classList.toggle('bases-map--measure', props.measureMode)
 }
 
 onMounted(async () => {
@@ -263,8 +409,10 @@ onMounted(async () => {
 
   map.on('zoomend', syncMarkers)
   map.on('moveend', syncMarkers)
+  map.on('click', onMapClick)
 
   syncMarkers()
+  syncMeasureModeCursor()
 
   mapResizeObserver = new ResizeObserver(() => {
     map?.invalidateSize({ animate: false })
@@ -312,12 +460,61 @@ watch(
   { deep: true },
 )
 
+watch(
+  () => props.measureMode,
+  (enabled) => {
+    syncMeasureModeCursor()
+
+    if (!enabled) {
+      resetMeasure()
+      return
+    }
+
+    syncMeasureGraphics()
+  },
+)
+
+watch(
+  () => props.measureOriginPoint,
+  (point) => {
+    if (!props.measureMode || !leaflet) {
+      return
+    }
+
+    if (!point) {
+      measureOrigin = null
+      syncMeasureGraphics()
+      return
+    }
+
+    setMeasureOrigin(leaflet.latLng(point.lat, point.lng), true)
+  },
+)
+
+watch(
+  () => props.activeId,
+  (id) => {
+    if (!props.measureMode || id == null || !measureOrigin) {
+      return
+    }
+
+    const hotel = props.markers.find((item) => item.id === id)
+    if (!hotel) {
+      return
+    }
+
+    setMeasureTarget(hotel.lat, hotel.lng)
+  },
+)
+
 onBeforeUnmount(() => {
   mapResizeObserver?.disconnect()
   mapResizeObserver = null
   map?.off('zoomend', syncMarkers)
   map?.off('moveend', syncMarkers)
+  map?.off('click', onMapClick)
   clearClusterLayers()
+  resetMeasure()
   map?.remove()
   map = null
   leaflet = null
@@ -343,6 +540,12 @@ onBeforeUnmount(() => {
   z-index: 0;
   overflow: hidden;
   background: var(--wh-gray-200, #dddddd);
+}
+
+.bases-map.bases-map--measure,
+.bases-map.bases-map--measure :deep(.leaflet-grab),
+.bases-map.bases-map--measure :deep(.leaflet-dragging) {
+  cursor: crosshair;
 }
 
 .bases-map :deep(.bases-map-pin) {
@@ -379,6 +582,45 @@ onBeforeUnmount(() => {
 .bases-map :deep(.bases-map-pin--active .bases-map-pin__dot) {
   border-color: #d64545;
   background: #e8883a;
+}
+
+.bases-map :deep(.bases-map-measure-origin) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+}
+
+.bases-map :deep(.bases-map-measure-origin__dot) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #e8883a;
+  box-shadow: 0 0 0 2px #e8883a, 0 2px 6px rgb(0 0 0 / 28%);
+  box-sizing: border-box;
+}
+
+.bases-map :deep(.bases-map-measure-label) {
+  background: transparent;
+  border: none;
+}
+
+.bases-map :deep(.bases-map-measure-label__text) {
+  display: inline-block;
+  transform: translate(-50%, -50%);
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--wh-gray-900, #1c211c);
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 18%);
 }
 
 .bases-map :deep(.leaflet-control-attribution) {
