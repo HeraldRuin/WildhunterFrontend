@@ -379,7 +379,7 @@ async function handleSubmit() {
 
 .community-block__social-btn:hover {
   background: var(--wh-orange-600);
-  transform: translateY(-1px);
+  transform: var(--wh-button-hover-lift);
 }
 
 .community-block--plain {

@@ -296,11 +296,12 @@ watch(isOpen, (open) => {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .login-modal__submit:hover {
   background: var(--wh-orange-600);
+  transform: var(--wh-button-hover-lift);
 }
 
 .login-modal__submit:disabled {

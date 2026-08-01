@@ -186,7 +186,7 @@ const socials = [
 }
 
 .footer__social:hover {
-  transform: translateY(-1px);
+  transform: var(--wh-button-hover-lift);
   opacity: 0.9;
 }
 

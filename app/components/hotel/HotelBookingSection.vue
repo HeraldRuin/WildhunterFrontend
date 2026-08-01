@@ -102,7 +102,7 @@ function handleBook() {
 
 .hotel-booking-section__book:hover {
   background: color-mix(in srgb, var(--wh-green) 78%, white);
-  transform: translateY(-1px);
+  transform: var(--wh-button-hover-lift);
 }
 
 @media (--wh-tablet) {

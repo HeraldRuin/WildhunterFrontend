@@ -41,6 +41,10 @@
   /* 1 — красить окантовку при ошибке, 0 — только текст под полем */
   --wh-field-error-border-enabled: 0;
 
+  /* 1 — поднимать кнопку при hover, 0 — без подъёма */
+  --wh-button-hover-lift-enabled: 0;
+  --wh-button-hover-lift: translateY(calc(-1px * var(--wh-button-hover-lift-enabled)));
+
   --wh-field-border-error: color-mix(
     in srgb,
     var(--wh-field-error) calc(100% * var(--wh-field-error-border-enabled)),
@@ -116,7 +120,7 @@ select {
 }
 
 .btn:hover {
-  transform: translateY(-1px);
+  transform: var(--wh-button-hover-lift);
 }
 
 .btn--primary {

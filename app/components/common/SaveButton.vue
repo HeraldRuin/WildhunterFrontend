@@ -68,7 +68,7 @@ const buttonStyle = computed(() => ({
 
 .save-button:hover:not(:disabled) {
   background: var(--wh-orange-600);
-  transform: translateY(-1px);
+  transform: var(--wh-button-hover-lift);
 }
 
 .save-button:disabled {

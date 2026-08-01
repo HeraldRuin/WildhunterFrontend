@@ -148,7 +148,7 @@ function goHome() {
 
 .error-card__btn:hover {
   background: var(--wh-orange-600);
-  transform: translateY(-1px);
+  transform: var(--wh-button-hover-lift);
 }
 
 @media (--wh-tablet) {

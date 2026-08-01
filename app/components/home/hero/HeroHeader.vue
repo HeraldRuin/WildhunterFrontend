@@ -173,7 +173,7 @@ const { isAuthenticated } = useAuth()
 
 .hero-header__login:hover {
   background: var(--wh-orange-600);
-  transform: translateY(-1px);
+  transform: var(--wh-button-hover-lift);
 }
 
 @media (--wh-tablet) {
