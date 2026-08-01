@@ -44,8 +44,8 @@ function formatRating(value: number) {
     </div>
 
     <div
-      v-if="!imageOnly"
       class="map-hotel-card__body"
+      :aria-hidden="imageOnly ? 'true' : undefined"
     >
       <div class="map-hotel-card__row">
         <h3 class="map-hotel-card__title">
@@ -71,22 +71,30 @@ function formatRating(value: number) {
 
 <style scoped>
 .map-hotel-card {
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-rows: 96px;
+  align-items: center;
   gap: 12px;
   width: 100%;
+  min-height: 118px;
+  height: auto;
   padding: 11px;
   border: 1px solid var(--wh-field-border);
   border-radius: 12px;
   background: var(--wh-white);
   text-align: left;
   cursor: pointer;
-  will-change: grid-template-columns, gap, padding;
+  appearance: none;
+  -webkit-appearance: none;
   transition:
     border-color 0.15s ease,
-    grid-template-columns 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-    gap 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-    padding 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+    grid-template-columns 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    grid-template-rows 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    gap 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    min-height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .map-hotel-card:hover:not(.map-hotel-card--active) {
@@ -100,47 +108,68 @@ function formatRating(value: number) {
 
 .map-hotel-card--compact {
   grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  align-items: stretch;
   gap: 8px;
+  min-height: 0;
   padding: 8px;
 }
 
+/*
+ * Snap card width immediately; animate only the media 96px → 120px.
+ * Animating card width while media is 100% made the photo briefly fill the wide sidebar.
+ */
 .map-hotel-card--image-only {
-  grid-template-columns: 1fr;
+  position: relative;
+  grid-template-columns: 120px;
+  grid-template-rows: 120px;
+  align-items: stretch;
   gap: 0;
+  width: 120px;
+  min-height: 120px;
+  max-width: 100%;
   padding: 0;
   overflow: hidden;
-  border: 1px solid var(--wh-field-border);
-  border-radius: 12px;
 }
 
 .map-hotel-card__media {
   overflow: hidden;
   width: 96px;
   height: 96px;
+  min-width: 96px;
+  min-height: 96px;
   border-radius: 8px;
   background: var(--wh-gray-100, #f5f5f5);
   transition:
-    width 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-    height 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    min-width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    min-height 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .map-hotel-card--compact .map-hotel-card__media {
   width: 100%;
   height: auto;
+  min-width: 0;
+  min-height: 0;
   aspect-ratio: 1 / 1;
 }
 
 .map-hotel-card--image-only .map-hotel-card__media {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1 / 1;
-  border-radius: 0;
+  width: 120px;
+  height: 120px;
+  min-width: 120px;
+  min-height: 120px;
+  border-radius: 12px;
 }
 
 .map-hotel-card__media img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: inherit;
 }
 
 .map-hotel-card__body {
@@ -149,6 +178,10 @@ function formatRating(value: number) {
   flex-direction: column;
   gap: 4px;
   justify-content: center;
+}
+
+.map-hotel-card--image-only .map-hotel-card__body {
+  display: none;
 }
 
 .map-hotel-card__row {
@@ -167,9 +200,10 @@ function formatRating(value: number) {
   font-weight: 600;
   line-height: 1.25;
   color: var(--wh-gray-900);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   transition: font-size 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
