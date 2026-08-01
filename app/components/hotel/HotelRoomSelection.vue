@@ -256,8 +256,8 @@ function quantityOptions(max: number) {
   line-height: 1;
   letter-spacing: -0.05em;
   color: var(--wh-black-text);
-  text-align: center;
-  text-align-last: center;
+  text-align: left;
+  text-align-last: left;
   appearance: none;
   cursor: pointer;
 }
