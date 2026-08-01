@@ -13,6 +13,15 @@ const DEFAULT_PRICE_BOUNDS: HotelPriceRangeBounds = {
   max: 15000,
 }
 
+function parseCoord(value: number | string | null | undefined): number | undefined {
+  if (value == null || value === '') {
+    return undefined
+  }
+
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
 export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
   const price = Number(offer.price) || 0
 
@@ -27,6 +36,8 @@ export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
     image: offer.image_url,
     reviews: Number(offer.review_count) || 0,
     rating: Number(offer.star_rate) || 0,
+    map_lat: parseCoord(offer.map_lat),
+    map_lng: parseCoord(offer.map_lng),
   }
 }
 

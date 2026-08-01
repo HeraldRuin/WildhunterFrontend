@@ -50,6 +50,8 @@ export interface OfferItem {
   image: string
   reviews: number
   rating: number
+  map_lat?: number
+  map_lng?: number
 }
 
 export interface BookableItem {
@@ -98,6 +100,8 @@ export interface HotelOffer {
   price?: number | string
   review_count?: number
   is_in_wishList?: boolean
+  map_lat?: number | string | null
+  map_lng?: number | string | null
 }
 
 export interface HotelSearchPagination {
