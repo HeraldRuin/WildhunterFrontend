@@ -39,33 +39,41 @@ function queryString(key: string): string {
 
 const isCatalogMode = computed(() => !queryString('checkIn') && !queryString('checkOut'))
 
-function buildSearchBody(): HotelSearchBody {
+const searchRequest = computed(() => {
+  const catalog = isCatalogMode.value
   const body: HotelSearchBody = {}
 
-  if (route.query.location) {
-    body.location_id = Number(route.query.location)
+  if (!catalog) {
+    if (route.query.location) {
+      body.location_id = Number(route.query.location)
+    }
+
+    if (route.query.animal) {
+      body.animal_id = Number(route.query.animal)
+    }
+
+    const checkIn = parseDisplayDateToApiDate(queryString('checkIn'))
+    if (checkIn) {
+      body.check_in = checkIn
+    }
+
+    const checkOut = parseDisplayDateToApiDate(queryString('checkOut'))
+    if (checkOut) {
+      body.check_out = checkOut
+    }
+
+    if (route.query.guests) {
+      body.adults = Number(route.query.guests)
+    }
   }
 
-  if (route.query.animal) {
-    body.animal_id = Number(route.query.animal)
+  return {
+    catalog,
+    body,
+    // Force reactivity when only query values change.
+    key: route.fullPath,
   }
-
-  const checkIn = parseDisplayDateToApiDate(queryString('checkIn'))
-  if (checkIn) {
-    body.check_in = checkIn
-  }
-
-  const checkOut = parseDisplayDateToApiDate(queryString('checkOut'))
-  if (checkOut) {
-    body.check_out = checkOut
-  }
-
-  if (route.query.guests) {
-    body.adults = Number(route.query.guests)
-  }
-
-  return body
-}
+})
 
 async function fetchAllSearchHotels(body: HotelSearchBody): Promise<OfferItem[]> {
   const first = await searchApi.searchHotels(1, body)
@@ -88,25 +96,43 @@ async function fetchAllSearchHotels(body: HotelSearchBody): Promise<OfferItem[]>
   return items.map(mapHotelOfferToItem)
 }
 
-const { data: hotels, pending: isLoading } = await useAsyncData(
-  'bases-map-hotels',
-  async () => {
-    try {
-      const items = isCatalogMode.value
-        ? await hotelsApi.getHotelOfferItems()
-        : await fetchAllSearchHotels(buildSearchBody())
+const hotels = ref<MapHotelItem[]>([])
+const isLoading = ref(false)
+let searchLoadId = 0
 
-      return items
-        .map(offerToMapHotel)
-        .filter((item): item is MapHotelItem => item != null)
+async function loadMapHotels() {
+  const loadId = ++searchLoadId
+  isLoading.value = true
+
+  try {
+    const items = searchRequest.value.catalog
+      ? await hotelsApi.getHotelOfferItems()
+      : await fetchAllSearchHotels(searchRequest.value.body)
+
+    if (loadId !== searchLoadId) {
+      return
     }
-    catch {
-      return [] as MapHotelItem[]
+
+    hotels.value = items
+      .map(offerToMapHotel)
+      .filter((item): item is MapHotelItem => item != null)
+  }
+  catch {
+    // Keep previous results visible if a refresh fails.
+  }
+  finally {
+    if (loadId === searchLoadId) {
+      isLoading.value = false
     }
-  },
-  {
-    watch: [() => route.query],
-    default: () => [] as MapHotelItem[],
+  }
+}
+
+await loadMapHotels()
+
+watch(
+  () => searchRequest.value.key,
+  () => {
+    void loadMapHotels()
   },
 )
 
@@ -114,6 +140,39 @@ const listEl = ref<HTMLElement | null>(null)
 const listPageCount = ref(1)
 const listPageIndex = ref(0)
 let listResizeObserver: ResizeObserver | null = null
+
+function getListMaxScroll(el: HTMLElement) {
+  return Math.max(0, el.scrollHeight - el.clientHeight)
+}
+
+function getListPageCount(el: HTMLElement) {
+  const pageSize = el.clientHeight || 1
+  const maxScroll = getListMaxScroll(el)
+
+  if (maxScroll <= 1) {
+    return 1
+  }
+
+  return Math.max(1, Math.ceil((maxScroll + pageSize) / pageSize))
+}
+
+function getListPageIndex(el: HTMLElement, pageCount: number) {
+  if (pageCount <= 1) {
+    return 0
+  }
+
+  const maxScroll = getListMaxScroll(el)
+
+  // Last screen is shorter than a full page — treat bottom as final page.
+  if (el.scrollTop >= maxScroll - 2) {
+    return pageCount - 1
+  }
+
+  return Math.min(
+    pageCount - 1,
+    Math.round((el.scrollTop / maxScroll) * (pageCount - 1)),
+  )
+}
 
 function updateListPages() {
   const el = listEl.value
@@ -123,13 +182,9 @@ function updateListPages() {
     return
   }
 
-  const pageSize = el.clientHeight || 1
-  const pages = Math.max(1, Math.ceil(el.scrollHeight / pageSize - 0.01))
+  const pages = getListPageCount(el)
   listPageCount.value = pages
-  listPageIndex.value = Math.min(
-    pages - 1,
-    Math.round(el.scrollTop / pageSize),
-  )
+  listPageIndex.value = getListPageIndex(el, pages)
 }
 
 function onListScroll() {
@@ -138,11 +193,7 @@ function onListScroll() {
     return
   }
 
-  const pageSize = el.clientHeight || 1
-  listPageIndex.value = Math.min(
-    listPageCount.value - 1,
-    Math.round(el.scrollTop / pageSize),
-  )
+  listPageIndex.value = getListPageIndex(el, listPageCount.value)
 }
 
 function scrollListToPage(index: number) {
@@ -151,8 +202,14 @@ function scrollListToPage(index: number) {
     return
   }
 
+  const pageCount = listPageCount.value
+  const maxScroll = getListMaxScroll(el)
+  const top = pageCount <= 1
+    ? 0
+    : (index / (pageCount - 1)) * maxScroll
+
   el.scrollTo({
-    top: index * el.clientHeight,
+    top,
     behavior: 'smooth',
   })
   listPageIndex.value = index
@@ -226,11 +283,12 @@ function toggleListColumns() {
 
 async function handleSearch(payload: Record<string, string>) {
   await navigateTo({
-    path: '/bases',
+    path: '/bases/map',
     query: {
       ...payload,
     },
   })
+  await loadMapHotels()
 }
 </script>
 
@@ -342,9 +400,14 @@ async function handleSearch(payload: Record<string, string>) {
                 </button>
               </div>
 
-              <div class="bases-map-page__list-wrap">
+              <div
+                class="bases-map-page__list-wrap"
+                :class="{
+                  'bases-map-page__list-wrap--with-dots': hotels.length && listPageCount > 1,
+                }"
+              >
                 <div
-                  v-if="!isLoading && hotels.length && listPageCount > 1"
+                  v-if="hotels.length && listPageCount > 1"
                   class="bases-map-page__list-dots"
                   role="tablist"
                   aria-label="Страницы списка баз"
@@ -364,13 +427,18 @@ async function handleSearch(payload: Record<string, string>) {
                 <aside
                   ref="listEl"
                   class="bases-map-page__list"
-                  :class="{ 'bases-map-page__list--grid': isGridList }"
+                  :class="{
+                    'bases-map-page__list--grid': isGridList,
+                    'bases-map-page__list--state': !hotels.length,
+                    'bases-map-page__list--refreshing': isLoading && hotels.length,
+                  }"
+                  :aria-busy="isLoading"
                   aria-label="Список баз"
                   @scroll.passive="onListScroll"
                 >
                   <div
-                    v-if="isLoading"
-                    class="bases-map-page__state"
+                    v-if="isLoading && !hotels.length"
+                    class="bases-map-page__state bases-map-page__state--loading"
                   >
                     <CommonSpinner
                       variant="ring"
@@ -395,6 +463,17 @@ async function handleSearch(payload: Record<string, string>) {
                       @select="selectHotel"
                     />
                   </template>
+
+                  <div
+                    v-if="isLoading && hotels.length"
+                    class="bases-map-page__refresh"
+                    aria-hidden="true"
+                  >
+                    <CommonSpinner
+                      variant="ring"
+                      size="md"
+                    />
+                  </div>
                 </aside>
               </div>
             </div>
@@ -432,6 +511,8 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .bases-map-page__results {
+  position: relative;
+  z-index: 1;
   padding: 20px 0 104px;
   background: #e8e8e8;
 }
@@ -534,11 +615,15 @@ async function handleSearch(payload: Record<string, string>) {
 
 .bases-map-page__list-wrap {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   flex: 1;
   min-height: 0;
   min-width: 0;
+}
+
+.bases-map-page__list-wrap--with-dots {
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 .bases-map-page__list-dots {
@@ -575,6 +660,7 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .bases-map-page__list {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
@@ -591,6 +677,16 @@ async function handleSearch(payload: Record<string, string>) {
   grid-template-columns: 1fr 1fr;
 }
 
+.bases-map-page__list--state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bases-map-page__list--refreshing {
+  pointer-events: none;
+}
+
 .bases-map-page__list::-webkit-scrollbar {
   display: none;
 }
@@ -599,6 +695,7 @@ async function handleSearch(payload: Record<string, string>) {
   display: grid;
   place-items: center;
   grid-column: 1 / -1;
+  width: 100%;
   min-height: 160px;
   padding: 16px;
   font-family: "Inter", sans-serif;
@@ -606,6 +703,21 @@ async function handleSearch(payload: Record<string, string>) {
   line-height: 1.4;
   color: var(--wh-gray-600, #666);
   text-align: center;
+}
+
+.bases-map-page__state--loading {
+  flex: 1;
+  min-height: 100%;
+}
+
+.bases-map-page__refresh {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  background: rgb(255 255 255 / 55%);
+  pointer-events: none;
 }
 
 .bases-map-page__map-wrap {

@@ -731,8 +731,7 @@ onUnmounted(() => {
 }
 
 .hero-search__field--open {
-  z-index: 30;
-  isolation: isolate;
+  z-index: 50;
 }
 
 .hero-search--dropdown-open .hero-search__field:not(.hero-search__field--open) {
@@ -745,7 +744,7 @@ onUnmounted(() => {
 
 .hero-search__field--open .hero-search__dropdown-list,
 .hero-search__field--open .hero-search__dropdown-panel {
-  z-index: 100;
+  z-index: 60;
 }
 
 .hero-search__field--location {

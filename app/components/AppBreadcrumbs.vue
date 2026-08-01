@@ -1,16 +1,37 @@
 <script setup lang="ts">
+import type { RouteLocationRaw } from 'vue-router'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 
 defineProps<{
   items: BreadcrumbItem[]
 }>()
+
+async function onLinkClick(to: RouteLocationRaw, event: MouseEvent) {
+  if (
+    event.defaultPrevented
+    || event.button !== 0
+    || event.metaKey
+    || event.altKey
+    || event.ctrlKey
+    || event.shiftKey
+  ) {
+    return
+  }
+
+  event.preventDefault()
+  await navigateTo(to)
+}
 </script>
 
 <template>
   <nav class="app-breadcrumbs" aria-label="Хлебные крошки">
     <template v-for="(item, index) in items" :key="`${item.label}-${index}`">
       <span v-if="index > 0" aria-hidden="true">&gt;</span>
-      <NuxtLink v-if="item.to" :to="item.to">
+      <NuxtLink
+        v-if="item.to"
+        :to="item.to"
+        @click="onLinkClick(item.to, $event)"
+      >
         {{ item.label }}
       </NuxtLink>
       <span

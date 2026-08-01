@@ -58,7 +58,9 @@ const backgroundStyle = computed(() => {
 <style scoped>
 .search-top {
   position: relative;
+  z-index: 40;
   height: 375px;
+  overflow: visible;
   background: var(--wh-green);
 }
 
@@ -74,6 +76,8 @@ const backgroundStyle = computed(() => {
 }
 
 .search-top__inner {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -81,6 +85,7 @@ const backgroundStyle = computed(() => {
   width: min(100%, 1440px);
   margin-inline: auto;
   padding: 172px 24px 48px;
+  overflow: visible;
 }
 
 .search-top--compact .search-top__inner {

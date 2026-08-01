@@ -331,6 +331,8 @@ onBeforeUnmount(() => {
   height: 100%;
   min-height: 0;
   border-radius: 12px;
+  position: relative;
+  z-index: 0;
   overflow: hidden;
   background: var(--wh-gray-200, #dddddd);
 }
