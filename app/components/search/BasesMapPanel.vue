@@ -780,6 +780,20 @@ async function searchMeasurePoint() {
   padding-left: 8px;
 }
 
+/*
+ * Collapsed toolbar (296px) overhangs the map column.
+ * Shift measure search past it so it sits to the right of the icons, not under them.
+ * 296 - sidebar(120) - column-gap(8) + gap(8) = 176
+ */
+.bases-map-page__layout--collapsed .bases-map-page__measure-search {
+  margin-left: 176px;
+}
+
+.bases-map-page__layout--collapsed:has(.bases-map-page__list-wrap--with-dots) .bases-map-page__measure-search {
+  /* 296 - 138 - 8 + 8 */
+  margin-left: 158px;
+}
+
 .bases-map-page__layout--collapsed .bases-map-page__list-wrap--with-dots {
   gap: 10px;
 }
@@ -1128,6 +1142,11 @@ async function searchMeasurePoint() {
     grid-column: 1;
     grid-row: auto;
     width: auto;
+  }
+
+  .bases-map-page__layout--collapsed .bases-map-page__measure-search,
+  .bases-map-page__layout--collapsed:has(.bases-map-page__list-wrap--with-dots) .bases-map-page__measure-search {
+    margin-left: 0;
   }
 
   .bases-map-page__sidebar {
