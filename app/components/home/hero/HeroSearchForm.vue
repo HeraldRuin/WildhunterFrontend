@@ -122,7 +122,7 @@ const locationLabel = computed(() => {
     return selectedLocation.value.name
   }
 
-  return locationsLoading.value ? 'Загрузка...' : 'Куда вы собираетесь?'
+  return 'Куда вы собираетесь?'
 })
 
 const selectedAnimal = computed(() =>
@@ -134,7 +134,7 @@ const animalLabel = computed(() => {
     return selectedAnimal.value.title
   }
 
-  return animalsLoading.value ? 'Загрузка...' : 'На кого будет охота?'
+  return 'На кого будет охота?'
 })
 
 function formatAdultsLabel(count: number) {

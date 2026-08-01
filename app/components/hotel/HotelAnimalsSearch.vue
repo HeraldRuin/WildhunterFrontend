@@ -58,7 +58,7 @@ const animalLabel = computed(() => {
     return selectedAnimal.value.title
   }
 
-  return animalsLoading.value ? 'Загрузка...' : 'На кого будет охота?'
+  return 'На кого будет охота?'
 })
 
 const dateRangeLabel = computed(() => {
@@ -288,10 +288,7 @@ function handleSubmit() {
         <div
           ref="animalFieldRef"
           class="hotel-animals-search__field hotel-animals-search__field--animal"
-          :class="{
-            'hotel-animals-search__field--open': isAnimalOpen,
-            'hotel-animals-search__field--placeholder': !selectedAnimal,
-          }"
+          :class="{ 'hotel-animals-search__field--open': isAnimalOpen }"
         >
           <span class="hotel-animals-search__label">Животные</span>
           <button
@@ -472,10 +469,6 @@ function handleSubmit() {
   color: #1c211c;
   text-align: left;
   cursor: pointer;
-}
-
-.hotel-animals-search__field--placeholder .hotel-animals-search__value {
-  opacity: 0.72;
 }
 
 .hotel-animals-search__value:disabled {
