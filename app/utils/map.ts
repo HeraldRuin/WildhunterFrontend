@@ -40,3 +40,43 @@ export function offerToMapHotel(item: OfferItem): MapHotelItem | null {
     reviews: item.reviews,
   }
 }
+
+/** Format a Leaflet distance (meters) for map UI. */
+export function formatMapDistance(meters: number): string {
+  if (!Number.isFinite(meters) || meters < 0) {
+    return ''
+  }
+
+  if (meters < 1000) {
+    return `${Math.round(meters)} м`
+  }
+
+  const km = meters / 1000
+  const rounded = km < 10 ? Math.round(km * 10) / 10 : Math.round(km)
+
+  return `${String(rounded).replace('.', ',')} км`
+}
+
+/** Parse "55.75, 37.61" / "55.75 37.61" style coordinates. */
+export function parseMapCoordinates(input: string): { lat: number, lng: number } | null {
+  const match = input.trim().match(
+    /^(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)$/,
+  )
+
+  if (!match) {
+    return null
+  }
+
+  const lat = Number(match[1].replace(',', '.'))
+  const lng = Number(match[2].replace(',', '.'))
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null
+  }
+
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null
+  }
+
+  return { lat, lng }
+}
