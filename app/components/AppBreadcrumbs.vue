@@ -36,11 +36,15 @@ defineProps<{
 }
 
 .app-breadcrumbs a {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
   transition: color 0.15s ease;
 }
 
 .app-breadcrumbs a:hover {
   color: var(--wh-gray-900);
+  text-decoration: underline;
 }
 
 .app-breadcrumbs__current {
