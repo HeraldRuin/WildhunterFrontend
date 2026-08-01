@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LocationItem, OfferItem, SearchFiltersState } from '~/types/api'
+import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { DEFAULT_SEARCH_FILTERS, matchesReviewRatingFilter } from '~/utils/search'
 
 definePageMeta({
@@ -136,6 +137,11 @@ const mobileFiltersOpen = ref(false)
 const currentPage = ref(Number(route.query.page) || 1)
 const perPage = 6
 
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
+  { label: 'Главная', to: '/' },
+  { label: locationName.value || 'Локация' },
+])
+
 const filteredOffers = computed(() => {
   return locationHotels.value.filter((item) => {
     if (item.price < filters.value.priceMin || item.price > filters.value.priceMax) {
@@ -229,6 +235,11 @@ function handleFiltersReset() {
 
     <section class="location-page__results">
       <div class="container location-page__results-inner">
+        <AppBreadcrumbs
+          :items="breadcrumbs"
+          class="location-page__breadcrumbs"
+        />
+
         <div class="location-page__toolbar">
           <button
             v-show="!mobileFiltersOpen"
@@ -324,6 +335,10 @@ function handleFiltersReset() {
   display: flex;
   flex-direction: column;
   gap: 28px;
+}
+
+.location-page__breadcrumbs {
+  align-self: start;
 }
 
 .location-page__toolbar {
