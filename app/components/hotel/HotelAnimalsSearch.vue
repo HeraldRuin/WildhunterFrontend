@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SearchAnimal } from '~/types/api'
-import { formatDisplayDate, parseDisplayDate } from '~/utils/date'
+import { formatDisplayDate, parseDisplayDate, startOfDay } from '~/utils/date'
 
 const emit = defineEmits<{
   check: [payload: { checkIn: string, checkOut: string, adults: number, animalId: string }]
@@ -61,12 +61,30 @@ const animalLabel = computed(() => {
   return 'На кого будет охота?'
 })
 
-const dateRangeLabel = computed(() => {
+const checkInLabel = computed(() =>
+  checkIn.value ? formatDisplayDate(checkIn.value) : 'Заезд',
+)
+
+const checkOutLabel = computed(() =>
+  checkOut.value ? formatDisplayDate(checkOut.value) : 'Выезд',
+)
+
+const hasCustomDates = computed(() => {
   if (!checkIn.value || !checkOut.value) {
-    return 'Выберите даты'
+    return false
   }
 
-  return `${formatDisplayDate(checkIn.value)} - ${formatDisplayDate(checkOut.value)}`
+  const defaultStart = parseDisplayDate(DEFAULT_CHECK_IN)
+  const defaultEnd = parseDisplayDate(DEFAULT_CHECK_OUT)
+
+  if (!defaultStart || !defaultEnd) {
+    return true
+  }
+
+  return !(
+    startOfDay(checkIn.value).getTime() === startOfDay(defaultStart).getTime()
+    && startOfDay(checkOut.value).getTime() === startOfDay(defaultEnd).getTime()
+  )
 })
 
 const isAnyDropdownOpen = computed(() =>
@@ -89,6 +107,11 @@ function closeOtherDropdowns(except?: 'hunters' | 'dates' | 'animal') {
   }
 }
 
+function closeDatesDropdown() {
+  isDatesOpen.value = false
+  activeDatePart.value = null
+}
+
 function toggleHuntersDropdown() {
   isHuntersOpen.value = !isHuntersOpen.value
   closeOtherDropdowns(isHuntersOpen.value ? 'hunters' : undefined)
@@ -103,16 +126,34 @@ function toggleAnimalDropdown() {
   closeOtherDropdowns(isAnimalOpen.value ? 'animal' : undefined)
 }
 
-function toggleDatesDropdown() {
-  if (isDatesOpen.value) {
-    isDatesOpen.value = false
-    activeDatePart.value = null
+function openDatesFor(part: 'start' | 'end') {
+  if (isDatesOpen.value && activeDatePart.value === part) {
+    closeDatesDropdown()
     return
   }
 
   isDatesOpen.value = true
-  activeDatePart.value = 'start'
+  activeDatePart.value = part
   closeOtherDropdowns('dates')
+}
+
+function toggleDatesDropdown() {
+  if (isDatesOpen.value) {
+    closeDatesDropdown()
+    return
+  }
+
+  openDatesFor('start')
+}
+
+function onDatesFieldClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+
+  if (target.closest('.hotel-animals-search__date-part, .hotel-animals-search__clear, .hotel-animals-search__dates-chevron, .hotel-animals-search__dropdown')) {
+    return
+  }
+
+  openDatesFor('start')
 }
 
 function incrementAdults() {
@@ -133,8 +174,23 @@ function selectAnimal(item: SearchAnimal) {
   hoveredAnimalId.value = null
 }
 
-function clearAnimal() {
+function clearDates(event: MouseEvent) {
+  event.stopPropagation()
+  checkIn.value = parseDisplayDate(DEFAULT_CHECK_IN)
+  checkOut.value = parseDisplayDate(DEFAULT_CHECK_OUT)
+  closeDatesDropdown()
+}
+
+function clearHunters(event: MouseEvent) {
+  event.stopPropagation()
+  adultsCount.value = 1
+  isHuntersOpen.value = false
+}
+
+function clearAnimal(event: MouseEvent) {
+  event.stopPropagation()
   animal.value = ''
+  isAnimalOpen.value = false
 }
 
 function setAnimalHover(id: string | number) {
@@ -152,8 +208,7 @@ function setAnimalHoverFromEvent(event: MouseEvent) {
 
 function handleDocumentClick(event: MouseEvent) {
   if (!datesFieldRef.value?.contains(event.target as Node)) {
-    isDatesOpen.value = false
-    activeDatePart.value = null
+    closeDatesDropdown()
   }
 
   if (!huntersFieldRef.value?.contains(event.target as Node)) {
@@ -201,25 +256,59 @@ function handleSubmit() {
           ref="datesFieldRef"
           class="hotel-animals-search__field hotel-animals-search__field--dates"
           :class="{ 'hotel-animals-search__field--open': isDatesOpen }"
+          @click="onDatesFieldClick"
         >
           <span class="hotel-animals-search__label">Заезд – Выезд</span>
+          <div class="hotel-animals-search__dates-control">
+            <button
+              type="button"
+              class="hotel-animals-search__date-part"
+              :class="{ 'hotel-animals-search__date-part--active': isDatesOpen && activeDatePart === 'start' }"
+              aria-label="Выбрать дату заезда"
+              @click="openDatesFor('start')"
+            >
+              {{ checkInLabel }}
+            </button>
+            <span class="hotel-animals-search__dates-sep" aria-hidden="true">-</span>
+            <button
+              type="button"
+              class="hotel-animals-search__date-part"
+              :class="{ 'hotel-animals-search__date-part--active': isDatesOpen && activeDatePart === 'end' }"
+              aria-label="Выбрать дату выезда"
+              @click="openDatesFor('end')"
+            >
+              {{ checkOutLabel }}
+            </button>
+          </div>
           <button
+            v-if="hasCustomDates"
             type="button"
-            class="hotel-animals-search__value"
+            class="hotel-animals-search__clear"
+            aria-label="Сбросить даты"
+            @click="clearDates"
+          >
+            <svg viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button
+            v-else
+            type="button"
+            class="hotel-animals-search__dates-chevron"
+            aria-label="Открыть календарь"
             @click="toggleDatesDropdown"
           >
-            {{ dateRangeLabel }}
+            <svg class="hotel-animals-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
+              <path
+                d="M1 2 6 6.5 11 2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </button>
-          <svg class="hotel-animals-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
-            <path
-              d="M1 2 6 6.5 11 2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
 
           <div
             v-if="isDatesOpen"
@@ -246,7 +335,18 @@ function handleSubmit() {
           >
             {{ huntersLabel }}
           </button>
-          <svg class="hotel-animals-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
+          <button
+            v-if="adultsCount > 1"
+            type="button"
+            class="hotel-animals-search__clear"
+            aria-label="Сбросить количество охотников"
+            @click="clearHunters"
+          >
+            <svg viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </button>
+          <svg v-else class="hotel-animals-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
             <path
               d="M1 2 6 6.5 11 2"
               fill="none"
@@ -475,6 +575,54 @@ function handleSubmit() {
   cursor: wait;
 }
 
+.hotel-animals-search__dates-control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  padding-right: 28px;
+}
+
+.hotel-animals-search__date-part {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 50%;
+  padding: 2px 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  color: #1c211c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hotel-animals-search__date-part--active {
+  color: var(--wh-orange-500);
+  animation: hotel-animals-search-date-part-pulse 1.4s ease-in-out infinite;
+}
+
+.hotel-animals-search__dates-sep {
+  flex-shrink: 0;
+  margin: 0 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  color: #1c211c;
+  opacity: 0.45;
+  user-select: none;
+}
+
 .hotel-animals-search__chevron {
   position: absolute;
   top: 50%;
@@ -486,10 +634,37 @@ function handleSubmit() {
   transform: translateY(-50%);
 }
 
+.hotel-animals-search__dates-chevron {
+  position: absolute;
+  top: 50%;
+  right: 22px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.hotel-animals-search__dates-chevron .hotel-animals-search__chevron {
+  position: static;
+  transform: none;
+}
+
+.hotel-animals-search__field--open .hotel-animals-search__dates-chevron .hotel-animals-search__chevron {
+  transform: rotate(180deg);
+}
+
 .hotel-animals-search__clear {
   position: absolute;
   top: 50%;
   right: 22px;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: 20px;
@@ -500,10 +675,33 @@ function handleSubmit() {
   color: #1c211c;
   cursor: pointer;
   transform: translateY(-50%);
+  transition: opacity 0.15s ease;
+}
+
+.hotel-animals-search__clear svg {
+  width: 12px;
+  height: 12px;
+}
+
+.hotel-animals-search__clear:hover {
+  opacity: 0.6;
 }
 
 .hotel-animals-search__field--open .hotel-animals-search__chevron {
   transform: translateY(-50%) rotate(180deg);
+}
+
+@keyframes hotel-animals-search-date-part-pulse {
+  0%,
+  100% {
+    background: rgb(209 101 16 / 0%);
+    box-shadow: 0 0 0 0 rgb(209 101 16 / 0%);
+  }
+
+  50% {
+    background: rgb(209 101 16 / 10%);
+    box-shadow: 0 0 0 3px rgb(209 101 16 / 8%);
+  }
 }
 
 .hotel-animals-search__dropdown,
