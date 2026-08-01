@@ -505,7 +505,11 @@ function handleBook() {
   }
 
   .hotel-page__hero-inner {
-    width: min(calc(100% - 32px), calc(100vw - 48px));
+    width: min(calc(100% - 16px), calc(100vw - 24px));
+  }
+
+  .hotel-page__booking :deep(.hotel-booking-section) {
+    width: 100% !important;
   }
 }
 

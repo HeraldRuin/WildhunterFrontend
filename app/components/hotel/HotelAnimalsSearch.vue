@@ -874,23 +874,16 @@ function handleSubmit() {
   }
 
   .hotel-animals-search__panel {
-    flex-direction: column;
+    flex-direction: row;
     gap: 2px;
   }
 
-  .hotel-animals-search__field,
-  .hotel-animals-search__field--dates,
-  .hotel-animals-search__field--hunters,
-  .hotel-animals-search__field--animal {
-    border-radius: var(--wh-radius-lg);
-  }
-
   .hotel-animals-search__field--animal .hotel-animals-search__dropdown-list {
-    border-radius: var(--wh-radius-lg);
+    border-radius: 0 var(--wh-radius-lg) var(--wh-radius-lg) 0;
   }
 
   .hotel-animals-search__dropdown--calendar {
-    border-radius: var(--wh-radius-lg);
+    border-radius: var(--wh-radius-lg) 0 0 var(--wh-radius-lg);
   }
 
   .hotel-animals-search__submit {
@@ -932,6 +925,10 @@ function handleSubmit() {
   .hotel-animals-search__field--hunters {
     grid-column: 1;
     grid-row: 3;
+    border-radius: var(--wh-radius-lg);
+  }
+
+  .hotel-animals-search__field--hunters .hotel-animals-search__dropdown {
     border-radius: var(--wh-radius-lg);
   }
 

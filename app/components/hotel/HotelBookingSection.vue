@@ -106,8 +106,12 @@ function handleBook() {
 }
 
 @media (--wh-tablet) {
+  .hotel-booking-section {
+    width: 100% !important;
+  }
+
   .hotel-booking-section__card {
-    padding: 20px 16px;
+    padding: 20px 12px;
     gap: 24px;
   }
 

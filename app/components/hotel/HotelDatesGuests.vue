@@ -678,22 +678,16 @@ function handleSubmit() {
   }
 
   .hotel-dates-guests__panel {
-    flex-direction: column;
+    flex-direction: row;
     gap: 2px;
   }
 
-  .hotel-dates-guests__field,
-  .hotel-dates-guests__field--dates,
-  .hotel-dates-guests__field--guests {
-    border-radius: var(--wh-radius-lg);
-  }
-
   .hotel-dates-guests__field--guests .hotel-dates-guests__dropdown:not(.hotel-dates-guests__dropdown--calendar) {
-    border-radius: var(--wh-radius-lg);
+    border-radius: 0 var(--wh-radius-lg) var(--wh-radius-lg) 0;
   }
 
   .hotel-dates-guests__dropdown--calendar {
-    border-radius: var(--wh-radius-lg);
+    border-radius: var(--wh-radius-lg) 0 0 var(--wh-radius-lg);
   }
 
   .hotel-dates-guests__submit {
