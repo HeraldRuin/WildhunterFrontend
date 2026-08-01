@@ -15,9 +15,10 @@ const hotelParams = computed(() => ({
   hotelSlug: String(route.params.slug || ''),
 }))
 
-const { data: hotel, pending, status } = useHotelDetail(hotelParams)
+const { data: hotel } = useHotelDetail(hotelParams)
 const placeholderHotel = computed(() => createMockHotelDetail(hotelParams.value))
-const isHotelLoading = computed(() => pending.value || status.value === 'idle' || !hotel.value)
+// Only blur/overlay on first load — not when cached data is already available (e.g. browser back)
+const isHotelLoading = computed(() => !hotel.value)
 const displayHotel = computed(() => {
   if (isHotelLoading.value) {
     return placeholderHotel.value
@@ -306,7 +307,8 @@ function handleBook() {
   user-select: none;
 }
 
-.hotel-page__body--loading .hotel-page__hero-inner > :not(.hotel-gallery) {
+/* Blur header/description while hotel data loads; booking stays sharp */
+.hotel-page__body--loading .hotel-page__hero-inner > :not(.hotel-gallery):not(.hotel-page__booking) {
   filter: blur(5px);
   opacity: 0.55;
 }
