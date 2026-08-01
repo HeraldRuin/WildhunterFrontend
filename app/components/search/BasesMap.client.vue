@@ -257,12 +257,14 @@ function syncMeasureGraphics() {
   }).addTo(map)
 }
 
-function setMeasureOrigin(latlng: LatLng, fly = false) {
+function setMeasureOrigin(latlng: LatLng, pan = false) {
   measureOrigin = latlng
   syncMeasureGraphics()
 
-  if (fly && map) {
-    map.flyTo(latlng, Math.max(map.getZoom(), 11), {
+  // Pan to the point without changing zoom (measure mode keeps the overview).
+  if (pan && map) {
+    map.panTo(latlng, {
+      animate: true,
       duration: 0.55,
     })
   }
