@@ -414,6 +414,28 @@ async function handleSearch(payload: Record<string, string>) {
                       />
                     </svg>
                   </button>
+
+                  <button
+                    type="button"
+                    class="bases-map-page__control"
+                    title="Фильтры"
+                    aria-label="Открыть фильтры"
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 6h16M7 12h10M10 18h4"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
