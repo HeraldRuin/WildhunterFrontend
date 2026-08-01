@@ -328,6 +328,14 @@ function syncMarkers() {
 
     marker.on('click', () => {
       if (cluster.items.length > 1) {
+        // Measure mode: distance to the cluster center, don't drill into it.
+        if (props.measureMode) {
+          if (measureOrigin) {
+            setMeasureTarget(cluster.lat, cluster.lng)
+          }
+          return
+        }
+
         const bounds = L.latLngBounds(
           cluster.items.map((item) => [item.lat, item.lng] as [number, number]),
         )
