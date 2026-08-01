@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DivIcon, LatLng, Map as LeafletMap, Marker, Polyline } from 'leaflet'
+import type { DivIcon, LatLng, Map as LeafletMap, Marker, Polyline, Tooltip } from 'leaflet'
 import { DEFAULT_MAP_CENTER, formatMapDistance } from '~/utils/map'
 import { formatBasesCount } from '~/utils/pluralize'
 
@@ -16,6 +16,10 @@ interface MarkerCluster {
   lng: number
   items: BasesMapMarker[]
 }
+
+type TooltipDirection = 'top' | 'bottom' | 'left' | 'right'
+
+const TOOLTIP_EDGE_PAD = 96
 
 const props = withDefaults(defineProps<{
   lat?: number
@@ -188,6 +192,77 @@ function tooltipHtml(items: BasesMapMarker[]) {
   return `<div class="bases-map-tooltip__title">${formatBasesCount(items.length)} рядом</div><ul class="bases-map-tooltip__list">${rows}</ul>`
 }
 
+function tooltipOffsetForDirection(direction: TooltipDirection): [number, number] {
+  switch (direction) {
+    case 'bottom':
+      return [0, 14]
+    case 'left':
+      return [-14, 0]
+    case 'right':
+      return [14, 0]
+    case 'top':
+    default:
+      return [0, -14]
+  }
+}
+
+/** Pick tooltip side so it stays inside the map viewport. */
+function resolveTooltipDirection(lat: number, lng: number, isMulti: boolean): TooltipDirection {
+  if (!map) {
+    return 'top'
+  }
+
+  const point = map.latLngToContainerPoint([lat, lng])
+  const size = map.getSize()
+  const padX = isMulti ? 140 : TOOLTIP_EDGE_PAD
+  const padY = isMulti ? 120 : TOOLTIP_EDGE_PAD
+
+  const nearTop = point.y < padY
+  const nearBottom = point.y > size.y - padY
+  const nearLeft = point.x < padX
+  const nearRight = point.x > size.x - padX
+
+  if (nearTop) {
+    return 'bottom'
+  }
+
+  if (nearBottom) {
+    return 'top'
+  }
+
+  if (nearRight) {
+    return 'left'
+  }
+
+  if (nearLeft) {
+    return 'right'
+  }
+
+  return 'top'
+}
+
+function applyTooltipDirection(tooltip: Tooltip, direction: TooltipDirection) {
+  if (!leaflet) {
+    return
+  }
+
+  tooltip.options.direction = direction
+  tooltip.options.offset = leaflet.point(...tooltipOffsetForDirection(direction))
+
+  const el = tooltip.getElement()
+  if (!el) {
+    return
+  }
+
+  el.classList.remove(
+    'leaflet-tooltip-top',
+    'leaflet-tooltip-bottom',
+    'leaflet-tooltip-left',
+    'leaflet-tooltip-right',
+  )
+  el.classList.add(`leaflet-tooltip-${direction}`)
+}
+
 function clearClusterLayers() {
   for (const layer of clusterLayers) {
     layer.remove()
@@ -317,13 +392,44 @@ function syncMarkers() {
       zIndexOffset: isActive ? 100 : (cluster.items.length > 1 ? 50 : 0),
     }).addTo(map)
 
+    const isMulti = cluster.items.length > 1
+
     marker.bindTooltip(tooltipHtml(cluster.items), {
       direction: 'top',
       offset: [0, -14],
       opacity: 1,
-      className: cluster.items.length > 1
+      className: isMulti
         ? 'bases-map-tooltip bases-map-tooltip--multi'
         : 'bases-map-tooltip',
+    })
+
+    // Set side before open so the first paint is already correct.
+    marker.on('mouseover', () => {
+      const tooltip = marker.getTooltip()
+      if (!tooltip || !leaflet) {
+        return
+      }
+
+      const direction = resolveTooltipDirection(cluster.lat, cluster.lng, isMulti)
+      tooltip.options.direction = direction
+      tooltip.options.offset = leaflet.point(...tooltipOffsetForDirection(direction))
+    })
+
+    marker.on('tooltipopen', (event) => {
+      const tooltip = event.tooltip
+      if (!tooltip || !map) {
+        return
+      }
+
+      const direction = resolveTooltipDirection(cluster.lat, cluster.lng, isMulti)
+      applyTooltipDirection(tooltip, direction)
+
+      // Recompute screen position after direction/offset change.
+      const layerPoint = map.latLngToLayerPoint(marker.getLatLng())
+      const tooltipWithPosition = tooltip as Tooltip & {
+        _setPosition?: (point: { x: number, y: number }) => void
+      }
+      tooltipWithPosition._setPosition?.(layerPoint)
     })
 
     marker.on('click', () => {
@@ -729,7 +835,19 @@ onBeforeUnmount(() => {
   padding-top: 4px;
 }
 
-.bases-map :deep(.bases-map-tooltip::before) {
+.bases-map :deep(.bases-map-tooltip.leaflet-tooltip-top::before) {
   border-top-color: var(--wh-gray-900, #1c211c);
+}
+
+.bases-map :deep(.bases-map-tooltip.leaflet-tooltip-bottom::before) {
+  border-bottom-color: var(--wh-gray-900, #1c211c);
+}
+
+.bases-map :deep(.bases-map-tooltip.leaflet-tooltip-left::before) {
+  border-left-color: var(--wh-gray-900, #1c211c);
+}
+
+.bases-map :deep(.bases-map-tooltip.leaflet-tooltip-right::before) {
+  border-right-color: var(--wh-gray-900, #1c211c);
 }
 </style>
