@@ -97,6 +97,8 @@ async function fetchAllSearchHotels(body: HotelSearchBody): Promise<OfferItem[]>
 }
 
 const hotels = ref<MapHotelItem[]>([])
+/** Compact size is always on in grid mode; two-per-row only with 2+ hotels. */
+const isGridMulti = computed(() => isGridList.value && hotels.value.length > 1)
 const isLoading = ref(false)
 let searchLoadId = 0
 
@@ -226,7 +228,7 @@ watch(
   { deep: true },
 )
 
-watch(isGridList, async () => {
+watch([isGridList, isGridMulti], async () => {
   await nextTick()
   updateListPages()
 })
@@ -306,98 +308,113 @@ async function handleSearch(payload: Record<string, string>) {
         <div class="bases-map-page__panel">
           <div
             class="bases-map-page__layout"
-            :class="{ 'bases-map-page__layout--grid': isGridList }"
+            :class="{
+              'bases-map-page__layout--grid': isGridMulti,
+              'bases-map-page__layout--grid-single': isGridList && hotels.length === 1,
+            }"
           >
             <div class="bases-map-page__sidebar">
               <div
-                class="bases-map-page__controls"
-                role="toolbar"
-                aria-label="Управление картой"
+                class="bases-map-page__controls-wrap"
+                :class="{
+                  'bases-map-page__controls-wrap--with-dots': hotels.length && listPageCount > 1,
+                }"
               >
-                <button
-                  type="button"
-                  class="bases-map-page__control"
-                  title="Показать все базы"
-                  aria-label="Показать все базы на карте"
-                  @click="resetMapView"
+                <div
+                  v-if="hotels.length && listPageCount > 1"
+                  class="bases-map-page__controls-spacer"
+                  aria-hidden="true"
+                />
+                <div
+                  class="bases-map-page__controls"
+                  role="toolbar"
+                  aria-label="Управление картой"
                 >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
+                  <button
+                    type="button"
+                    class="bases-map-page__control"
+                    title="Показать все базы"
+                    aria-label="Показать все базы на карте"
+                    @click="resetMapView"
                   >
-                    <path
-                      d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"
-                      stroke="currentColor"
-                      stroke-width="1.7"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="2.2"
-                      fill="currentColor"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="2.2"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </button>
 
-                <button
-                  type="button"
-                  class="bases-map-page__control"
-                  :class="{ 'bases-map-page__control--active': isGridList }"
-                  :title="isGridList ? 'Один ряд' : 'Два ряда'"
-                  :aria-label="isGridList ? 'Показать список в один ряд' : 'Показать список в два ряда'"
-                  :aria-pressed="isGridList"
-                  @click="toggleListColumns"
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
+                  <button
+                    type="button"
+                    class="bases-map-page__control"
+                    :class="{ 'bases-map-page__control--active': isGridList }"
+                    :title="isGridList ? 'Крупные карточки' : 'Компактные карточки'"
+                    :aria-label="isGridList ? 'Показать крупные карточки' : 'Показать компактные карточки'"
+                    :aria-pressed="isGridList"
+                    @click="toggleListColumns"
                   >
-                    <rect
-                      x="3.5"
-                      y="3.5"
-                      width="7"
-                      height="7"
-                      rx="1.2"
-                      stroke="currentColor"
-                      stroke-width="1.7"
-                    />
-                    <rect
-                      x="13.5"
-                      y="3.5"
-                      width="7"
-                      height="7"
-                      rx="1.2"
-                      stroke="currentColor"
-                      stroke-width="1.7"
-                    />
-                    <rect
-                      x="3.5"
-                      y="13.5"
-                      width="7"
-                      height="7"
-                      rx="1.2"
-                      stroke="currentColor"
-                      stroke-width="1.7"
-                    />
-                    <rect
-                      x="13.5"
-                      y="13.5"
-                      width="7"
-                      height="7"
-                      rx="1.2"
-                      stroke="currentColor"
-                      stroke-width="1.7"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <rect
+                        x="3.5"
+                        y="3.5"
+                        width="7"
+                        height="7"
+                        rx="1.2"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                      />
+                      <rect
+                        x="13.5"
+                        y="3.5"
+                        width="7"
+                        height="7"
+                        rx="1.2"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                      />
+                      <rect
+                        x="3.5"
+                        y="13.5"
+                        width="7"
+                        height="7"
+                        rx="1.2"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                      />
+                      <rect
+                        x="13.5"
+                        y="13.5"
+                        width="7"
+                        height="7"
+                        rx="1.2"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <div
@@ -429,6 +446,7 @@ async function handleSearch(payload: Record<string, string>) {
                   class="bases-map-page__list"
                   :class="{
                     'bases-map-page__list--grid': isGridList,
+                    'bases-map-page__list--grid-multi': isGridMulti,
                     'bases-map-page__list--state': !hotels.length,
                     'bases-map-page__list--refreshing': isLoading && hotels.length,
                   }"
@@ -531,13 +549,11 @@ async function handleSearch(payload: Record<string, string>) {
 
 .bases-map-page__panel {
   padding: 16px;
-  border-radius: 16px;
-  background: var(--wh-white);
 }
 
 .bases-map-page__layout {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 380px minmax(0, 1fr);
   gap: 20px;
   height: min(70vh, 720px);
   min-height: 520px;
@@ -545,7 +561,12 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .bases-map-page__layout--grid {
-  grid-template-columns: 420px minmax(0, 1fr);
+  grid-template-columns: 520px minmax(0, 1fr);
+}
+
+/* Compact mode with one hotel: sidebar fits a single card, no empty second slot. */
+.bases-map-page__layout--grid-single {
+  grid-template-columns: 254px minmax(0, 1fr);
 }
 
 .bases-map-page__sidebar {
@@ -577,16 +598,31 @@ async function handleSearch(payload: Record<string, string>) {
   white-space: nowrap;
 }
 
+.bases-map-page__controls-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.bases-map-page__controls-wrap--with-dots {
+  grid-template-columns: 8px minmax(0, 1fr);
+}
+
+.bases-map-page__controls-spacer {
+  width: 8px;
+}
+
 .bases-map-page__controls {
   display: flex;
-  flex-shrink: 0;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   min-height: 40px;
   padding: 6px;
   border: 1px solid var(--wh-gray-200, #dddddd);
   border-radius: 10px;
-  background: var(--wh-gray-100, #f5f5f5);
 }
 
 .bases-map-page__control {
@@ -623,7 +659,7 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .bases-map-page__list-wrap--with-dots {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 8px minmax(0, 1fr);
 }
 
 .bases-map-page__list-dots {
@@ -632,6 +668,7 @@ async function handleSearch(payload: Record<string, string>) {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width: 8px;
   padding: 4px 0;
 }
 
@@ -674,6 +711,10 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .bases-map-page__list--grid {
+  grid-template-columns: 1fr;
+}
+
+.bases-map-page__list--grid-multi {
   grid-template-columns: 1fr 1fr;
 }
 

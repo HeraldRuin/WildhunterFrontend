@@ -68,7 +68,7 @@ function formatRating(value: number) {
   grid-template-columns: 96px minmax(0, 1fr);
   gap: 12px;
   width: 100%;
-  padding: 10px;
+  padding: 11px;
   border: 1px solid var(--wh-field-border);
   border-radius: 12px;
   background: var(--wh-white);
@@ -137,11 +137,16 @@ function formatRating(value: number) {
 
 .map-hotel-card__title {
   margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
   font-family: "Inter", sans-serif;
   font-size: 15px;
   font-weight: 600;
   line-height: 1.25;
   color: var(--wh-gray-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   transition: font-size 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
