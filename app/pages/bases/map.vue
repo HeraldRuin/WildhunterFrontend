@@ -647,9 +647,14 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .bases-map-page__layout--collapsed {
-  /* dots (8) + gap (12) + photo (120) — same left rhythm as expanded */
-  grid-template-columns: 140px minmax(0, 1fr);
-  column-gap: 10px;
+  /* Photo strip only; widen when pagination dots are present. */
+  grid-template-columns: 120px minmax(0, 1fr);
+  column-gap: 8px;
+}
+
+.bases-map-page__layout--collapsed:has(.bases-map-page__list-wrap--with-dots) {
+  /* dots (8) + gap (10) + photo (120) */
+  grid-template-columns: 138px minmax(0, 1fr);
 }
 
 .bases-map-page__controls-wrap {
@@ -709,7 +714,7 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .bases-map-page__layout--collapsed .bases-map-page__list-wrap--with-dots {
-  gap: 12px;
+  gap: 10px;
 }
 
 .bases-map-page__title {
