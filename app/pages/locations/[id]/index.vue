@@ -362,6 +362,7 @@ function handleFiltersReset() {
 
 .location-page__title {
   grid-column: 2;
+  grid-row: 1;
   margin: 0;
   font-family: "UNCAGE", sans-serif;
   font-size: 32px;
@@ -411,11 +412,21 @@ function handleFiltersReset() {
 }
 
 .location-page__locations-label {
+  display: none;
+  grid-column: 1;
   justify-self: start;
   cursor: pointer;
+  color: #d64545;
+}
+
+@media (--wh-desktop) {
+  .location-page__locations-label {
+    display: inline;
+  }
 }
 
 .location-page__map-link {
+  grid-column: 3;
   justify-self: end;
 }
 
@@ -487,10 +498,7 @@ function handleFiltersReset() {
 
   .location-page__filters-btn {
     display: inline;
-  }
-
-  .location-page__locations-label {
-    display: none;
+    grid-column: 1;
   }
 
   .location-page__grid {
