@@ -382,7 +382,24 @@ onBeforeUnmount(() => {
 }
 
 .bases-map :deep(.leaflet-control-attribution) {
-  font-size: 11px;
+  margin: 0 1px 1px 0;
+  padding: 0 2px;
+  max-width: none;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 12%);
+  color: rgb(28 33 28 / 22%);
+  font-size: 5px;
+  line-height: 1.15;
+  white-space: nowrap;
+  box-shadow: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transform: scale(0.92);
+  transform-origin: bottom right;
+}
+
+.bases-map :deep(.leaflet-control-attribution a) {
+  color: inherit;
 }
 
 .bases-map :deep(.bases-map-tooltip) {
