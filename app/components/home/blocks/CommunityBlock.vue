@@ -11,7 +11,7 @@ const { newsletter } = useApi()
 const notifications = useNotifications()
 
 const email = ref('')
-const agreed = ref(true)
+const agreed = ref(false)
 const isSubmitting = ref(false)
 const submitError = ref('')
 const fieldErrors = ref<Record<string, string[]>>({})
