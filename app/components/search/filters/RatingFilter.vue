@@ -32,11 +32,15 @@ function toggle(value: string) {
         v-for="option in options"
         :key="option.value"
       >
-        <label class="search-filters-rating__option">
+        <label
+          class="search-filters-rating__option"
+          @click.prevent="toggle(option.value)"
+        >
           <input
             type="checkbox"
             :checked="model.includes(option.value)"
-            @change="toggle(option.value)"
+            tabindex="-1"
+            @click.prevent
           >
           <span class="search-filters-rating__checkmark" />
           <span>{{ option.label }}</span>

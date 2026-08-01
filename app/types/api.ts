@@ -198,7 +198,7 @@ export interface HotelSearchBody {
   check_out?: string
   adults?: number
   price_range?: string
-  review_score?: string[]
+  star_rate?: string[]
 }
 
 export interface SearchResultData {

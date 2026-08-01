@@ -2,7 +2,7 @@
 import type { HotelSearchBody, OfferItem, SearchFiltersState } from '~/types/api'
 import { mapHotelOfferToItem } from '~/api/hotels'
 import { parseDisplayDateToApiDate } from '~/utils/date'
-import { DEFAULT_SEARCH_FILTERS } from '~/utils/search'
+import { DEFAULT_SEARCH_FILTERS, matchesReviewRatingFilter } from '~/utils/search'
 
 definePageMeta({
   layout: 'home',
@@ -16,6 +16,7 @@ const route = useRoute()
 const { search: searchApi, hotels: hotelsApi } = useApi()
 
 const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
+const CATALOG_PER_PAGE = 12
 
 const { data: priceBounds } = await useAsyncData(
   'hotel-price-range',
@@ -66,44 +67,59 @@ const emptySearchResult = (): NormalizedSearchResult => ({
   totalPages: 1,
 })
 
+function queryString(key: string): string {
+  const value = route.query[key]
+  return Array.isArray(value) ? String(value[0] || '') : String(value || '')
+}
+
+/** Without dates → full catalog via /hotels/offers; with dates → availability search. */
+const isCatalogMode = computed(() => !queryString('checkIn') && !queryString('checkOut'))
+
+const hasActivePriceFilter = computed(() => (
+  filters.value.priceMin > priceBounds.value.min
+  || filters.value.priceMax < priceBounds.value.max
+))
+
 const searchRequest = computed(() => {
+  const catalog = isCatalogMode.value
   const body: HotelSearchBody = {}
 
-  if (route.query.location) {
-    body.location_id = Number(route.query.location)
-  }
+  if (!catalog) {
+    if (route.query.location) {
+      body.location_id = Number(route.query.location)
+    }
 
-  if (route.query.animal) {
-    body.animal_id = Number(route.query.animal)
-  }
+    if (route.query.animal) {
+      body.animal_id = Number(route.query.animal)
+    }
 
-  const checkIn = parseDisplayDateToApiDate(String(route.query.checkIn || ''))
-  if (checkIn) {
-    body.check_in = checkIn
-  }
+    const checkIn = parseDisplayDateToApiDate(queryString('checkIn'))
+    if (checkIn) {
+      body.check_in = checkIn
+    }
 
-  const checkOut = parseDisplayDateToApiDate(String(route.query.checkOut || ''))
-  if (checkOut) {
-    body.check_out = checkOut
-  }
+    const checkOut = parseDisplayDateToApiDate(queryString('checkOut'))
+    if (checkOut) {
+      body.check_out = checkOut
+    }
 
-  if (route.query.guests) {
-    body.adults = Number(route.query.guests)
-  }
+    if (route.query.guests) {
+      body.adults = Number(route.query.guests)
+    }
 
-  if (
-    filters.value.priceMin > priceBounds.value.min
-    || filters.value.priceMax < priceBounds.value.max
-  ) {
-    body.price_range = `${filters.value.priceMin};${filters.value.priceMax}`
-  }
+    if (hasActivePriceFilter.value) {
+      body.price_range = `${filters.value.priceMin};${filters.value.priceMax}`
+    }
 
-  if (filters.value.ratings.length) {
-    body.review_score = filters.value.ratings
+    if (filters.value.ratings.length) {
+      body.star_rate = filters.value.ratings
+    }
   }
 
   return {
-    page: currentPage.value,
+    // Catalog is loaded once; pagination is client-side.
+    page: catalog ? 1 : currentPage.value,
+    catalog,
     body,
   }
 })
@@ -112,6 +128,16 @@ const { data: searchResult, refresh } = await useAsyncData(
   'hotel-search',
   async () => {
     try {
+      if (searchRequest.value.catalog) {
+        const items = await hotelsApi.getHotelOfferItems()
+
+        return {
+          items,
+          total: items.length,
+          totalPages: Math.max(1, Math.ceil(items.length / CATALOG_PER_PAGE)),
+        }
+      }
+
       const response = await searchApi.searchHotels(
         searchRequest.value.page,
         searchRequest.value.body,
@@ -141,6 +167,14 @@ const { data: searchResult, refresh } = await useAsyncData(
 const isSearchLoading = ref(false)
 let searchLoadId = 0
 
+watch(
+  filters,
+  () => {
+    currentPage.value = 1
+  },
+  { deep: true },
+)
+
 watch(searchRequest, async () => {
   const loadId = ++searchLoadId
   isSearchLoading.value = true
@@ -154,10 +188,60 @@ watch(searchRequest, async () => {
   }
 })
 
-const totalCount = computed(() => searchResult.value.total)
-const totalPages = computed(() => searchResult.value.totalPages)
-const offerItems = computed(() => searchResult.value.items)
-const hasResults = computed(() => offerItems.value.length > 0)
+const filteredCatalogItems = computed(() => {
+  if (!isCatalogMode.value) {
+    return searchResult.value.items
+  }
+
+  return searchResult.value.items.filter((item) => {
+    if (item.price < filters.value.priceMin || item.price > filters.value.priceMax) {
+      return false
+    }
+
+    if (
+      filters.value.ratings.length
+      && !matchesReviewRatingFilter(item.rating, filters.value.ratings)
+    ) {
+      return false
+    }
+
+    return true
+  })
+})
+
+const totalPages = computed(() => {
+  if (isCatalogMode.value) {
+    return Math.max(1, Math.ceil(filteredCatalogItems.value.length / CATALOG_PER_PAGE))
+  }
+
+  return searchResult.value.totalPages
+})
+
+const offerItems = computed(() => {
+  if (isCatalogMode.value) {
+    const page = Math.min(currentPage.value, totalPages.value)
+    const start = (page - 1) * CATALOG_PER_PAGE
+    return filteredCatalogItems.value.slice(start, start + CATALOG_PER_PAGE)
+  }
+
+  return searchResult.value.items
+})
+
+const totalCount = computed(() => {
+  if (isCatalogMode.value) {
+    return filteredCatalogItems.value.length
+  }
+
+  return searchResult.value.total
+})
+
+const hasResults = computed(() => totalCount.value > 0)
+
+watch(totalPages, (pages) => {
+  if (currentPage.value > pages) {
+    currentPage.value = pages
+  }
+})
 
 async function handleSearch(payload: Record<string, string>) {
   currentPage.value = 1
