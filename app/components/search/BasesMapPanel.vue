@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BreadcrumbItem } from '~/types/breadcrumb'
-import { DEFAULT_MAP_CENTER, type MapHotelItem } from '~/utils/map'
+import { DEFAULT_MAP_CENTER, parseMapCoordinates, type MapHotelItem } from '~/utils/map'
 
 const props = withDefaults(defineProps<{
   hotels: MapHotelItem[]
@@ -14,6 +14,11 @@ const selectedId = ref<number | null>(null)
 const fitVersion = ref(0)
 const listColumns = ref<1 | 2>(1)
 const isListCollapsed = ref(false)
+const isMeasureMode = ref(false)
+const measureSearchQuery = ref('')
+const measureSearchPending = ref(false)
+const measureSearchError = ref('')
+const measureOriginPoint = ref<{ lat: number, lng: number, key: number } | null>(null)
 const isGridList = computed(() => listColumns.value === 2)
 const isGridMulti = computed(() => isGridList.value && props.hotels.length > 1)
 
@@ -172,6 +177,86 @@ function toggleListColumns() {
 function toggleListCollapsed() {
   isListCollapsed.value = !isListCollapsed.value
 }
+
+function toggleMeasureMode() {
+  isMeasureMode.value = !isMeasureMode.value
+
+  if (!isMeasureMode.value) {
+    measureSearchQuery.value = ''
+    measureSearchError.value = ''
+    measureOriginPoint.value = null
+  }
+}
+
+async function geocodeMeasureQuery(query: string) {
+  const results = await $fetch<Array<{ lat: string, lon: string }>>(
+    'https://nominatim.openstreetmap.org/search',
+    {
+      query: {
+        format: 'json',
+        q: query,
+        limit: 1,
+        countrycodes: 'ru',
+      },
+    },
+  )
+
+  const first = results[0]
+  if (!first) {
+    return null
+  }
+
+  const lat = Number(first.lat)
+  const lng = Number(first.lon)
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null
+  }
+
+  return { lat, lng }
+}
+
+const showMeasureClear = computed(() => measureOriginPoint.value != null)
+
+function clearMeasureSearch() {
+  measureSearchQuery.value = ''
+  measureSearchError.value = ''
+  measureOriginPoint.value = null
+}
+
+async function searchMeasurePoint() {
+  const query = measureSearchQuery.value.trim()
+  measureSearchError.value = ''
+
+  if (!query) {
+    return
+  }
+
+  const coords = parseMapCoordinates(query)
+  if (coords) {
+    measureOriginPoint.value = { ...coords, key: Date.now() }
+    return
+  }
+
+  measureSearchPending.value = true
+
+  try {
+    const point = await geocodeMeasureQuery(query)
+
+    if (!point) {
+      measureSearchError.value = 'Точка не найдена'
+      return
+    }
+
+    measureOriginPoint.value = { ...point, key: Date.now() }
+  }
+  catch {
+    measureSearchError.value = 'Не удалось найти точку'
+  }
+  finally {
+    measureSearchPending.value = false
+  }
+}
 </script>
 
 <template>
@@ -316,6 +401,45 @@ function toggleListCollapsed() {
 
                 <button
                   type="button"
+                  class="bases-map-page__control"
+                  :class="{ 'bases-map-page__control--active': isMeasureMode }"
+                  title="Расстояния"
+                  aria-label="Измерить расстояние на карте"
+                  :aria-pressed="isMeasureMode"
+                  @click="toggleMeasureMode"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M4 20L20 4"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                    <circle
+                      cx="5.5"
+                      cy="18.5"
+                      r="2"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                    <circle
+                      cx="18.5"
+                      cy="5.5"
+                      r="2"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
                   class="bases-map-page__control bases-map-page__control--collapse"
                   :class="{ 'bases-map-page__control--active': isListCollapsed }"
                   :title="isListCollapsed ? 'Развернуть список' : 'Свернуть список'"
@@ -434,9 +558,95 @@ function toggleListCollapsed() {
             </div>
 
             <div class="bases-map-page__main">
-              <h1 class="bases-map-page__title">
-                {{ hotels.length ? `Базы на карте: ${hotels.length}` : 'Базы на карте' }}
-              </h1>
+              <div
+                class="bases-map-page__main-header"
+                :class="{ 'bases-map-page__main-header--measure': isMeasureMode }"
+              >
+                <form
+                  v-if="isMeasureMode"
+                  class="bases-map-page__measure-search"
+                  @submit.prevent="searchMeasurePoint"
+                >
+                  <span
+                    class="bases-map-page__measure-search-icon"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        cx="11"
+                        cy="11"
+                        r="6.5"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                      />
+                      <path
+                        d="M16 16l4 4"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </span>
+
+                  <input
+                    v-model="measureSearchQuery"
+                    type="search"
+                    class="bases-map-page__measure-search-input"
+                    placeholder="Адрес или координаты"
+                    aria-label="Поиск точки для измерения расстояния"
+                    :disabled="measureSearchPending"
+                  >
+
+                  <button
+                    v-if="showMeasureClear"
+                    type="button"
+                    class="bases-map-page__measure-search-clear"
+                    title="Очистить"
+                    aria-label="Очистить поле и точку на карте"
+                    @click="clearMeasureSearch"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M6 6l12 12M18 6L6 18"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </button>
+
+                  <button
+                    v-else
+                    type="submit"
+                    class="bases-map-page__measure-search-submit"
+                    :disabled="measureSearchPending || !measureSearchQuery.trim()"
+                  >
+                    {{ measureSearchPending ? '…' : 'Найти' }}
+                  </button>
+
+                  <p
+                    v-if="measureSearchError"
+                    class="bases-map-page__measure-search-error"
+                  >
+                    {{ measureSearchError }}
+                  </p>
+                </form>
+
+                <h1 class="bases-map-page__title">
+                  {{ hotels.length ? `Базы на карте: ${hotels.length}` : 'Базы на карте' }}
+                </h1>
+              </div>
 
               <div class="bases-map-page__map-wrap">
                 <SearchBasesMap
@@ -446,6 +656,8 @@ function toggleListCollapsed() {
                   :markers="mapMarkers"
                   :active-id="selectedId"
                   :fit-version="fitVersion"
+                  :measure-mode="isMeasureMode"
+                  :measure-origin-point="measureOriginPoint"
                   @select="selectHotel"
                 />
               </div>
@@ -572,6 +784,117 @@ function toggleListCollapsed() {
   gap: 10px;
 }
 
+.bases-map-page__main-header {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  min-height: 40px;
+}
+
+.bases-map-page__main-header--measure {
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+}
+
+.bases-map-page__measure-search {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  width: 100%;
+  max-width: 380px;
+  min-height: 40px;
+  padding: 0 8px 0 12px;
+  border: 1px solid var(--wh-field-border, var(--wh-gray-200, #dddddd));
+  border-radius: 10px;
+  background: var(--wh-white);
+  transition: border-color 0.15s ease;
+}
+
+.bases-map-page__measure-search:focus-within {
+  border-color: var(--wh-field-border-active);
+}
+
+.bases-map-page__measure-search-icon {
+  display: inline-flex;
+  color: var(--wh-gray-500, #888);
+}
+
+.bases-map-page__measure-search-input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--wh-gray-900);
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  outline: none;
+}
+
+.bases-map-page__measure-search-input::placeholder {
+  color: var(--wh-gray-500, #888);
+}
+
+.bases-map-page__measure-search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.bases-map-page__measure-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--wh-gray-900, #1c211c);
+  cursor: pointer;
+}
+
+.bases-map-page__measure-search-clear:hover {
+  background: var(--wh-gray-100, #f5f5f5);
+}
+
+.bases-map-page__measure-search-submit {
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #e8883a;
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bases-map-page__measure-search-submit:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.bases-map-page__measure-search-error {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #fff;
+  color: #c0392b;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  line-height: 1.3;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
+}
+
 .bases-map-page__title {
   margin: 0;
   min-height: 40px;
@@ -583,6 +906,11 @@ function toggleListCollapsed() {
   text-align: center;
   color: var(--wh-gray-900);
   white-space: nowrap;
+}
+
+.bases-map-page__main-header--measure .bases-map-page__title {
+  grid-column: 2;
+  justify-self: center;
 }
 
 .bases-map-page__controls-wrap {
