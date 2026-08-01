@@ -240,41 +240,49 @@ function handleFiltersReset() {
           class="location-page__breadcrumbs"
         />
 
-        <div class="location-page__toolbar">
-          <button
-            v-show="!mobileFiltersOpen"
-            type="button"
-            class="location-page__toolbar-link location-page__filters-btn"
-            @click="mobileFiltersOpen = true"
-          >
-            Фильтры
-          </button>
-
-          <h1
-            v-if="countReady"
-            class="location-page__title"
-          >
-            Найдено баз: {{ totalCount }}
-          </h1>
-
-          <NuxtLink
-            v-if="countReady"
-            :to="`/locations/${locationId}/map`"
-            class="location-page__toolbar-link location-page__map-link"
-          >
-            Показать на карте
-          </NuxtLink>
-        </div>
-
         <div
           class="location-page__layout"
           :class="{ 'location-page__layout--filters-open': mobileFiltersOpen }"
         >
+          <div class="location-page__toolbar">
+            <button
+              v-show="!mobileFiltersOpen"
+              type="button"
+              class="location-page__toolbar-link location-page__filters-btn"
+              @click="mobileFiltersOpen = true"
+            >
+              Фильтры
+            </button>
+
+            <span
+              v-if="countReady"
+              class="location-page__toolbar-link location-page__locations-label"
+            >
+              Все локации
+            </span>
+
+            <h1
+              v-if="countReady"
+              class="location-page__title"
+            >
+              Найдено баз: {{ totalCount }}
+            </h1>
+
+            <NuxtLink
+              v-if="countReady"
+              :to="`/locations/${locationId}/map`"
+              class="location-page__toolbar-link location-page__map-link"
+            >
+              Показать на карте
+            </NuxtLink>
+          </div>
+
           <SearchFilters
             v-model="filters"
             v-model:mobile-open="mobileFiltersOpen"
             :price-bound-min="priceBounds.min"
             :price-bound-max="priceBounds.max"
+            class="location-page__filters"
             @reset="handleFiltersReset"
           />
 
@@ -342,6 +350,8 @@ function handleFiltersReset() {
 }
 
 .location-page__toolbar {
+  grid-column: 2;
+  grid-row: 1;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
@@ -400,6 +410,11 @@ function handleFiltersReset() {
   justify-self: start;
 }
 
+.location-page__locations-label {
+  justify-self: start;
+  cursor: pointer;
+}
+
 .location-page__map-link {
   justify-self: end;
 }
@@ -407,11 +422,20 @@ function handleFiltersReset() {
 .location-page__layout {
   display: grid;
   grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
-  gap: 32px;
+  grid-template-rows: auto auto;
+  column-gap: 32px;
+  row-gap: 28px;
   align-items: start;
 }
 
+.location-page__filters {
+  grid-column: 1;
+  grid-row: 2;
+}
+
 .location-page__main {
+  grid-column: 2;
+  grid-row: 2;
   display: flex;
   flex-direction: column;
   gap: 40px;
@@ -451,10 +475,22 @@ function handleFiltersReset() {
 @media (--wh-tablet) {
   .location-page__layout {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .location-page__toolbar,
+  .location-page__filters,
+  .location-page__main {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .location-page__filters-btn {
     display: inline;
+  }
+
+  .location-page__locations-label {
+    display: none;
   }
 
   .location-page__grid {
@@ -519,6 +555,7 @@ function handleFiltersReset() {
     opacity: 1;
   }
 
+  .location-page__locations-label,
   .location-page__map-link {
     display: none;
   }
