@@ -30,6 +30,7 @@ const breadcrumbs = computed(() => [
 const selectedId = ref<number | null>(null)
 const fitVersion = ref(0)
 const listColumns = ref<1 | 2>(1)
+const isListCollapsed = ref(false)
 const isGridList = computed(() => listColumns.value === 2)
 
 function queryString(key: string): string {
@@ -228,7 +229,7 @@ watch(
   { deep: true },
 )
 
-watch([isGridList, isGridMulti], async () => {
+watch([isGridList, isGridMulti, isListCollapsed], async () => {
   await nextTick()
   updateListPages()
 })
@@ -283,6 +284,10 @@ function toggleListColumns() {
   listColumns.value = listColumns.value === 1 ? 2 : 1
 }
 
+function toggleListCollapsed() {
+  isListCollapsed.value = !isListCollapsed.value
+}
+
 async function handleSearch(payload: Record<string, string>) {
   await navigateTo({
     path: '/bases/map',
@@ -309,136 +314,172 @@ async function handleSearch(payload: Record<string, string>) {
           <div
             class="bases-map-page__layout"
             :class="{
-              'bases-map-page__layout--grid': isGridMulti,
-              'bases-map-page__layout--grid-single': isGridList && hotels.length === 1,
+              'bases-map-page__layout--collapsed': isListCollapsed,
+              'bases-map-page__layout--grid': isGridMulti && !isListCollapsed,
+              'bases-map-page__layout--grid-single': isGridList && hotels.length === 1 && !isListCollapsed,
             }"
           >
-            <div class="bases-map-page__sidebar">
+            <div
+              class="bases-map-page__controls-wrap"
+              :class="{
+                'bases-map-page__controls-wrap--with-dots': !isListCollapsed && hotels.length && listPageCount > 1,
+              }"
+            >
               <div
-                class="bases-map-page__controls-wrap"
-                :class="{
-                  'bases-map-page__controls-wrap--with-dots': hotels.length && listPageCount > 1,
-                }"
+                v-if="!isListCollapsed && hotels.length && listPageCount > 1"
+                class="bases-map-page__controls-spacer"
+                aria-hidden="true"
+              />
+              <div
+                class="bases-map-page__controls"
+                role="toolbar"
+                aria-label="Управление картой"
               >
-                <div
-                  v-if="hotels.length && listPageCount > 1"
-                  class="bases-map-page__controls-spacer"
-                  aria-hidden="true"
-                />
-                <div
-                  class="bases-map-page__controls"
-                  role="toolbar"
-                  aria-label="Управление картой"
+                <button
+                  type="button"
+                  class="bases-map-page__control"
+                  title="Показать все базы"
+                  aria-label="Показать все базы на карте"
+                  @click="resetMapView"
                 >
-                  <button
-                    type="button"
-                    class="bases-map-page__control"
-                    title="Показать все базы"
-                    aria-label="Показать все базы на карте"
-                    @click="resetMapView"
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"
-                        stroke="currentColor"
-                        stroke-width="1.7"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="2.2"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </button>
+                    <path
+                      d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="2.2"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
 
-                  <button
-                    type="button"
-                    class="bases-map-page__control"
-                    :class="{ 'bases-map-page__control--active': isGridList }"
-                    :title="isGridList ? 'Крупные карточки' : 'Компактные карточки'"
-                    :aria-label="isGridList ? 'Показать крупные карточки' : 'Показать компактные карточки'"
-                    :aria-pressed="isGridList"
-                    @click="toggleListColumns"
+                <button
+                  type="button"
+                  class="bases-map-page__control"
+                  :class="{ 'bases-map-page__control--active': isGridList }"
+                  :title="isGridList ? 'Крупные карточки' : 'Компактные карточки'"
+                  :aria-label="isGridList ? 'Показать крупные карточки' : 'Показать компактные карточки'"
+                  :aria-pressed="isGridList"
+                  @click="toggleListColumns"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <rect
-                        x="3.5"
-                        y="3.5"
-                        width="7"
-                        height="7"
-                        rx="1.2"
-                        stroke="currentColor"
-                        stroke-width="1.7"
-                      />
-                      <rect
-                        x="13.5"
-                        y="3.5"
-                        width="7"
-                        height="7"
-                        rx="1.2"
-                        stroke="currentColor"
-                        stroke-width="1.7"
-                      />
-                      <rect
-                        x="3.5"
-                        y="13.5"
-                        width="7"
-                        height="7"
-                        rx="1.2"
-                        stroke="currentColor"
-                        stroke-width="1.7"
-                      />
-                      <rect
-                        x="13.5"
-                        y="13.5"
-                        width="7"
-                        height="7"
-                        rx="1.2"
-                        stroke="currentColor"
-                        stroke-width="1.7"
-                      />
-                    </svg>
-                  </button>
+                    <rect
+                      x="3.5"
+                      y="3.5"
+                      width="7"
+                      height="7"
+                      rx="1.2"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                    <rect
+                      x="13.5"
+                      y="3.5"
+                      width="7"
+                      height="7"
+                      rx="1.2"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                    <rect
+                      x="3.5"
+                      y="13.5"
+                      width="7"
+                      height="7"
+                      rx="1.2"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                    <rect
+                      x="13.5"
+                      y="13.5"
+                      width="7"
+                      height="7"
+                      rx="1.2"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                  </svg>
+                </button>
 
-                  <button
-                    type="button"
-                    class="bases-map-page__control"
-                    title="Фильтры"
-                    aria-label="Открыть фильтры"
+                <button
+                  type="button"
+                  class="bases-map-page__control"
+                  title="Фильтры"
+                  aria-label="Открыть фильтры"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
                   >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M4 6h16M7 12h10M10 18h4"
-                        stroke="currentColor"
-                        stroke-width="1.7"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  </button>
-                </div>
+                    <path
+                      d="M4 6h16M7 12h10M10 18h4"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  class="bases-map-page__control bases-map-page__control--collapse"
+                  :class="{ 'bases-map-page__control--active': isListCollapsed }"
+                  :title="isListCollapsed ? 'Развернуть список' : 'Свернуть список'"
+                  :aria-label="isListCollapsed ? 'Развернуть список отелей' : 'Свернуть список отелей'"
+                  :aria-pressed="isListCollapsed"
+                  @click="toggleListCollapsed"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      v-if="isListCollapsed"
+                      d="M9 6l6 6-6 6"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      v-else
+                      d="M15 6l-6 6 6 6"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
               </div>
+            </div>
 
+            <div class="bases-map-page__sidebar">
               <div
                 class="bases-map-page__list-wrap"
                 :class="{
@@ -467,8 +508,9 @@ async function handleSearch(payload: Record<string, string>) {
                   ref="listEl"
                   class="bases-map-page__list"
                   :class="{
-                    'bases-map-page__list--grid': isGridList,
-                    'bases-map-page__list--grid-multi': isGridMulti,
+                    'bases-map-page__list--grid': isGridList && !isListCollapsed,
+                    'bases-map-page__list--grid-multi': isGridMulti && !isListCollapsed,
+                    'bases-map-page__list--collapsed': isListCollapsed,
                     'bases-map-page__list--state': !hotels.length,
                     'bases-map-page__list--refreshing': isLoading && hotels.length,
                   }"
@@ -499,7 +541,8 @@ async function handleSearch(payload: Record<string, string>) {
                       :key="hotel.id"
                       :item="hotel"
                       :active="hotel.id === selectedId"
-                      :compact="isGridList"
+                      :compact="isGridList && !isListCollapsed"
+                      :image-only="isListCollapsed"
                       @select="selectHotel"
                     />
                   </template>
@@ -576,7 +619,9 @@ async function handleSearch(payload: Record<string, string>) {
 .bases-map-page__layout {
   display: grid;
   grid-template-columns: 380px minmax(0, 1fr);
-  gap: 20px;
+  grid-template-rows: auto minmax(0, 1fr);
+  column-gap: 20px;
+  row-gap: 12px;
   height: min(70vh, 720px);
   min-height: 520px;
   transition: grid-template-columns 0.7s cubic-bezier(0.16, 1, 0.3, 1);
@@ -591,7 +636,19 @@ async function handleSearch(payload: Record<string, string>) {
   grid-template-columns: 254px minmax(0, 1fr);
 }
 
+.bases-map-page__layout--collapsed {
+  grid-template-columns: 120px minmax(0, 1fr);
+}
+
+.bases-map-page__controls-wrap {
+  grid-column: 1;
+  grid-row: 1;
+  z-index: 4;
+}
+
 .bases-map-page__sidebar {
+  grid-column: 1;
+  grid-row: 2;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -600,11 +657,38 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .bases-map-page__main {
+  grid-column: 2;
+  grid-row: 1 / -1;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
   min-height: 0;
+}
+
+/* Collapsed: short toolbar over the map; photo column stays narrow. */
+.bases-map-page__layout--collapsed .bases-map-page__controls-wrap {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  width: min(280px, 100%);
+  justify-self: start;
+  z-index: 5;
+}
+
+.bases-map-page__layout--collapsed .bases-map-page__sidebar {
+  grid-row: 2;
+}
+
+.bases-map-page__layout--collapsed .bases-map-page__main {
+  grid-row: 1 / -1;
+}
+
+.bases-map-page__layout--collapsed .bases-map-page__control--collapse {
+  margin-left: auto;
+}
+
+.bases-map-page__layout--collapsed .bases-map-page__title {
+  padding-left: 8px;
 }
 
 .bases-map-page__title {
@@ -626,6 +710,7 @@ async function handleSearch(payload: Record<string, string>) {
   gap: 8px;
   flex-shrink: 0;
   min-width: 0;
+  min-height: 40px;
 }
 
 .bases-map-page__controls-wrap--with-dots {
@@ -645,6 +730,16 @@ async function handleSearch(payload: Record<string, string>) {
   padding: 6px;
   border: 1px solid var(--wh-gray-200, #dddddd);
   border-radius: 10px;
+  background: var(--wh-gray-100, #f5f5f5);
+}
+
+.bases-map-page__layout--collapsed .bases-map-page__controls {
+  background: rgb(245 245 245 / 96%);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
+}
+
+.bases-map-page__control--collapse {
+  margin-left: auto;
 }
 
 .bases-map-page__control {
@@ -740,6 +835,13 @@ async function handleSearch(payload: Record<string, string>) {
   grid-template-columns: 1fr 1fr;
 }
 
+.bases-map-page__list--collapsed {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  overflow-x: visible;
+  padding: 1px;
+}
+
 .bases-map-page__list--state {
   display: flex;
   align-items: center;
@@ -790,10 +892,25 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 @media (max-width: 960px) {
-  .bases-map-page__layout {
+  .bases-map-page__layout,
+  .bases-map-page__layout--collapsed,
+  .bases-map-page__layout--grid,
+  .bases-map-page__layout--grid-single {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
     height: auto;
     min-height: 0;
+  }
+
+  .bases-map-page__controls-wrap,
+  .bases-map-page__layout--collapsed .bases-map-page__controls-wrap,
+  .bases-map-page__sidebar,
+  .bases-map-page__layout--collapsed .bases-map-page__sidebar,
+  .bases-map-page__main,
+  .bases-map-page__layout--collapsed .bases-map-page__main {
+    grid-column: 1;
+    grid-row: auto;
+    width: auto;
   }
 
   .bases-map-page__sidebar {
