@@ -294,7 +294,7 @@ function handleFiltersReset() {
 
           <NuxtLink
             v-if="hasResults"
-            to="/bases/map"
+            :to="{ path: '/bases/map', query: route.query }"
             class="bases-page__toolbar-link bases-page__map-link"
           >
             Показать на карте
