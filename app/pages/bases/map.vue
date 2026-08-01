@@ -225,6 +225,8 @@ watch(
     fitVersion.value += 1
     await nextTick()
     updateListPages()
+    // Recalculate after images affect scrollHeight.
+    requestAnimationFrame(() => updateListPages())
   },
   { deep: true },
 )
@@ -232,6 +234,7 @@ watch(
 watch([isGridList, isGridMulti, isListCollapsed], async () => {
   await nextTick()
   updateListPages()
+  requestAnimationFrame(() => updateListPages())
 })
 
 watch(listEl, (el) => {
@@ -322,11 +325,11 @@ async function handleSearch(payload: Record<string, string>) {
             <div
               class="bases-map-page__controls-wrap"
               :class="{
-                'bases-map-page__controls-wrap--with-dots': !isListCollapsed && hotels.length && listPageCount > 1,
+                'bases-map-page__controls-wrap--with-dots': hotels.length && listPageCount > 1,
               }"
             >
               <div
-                v-if="!isListCollapsed && hotels.length && listPageCount > 1"
+                v-if="hotels.length && listPageCount > 1"
                 class="bases-map-page__controls-spacer"
                 aria-hidden="true"
               />
@@ -624,6 +627,7 @@ async function handleSearch(payload: Record<string, string>) {
   row-gap: 12px;
   height: min(70vh, 720px);
   min-height: 520px;
+  overflow: hidden;
   transition: grid-template-columns 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -637,7 +641,9 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .bases-map-page__layout--collapsed {
-  grid-template-columns: 120px minmax(0, 1fr);
+  /* dots (8) + gap (12) + photo (120) — same left rhythm as expanded */
+  grid-template-columns: 140px minmax(0, 1fr);
+  column-gap: 10px;
 }
 
 .bases-map-page__controls-wrap {
@@ -652,8 +658,10 @@ async function handleSearch(payload: Record<string, string>) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 .bases-map-page__main {
@@ -666,11 +674,14 @@ async function handleSearch(payload: Record<string, string>) {
   min-height: 0;
 }
 
-/* Collapsed: short toolbar over the map; photo column stays narrow. */
+/*
+ * Collapsed: toolbar stays in the photo column rhythm (spacer + controls),
+ * then extends over the map so collapse sits outside the narrow strip.
+ */
 .bases-map-page__layout--collapsed .bases-map-page__controls-wrap {
   grid-column: 1 / -1;
   grid-row: 1;
-  width: min(280px, 100%);
+  width: min(296px, 100%);
   justify-self: start;
   z-index: 5;
 }
@@ -689,6 +700,10 @@ async function handleSearch(payload: Record<string, string>) {
 
 .bases-map-page__layout--collapsed .bases-map-page__title {
   padding-left: 8px;
+}
+
+.bases-map-page__layout--collapsed .bases-map-page__list-wrap--with-dots {
+  gap: 12px;
 }
 
 .bases-map-page__title {
@@ -769,10 +784,13 @@ async function handleSearch(payload: Record<string, string>) {
 .bases-map-page__list-wrap {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 8px;
-  flex: 1;
+  flex: 1 1 auto;
+  height: 100%;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 .bases-map-page__list-wrap--with-dots {
@@ -819,6 +837,7 @@ async function handleSearch(payload: Record<string, string>) {
   grid-template-columns: 1fr;
   gap: 12px;
   align-content: start;
+  height: 100%;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -837,8 +856,8 @@ async function handleSearch(payload: Record<string, string>) {
 
 .bases-map-page__list--collapsed {
   grid-template-columns: 1fr;
-  gap: 8px;
-  overflow-x: visible;
+  gap: 10px;
+  overflow-x: hidden;
   padding: 1px;
 }
 
