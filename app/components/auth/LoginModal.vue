@@ -103,7 +103,15 @@ watch(isOpen, (open) => {
         @keydown="handleKeydown"
       >
         <div class="login-modal__card">
-          <CommonModalCloseButton @click="close" />
+          <div
+            v-if="isSubmitting"
+            class="login-modal__loader"
+            aria-hidden="true"
+          >
+            <CommonSpinner variant="ring" size="lg" label="Вход" />
+          </div>
+
+          <CommonModalCloseButton :disabled="isSubmitting" @click="close" />
 
           <h2 id="login-modal-title" class="login-modal__title">Вход</h2>
 
@@ -150,7 +158,7 @@ watch(isOpen, (open) => {
             </div>
 
             <button type="submit" class="login-modal__submit" :disabled="isSubmitting">
-              {{ isSubmitting ? 'Вход...' : 'Вход' }}
+              Вход
             </button>
           </form>
 
@@ -187,6 +195,18 @@ watch(isOpen, (open) => {
   border-radius: var(--wh-radius);
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
+}
+
+.login-modal__loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: transparent;
+  pointer-events: all;
 }
 
 .login-modal__title {
@@ -276,18 +296,16 @@ watch(isOpen, (open) => {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .login-modal__submit:hover {
   background: var(--wh-orange-600);
-  transform: translateY(-1px);
 }
 
 .login-modal__submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
 }
 
 .login-modal__error {

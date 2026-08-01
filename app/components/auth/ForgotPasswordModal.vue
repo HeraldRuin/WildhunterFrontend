@@ -509,18 +509,16 @@ watch(isOpen, (open) => {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .forgot-password-modal__submit:hover:not(:disabled) {
   background: var(--wh-orange-600);
-  transform: translateY(-1px);
 }
 
 .forgot-password-modal__submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
 }
 
 .forgot-password-modal__footer {

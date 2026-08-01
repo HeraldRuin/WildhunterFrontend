@@ -589,18 +589,16 @@ watch(isOpen, (open) => {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .register-modal__submit:hover {
   background: var(--wh-orange-600);
-  transform: translateY(-1px);
 }
 
 .register-modal__submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  transform: none;
 }
 
 .register-modal__footer {
