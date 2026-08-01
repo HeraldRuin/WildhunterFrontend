@@ -412,7 +412,7 @@ function handleSubmit() {
   min-width: 0;
   height: 81px;
   padding: 16px 22px;
-  border: 1px solid var(--wh-gray);
+  border: 1px solid var(--wh-field-border);
   border-radius: var(--wh-radius-lg);
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
@@ -513,7 +513,7 @@ function handleSubmit() {
   left: 0;
   right: 0;
   z-index: 100;
-  border: 1px solid var(--wh-gray);
+  border: 1px solid var(--wh-field-border);
   background: var(--wh-white);
   color: var(--wh-black-text);
   pointer-events: auto;
@@ -602,6 +602,8 @@ function handleSubmit() {
   padding: 12px 14px;
   border: none;
   border-radius: 10px;
+  appearance: none;
+  -webkit-appearance: none;
   background: transparent;
   color: var(--wh-black-text);
   font-family: 'Inter', system-ui, sans-serif;
@@ -611,27 +613,32 @@ function handleSubmit() {
   letter-spacing: -0.05em;
   text-align: left;
   cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .hotel-animals-search__dropdown-option--hovered,
-.hotel-animals-search__dropdown-option:hover {
-  background: var(--wh-gray-100);
-}
-
-.hotel-animals-search__dropdown-option--active {
-  background: rgb(209 101 16 / 10%);
+.hotel-animals-search__dropdown-option:hover,
+.hotel-animals-search__dropdown-option:focus-visible {
+  background-color: #e8883a;
+  color: #ffffff;
 }
 
 .hotel-animals-search__dropdown-option-dot {
   flex-shrink: 0;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: transparent;
 }
 
 .hotel-animals-search__dropdown-option--active .hotel-animals-search__dropdown-option-dot {
-  background: var(--wh-orange-500);
+  background-color: #d16510;
+}
+
+.hotel-animals-search__dropdown-option--active:hover .hotel-animals-search__dropdown-option-dot,
+.hotel-animals-search__dropdown-option--active.hotel-animals-search__dropdown-option--hovered .hotel-animals-search__dropdown-option-dot,
+.hotel-animals-search__dropdown-option--active:focus-visible .hotel-animals-search__dropdown-option-dot {
+  background-color: #ffffff;
 }
 
 .hotel-animals-search__submit {

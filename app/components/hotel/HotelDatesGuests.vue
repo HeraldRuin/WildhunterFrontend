@@ -289,7 +289,7 @@ function handleSubmit() {
   min-width: 0;
   height: 81px;
   padding: 16px 22px;
-  border: 1px solid var(--wh-gray);
+  border: 1px solid var(--wh-field-border);
   border-radius: var(--wh-radius-lg);
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
@@ -366,7 +366,7 @@ function handleSubmit() {
   right: 0;
   z-index: 100;
   padding: 14px 16px;
-  border: 1px solid var(--wh-gray);
+  border: 1px solid var(--wh-field-border);
   border-radius: 14px;
   background: var(--wh-white);
   color: var(--wh-black-text);

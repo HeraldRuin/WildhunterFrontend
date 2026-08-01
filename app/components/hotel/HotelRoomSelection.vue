@@ -138,7 +138,7 @@ function quantityOptions(max: number) {
   gap: 20px;
   height: 212px;
   padding: 16px;
-  border: 1px solid var(--wh-gray);
+  border: 1px solid var(--wh-field-border);
   border-radius: var(--wh-radius-lg);
   background: var(--wh-white);
   box-sizing: border-box;
@@ -218,7 +218,7 @@ function quantityOptions(max: number) {
   gap: 8px;
   min-height: 34px;
   padding: 6px 12px;
-  border: 1px solid var(--wh-gray);
+  border: 1px solid var(--wh-field-border);
   border-radius: 10px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
@@ -247,7 +247,7 @@ function quantityOptions(max: number) {
   width: 100%;
   height: 100%;
   padding: 8px 34px 8px 16px;
-  border: 1px solid var(--wh-gray);
+  border: 1px solid var(--wh-field-border);
   border-radius: var(--wh-radius-lg);
   background: var(--wh-white);
   font-family: 'Inter', system-ui, sans-serif;
