@@ -5,6 +5,7 @@ const props = defineProps<{
   item: MapHotelItem
   active?: boolean
   compact?: boolean
+  imageOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -26,8 +27,11 @@ function formatRating(value: number) {
     class="map-hotel-card"
     :class="{
       'map-hotel-card--active': active,
-      'map-hotel-card--compact': compact,
+      'map-hotel-card--compact': compact && !imageOnly,
+      'map-hotel-card--image-only': imageOnly,
     }"
+    :title="imageOnly ? item.title : undefined"
+    :aria-label="imageOnly ? item.title : undefined"
     @click="emit('select', props.item.id)"
   >
     <div class="map-hotel-card__media">
@@ -39,7 +43,10 @@ function formatRating(value: number) {
       >
     </div>
 
-    <div class="map-hotel-card__body">
+    <div
+      v-if="!imageOnly"
+      class="map-hotel-card__body"
+    >
       <div class="map-hotel-card__row">
         <h3 class="map-hotel-card__title">
           {{ item.title }}
@@ -97,6 +104,15 @@ function formatRating(value: number) {
   padding: 8px;
 }
 
+.map-hotel-card--image-only {
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 12px;
+}
+
 .map-hotel-card__media {
   overflow: hidden;
   width: 96px;
@@ -112,6 +128,13 @@ function formatRating(value: number) {
   width: 100%;
   height: auto;
   aspect-ratio: 1 / 1;
+}
+
+.map-hotel-card--image-only .map-hotel-card__media {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 0;
 }
 
 .map-hotel-card__media img {
