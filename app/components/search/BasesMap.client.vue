@@ -475,6 +475,25 @@ watch(
 )
 
 watch(
+  () => props.markers.map((item) => item.id).join(','),
+  (ids, previousIds) => {
+    if (!props.measureMode || ids === previousIds) {
+      return
+    }
+
+    // Search replaced a single-base measure with several bases — drop the line.
+    if (props.markers.length !== 1) {
+      resetMeasure()
+      return
+    }
+
+    if (measureOrigin) {
+      applySingleBaseTargetIfNeeded()
+    }
+  },
+)
+
+watch(
   () => props.measureMode,
   (enabled) => {
     syncMeasureModeCursor()
