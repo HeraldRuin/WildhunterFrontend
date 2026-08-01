@@ -36,7 +36,10 @@ const backgroundStyle = computed(() => {
     <div class="search-top__inner">
       <HomeHeroHeader />
 
-      <p class="search-top__tagline">
+      <p
+        v-if="title || !hideSearch"
+        class="search-top__tagline"
+      >
         <template v-if="title">
           {{ title }}
         </template>

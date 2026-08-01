@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { formatLocationInPrepositional } from '~/utils/location'
 
-const props = defineProps<{
-  locationName: string
-}>()
+const props = withDefaults(defineProps<{
+  locationName?: string
+  title?: string
+}>(), {
+  locationName: '',
+  title: undefined,
+})
 
-const title = computed(() => {
+const heading = computed(() => {
+  if (props.title) {
+    return props.title
+  }
+
   const region = formatLocationInPrepositional(props.locationName)
 
   return region
@@ -23,7 +31,7 @@ const paragraphs = [
   <section class="location-about">
     <div class="container location-about__inner">
       <h2 class="location-about__title">
-        {{ title }}
+        {{ heading }}
       </h2>
 
       <div class="location-about__content">
