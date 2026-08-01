@@ -325,7 +325,7 @@ function handleBook() {
 }
 
 .hotel-page__hero {
-  padding: 28px 0 72px;
+  padding: 28px 0 12px;
 }
 
 .hotel-page__hero-inner {

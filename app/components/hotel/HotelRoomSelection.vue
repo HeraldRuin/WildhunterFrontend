@@ -345,7 +345,7 @@ function quantityOptions(max: number) {
   .hotel-room-selection__media {
     flex: none;
     width: 100%;
-    max-width: 288px;
+    max-width: none;
     height: auto;
     aspect-ratio: 288 / 172;
   }
