@@ -246,14 +246,13 @@ function handleFiltersReset() {
             Найдено баз: {{ totalCount }}
           </h1>
 
-          <!--
           <NuxtLink
-            :to="`/bases/map?location=${locationId}`"
+            v-if="countReady"
+            :to="`/locations/${locationId}/map`"
             class="location-page__toolbar-link location-page__map-link"
           >
             Показать на карте
           </NuxtLink>
-          -->
         </div>
 
         <div
