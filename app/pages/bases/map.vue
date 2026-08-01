@@ -15,17 +15,11 @@ useHead({
 const route = useRoute()
 const { search: searchApi, hotels: hotelsApi } = useApi()
 
-const breadcrumbs = computed(() => [
+const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  {
-    label: 'Базы',
-    to: {
-      path: '/bases',
-      query: route.query,
-    },
-  },
+  { label: 'Базы', to: '/bases' },
   { label: 'Карта' },
-])
+]
 
 const selectedId = ref<number | null>(null)
 const fitVersion = ref(0)
@@ -605,7 +599,7 @@ async function handleSearch(payload: Record<string, string>) {
 .bases-map-page__results {
   position: relative;
   z-index: 1;
-  padding: 20px 0 104px;
+  padding: 20px 0 48px;
   background: #e8e8e8;
 }
 
@@ -959,7 +953,7 @@ async function handleSearch(payload: Record<string, string>) {
 
 @media (max-width: 768px) {
   .bases-map-page__results {
-    padding: 16px 0 72px;
+    padding: 16px 0 36px;
   }
 
   .bases-map-page__title {
