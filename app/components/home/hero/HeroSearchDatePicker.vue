@@ -361,11 +361,11 @@ function goToNextYear() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--wh-black-text);
   font-family: 'Inter', system-ui, sans-serif;
@@ -386,8 +386,13 @@ function goToNextYear() {
 }
 
 .hero-search-calendar__day--active-target {
-  box-shadow: 0 0 0 2px rgb(209 101 16 / 45%);
-  animation: hero-search-day-pulse 1.4s ease-in-out infinite;
+  z-index: 2;
+  background: var(--wh-orange-600);
+  outline: 1px solid var(--wh-green);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--wh-green) 22%, transparent);
+  transform: scale(1.08);
+  animation: hero-search-day-pulse 1.2s ease-in-out infinite;
 }
 
 .hero-search-calendar__day:not(.hero-search-calendar__day--selected):hover {
@@ -397,11 +402,15 @@ function goToNextYear() {
 @keyframes hero-search-day-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 2px rgb(209 101 16 / 35%);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--wh-green) 24%, transparent);
+    transform: scale(1.08);
   }
 
   50% {
-    box-shadow: 0 0 0 4px rgb(209 101 16 / 18%);
+    outline-offset: 4px;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--wh-green) 16%, transparent);
+    transform: scale(1.1);
   }
 }
 </style>
