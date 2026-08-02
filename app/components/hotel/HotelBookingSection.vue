@@ -46,8 +46,12 @@ const confirmationPath = computed(() => {
 const availableRooms = ref<HotelRoomOption[]>([])
 const isCheckingAvailability = ref(false)
 const isNoHuntConfirmOpen = ref(false)
+const isAnimalWarningOpen = ref(false)
 const hasSelectedRooms = ref(false)
 const animalsSearchRef = ref<{ getSelectedAnimalId: () => string } | null>(null)
+const isAnyModalOpen = computed(() =>
+  isNoHuntConfirmOpen.value || isAnimalWarningOpen.value,
+)
 
 function mapAvailabilityRoom(room: HotelRoomAvailability): HotelRoomOption {
   const gallery = Array.isArray(room.gallery)
@@ -116,6 +120,20 @@ async function handleCheck(payload: { checkIn: string, checkOut: string, adults:
   }
 }
 
+function handleAnimalsCheck(payload: {
+  checkIn: string
+  checkOut: string
+  adults: number
+  animalId: string
+}) {
+  if (!payload.animalId) {
+    isAnimalWarningOpen.value = true
+    return
+  }
+
+  void handleCheck(payload)
+}
+
 function proceedBook() {
   isNoHuntConfirmOpen.value = false
   emit('book')
@@ -137,13 +155,18 @@ function closeNoHuntConfirm() {
   isNoHuntConfirmOpen.value = false
 }
 
+function closeAnimalWarning() {
+  isAnimalWarningOpen.value = false
+}
+
 function handleConfirmKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     closeNoHuntConfirm()
+    closeAnimalWarning()
   }
 }
 
-watch(isNoHuntConfirmOpen, (isOpen) => {
+watch(isAnyModalOpen, (isOpen) => {
   if (!import.meta.client) {
     return
   }
@@ -164,7 +187,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleConfirmKeydown)
 })
 
-useBodyScrollLock(isNoHuntConfirmOpen)
+useBodyScrollLock(isAnyModalOpen)
 </script>
 
 <template>
@@ -175,7 +198,10 @@ useBodyScrollLock(isNoHuntConfirmOpen)
           :loading="isCheckingAvailability"
           @check="handleCheck"
         />
-        <HotelAnimalsSearch ref="animalsSearchRef" />
+        <HotelAnimalsSearch
+          ref="animalsSearchRef"
+          @check="handleAnimalsCheck"
+        />
       </div>
 
       <HotelRoomSelection
@@ -226,6 +252,35 @@ useBodyScrollLock(isNoHuntConfirmOpen)
                 @click="proceedBook"
               >
                 Да
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="hotel-booking-confirm">
+        <div
+          v-if="isAnimalWarningOpen"
+          class="hotel-booking-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hotel-animal-warning-title"
+          @click.self="closeAnimalWarning"
+        >
+          <div class="hotel-booking-confirm__card">
+            <CommonModalCloseButton @click="closeAnimalWarning" />
+
+            <h2 id="hotel-animal-warning-title" class="hotel-booking-confirm__title">
+              Пожалуйста, выберите животное
+            </h2>
+
+            <div class="hotel-booking-confirm__actions">
+              <button
+                type="button"
+                class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
+                @click="closeAnimalWarning"
+              >
+                Хорошо
               </button>
             </div>
           </div>
