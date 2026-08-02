@@ -12,12 +12,51 @@ const emit = defineEmits<{
   select: [id: number]
 }>()
 
+const tipVisible = ref(false)
+const tipStyle = ref<Record<string, string>>({})
+
 function formatPrice(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value)
 }
 
 function formatRating(value: number) {
   return value.toFixed(1).replace('.', ',')
+}
+
+const imageOnlyLabel = computed(() => {
+  const parts = [
+    props.item.title,
+    `${formatPrice(props.item.price)} ₽`,
+    props.item.location,
+  ]
+
+  if (props.item.rating > 0) {
+    parts.push(`★ ${formatRating(props.item.rating)}`)
+  }
+
+  return parts.filter(Boolean).join(', ')
+})
+
+function showTip(event: Event) {
+  if (!props.imageOnly) {
+    return
+  }
+
+  const target = event.currentTarget as HTMLElement | null
+  if (!target) {
+    return
+  }
+
+  const rect = target.getBoundingClientRect()
+  tipStyle.value = {
+    left: `${Math.round(rect.right + 8)}px`,
+    top: `${Math.round(rect.top + rect.height / 2)}px`,
+  }
+  tipVisible.value = true
+}
+
+function hideTip() {
+  tipVisible.value = false
 }
 </script>
 
@@ -29,10 +68,14 @@ function formatRating(value: number) {
       'map-hotel-card--active': active,
       'map-hotel-card--compact': compact && !imageOnly,
       'map-hotel-card--image-only': imageOnly,
+      'map-hotel-card--image-only-compact': imageOnly && compact,
     }"
-    :title="imageOnly ? item.title : undefined"
-    :aria-label="imageOnly ? item.title : undefined"
+    :aria-label="imageOnly ? imageOnlyLabel : undefined"
     @click="emit('select', props.item.id)"
+    @mouseenter="showTip"
+    @mouseleave="hideTip"
+    @focus="showTip"
+    @blur="hideTip"
   >
     <div class="map-hotel-card__media">
       <img
@@ -67,6 +110,34 @@ function formatRating(value: number) {
       </p>
     </div>
   </button>
+
+  <Teleport to="body">
+    <div
+      v-if="imageOnly && tipVisible"
+      class="map-hotel-card-tip"
+      :style="tipStyle"
+      aria-hidden="true"
+    >
+      <div class="map-hotel-card-tip__row">
+        <p class="map-hotel-card-tip__title">
+          {{ item.title }}
+        </p>
+        <p class="map-hotel-card-tip__price">
+          {{ formatPrice(item.price) }} ₽
+        </p>
+      </div>
+      <p class="map-hotel-card-tip__location">
+        {{ item.location }}
+      </p>
+      <p
+        v-if="item.rating > 0"
+        class="map-hotel-card-tip__rating"
+      >
+        <span class="map-hotel-card-tip__star">★</span>
+        {{ formatRating(item.rating) }}
+      </p>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -165,6 +236,23 @@ function formatRating(value: number) {
   border-radius: 12px;
 }
 
+/* Collapsed sidebar + compact mode: fill half-width grid cell (~56px). */
+.map-hotel-card--image-only-compact {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+}
+
+.map-hotel-card--image-only-compact .map-hotel-card__media {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 8px;
+}
+
 .map-hotel-card__media img {
   display: block;
   width: 100%;
@@ -254,6 +342,79 @@ function formatRating(value: number) {
 }
 
 .map-hotel-card__star {
+  color: #e8b84a;
+}
+</style>
+
+<!-- Teleported tip is outside the component root subtree for positioning; unscoped block. -->
+<style>
+.map-hotel-card-tip {
+  position: fixed;
+  z-index: 40;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+  max-width: 260px;
+  padding: 10px 12px;
+  border: 1px solid var(--wh-field-border, #dddddd);
+  border-radius: 12px;
+  background: var(--wh-white, #fff);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
+  transform: translateY(-50%);
+  pointer-events: none;
+  text-align: left;
+}
+
+.map-hotel-card-tip__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.map-hotel-card-tip__title {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--wh-gray-900, #1c211c);
+}
+
+.map-hotel-card-tip__price {
+  margin: 0;
+  flex-shrink: 0;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wh-gray-900, #1c211c);
+  white-space: nowrap;
+}
+
+.map-hotel-card-tip__location {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--wh-gray-600, #6b7280);
+}
+
+.map-hotel-card-tip__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--wh-gray-900, #1c211c);
+}
+
+.map-hotel-card-tip__star {
   color: #e8b84a;
 }
 </style>
