@@ -15,6 +15,12 @@ export interface YmapsMap {
     getSize: () => number[]
     getElement: () => HTMLElement
   }
+  converter: {
+    globalToPage: (point: number[]) => number[]
+  }
+  options: {
+    get: (key: string) => unknown
+  }
   getZoom: () => number
   getCenter: () => YmapsCoords
   getBounds: () => [YmapsCoords, YmapsCoords] | null

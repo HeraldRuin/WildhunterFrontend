@@ -23,6 +23,9 @@ interface LatLngPoint {
   lng: number
 }
 
+type TooltipDirection = 'top' | 'bottom' | 'left' | 'right'
+
+const TOOLTIP_EDGE_PAD = 96
 const CLUSTER_PIXEL_DISTANCE = 32
 
 const props = withDefaults(defineProps<{
@@ -55,7 +58,7 @@ const mapError = ref('')
 let ymapsApi: YmapsApi | null = null
 let map: (YmapsMap & { getCenter: () => YmapsCoords }) | null = null
 let mapResizeObserver: ResizeObserver | null = null
-const clusterObjects: unknown[] = []
+const clusterObjects: Array<{ events: YmapsMap['events'] }> = []
 let measureOrigin: LatLngPoint | null = null
 let measureTarget: LatLngPoint | null = null
 let measureOriginMarker: unknown = null
@@ -64,9 +67,12 @@ let measureLabelMarker: unknown = null
 let syncMarkersScheduled = false
 let lastClusterZoom: number | null = null
 let ignoreBoundsChange = false
-let pinLayout: unknown = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let pinLayout: any = null
 let measureOriginLayout: unknown = null
 let measureLabelLayout: unknown = null
+const clustersByKey = new Map<string, MarkerCluster>()
+let activeTooltipRoot: HTMLElement | null = null
 
 function fitMapToContainer() {
   map?.container.fitToViewport()
@@ -118,17 +124,122 @@ function coordsBounds(points: LatLngPoint[]): [YmapsCoords, YmapsCoords] {
   ]
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+}
+
+function tooltipHtml(items: BasesMapMarker[]) {
+  if (items.length === 1) {
+    return escapeHtml(items[0].title)
+  }
+
+  const rows = items
+    .map((item) => `<li>${escapeHtml(item.title)}</li>`)
+    .join('')
+
+  return `<div class="bases-map-tooltip__title">${formatBasesCount(items.length)} рядом</div><ul class="bases-map-tooltip__list">${rows}</ul>`
+}
+
+/** Pick tooltip side so it stays inside the map viewport (same as Leaflet). */
+function resolveTooltipDirection(root: HTMLElement, isMulti: boolean): TooltipDirection {
+  if (!mapEl.value) {
+    return 'top'
+  }
+
+  const mapRect = mapEl.value.getBoundingClientRect()
+  const pinRect = root.getBoundingClientRect()
+  const x = pinRect.left + pinRect.width / 2 - mapRect.left
+  const y = pinRect.top + pinRect.height / 2 - mapRect.top
+  const width = mapRect.width
+  const height = mapRect.height
+  const padX = isMulti ? 140 : TOOLTIP_EDGE_PAD
+  const padY = isMulti ? 120 : TOOLTIP_EDGE_PAD
+
+  if (y < padY) {
+    return 'bottom'
+  }
+
+  if (y > height - padY) {
+    return 'top'
+  }
+
+  if (x > width - padX) {
+    return 'left'
+  }
+
+  if (x < padX) {
+    return 'right'
+  }
+
+  return 'top'
+}
+
+function hideTooltip() {
+  if (!activeTooltipRoot) {
+    return
+  }
+
+  const tip = activeTooltipRoot.querySelector<HTMLElement>('.bases-map-tooltip')
+  if (tip) {
+    tip.hidden = true
+    tip.innerHTML = ''
+    tip.className = 'bases-map-tooltip'
+  }
+
+  activeTooltipRoot.style.zIndex = ''
+  activeTooltipRoot = null
+}
+
+function showTooltip(cluster: MarkerCluster) {
+  if (!mapEl.value) {
+    return
+  }
+
+  const root = mapEl.value.querySelector<HTMLElement>(
+    `.bases-map-pin-root[data-cluster-key="${CSS.escape(cluster.key)}"]`,
+  )
+  const tip = root?.querySelector<HTMLElement>('.bases-map-tooltip')
+
+  if (!root || !tip) {
+    return
+  }
+
+  if (activeTooltipRoot && activeTooltipRoot !== root) {
+    hideTooltip()
+  }
+
+  const isMulti = cluster.items.length > 1
+  const direction = resolveTooltipDirection(root, isMulti)
+
+  tip.innerHTML = tooltipHtml(cluster.items)
+  tip.className = [
+    'bases-map-tooltip',
+    `bases-map-tooltip--${direction}`,
+    isMulti ? 'bases-map-tooltip--multi' : '',
+  ].filter(Boolean).join(' ')
+  tip.hidden = false
+  root.style.zIndex = '1000'
+  activeTooltipRoot = root
+}
+
 function ensureLayouts() {
   if (!ymapsApi || pinLayout) {
     return
   }
 
-  const PinLayout = ymapsApi.templateLayoutFactory.createClass(
-    `<div class="bases-map-pin $[properties.pinClass]" style="width:$[properties.pinSize]px;height:$[properties.pinSize]px;">
-      <span class="bases-map-pin__dot">$[properties.iconContent]</span>
+  // Tooltip lives on the pin so it always tracks the marker (events-pane blocks DOM hover).
+  pinLayout = ymapsApi.templateLayoutFactory.createClass(
+    `<div class="bases-map-pin-root" data-cluster-key="$[properties.clusterKey]" style="width:$[properties.pinSize]px;height:$[properties.pinSize]px;">
+      <div class="bases-map-pin $[properties.pinClass]">
+        <span class="bases-map-pin__dot">$[properties.iconContent]</span>
+      </div>
+      <div class="bases-map-tooltip" hidden></div>
     </div>`,
   )
-  pinLayout = PinLayout
 
   measureOriginLayout = ymapsApi.templateLayoutFactory.createClass(
     `<div class="bases-map-measure-origin">
@@ -203,15 +314,9 @@ function buildClusters(): MarkerCluster[] {
   return clusters
 }
 
-function hintContent(items: BasesMapMarker[]) {
-  if (items.length === 1) {
-    return items[0].title
-  }
-
-  return `${formatBasesCount(items.length)} рядом: ${items.map((item) => item.title).join(', ')}`
-}
-
 function clearClusterObjects() {
+  hideTooltip()
+
   if (!map) {
     clusterObjects.length = 0
     return
@@ -390,6 +495,11 @@ function onMapClick(event: YmapsEvent) {
   applySingleBaseTargetIfNeeded()
 }
 
+function onMapActionBegin() {
+  // Pins move under the cursor during pan/zoom — drop stale tooltip.
+  hideTooltip()
+}
+
 function onBoundsChange(event: YmapsEvent) {
   if (ignoreBoundsChange) {
     return
@@ -431,6 +541,10 @@ function syncMarkers() {
   lastClusterZoom = map.getZoom()
 
   const clusters = buildClusters()
+  clustersByKey.clear()
+  for (const cluster of clusters) {
+    clustersByKey.set(cluster.key, cluster)
+  }
 
   for (const cluster of clusters) {
     const isActive = cluster.items.some((item) => item.id === props.activeId)
@@ -447,19 +561,30 @@ function syncMarkers() {
         iconContent: isMulti ? String(cluster.items.length) : '',
         pinClass,
         pinSize: size,
-        hintContent: hintContent(cluster.items),
+        clusterKey: cluster.key,
       },
       {
         iconLayout: pinLayout,
+        // Hit area on the events-pane (DOM pins sit underneath and never receive mouse).
         iconShape: {
           type: 'Circle',
           coordinates: [0, 0],
-          radius: size / 2,
+          radius: Math.max(18, size / 2 + 10),
         },
+        cursor: 'pointer',
         zIndex: isActive ? 100 : (isMulti ? 50 : 0),
         hasBalloon: false,
+        hasHint: false,
       },
     )
+
+    placemark.events.add('mouseenter', () => {
+      showTooltip(cluster)
+    })
+
+    placemark.events.add('mouseleave', () => {
+      hideTooltip()
+    })
 
     placemark.events.add('click', () => {
       if (isMulti) {
@@ -591,6 +716,7 @@ onMounted(async () => {
     }) as YmapsMap & { getCenter: () => YmapsCoords }
 
     map.events.add('click', onMapClick)
+    map.events.add('actionbegin', onMapActionBegin)
     map.events.add('boundschange', onBoundsChange)
 
     mapResizeObserver = new ResizeObserver(() => {
@@ -720,6 +846,7 @@ onBeforeUnmount(() => {
 
   if (map) {
     map.events.remove('click', onMapClick)
+    map.events.remove('actionbegin', onMapActionBegin)
     map.events.remove('boundschange', onBoundsChange)
   }
 
@@ -798,12 +925,21 @@ onBeforeUnmount(() => {
   background: var(--wh-gray-200, #dddddd);
 }
 
+.bases-map :deep(.bases-map-pin-root) {
+  position: relative;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  border: none;
+}
+
 .bases-map :deep(.bases-map-pin) {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
   background: transparent;
   border: none;
 }
@@ -876,6 +1012,78 @@ onBeforeUnmount(() => {
   line-height: 1.2;
   white-space: nowrap;
   box-shadow: 0 4px 12px rgb(0 0 0 / 18%);
+}
+
+.bases-map :deep(.bases-map-tooltip) {
+  position: absolute;
+  z-index: 5;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--wh-gray-900, #1c211c);
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 18%);
+}
+
+.bases-map :deep(.bases-map-tooltip--multi) {
+  padding: 8px 12px;
+  min-width: 160px;
+  max-width: 260px;
+  white-space: normal;
+}
+
+.bases-map :deep(.bases-map-tooltip--top) {
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+}
+
+.bases-map :deep(.bases-map-tooltip--bottom) {
+  left: 50%;
+  top: calc(100% + 10px);
+  transform: translateX(-50%);
+}
+
+.bases-map :deep(.bases-map-tooltip--left) {
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.bases-map :deep(.bases-map-tooltip--right) {
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.bases-map :deep(.bases-map-tooltip__title) {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.bases-map :deep(.bases-map-tooltip__list) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bases-map :deep(.bases-map-tooltip__list li) {
+  padding: 2px 0;
+  line-height: 1.3;
+}
+
+.bases-map :deep(.bases-map-tooltip__list li + li) {
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  margin-top: 2px;
+  padding-top: 4px;
 }
 
 /* Keep «Открыть в Яндекс Картах» bottom-right; hide constructor/logo promo. */
