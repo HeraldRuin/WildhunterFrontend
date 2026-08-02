@@ -6,6 +6,12 @@ export interface HotelRoomOption {
   price: number
   nights: number
   image?: string
+  photosCount: number
+  gallery: Array<{
+    large: string
+    medium: string
+    thumb: string
+  }>
   maxQuantity: number
 }
 

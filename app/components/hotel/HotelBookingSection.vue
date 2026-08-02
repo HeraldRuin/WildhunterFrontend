@@ -47,6 +47,22 @@ const availableRooms = ref<HotelRoomOption[]>([])
 const isCheckingAvailability = ref(false)
 
 function mapAvailabilityRoom(room: HotelRoomAvailability): HotelRoomOption {
+  const gallery = Array.isArray(room.gallery)
+    ? room.gallery.map(item => ({
+        large: item.large || item.medium || item.thumb || '',
+        medium: item.medium || item.large || item.thumb || '',
+        thumb: item.thumb || item.medium || item.large || '',
+      })).filter(item => item.large || item.medium || item.thumb)
+    : []
+
+  if (!gallery.length && room.image_url) {
+    gallery.push({
+      large: room.image_url,
+      medium: room.image_url,
+      thumb: room.image_url,
+    })
+  }
+
   return {
     id: String(room.id),
     title: room.title,
@@ -54,7 +70,9 @@ function mapAvailabilityRoom(room: HotelRoomAvailability): HotelRoomOption {
     capacity: room.adults,
     price: room.price,
     nights: room.nights,
-    image: room.image_url || undefined,
+    image: room.image_url || gallery[0]?.medium || undefined,
+    photosCount: gallery.length,
+    gallery,
     maxQuantity: Math.max(1, Number(room.number) || 1),
   }
 }

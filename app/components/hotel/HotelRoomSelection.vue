@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { HotelGalleryImage } from '~/types/api'
 import type { HotelRoomOption } from '~/types/hotelBooking'
 import { formatHotelPrice } from '~/utils/hotel'
 
@@ -9,6 +10,9 @@ const props = withDefaults(defineProps<{
 })
 
 const quantities = ref<Record<string, number>>({})
+const lightboxOpen = ref(false)
+const lightboxImages = ref<HotelGalleryImage[]>([])
+const lightboxTitle = ref('')
 
 watch(
   () => props.rooms,
@@ -17,6 +21,16 @@ watch(
   },
   { immediate: true },
 )
+
+function openRoomGallery(room: HotelRoomOption) {
+  if (!room.gallery.length) {
+    return
+  }
+
+  lightboxImages.value = room.gallery
+  lightboxTitle.value = room.title
+  lightboxOpen.value = true
+}
 
 function nightsLabel(count: number) {
   const mod10 = count % 10
@@ -45,7 +59,13 @@ function quantityOptions(max: number) {
       :key="room.id"
       class="hotel-room-selection__card"
     >
-      <div class="hotel-room-selection__media">
+      <button
+        type="button"
+        class="hotel-room-selection__media"
+        :aria-label="`Открыть фото: ${room.title}`"
+        :disabled="!room.gallery.length"
+        @click="openRoomGallery(room)"
+      >
         <img
           v-if="room.image"
           :src="room.image"
@@ -53,7 +73,25 @@ function quantityOptions(max: number) {
           loading="lazy"
           decoding="async"
         >
-      </div>
+        <span
+          v-if="room.photosCount > 0"
+          class="hotel-room-selection__photos"
+        >
+          <svg
+            class="hotel-room-selection__photos-icon"
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            aria-hidden="true"
+          >
+            <path
+              fill="currentColor"
+              d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2M8.5 13.5l2.5 3.01L14.5 12l4.5 6H5z"
+            />
+          </svg>
+          {{ room.photosCount }}
+        </span>
+      </button>
 
       <div class="hotel-room-selection__body">
         <div class="hotel-room-selection__info">
@@ -128,6 +166,12 @@ function quantityOptions(max: number) {
         </div>
       </div>
     </article>
+
+    <HotelGalleryLightbox
+      v-model:open="lightboxOpen"
+      :images="lightboxImages"
+      :title="lightboxTitle"
+    />
   </div>
 </template>
 
@@ -153,12 +197,20 @@ function quantityOptions(max: number) {
 }
 
 .hotel-room-selection__media {
+  position: relative;
   flex: 0 0 288px;
   width: 288px;
   height: 172px;
+  padding: 0;
+  border: none;
   border-radius: 12px;
   background: var(--wh-gray-300);
   overflow: hidden;
+  cursor: pointer;
+}
+
+.hotel-room-selection__media:disabled {
+  cursor: default;
 }
 
 .hotel-room-selection__media img {
@@ -166,6 +218,34 @@ function quantityOptions(max: number) {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.hotel-room-selection__photos {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 55%);
+  color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.hotel-room-selection__photos-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: #fff;
 }
 
 .hotel-room-selection__body {
