@@ -45,6 +45,9 @@ const confirmationPath = computed(() => {
 
 const availableRooms = ref<HotelRoomOption[]>([])
 const isCheckingAvailability = ref(false)
+const isNoHuntConfirmOpen = ref(false)
+const hasSelectedRooms = ref(false)
+const animalsSearchRef = ref<{ getSelectedAnimalId: () => string } | null>(null)
 
 function mapAvailabilityRoom(room: HotelRoomAvailability): HotelRoomOption {
   const gallery = Array.isArray(room.gallery)
@@ -113,10 +116,55 @@ async function handleCheck(payload: { checkIn: string, checkOut: string, adults:
   }
 }
 
-function handleBook() {
+function proceedBook() {
+  isNoHuntConfirmOpen.value = false
   emit('book')
   void navigateTo(confirmationPath.value)
 }
+
+function handleBook() {
+  const animalId = animalsSearchRef.value?.getSelectedAnimalId() || ''
+
+  if (!animalId) {
+    isNoHuntConfirmOpen.value = true
+    return
+  }
+
+  proceedBook()
+}
+
+function closeNoHuntConfirm() {
+  isNoHuntConfirmOpen.value = false
+}
+
+function handleConfirmKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    closeNoHuntConfirm()
+  }
+}
+
+watch(isNoHuntConfirmOpen, (isOpen) => {
+  if (!import.meta.client) {
+    return
+  }
+
+  if (isOpen) {
+    window.addEventListener('keydown', handleConfirmKeydown)
+    return
+  }
+
+  window.removeEventListener('keydown', handleConfirmKeydown)
+})
+
+onBeforeUnmount(() => {
+  if (!import.meta.client) {
+    return
+  }
+
+  window.removeEventListener('keydown', handleConfirmKeydown)
+})
+
+useBodyScrollLock(isNoHuntConfirmOpen)
 </script>
 
 <template>
@@ -127,19 +175,63 @@ function handleBook() {
           :loading="isCheckingAvailability"
           @check="handleCheck"
         />
-        <HotelAnimalsSearch />
+        <HotelAnimalsSearch ref="animalsSearchRef" />
       </div>
 
-      <HotelRoomSelection :rooms="availableRooms" />
+      <HotelRoomSelection
+        :rooms="availableRooms"
+        @selection-change="hasSelectedRooms = $event"
+      />
 
-      <button
-        type="button"
-        class="hotel-booking-section__book"
-        @click="handleBook"
-      >
-        Забронировать сейчас
-      </button>
+      <Transition name="hotel-booking-book">
+        <button
+          v-if="hasSelectedRooms"
+          type="button"
+          class="hotel-booking-section__book"
+          @click="handleBook"
+        >
+          Забронировать сейчас
+        </button>
+      </Transition>
     </div>
+
+    <Teleport to="body">
+      <Transition name="hotel-booking-confirm">
+        <div
+          v-if="isNoHuntConfirmOpen"
+          class="hotel-booking-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hotel-booking-confirm-title"
+          @click.self="closeNoHuntConfirm"
+        >
+          <div class="hotel-booking-confirm__card">
+            <CommonModalCloseButton @click="closeNoHuntConfirm" />
+
+            <h2 id="hotel-booking-confirm-title" class="hotel-booking-confirm__title">
+              Вы уверены, что хотите забронировать номер без охоты?
+            </h2>
+
+            <div class="hotel-booking-confirm__actions">
+              <button
+                type="button"
+                class="hotel-booking-confirm__btn hotel-booking-confirm__btn--secondary"
+                @click="closeNoHuntConfirm"
+              >
+                Нет
+              </button>
+              <button
+                type="button"
+                class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
+                @click="proceedBook"
+              >
+                Да
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </section>
 </template>
 
@@ -188,6 +280,97 @@ function handleBook() {
 .hotel-booking-section__book:hover {
   background: color-mix(in srgb, var(--wh-green) 78%, white);
   transform: var(--wh-button-hover-lift);
+}
+
+.hotel-booking-book-enter-active,
+.hotel-booking-book-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.hotel-booking-book-enter-from,
+.hotel-booking-book-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.hotel-booking-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.hotel-booking-confirm__card {
+  position: relative;
+  width: min(100%, 420px);
+  padding: 40px 32px 28px;
+  border-radius: var(--wh-radius);
+  background: var(--wh-white);
+  box-shadow: var(--wh-shadow);
+  text-align: center;
+}
+
+.hotel-booking-confirm__title {
+  margin: 0 0 28px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.03em;
+  color: var(--wh-black-text);
+}
+
+.hotel-booking-confirm__actions {
+  display: flex;
+  gap: 12px;
+}
+
+.hotel-booking-confirm__btn {
+  flex: 1;
+  min-height: 52px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: var(--wh-radius-lg);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.hotel-booking-confirm__btn--secondary {
+  border: 1px solid var(--wh-field-border);
+  background: var(--wh-white);
+  color: var(--wh-black-text);
+}
+
+.hotel-booking-confirm__btn--secondary:hover {
+  background: #f5f5f5;
+}
+
+.hotel-booking-confirm__btn--primary {
+  background: var(--wh-green);
+  color: var(--wh-white);
+}
+
+.hotel-booking-confirm__btn--primary:hover {
+  background: color-mix(in srgb, var(--wh-green) 78%, white);
+  transform: var(--wh-button-hover-lift);
+}
+
+.hotel-booking-confirm-enter-active,
+.hotel-booking-confirm-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.hotel-booking-confirm-enter-from,
+.hotel-booking-confirm-leave-to {
+  opacity: 0;
 }
 
 @media (--wh-tablet) {

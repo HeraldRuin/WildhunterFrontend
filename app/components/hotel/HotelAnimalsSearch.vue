@@ -241,6 +241,10 @@ function handleSubmit() {
     animalId: animal.value,
   })
 }
+
+defineExpose({
+  getSelectedAnimalId: () => animal.value,
+})
 </script>
 
 <template>

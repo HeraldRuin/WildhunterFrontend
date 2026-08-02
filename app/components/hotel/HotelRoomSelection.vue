@@ -9,15 +9,31 @@ const props = withDefaults(defineProps<{
   rooms: () => [],
 })
 
+const emit = defineEmits<{
+  'selection-change': [hasSelectedRooms: boolean]
+}>()
+
 const quantities = ref<Record<string, number>>({})
 const lightboxOpen = ref(false)
 const lightboxImages = ref<HotelGalleryImage[]>([])
 const lightboxTitle = ref('')
 
+const hasSelectedRooms = computed(() =>
+  Object.values(quantities.value).some(quantity => quantity > 0),
+)
+
 watch(
   () => props.rooms,
   (rooms) => {
     quantities.value = Object.fromEntries(rooms.map(room => [room.id, 0]))
+  },
+  { immediate: true },
+)
+
+watch(
+  hasSelectedRooms,
+  (value) => {
+    emit('selection-change', value)
   },
   { immediate: true },
 )
