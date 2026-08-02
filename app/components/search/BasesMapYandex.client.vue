@@ -862,17 +862,31 @@ onBeforeUnmount(() => {
   box-shadow: 0 4px 12px rgb(0 0 0 / 18%);
 }
 
-/* Keep Yandex open/copyright links sharp (no Leaflet-style fade) and bottom-right. */
+/* Keep «Открыть в Яндекс Картах» bottom-right; hide constructor/logo promo. */
 .bases-map :deep([class*="copyrights-pane"]),
 .bases-map :deep([class*="copyright-pane"]) {
   left: auto !important;
   right: 0 !important;
 }
 
-.bases-map :deep([class*="map-copyrights-promo"]),
-.bases-map :deep([class*="gototech"]) {
+.bases-map :deep([class*="map-copyrights-promo"]) {
   left: auto !important;
   right: 8px !important;
   bottom: 8px !important;
+}
+
+/* Hide logo, constructor promo and «Условия использования»; keep open-in-maps link. */
+.bases-map :deep([class*="gototech"]),
+.bases-map :deep([class*="copyright__logo"]),
+.bases-map :deep([class*="copyright-logo"]),
+.bases-map :deep([class*="copyright__text"]),
+.bases-map :deep([class*="copyright-text"]),
+.bases-map :deep([class*="copyrights__text"]),
+.bases-map :deep([class*="copyrights-pane"] > ymaps:not([class*="map-copyrights-promo"])),
+.bases-map :deep(a[href*="map-constructor"]),
+.bases-map :deep(a[href*="constructor.maps"]),
+.bases-map :deep(a[href*="legal.yandex"]),
+.bases-map :deep(a[href*="termsofuse"]) {
+  display: none !important;
 }
 </style>
