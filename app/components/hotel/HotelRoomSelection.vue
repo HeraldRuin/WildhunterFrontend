@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { HotelRoomOption } from '~/types/hotelBooking'
 import { formatHotelPrice } from '~/utils/hotel'
-import areaIcon from '~/assets/icons/wordpress_square.png'
-import peopleIcon from '~/assets/icons/mdi_people.png'
 
 const props = withDefaults(defineProps<{
   rooms?: HotelRoomOption[]
@@ -63,26 +61,38 @@ function quantityOptions(max: number) {
 
           <div class="hotel-room-selection__meta">
             <span v-if="room.area" class="hotel-room-selection__badge">
-              <img
+              <svg
                 class="hotel-room-selection__badge-icon"
-                :src="areaIcon"
-                alt=""
+                viewBox="0 0 24 24"
                 width="16"
                 height="16"
                 aria-hidden="true"
               >
+                <path
+                  d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
               {{ room.area }}
             </span>
 
             <span class="hotel-room-selection__badge">
-              <img
+              <svg
                 class="hotel-room-selection__badge-icon"
-                :src="peopleIcon"
-                alt=""
+                viewBox="0 0 24 24"
                 width="16"
                 height="16"
                 aria-hidden="true"
               >
+                <path
+                  fill="currentColor"
+                  d="M16.5 12c1.38 0 2.49-1.12 2.49-2.5S17.88 7 16.5 7 14 8.12 14 9.5s1.12 2.5 2.5 2.5M9 11c1.66 0 2.99-1.34 2.99-3S10.66 5 9 5C7.34 5 6 6.34 6 8s1.34 3 3 3m7.5 3c-1.83 0-5.5.92-5.5 2.75V19h11v-2.25c0-1.83-3.67-2.75-5.5-2.75M9 13c-2.33 0-7 1.17-7 3.5V19h7v-2.25c0-.85.33-2.34 2.37-3.47C10.5 13.1 9.66 13 9 13"
+                />
+              </svg>
               x{{ room.capacity }}
             </span>
           </div>
@@ -232,8 +242,7 @@ function quantityOptions(max: number) {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  color: var(--wh-black-text);
-  object-fit: contain;
+  color: #1c211c;
 }
 
 .hotel-room-selection__quantity {
