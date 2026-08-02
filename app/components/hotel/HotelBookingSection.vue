@@ -350,16 +350,18 @@ useBodyScrollLock(isNoHuntConfirmOpen)
 }
 
 .hotel-booking-confirm__btn--secondary:hover {
+  border-color: var(--wh-field-border-active);
+  box-shadow: 0 0 0 3px var(--wh-field-focus-ring);
   background: #f5f5f5;
 }
 
 .hotel-booking-confirm__btn--primary {
-  background: var(--wh-green);
+  background: var(--wh-orange-500);
   color: var(--wh-white);
 }
 
 .hotel-booking-confirm__btn--primary:hover {
-  background: color-mix(in srgb, var(--wh-green) 78%, white);
+  background: var(--wh-orange-600);
   transform: var(--wh-button-hover-lift);
 }
 
