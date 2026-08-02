@@ -21,6 +21,15 @@ const measureSearchError = ref('')
 const measureOriginPoint = ref<{ lat: number, lng: number, key: number } | null>(null)
 const isGridList = computed(() => listColumns.value === 2)
 const isGridMulti = computed(() => isGridList.value && props.hotels.length > 1)
+/** Collapsed strip + compact thumbs: content is dense; page dots steal width and mislead. */
+const isCollapsedGridList = computed(() => isListCollapsed.value && isGridList.value)
+const showListPageDots = computed(() => {
+  if (isCollapsedGridList.value) {
+    return false
+  }
+
+  return props.hotels.length > 0 && listPageCount.value > 1
+})
 
 const listEl = ref<HTMLElement | null>(null)
 const listPageCount = ref(1)
@@ -35,7 +44,8 @@ function getListPageCount(el: HTMLElement) {
   const pageSize = el.clientHeight || 1
   const maxScroll = getListMaxScroll(el)
 
-  if (maxScroll <= 1) {
+  // Ignore tiny overflow from subpixels/padding so a nearly-full list stays one page.
+  if (maxScroll <= 8) {
     return 1
   }
 
@@ -337,11 +347,11 @@ async function searchMeasurePoint() {
             <div
               class="bases-map-page__controls-wrap"
               :class="{
-                'bases-map-page__controls-wrap--with-dots': hotels.length && listPageCount > 1,
+                'bases-map-page__controls-wrap--with-dots': showListPageDots,
               }"
             >
               <div
-                v-if="hotels.length && listPageCount > 1"
+                v-if="showListPageDots"
                 class="bases-map-page__controls-spacer"
                 aria-hidden="true"
               />
@@ -537,11 +547,11 @@ async function searchMeasurePoint() {
               <div
                 class="bases-map-page__list-wrap"
                 :class="{
-                  'bases-map-page__list-wrap--with-dots': hotels.length && listPageCount > 1,
+                  'bases-map-page__list-wrap--with-dots': showListPageDots,
                 }"
               >
                 <div
-                  v-if="hotels.length && listPageCount > 1"
+                  v-if="showListPageDots"
                   class="bases-map-page__list-dots"
                   role="tablist"
                   aria-label="Страницы списка баз"
@@ -565,6 +575,7 @@ async function searchMeasurePoint() {
                     'bases-map-page__list--grid': isGridList && !isListCollapsed,
                     'bases-map-page__list--grid-multi': isGridMulti && !isListCollapsed,
                     'bases-map-page__list--collapsed': isListCollapsed,
+                    'bases-map-page__list--collapsed-grid': isCollapsedGridList,
                     'bases-map-page__list--state': !hotels.length,
                     'bases-map-page__list--refreshing': loading && hotels.length,
                   }"
@@ -595,7 +606,7 @@ async function searchMeasurePoint() {
                       :key="hotel.id"
                       :item="hotel"
                       :active="hotel.id === selectedId"
-                      :compact="isGridList && !isListCollapsed"
+                      :compact="isGridList"
                       :image-only="isListCollapsed"
                       @select="selectHotel"
                     />
@@ -1129,6 +1140,13 @@ async function searchMeasurePoint() {
   gap: 10px;
   overflow-x: hidden;
   padding: 1px;
+}
+
+/* Collapsed + compact: two small thumbs per row inside the 120px strip. */
+.bases-map-page__list--collapsed-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  align-items: start;
 }
 
 .bases-map-page__list--state {
