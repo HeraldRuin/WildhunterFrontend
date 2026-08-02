@@ -14,6 +14,8 @@ const emit = defineEmits<{
   check: [payload: { checkIn: string, checkOut: string, adults: number }]
 }>()
 
+const route = useRoute()
+
 const blocksStyle = computed(() => ({
   '--hotel-booking-blocks-width': props.blocksWidth,
 }))
@@ -22,9 +24,28 @@ const DEFAULT_CHECK_IN = '04.02.26'
 const DEFAULT_CHECK_OUT = '05.02.26'
 const maxAdults = 100
 
-const checkIn = ref<Date | null>(parseDisplayDate(DEFAULT_CHECK_IN))
-const checkOut = ref<Date | null>(parseDisplayDate(DEFAULT_CHECK_OUT))
-const adultsCount = ref(1)
+function queryString(key: string): string {
+  const value = route.query[key]
+  return Array.isArray(value) ? String(value[0] || '') : String(value || '')
+}
+
+function adultsFromQuery() {
+  const count = Number(queryString('guests'))
+
+  if (!Number.isFinite(count) || count < 1) {
+    return 1
+  }
+
+  return Math.min(maxAdults, Math.floor(count))
+}
+
+const checkIn = ref<Date | null>(
+  parseDisplayDate(queryString('checkIn')) ?? parseDisplayDate(DEFAULT_CHECK_IN),
+)
+const checkOut = ref<Date | null>(
+  parseDisplayDate(queryString('checkOut')) ?? parseDisplayDate(DEFAULT_CHECK_OUT),
+)
+const adultsCount = ref(adultsFromQuery())
 
 const isDatesOpen = ref(false)
 const isGuestsOpen = ref(false)

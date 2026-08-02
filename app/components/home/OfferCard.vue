@@ -10,13 +10,33 @@ const props = defineProps<{
   item: OfferItem
 }>()
 
+const route = useRoute()
+
+function searchQueryForHotel() {
+  const query: Record<string, string> = {}
+
+  for (const key of ['checkIn', 'checkOut', 'guests'] as const) {
+    const raw = route.query[key]
+    const value = Array.isArray(raw) ? String(raw[0] || '') : String(raw || '')
+
+    if (value) {
+      query[key] = value
+    }
+  }
+
+  return query
+}
+
 const hotelLink = computed(() => {
   if (
     props.item.object_model === 'hotel'
     && props.item.slug
     && props.item.locationSlug
   ) {
-    return getHotelPath(props.item.locationSlug, props.item.slug)
+    return {
+      path: getHotelPath(props.item.locationSlug, props.item.slug),
+      query: searchQueryForHotel(),
+    }
   }
 
   return `/${props.item.object_model}/${props.item.id}`
