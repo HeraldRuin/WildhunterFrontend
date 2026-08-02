@@ -205,6 +205,40 @@ export interface HotelSearchBody {
   star_rate?: string[]
 }
 
+export interface HotelRoomAvailabilityRequest {
+  hotel_id: number
+  check_in: string
+  check_out: string
+  adults: number
+}
+
+export interface HotelRoomAvailabilityGalleryImage {
+  large: string
+  medium: string
+  thumb: string
+}
+
+export interface HotelRoomAvailability {
+  id: number
+  title: string
+  price: number
+  nights: number
+  size: number
+  beds: number
+  adults: number
+  children: number
+  number_selected: number
+  number: number
+  image_url: string
+  gallery: HotelRoomAvailabilityGalleryImage[]
+}
+
+export interface HotelRoomAvailabilityData {
+  rooms: HotelRoomAvailability[]
+}
+
+export type HotelRoomAvailabilityResponse = ApiSuccessResponse<HotelRoomAvailabilityData>
+
 export interface SearchResultData {
   total: number
   total_pages: number

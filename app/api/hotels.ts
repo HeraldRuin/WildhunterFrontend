@@ -4,6 +4,8 @@ import type {
   HotelOffer,
   HotelPriceRange,
   HotelPriceRangeBounds,
+  HotelRoomAvailabilityRequest,
+  HotelRoomAvailabilityResponse,
   OfferItem,
 } from '~/types/api'
 import { useApiClient } from './client'
@@ -103,11 +105,19 @@ export function useHotelsApi() {
     }
   }
 
+  function checkAvailability(body: HotelRoomAvailabilityRequest) {
+    return apiFetch<HotelRoomAvailabilityResponse>('/hotels/rooms/check-availability', {
+      method: 'POST',
+      body,
+    })
+  }
+
   return {
     getHotelOffers,
     getHotelOfferItems,
     getHotelDetail,
     getPriceRange,
     getPriceRangeBounds,
+    checkAvailability,
   }
 }
