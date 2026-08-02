@@ -188,7 +188,7 @@ function toggleMeasureMode() {
   }
 }
 
-async function geocodeMeasureQuery(query: string) {
+async function geocodeWithNominatim(query: string) {
   const results = await $fetch<Array<{ lat: string, lon: string }>>(
     'https://nominatim.openstreetmap.org/search',
     {
@@ -214,6 +214,61 @@ async function geocodeMeasureQuery(query: string) {
   }
 
   return { lat, lng }
+}
+
+async function geocodeWithYandex(query: string) {
+  const config = useRuntimeConfig()
+  const apikey = String(config.public.yandexMapsApiKey || '')
+
+  if (!apikey) {
+    throw new Error('Yandex Maps API key is missing')
+  }
+
+  const data = await $fetch<{
+    response?: {
+      GeoObjectCollection?: {
+        featureMember?: Array<{
+          GeoObject?: {
+            Point?: { pos?: string }
+          }
+        }>
+      }
+    }
+  }>('https://geocode-maps.yandex.ru/1.x/', {
+    query: {
+      apikey,
+      geocode: query,
+      format: 'json',
+      results: 1,
+      lang: 'ru_RU',
+    },
+  })
+
+  const pos = data.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos
+  if (!pos) {
+    return null
+  }
+
+  const [lngRaw, latRaw] = pos.split(/\s+/)
+  const lat = Number(latRaw)
+  const lng = Number(lngRaw)
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null
+  }
+
+  return { lat, lng }
+}
+
+async function geocodeMeasureQuery(query: string) {
+  const config = useRuntimeConfig()
+  const provider = String(config.public.mapProvider || 'leaflet')
+
+  if (provider === 'yandex') {
+    return geocodeWithYandex(query)
+  }
+
+  return geocodeWithNominatim(query)
 }
 
 const showMeasureClear = computed(() => measureOriginPoint.value != null)
@@ -250,8 +305,11 @@ async function searchMeasurePoint() {
 
     measureOriginPoint.value = { ...point, key: Date.now() }
   }
-  catch {
-    measureSearchError.value = 'Не удалось найти точку'
+  catch (error) {
+    const message = error instanceof Error ? error.message : ''
+    measureSearchError.value = message.includes('API key')
+      ? 'Геокодер недоступен'
+      : 'Не удалось найти точку'
   }
   finally {
     measureSearchPending.value = false
@@ -1120,6 +1178,9 @@ async function searchMeasurePoint() {
   flex: 1;
   min-width: 0;
   min-height: 0;
+  border-radius: 12px;
+  background: #e8e8e8;
+  overflow: hidden;
 }
 
 @media (max-width: 960px) {
