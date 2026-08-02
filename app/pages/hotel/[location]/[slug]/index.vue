@@ -255,7 +255,7 @@ function handleBook() {
           </section>
 
           <section class="hotel-page__booking">
-            <HotelBookingSection width="90%" @book="handleBook" />
+            <HotelBookingSection width="100%" @book="handleBook" />
           </section>
         </div>
       </section>
@@ -289,7 +289,8 @@ function handleBook() {
 }
 
 .hotel-page__header :deep(.hero-header) {
-  width: min(100%, calc(100vw - 160px));
+  /* Desktop: side gutters shrink toward tablet; tablet/mobile override below */
+  width: min(100%, calc(100vw - 2 * clamp(12px, 1.5vw + 4px, 80px)));
   border: 1px solid var(--wh-gray-400);
   border-top: none;
   background: rgba(255, 255, 255, 0.88);
@@ -332,7 +333,8 @@ function handleBook() {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  width: min(calc(100% - 48px), calc(100vw - 220px));
+  /* Desktop: wide screens keep gutters; near tablet they collapse hard */
+  width: min(100%, calc(100vw - 2 * clamp(16px, 12vw - 140px, 110px)));
   margin-inline: auto;
 }
 
