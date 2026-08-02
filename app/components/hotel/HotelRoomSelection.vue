@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { HotelRoomOption } from '~/types/hotelBooking'
 import { formatHotelPrice } from '~/utils/hotel'
+import areaIcon from '~/assets/icons/wordpress_square.png'
+import peopleIcon from '~/assets/icons/mdi_people.png'
 
 const props = withDefaults(defineProps<{
   rooms?: HotelRoomOption[]
@@ -63,7 +65,7 @@ function quantityOptions(max: number) {
             <span v-if="room.area" class="hotel-room-selection__badge">
               <img
                 class="hotel-room-selection__badge-icon"
-                src="/icons/wordpress_square.png"
+                :src="areaIcon"
                 alt=""
                 width="16"
                 height="16"
@@ -75,7 +77,7 @@ function quantityOptions(max: number) {
             <span class="hotel-room-selection__badge">
               <img
                 class="hotel-room-selection__badge-icon"
-                src="/icons/mdi_people.png"
+                :src="peopleIcon"
                 alt=""
                 width="16"
                 height="16"
