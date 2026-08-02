@@ -16,11 +16,18 @@ useHead({
 const route = useRoute()
 const { search: searchApi, hotels: hotelsApi, location: locationApi } = useApi()
 
-const breadcrumbs: BreadcrumbItem[] = [
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
   { label: 'Главная', to: '/' },
-  { label: 'Базы', to: '/bases' },
+  {
+    label: 'Базы',
+    to: {
+      path: '/bases',
+      // Keep hero search (dates, guests, location, animal) when leaving the map.
+      query: route.query,
+    },
+  },
   { label: 'Карта' },
-]
+])
 
 function queryString(key: string): string {
   const value = route.query[key]
