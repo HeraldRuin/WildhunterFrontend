@@ -75,6 +75,7 @@
 
 html {
   overflow-anchor: none;
+  scrollbar-gutter: stable;
 }
 
 body {
