@@ -1,6 +1,16 @@
 import type { OfferItem } from '~/types/api'
 import { toMediaImageSize } from '~/utils/image'
 
+/** Map engine: Leaflet/OSM or Yandex Maps JS API 2.1. */
+export type MapProvider = 'leaflet' | 'yandex'
+
+export interface BasesMapMarker {
+  id: number
+  title: string
+  lat: number
+  lng: number
+}
+
 /** Default map center (central Russia) when no hotels are selected. */
 export const DEFAULT_MAP_CENTER = {
   lat: 57.6261,
@@ -41,7 +51,7 @@ export function offerToMapHotel(item: OfferItem): MapHotelItem | null {
   }
 }
 
-/** Format a Leaflet distance (meters) for map UI. */
+/** Format a map distance (meters) for map UI. */
 export function formatMapDistance(meters: number): string {
   if (!Number.isFinite(meters) || meters < 0) {
     return ''
