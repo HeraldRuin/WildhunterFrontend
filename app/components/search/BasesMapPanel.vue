@@ -597,7 +597,7 @@ async function searchMeasurePoint() {
                     v-model="measureSearchQuery"
                     type="search"
                     class="bases-map-page__measure-search-input"
-                    placeholder="Адрес или координаты"
+                    placeholder="Поиск по городу/адресу"
                     aria-label="Поиск точки для измерения расстояния"
                     :disabled="measureSearchPending"
                   >
@@ -850,7 +850,8 @@ async function searchMeasurePoint() {
 }
 
 .bases-map-page__measure-search-input::placeholder {
-  color: var(--wh-gray-500, #888);
+  color: var(--wh-gray-400);
+  opacity: 1;
 }
 
 .bases-map-page__measure-search-input::-webkit-search-cancel-button {
