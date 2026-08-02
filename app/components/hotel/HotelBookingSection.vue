@@ -47,6 +47,7 @@ const availableRooms = ref<HotelRoomOption[]>([])
 const isCheckingAvailability = ref(false)
 const isNoHuntConfirmOpen = ref(false)
 const isAnimalWarningOpen = ref(false)
+const isHuntDateWarningOpen = ref(false)
 const hasSelectedRooms = ref(false)
 const didAutoCheckFromSearch = ref(false)
 const datesGuestsRef = ref<{
@@ -54,7 +55,9 @@ const datesGuestsRef = ref<{
 } | null>(null)
 const animalsSearchRef = ref<{ getSelectedAnimalId: () => string } | null>(null)
 const isAnyModalOpen = computed(() =>
-  isNoHuntConfirmOpen.value || isAnimalWarningOpen.value,
+  isNoHuntConfirmOpen.value
+  || isAnimalWarningOpen.value
+  || isHuntDateWarningOpen.value,
 )
 
 function tryAutoCheckFromSearch() {
@@ -150,6 +153,11 @@ function handleAnimalsCheck(payload: {
     return
   }
 
+  if (!payload.checkIn || !payload.checkOut) {
+    isHuntDateWarningOpen.value = true
+    return
+  }
+
   void handleCheck(payload)
 }
 
@@ -178,10 +186,15 @@ function closeAnimalWarning() {
   isAnimalWarningOpen.value = false
 }
 
+function closeHuntDateWarning() {
+  isHuntDateWarningOpen.value = false
+}
+
 function handleConfirmKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     closeNoHuntConfirm()
     closeAnimalWarning()
+    closeHuntDateWarning()
   }
 }
 
@@ -313,6 +326,35 @@ watch(
           </div>
         </div>
       </Transition>
+
+      <Transition name="hotel-booking-confirm">
+        <div
+          v-if="isHuntDateWarningOpen"
+          class="hotel-booking-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hotel-hunt-date-warning-title"
+          @click.self="closeHuntDateWarning"
+        >
+          <div class="hotel-booking-confirm__card">
+            <CommonModalCloseButton @click="closeHuntDateWarning" />
+
+            <h2 id="hotel-hunt-date-warning-title" class="hotel-booking-confirm__title">
+              Пожалуйста, выберите дату охоты
+            </h2>
+
+            <div class="hotel-booking-confirm__actions">
+              <button
+                type="button"
+                class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
+                @click="closeHuntDateWarning"
+              >
+                Хорошо
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </Teleport>
   </section>
 </template>
@@ -383,8 +425,20 @@ watch(
   align-items: center;
   justify-content: center;
   padding: 24px;
+  /* Blur stays on a non-fading layer; animating opacity + backdrop-filter
+     briefly inflates box-shadows on the search blocks behind. */
+  isolation: isolate;
+}
+
+.hotel-booking-confirm::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: rgba(17, 24, 39, 0.45);
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
 }
 
 .hotel-booking-confirm__card {
@@ -395,6 +449,7 @@ watch(
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
   text-align: center;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .hotel-booking-confirm__title {
@@ -449,12 +504,19 @@ watch(
 
 .hotel-booking-confirm-enter-active,
 .hotel-booking-confirm-leave-active {
-  transition: opacity 0.2s ease;
+  /* Duration only — root opacity stays 1 so backdrop-filter does not bloom. */
+  transition: visibility 0.2s linear;
 }
 
 .hotel-booking-confirm-enter-from,
 .hotel-booking-confirm-leave-to {
+  visibility: visible;
+}
+
+.hotel-booking-confirm-enter-from .hotel-booking-confirm__card,
+.hotel-booking-confirm-leave-to .hotel-booking-confirm__card {
   opacity: 0;
+  transform: translateY(8px);
 }
 
 @media (--wh-tablet) {
