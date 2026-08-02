@@ -1086,20 +1086,35 @@ onBeforeUnmount(() => {
   padding-top: 4px;
 }
 
-/* Keep «Открыть в Яндекс Картах» bottom-right; hide constructor/logo promo. */
+/* Keep «Открыть в Яндекс Картах» / taxi bottom-right; hide constructor/logo promo. */
 .bases-map :deep([class*="copyrights-pane"]),
 .bases-map :deep([class*="copyright-pane"]) {
   left: auto !important;
   right: 0 !important;
 }
 
-.bases-map :deep([class*="map-copyrights-promo"]) {
+.bases-map :deep([class*="map-copyrights-promo"]),
+.bases-map :deep([class*="map-copyrights-promo"] > ymaps) {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: max-content !important;
+  max-width: none !important;
   left: auto !important;
   right: 8px !important;
   bottom: 8px !important;
 }
 
-/* Hide logo, constructor promo and «Условия использования»; keep open-in-maps link. */
+/* «Как добраться» + «Доехать на такси» in one row (taxi stays hidden until Yandex shows it). */
+.bases-map :deep([class*="gotoymaps"]),
+.bases-map :deep([class*="gototaxi"]) {
+  flex: 0 0 auto !important;
+  vertical-align: middle;
+}
+
+/* Hide logo, constructor promo and «Условия использования»; keep open-in-maps / taxi. */
 .bases-map :deep([class*="gototech"]),
 .bases-map :deep([class*="copyright__logo"]),
 .bases-map :deep([class*="copyright-logo"]),
