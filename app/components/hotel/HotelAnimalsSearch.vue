@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import type { SearchAnimal } from '~/types/api'
-import { formatDisplayDate, parseDisplayDate, startOfDay } from '~/utils/date'
+import { formatDisplayDate, startOfDay } from '~/utils/date'
 
 const emit = defineEmits<{
   check: [payload: { checkIn: string, checkOut: string, adults: number, animalId: string }]
 }>()
 
-const DEFAULT_HUNT_DATE = '04.02.26'
 const maxAdults = 100
+const emptyHuntDateLabel = 'Пожалуйста выберите дату'
 
 const { animals: animalsApi } = useApi()
 
-const huntDate = ref<Date | null>(parseDisplayDate(DEFAULT_HUNT_DATE))
+const huntDate = ref<Date | null>(null)
 const adultsCount = ref(1)
 const animal = ref('')
 
@@ -60,22 +60,10 @@ const animalLabel = computed(() => {
 })
 
 const huntDateLabel = computed(() =>
-  huntDate.value ? formatDisplayDate(huntDate.value) : 'Дата охоты',
+  huntDate.value ? formatDisplayDate(huntDate.value) : emptyHuntDateLabel,
 )
 
-const hasCustomDates = computed(() => {
-  if (!huntDate.value) {
-    return false
-  }
-
-  const defaultDate = parseDisplayDate(DEFAULT_HUNT_DATE)
-
-  if (!defaultDate) {
-    return true
-  }
-
-  return startOfDay(huntDate.value).getTime() !== startOfDay(defaultDate).getTime()
-})
+const hasCustomDates = computed(() => Boolean(huntDate.value))
 
 function nextDay(date: Date) {
   const next = startOfDay(date)
@@ -167,7 +155,7 @@ function selectAnimal(item: SearchAnimal) {
 
 function clearDates(event: MouseEvent) {
   event.stopPropagation()
-  huntDate.value = parseDisplayDate(DEFAULT_HUNT_DATE)
+  huntDate.value = null
   closeDatesDropdown()
 }
 
@@ -220,16 +208,12 @@ onBeforeUnmount(() => {
 })
 
 function handleSubmit() {
-  if (!huntDate.value) {
-    return
-  }
-
-  const checkIn = startOfDay(huntDate.value)
-  const checkOut = nextDay(checkIn)
+  const checkIn = huntDate.value ? startOfDay(huntDate.value) : null
+  const checkOut = checkIn ? nextDay(checkIn) : null
 
   emit('check', {
-    checkIn: formatDisplayDate(checkIn),
-    checkOut: formatDisplayDate(checkOut),
+    checkIn: checkIn ? formatDisplayDate(checkIn) : '',
+    checkOut: checkOut ? formatDisplayDate(checkOut) : '',
     adults: adultsCount.value,
     animalId: animal.value,
   })
