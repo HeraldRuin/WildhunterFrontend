@@ -54,6 +54,7 @@ const mapError = ref('')
 
 let ymapsApi: YmapsApi | null = null
 let map: (YmapsMap & { getCenter: () => YmapsCoords }) | null = null
+let mapResizeObserver: ResizeObserver | null = null
 const clusterObjects: unknown[] = []
 let measureOrigin: LatLngPoint | null = null
 let measureTarget: LatLngPoint | null = null
@@ -66,6 +67,10 @@ let ignoreBoundsChange = false
 let pinLayout: unknown = null
 let measureOriginLayout: unknown = null
 let measureLabelLayout: unknown = null
+
+function fitMapToContainer() {
+  map?.container.fitToViewport()
+}
 
 function withQuietMove(run: () => void) {
   ignoreBoundsChange = true
@@ -579,6 +584,8 @@ onMounted(async () => {
       zoom: DEFAULT_MAP_CENTER.zoom,
       controls: ['zoomControl'],
     }, {
+      // Follow container width when the hotel list collapses/expands.
+      autoFitToViewport: 'always',
       // Fewer interactive POIs — less UI chrome, snappier map.
       yandexMapDisablePoiInteractivity: true,
     }) as YmapsMap & { getCenter: () => YmapsCoords }
@@ -586,11 +593,17 @@ onMounted(async () => {
     map.events.add('click', onMapClick)
     map.events.add('boundschange', onBoundsChange)
 
+    mapResizeObserver = new ResizeObserver(() => {
+      fitMapToContainer()
+    })
+    mapResizeObserver.observe(mapEl.value)
+
     ensureLayouts()
     syncMarkers()
     syncMeasureModeCursor()
 
     requestAnimationFrame(() => {
+      fitMapToContainer()
       if (props.activeId == null) {
         fitAllMarkers()
       }
@@ -702,6 +715,9 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  mapResizeObserver?.disconnect()
+  mapResizeObserver = null
+
   if (map) {
     map.events.remove('click', onMapClick)
     map.events.remove('boundschange', onBoundsChange)

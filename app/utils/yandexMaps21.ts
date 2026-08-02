@@ -10,7 +10,11 @@ export interface YmapsMap {
     add: (object: unknown) => void
     remove: (object: unknown) => void
   }
-  container: HTMLElement
+  container: {
+    fitToViewport: (preserve?: boolean) => void
+    getSize: () => number[]
+    getElement: () => HTMLElement
+  }
   getZoom: () => number
   getCenter: () => YmapsCoords
   getBounds: () => [YmapsCoords, YmapsCoords] | null
