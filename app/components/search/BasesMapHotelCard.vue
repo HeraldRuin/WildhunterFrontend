@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
+import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import type { MapHotelItem } from '~/utils/map'
 
 const props = defineProps<{
@@ -12,8 +14,22 @@ const emit = defineEmits<{
   select: [id: number]
 }>()
 
+const { services } = useApi()
+const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
+const { isFavorite: isHotelFavorite, setFavorite, loadFavorites, isLoaded } = useFavoriteHotels()
+const notifications = useNotifications()
+
+const isFavoriteLoading = ref(false)
+const isFavorite = computed(() => isHotelFavorite(props.item.id))
+
 const tipVisible = ref(false)
 const tipStyle = ref<Record<string, string>>({})
+
+onMounted(() => {
+  if (!isLoaded.value) {
+    loadFavorites()
+  }
+})
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value)
@@ -58,11 +74,107 @@ function showTip(event: Event) {
 function hideTip() {
   tipVisible.value = false
 }
+
+function selectCard() {
+  emit('select', props.item.id)
+}
+
+function onCardKeydown(event: KeyboardEvent) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    selectCard()
+  }
+}
+
+function getErrorMessage(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return ''
+  }
+
+  const fetchError = error as {
+    data?: { message?: string }
+    message?: string
+  }
+
+  return fetchError.data?.message || fetchError.message || ''
+}
+
+function shouldOpenRegistrationModal(error: unknown, message: string) {
+  const statusCode = (error as { statusCode?: number })?.statusCode
+
+  return statusCode === 401
+    || statusCode === 403
+    || message.includes('регистрацию')
+    || message === FAVORITE_REGISTRATION_MESSAGE
+}
+
+function notifyFavoriteSuccess(message: string) {
+  if (featureFlags.favoriteNotifications && message) {
+    notifications.success(message, 'Успех', { group: FAVORITE_NOTIFICATION_GROUP })
+  }
+}
+
+function notifyFavoriteError(message: string) {
+  if (featureFlags.favoriteNotifications && message) {
+    notifications.error(message, 'Ошибка', { group: FAVORITE_NOTIFICATION_GROUP })
+  }
+}
+
+async function handleFavoriteClick(event: MouseEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+  hideTip()
+
+  if (isFavoriteLoading.value) {
+    return
+  }
+
+  isFavoriteLoading.value = true
+
+  const wasFavorite = isFavorite.value
+
+  try {
+    const response = wasFavorite
+      ? await services.removeFavorite(props.item.id)
+      : await services.addFavorite(props.item.id)
+
+    if (response.success === false) {
+      const message = response.message || FAVORITE_REGISTRATION_MESSAGE
+
+      if (shouldOpenRegistrationModal(null, message)) {
+        openFavoriteAuthModal(message)
+      }
+      else {
+        notifyFavoriteError(message)
+      }
+
+      return
+    }
+
+    setFavorite(props.item.id, !wasFavorite)
+
+    if (response.message) {
+      notifyFavoriteSuccess(response.message)
+    }
+  }
+  catch (error) {
+    const message = getErrorMessage(error)
+
+    if (shouldOpenRegistrationModal(error, message)) {
+      openFavoriteAuthModal(message || FAVORITE_REGISTRATION_MESSAGE)
+    }
+    else {
+      notifyFavoriteError(message)
+    }
+  }
+  finally {
+    isFavoriteLoading.value = false
+  }
+}
 </script>
 
 <template>
-  <button
-    type="button"
+  <div
     class="map-hotel-card"
     :class="{
       'map-hotel-card--active': active,
@@ -70,8 +182,11 @@ function hideTip() {
       'map-hotel-card--image-only': imageOnly,
       'map-hotel-card--image-only-compact': imageOnly && compact,
     }"
+    role="button"
+    tabindex="0"
     :aria-label="imageOnly ? imageOnlyLabel : undefined"
-    @click="emit('select', props.item.id)"
+    @click="selectCard"
+    @keydown="onCardKeydown"
     @mouseenter="showTip"
     @mouseleave="hideTip"
     @focus="showTip"
@@ -84,6 +199,32 @@ function hideTip() {
         loading="lazy"
         decoding="async"
       >
+      <button
+        type="button"
+        class="map-hotel-card__favorite"
+        :class="{ 'map-hotel-card__favorite--active': isFavorite }"
+        :aria-label="isFavorite ? 'Убрать из избранного' : 'В избранное'"
+        :aria-pressed="isFavorite"
+        :disabled="isFavoriteLoading"
+        @click="handleFavoriteClick"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            fill="currentColor"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
     </div>
 
     <div
@@ -109,7 +250,7 @@ function hideTip() {
         {{ formatRating(item.rating) }}
       </p>
     </div>
-  </button>
+  </div>
 
   <Teleport to="body">
     <div
@@ -157,8 +298,6 @@ function hideTip() {
   background: var(--wh-white);
   text-align: left;
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
   transition:
     border-color 0.15s ease,
     grid-template-columns 0.45s cubic-bezier(0.22, 1, 0.36, 1),
@@ -205,6 +344,7 @@ function hideTip() {
 }
 
 .map-hotel-card__media {
+  position: relative;
   overflow: hidden;
   width: 96px;
   height: 96px;
@@ -259,6 +399,60 @@ function hideTip() {
   height: 100%;
   object-fit: cover;
   border-radius: inherit;
+}
+
+.map-hotel-card__favorite {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease, color 0.15s ease;
+}
+
+.map-hotel-card__favorite:hover:not(:disabled) {
+  transform: scale(1.08);
+}
+
+.map-hotel-card__favorite:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.map-hotel-card__favorite--active {
+  transform: scale(1.05);
+  color: #e53935;
+}
+
+.map-hotel-card__favorite--active:hover:not(:disabled) {
+  transform: scale(1.13);
+}
+
+.map-hotel-card__favorite svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 35%));
+}
+
+.map-hotel-card--image-only-compact .map-hotel-card__favorite {
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+}
+
+.map-hotel-card--image-only-compact .map-hotel-card__favorite svg {
+  width: 18px;
+  height: 18px;
 }
 
 .map-hotel-card__body {
