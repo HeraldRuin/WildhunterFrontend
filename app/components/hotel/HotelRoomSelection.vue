@@ -2,6 +2,7 @@
 import type { HotelGalleryImage } from '~/types/api'
 import type { HotelRoomOption } from '~/types/hotelBooking'
 import { formatHotelPrice } from '~/utils/hotel'
+import { pluralizeRu } from '~/utils/pluralize'
 
 const props = withDefaults(defineProps<{
   rooms?: HotelRoomOption[]
@@ -63,10 +64,16 @@ function nightsLabel(count: number) {
   return `${count} ночей`
 }
 
-function quantityOptions(max: number) {
+function quantityOptions(max: number, price: number) {
   return Array.from({ length: max + 1 }, (_, index) => ({
     value: String(index),
     label: String(index),
+    ...(index > 0
+      ? {
+          triggerLabel: pluralizeRu(index, ['номер', 'номера', 'номеров']),
+          suffix: `${formatHotelPrice(price * index)} ₽`,
+        }
+      : {}),
   }))
 }
 
@@ -76,6 +83,11 @@ function quantityValue(roomId: string) {
 
 function setQuantity(roomId: string, value: string) {
   quantities.value[roomId] = Number(value) || 0
+}
+
+function roomTotalPrice(room: HotelRoomOption) {
+  const quantity = quantities.value[room.id] ?? 0
+  return quantity > 0 ? room.price * quantity : room.price
 }
 </script>
 
@@ -165,15 +177,15 @@ function setQuantity(roomId: string, value: string) {
 
         <div class="hotel-room-selection__booking">
           <p class="hotel-room-selection__price">
-            {{ formatHotelPrice(room.price) }} ₽ / {{ nightsLabel(room.nights) }}
+            {{ formatHotelPrice(roomTotalPrice(room)) }} ₽ / {{ nightsLabel(room.nights) }}
           </p>
 
           <div class="hotel-room-selection__quantity">
             <span class="visually-hidden">Количество: {{ room.title }}</span>
             <CommonSelectField
               :model-value="quantityValue(room.id)"
-              :options="quantityOptions(room.maxQuantity)"
-              :placeholder="'0'"
+              :options="quantityOptions(room.maxQuantity, room.price)"
+              placeholder="0"
               no-margin
               @update:model-value="setQuantity(room.id, $event)"
             />
@@ -361,7 +373,7 @@ function setQuantity(roomId: string, value: string) {
 .hotel-room-selection__quantity :deep(.select-field__trigger) {
   min-height: 46px;
   height: 46px;
-  padding: 8px 14px 8px 16px;
+  padding: 8px 14px 8px 20px;
   border-radius: var(--wh-radius-lg);
   font-size: 16px;
   font-weight: 500;
@@ -417,6 +429,11 @@ function setQuantity(roomId: string, value: string) {
     width: 172px;
     max-width: none;
     margin-inline: 0;
+  }
+
+  .hotel-room-selection__quantity :deep(.select-field__list) {
+    top: auto;
+    bottom: calc(100% + 4px);
   }
 }
 

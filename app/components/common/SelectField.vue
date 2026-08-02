@@ -2,6 +2,10 @@
 export interface SelectFieldOption {
   value: string
   label: string
+  /** Closed trigger text; falls back to `label` when omitted. */
+  triggerLabel?: string
+  /** Shown only in the open list (e.g. price sum), not in the closed trigger. */
+  suffix?: string
 }
 
 const props = withDefaults(defineProps<{
@@ -26,9 +30,14 @@ const isOpen = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
 const hoveredValue = ref<string | null>(null)
 
-const selectedLabel = computed(() =>
-  props.options.find(option => option.value === model.value)?.label ?? '',
-)
+const selectedLabel = computed(() => {
+  const option = props.options.find(item => item.value === model.value)
+  if (!option) {
+    return ''
+  }
+
+  return option.triggerLabel ?? option.label
+})
 
 const triggerLabel = computed(() => selectedLabel.value || props.placeholder)
 
@@ -122,6 +131,10 @@ onUnmounted(() => {
         >
           <span class="select-field__option-dot" aria-hidden="true" />
           <span class="select-field__option-label">{{ option.label }}</span>
+          <span
+            v-if="option.suffix"
+            class="select-field__option-suffix"
+          >{{ option.suffix }}</span>
         </button>
       </li>
     </ul>
@@ -275,6 +288,13 @@ onUnmounted(() => {
 
 .select-field__option-label {
   min-width: 0;
+}
+
+.select-field__option-suffix {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .select-field__option:hover,
