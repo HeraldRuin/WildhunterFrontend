@@ -48,10 +48,29 @@ const isCheckingAvailability = ref(false)
 const isNoHuntConfirmOpen = ref(false)
 const isAnimalWarningOpen = ref(false)
 const hasSelectedRooms = ref(false)
+const didAutoCheckFromSearch = ref(false)
+const datesGuestsRef = ref<{
+  getCheckPayload: () => { checkIn: string, checkOut: string, adults: number } | null
+} | null>(null)
 const animalsSearchRef = ref<{ getSelectedAnimalId: () => string } | null>(null)
 const isAnyModalOpen = computed(() =>
   isNoHuntConfirmOpen.value || isAnimalWarningOpen.value,
 )
+
+function tryAutoCheckFromSearch() {
+  if (didAutoCheckFromSearch.value || !hotel.value?.id) {
+    return
+  }
+
+  const payload = datesGuestsRef.value?.getCheckPayload()
+
+  if (!payload) {
+    return
+  }
+
+  didAutoCheckFromSearch.value = true
+  void handleCheck(payload)
+}
 
 function mapAvailabilityRoom(room: HotelRoomAvailability): HotelRoomOption {
   const gallery = Array.isArray(room.gallery)
@@ -188,6 +207,13 @@ onBeforeUnmount(() => {
 })
 
 useBodyScrollLock(isAnyModalOpen)
+
+watch(
+  [() => hotel.value?.id, datesGuestsRef],
+  () => {
+    tryAutoCheckFromSearch()
+  },
+)
 </script>
 
 <template>
@@ -195,6 +221,7 @@ useBodyScrollLock(isAnyModalOpen)
     <div class="hotel-booking-section__card">
       <div class="hotel-booking-section__blocks">
         <HotelDatesGuests
+          ref="datesGuestsRef"
           :loading="isCheckingAvailability"
           @check="handleCheck"
         />
