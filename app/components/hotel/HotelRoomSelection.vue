@@ -1,33 +1,21 @@
 <script setup lang="ts">
+import type { HotelRoomOption } from '~/types/hotelBooking'
 import { formatHotelPrice } from '~/utils/hotel'
 
-interface HotelRoomOption {
-  id: string
-  title: string
-  area: string
-  capacity: number
-  price: number
-  nights: number
-  image?: string
-  maxQuantity: number
-}
+const props = withDefaults(defineProps<{
+  rooms?: HotelRoomOption[]
+}>(), {
+  rooms: () => [],
+})
 
-const MOCK_ROOMS: HotelRoomOption[] = [
-  {
-    id: 'quad',
-    title: '4-х местный',
-    area: '70 кв. футов',
-    capacity: 4,
-    price: 4000,
-    nights: 1,
-    maxQuantity: 5,
+const quantities = ref<Record<string, number>>({})
+
+watch(
+  () => props.rooms,
+  (rooms) => {
+    quantities.value = Object.fromEntries(rooms.map(room => [room.id, 0]))
   },
-]
-
-const rooms = MOCK_ROOMS
-
-const quantities = ref<Record<string, number>>(
-  Object.fromEntries(rooms.map(room => [room.id, 0])),
+  { immediate: true },
 )
 
 function nightsLabel(count: number) {
@@ -72,7 +60,7 @@ function quantityOptions(max: number) {
           <h3 class="hotel-room-selection__title">{{ room.title }}</h3>
 
           <div class="hotel-room-selection__meta">
-            <span class="hotel-room-selection__badge">
+            <span v-if="room.area" class="hotel-room-selection__badge">
               <img
                 class="hotel-room-selection__badge-icon"
                 src="/icons/wordpress_square.png"
@@ -242,6 +230,7 @@ function quantityOptions(max: number) {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
+  color: var(--wh-black-text);
   object-fit: contain;
 }
 

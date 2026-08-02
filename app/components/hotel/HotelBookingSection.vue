@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import type { HotelRoomAvailability } from '~/types/api'
+import type { HotelRoomOption } from '~/types/hotelBooking'
+import { parseDisplayDateToApiDate } from '~/utils/date'
+
 const props = withDefaults(defineProps<{
   /** Ширина всего блока, например `100%`, `90%`, `720px` */
   width?: string
@@ -14,6 +18,14 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const { hotels } = useApi()
+
+const hotelParams = computed(() => ({
+  locationSlug: String(route.params.location || ''),
+  hotelSlug: String(route.params.slug || ''),
+}))
+
+const { data: hotel } = useHotelDetail(hotelParams)
 
 const sectionStyle = computed(() => ({
   width: props.width,
@@ -31,6 +43,58 @@ const confirmationPath = computed(() => {
   return `/hotel/${location}/${slug}/confirmation`
 })
 
+const availableRooms = ref<HotelRoomOption[]>([])
+const isCheckingAvailability = ref(false)
+
+function mapAvailabilityRoom(room: HotelRoomAvailability): HotelRoomOption {
+  return {
+    id: String(room.id),
+    title: room.title,
+    area: room.size > 0 ? `${room.size} м²` : '',
+    capacity: room.adults,
+    price: room.price,
+    nights: room.nights,
+    image: room.image_url || undefined,
+    maxQuantity: Math.max(1, Number(room.number) || 1),
+  }
+}
+
+async function handleCheck(payload: { checkIn: string, checkOut: string, adults: number }) {
+  const hotelId = hotel.value?.id
+
+  if (!hotelId || isCheckingAvailability.value) {
+    return
+  }
+
+  const checkIn = parseDisplayDateToApiDate(payload.checkIn)
+  const checkOut = parseDisplayDateToApiDate(payload.checkOut)
+
+  if (!checkIn || !checkOut) {
+    return
+  }
+
+  isCheckingAvailability.value = true
+
+  try {
+    const response = await hotels.checkAvailability({
+      hotel_id: hotelId,
+      check_in: checkIn,
+      check_out: checkOut,
+      adults: payload.adults,
+    })
+
+    availableRooms.value = response.success
+      ? response.data.rooms.map(mapAvailabilityRoom)
+      : []
+  }
+  catch {
+    availableRooms.value = []
+  }
+  finally {
+    isCheckingAvailability.value = false
+  }
+}
+
 function handleBook() {
   emit('book')
   void navigateTo(confirmationPath.value)
@@ -41,11 +105,14 @@ function handleBook() {
   <section class="hotel-booking-section" :style="sectionStyle">
     <div class="hotel-booking-section__card">
       <div class="hotel-booking-section__blocks">
-        <HotelDatesGuests />
+        <HotelDatesGuests
+          :loading="isCheckingAvailability"
+          @check="handleCheck"
+        />
         <HotelAnimalsSearch />
       </div>
 
-      <HotelRoomSelection />
+      <HotelRoomSelection :rooms="availableRooms" />
 
       <button
         type="button"

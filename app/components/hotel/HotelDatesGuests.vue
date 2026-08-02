@@ -4,8 +4,10 @@ import { formatDisplayDate, parseDisplayDate, startOfDay } from '~/utils/date'
 const props = withDefaults(defineProps<{
   /** Ширина внутренних блоков (поля и кнопка), например `100%`, `720px`, `75%` */
   blocksWidth?: string
+  loading?: boolean
 }>(), {
   blocksWidth: '100%',
+  loading: false,
 })
 
 const emit = defineEmits<{
@@ -167,7 +169,7 @@ onBeforeUnmount(() => {
 })
 
 function handleSubmit() {
-  if (!checkIn.value || !checkOut.value) {
+  if (!checkIn.value || !checkOut.value || props.loading) {
     return
   }
 
@@ -323,9 +325,17 @@ function handleSubmit() {
         </div>
       </div>
 
-      <button type="submit" class="hotel-dates-guests__submit">
-        <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--desktop">Проверить наличие</span>
-        <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--mobile">Искать</span>
+      <button
+        type="submit"
+        class="hotel-dates-guests__submit"
+        :disabled="loading"
+      >
+        <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--desktop">
+          {{ loading ? 'Проверяем…' : 'Проверить наличие' }}
+        </span>
+        <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--mobile">
+          {{ loading ? '…' : 'Искать' }}
+        </span>
       </button>
     </form>
   </div>
@@ -658,8 +668,13 @@ function handleSubmit() {
   transition: background 0.15s ease;
 }
 
-.hotel-dates-guests__submit:hover {
+.hotel-dates-guests__submit:hover:not(:disabled) {
   background: var(--wh-orange-600);
+}
+
+.hotel-dates-guests__submit:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .hotel-dates-guests__submit-label--mobile {

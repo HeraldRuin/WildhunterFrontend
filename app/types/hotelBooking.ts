@@ -1,3 +1,14 @@
+export interface HotelRoomOption {
+  id: string
+  title: string
+  area: string
+  capacity: number
+  price: number
+  nights: number
+  image?: string
+  maxQuantity: number
+}
+
 export interface HotelBookingRoomSelection {
   id: string
   title: string
