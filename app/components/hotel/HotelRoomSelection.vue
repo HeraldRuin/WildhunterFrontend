@@ -48,7 +48,18 @@ function nightsLabel(count: number) {
 }
 
 function quantityOptions(max: number) {
-  return Array.from({ length: max + 1 }, (_, index) => index)
+  return Array.from({ length: max + 1 }, (_, index) => ({
+    value: String(index),
+    label: String(index),
+  }))
+}
+
+function quantityValue(roomId: string) {
+  return String(quantities.value[roomId] ?? 0)
+}
+
+function setQuantity(roomId: string, value: string) {
+  quantities.value[roomId] = Number(value) || 0
 }
 </script>
 
@@ -141,28 +152,16 @@ function quantityOptions(max: number) {
             {{ formatHotelPrice(room.price) }} ₽ / {{ nightsLabel(room.nights) }}
           </p>
 
-          <label class="hotel-room-selection__quantity">
+          <div class="hotel-room-selection__quantity">
             <span class="visually-hidden">Количество: {{ room.title }}</span>
-            <select v-model.number="quantities[room.id]">
-              <option
-                v-for="value in quantityOptions(room.maxQuantity)"
-                :key="value"
-                :value="value"
-              >
-                {{ value }}
-              </option>
-            </select>
-            <svg class="hotel-room-selection__chevron" viewBox="0 0 12 8" aria-hidden="true">
-              <path
-                d="M1 2 6 6.5 11 2"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </label>
+            <CommonSelectField
+              :model-value="quantityValue(room.id)"
+              :options="quantityOptions(room.maxQuantity)"
+              :placeholder="'0'"
+              no-margin
+              @update:model-value="setQuantity(room.id, $event)"
+            />
+          </div>
         </div>
       </div>
     </article>
@@ -185,6 +184,7 @@ function quantityOptions(max: number) {
 }
 
 .hotel-room-selection__card {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 20px;
@@ -194,6 +194,11 @@ function quantityOptions(max: number) {
   border-radius: var(--wh-radius-lg);
   background: var(--wh-white);
   box-sizing: border-box;
+  overflow: visible;
+}
+
+.hotel-room-selection__card:has(.select-field--open) {
+  z-index: 4;
 }
 
 .hotel-room-selection__media {
@@ -327,45 +332,28 @@ function quantityOptions(max: number) {
 
 .hotel-room-selection__quantity {
   position: relative;
-  display: block;
+  z-index: 1;
   width: 172px;
-  height: 46px;
   flex-shrink: 0;
 }
 
-.hotel-room-selection__quantity select {
-  width: 100%;
-  height: 100%;
-  padding: 8px 34px 8px 16px;
-  border: 1px solid var(--wh-field-border);
+.hotel-room-selection__quantity:focus-within,
+.hotel-room-selection__card:has(.select-field--open) .hotel-room-selection__quantity {
+  z-index: 5;
+}
+
+.hotel-room-selection__quantity :deep(.select-field__trigger) {
+  min-height: 46px;
+  height: 46px;
+  padding: 8px 14px 8px 16px;
   border-radius: var(--wh-radius-lg);
-  background: var(--wh-white);
-  font-family: 'Inter', system-ui, sans-serif;
   font-size: 16px;
   font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.05em;
-  color: var(--wh-black-text);
-  text-align: left;
-  text-align-last: left;
-  appearance: none;
-  cursor: pointer;
 }
 
-.hotel-room-selection__quantity select:focus-visible {
-  outline: 2px solid var(--wh-green);
-  outline-offset: 2px;
-}
-
-.hotel-room-selection__chevron {
-  position: absolute;
-  top: 50%;
-  right: 14px;
-  width: 12px;
-  height: 8px;
-  color: var(--wh-black-text);
-  pointer-events: none;
-  transform: translateY(-50%);
+.hotel-room-selection__quantity :deep(.select-field__list) {
+  border-radius: var(--wh-radius-lg);
 }
 
 .visually-hidden {
