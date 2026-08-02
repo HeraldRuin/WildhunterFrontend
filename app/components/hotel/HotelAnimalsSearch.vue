@@ -6,21 +6,19 @@ const emit = defineEmits<{
   check: [payload: { checkIn: string, checkOut: string, adults: number, animalId: string }]
 }>()
 
-const DEFAULT_CHECK_IN = '04.02.26'
-const DEFAULT_CHECK_OUT = '05.02.26'
+const DEFAULT_HUNT_DATE = '04.02.26'
 const maxAdults = 100
 
 const { animals: animalsApi } = useApi()
 
-const checkIn = ref<Date | null>(parseDisplayDate(DEFAULT_CHECK_IN))
-const checkOut = ref<Date | null>(parseDisplayDate(DEFAULT_CHECK_OUT))
+const huntDate = ref<Date | null>(parseDisplayDate(DEFAULT_HUNT_DATE))
 const adultsCount = ref(1)
 const animal = ref('')
 
 const isDatesOpen = ref(false)
 const isHuntersOpen = ref(false)
 const isAnimalOpen = ref(false)
-const activeDatePart = ref<'start' | 'end' | null>(null)
+const activeDatePart = ref<'start' | 'end' | null>('start')
 const hoveredAnimalId = ref<string | null>(null)
 
 const datesFieldRef = ref<HTMLElement | null>(null)
@@ -61,31 +59,29 @@ const animalLabel = computed(() => {
   return 'На кого будет охота?'
 })
 
-const checkInLabel = computed(() =>
-  checkIn.value ? formatDisplayDate(checkIn.value) : 'Заезд',
-)
-
-const checkOutLabel = computed(() =>
-  checkOut.value ? formatDisplayDate(checkOut.value) : 'Выезд',
+const huntDateLabel = computed(() =>
+  huntDate.value ? formatDisplayDate(huntDate.value) : 'Дата охоты',
 )
 
 const hasCustomDates = computed(() => {
-  if (!checkIn.value || !checkOut.value) {
+  if (!huntDate.value) {
     return false
   }
 
-  const defaultStart = parseDisplayDate(DEFAULT_CHECK_IN)
-  const defaultEnd = parseDisplayDate(DEFAULT_CHECK_OUT)
+  const defaultDate = parseDisplayDate(DEFAULT_HUNT_DATE)
 
-  if (!defaultStart || !defaultEnd) {
+  if (!defaultDate) {
     return true
   }
 
-  return !(
-    startOfDay(checkIn.value).getTime() === startOfDay(defaultStart).getTime()
-    && startOfDay(checkOut.value).getTime() === startOfDay(defaultEnd).getTime()
-  )
+  return startOfDay(huntDate.value).getTime() !== startOfDay(defaultDate).getTime()
 })
+
+function nextDay(date: Date) {
+  const next = startOfDay(date)
+  next.setDate(next.getDate() + 1)
+  return next
+}
 
 const isAnyDropdownOpen = computed(() =>
   isDatesOpen.value || isHuntersOpen.value || isAnimalOpen.value,
@@ -126,34 +122,29 @@ function toggleAnimalDropdown() {
   closeOtherDropdowns(isAnimalOpen.value ? 'animal' : undefined)
 }
 
-function openDatesFor(part: 'start' | 'end') {
-  if (isDatesOpen.value && activeDatePart.value === part) {
-    closeDatesDropdown()
-    return
-  }
-
-  isDatesOpen.value = true
-  activeDatePart.value = part
-  closeOtherDropdowns('dates')
-}
-
 function toggleDatesDropdown() {
   if (isDatesOpen.value) {
     closeDatesDropdown()
     return
   }
 
-  openDatesFor('start')
+  isDatesOpen.value = true
+  activeDatePart.value = 'start'
+  closeOtherDropdowns('dates')
 }
 
 function onDatesFieldClick(event: MouseEvent) {
   const target = event.target as HTMLElement
 
-  if (target.closest('.hotel-animals-search__date-part, .hotel-animals-search__clear, .hotel-animals-search__dates-chevron, .hotel-animals-search__dropdown')) {
+  if (target.closest('.hotel-animals-search__clear, .hotel-animals-search__dates-chevron, .hotel-animals-search__dropdown')) {
     return
   }
 
-  openDatesFor('start')
+  toggleDatesDropdown()
+}
+
+function onHuntDateSelect() {
+  closeDatesDropdown()
 }
 
 function incrementAdults() {
@@ -176,8 +167,7 @@ function selectAnimal(item: SearchAnimal) {
 
 function clearDates(event: MouseEvent) {
   event.stopPropagation()
-  checkIn.value = parseDisplayDate(DEFAULT_CHECK_IN)
-  checkOut.value = parseDisplayDate(DEFAULT_CHECK_OUT)
+  huntDate.value = parseDisplayDate(DEFAULT_HUNT_DATE)
   closeDatesDropdown()
 }
 
@@ -230,13 +220,16 @@ onBeforeUnmount(() => {
 })
 
 function handleSubmit() {
-  if (!checkIn.value || !checkOut.value) {
+  if (!huntDate.value) {
     return
   }
 
+  const checkIn = startOfDay(huntDate.value)
+  const checkOut = nextDay(checkIn)
+
   emit('check', {
-    checkIn: formatDisplayDate(checkIn.value),
-    checkOut: formatDisplayDate(checkOut.value),
+    checkIn: formatDisplayDate(checkIn),
+    checkOut: formatDisplayDate(checkOut),
     adults: adultsCount.value,
     animalId: animal.value,
   })
@@ -262,33 +255,20 @@ defineExpose({
           :class="{ 'hotel-animals-search__field--open': isDatesOpen }"
           @click="onDatesFieldClick"
         >
-          <span class="hotel-animals-search__label">Заезд – Выезд</span>
-          <div class="hotel-animals-search__dates-control">
-            <button
-              type="button"
-              class="hotel-animals-search__date-part"
-              :class="{ 'hotel-animals-search__date-part--active': isDatesOpen && activeDatePart === 'start' }"
-              aria-label="Выбрать дату заезда"
-              @click="openDatesFor('start')"
-            >
-              {{ checkInLabel }}
-            </button>
-            <span class="hotel-animals-search__dates-sep" aria-hidden="true">-</span>
-            <button
-              type="button"
-              class="hotel-animals-search__date-part"
-              :class="{ 'hotel-animals-search__date-part--active': isDatesOpen && activeDatePart === 'end' }"
-              aria-label="Выбрать дату выезда"
-              @click="openDatesFor('end')"
-            >
-              {{ checkOutLabel }}
-            </button>
-          </div>
+          <span class="hotel-animals-search__label">Дата охоты</span>
+          <button
+            type="button"
+            class="hotel-animals-search__value"
+            aria-label="Выбрать дату охоты"
+            @click.stop="toggleDatesDropdown"
+          >
+            {{ huntDateLabel }}
+          </button>
           <button
             v-if="hasCustomDates"
             type="button"
             class="hotel-animals-search__clear"
-            aria-label="Сбросить даты"
+            aria-label="Сбросить дату охоты"
             @click="clearDates"
           >
             <svg viewBox="0 0 12 12" aria-hidden="true">
@@ -300,7 +280,7 @@ defineExpose({
             type="button"
             class="hotel-animals-search__dates-chevron"
             aria-label="Открыть календарь"
-            @click="toggleDatesDropdown"
+            @click.stop="toggleDatesDropdown"
           >
             <svg class="hotel-animals-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
               <path
@@ -319,9 +299,10 @@ defineExpose({
             class="hotel-animals-search__dropdown hotel-animals-search__dropdown--calendar"
           >
             <HomeHeroSearchDatePicker
-              v-model:start="checkIn"
-              v-model:end="checkOut"
+              mode="single"
+              v-model:start="huntDate"
               v-model:active-part="activeDatePart"
+              @select="onHuntDateSelect"
             />
           </div>
         </div>
