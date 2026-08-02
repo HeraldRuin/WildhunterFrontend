@@ -64,6 +64,9 @@ export default defineNuxtConfig({
     public: {
       apiBase: 'http://localhost:8000/api',
       apiVersion: 'v1',
+      /** `leaflet` (OSM) or `yandex` — switch via NUXT_PUBLIC_MAP_PROVIDER */
+      mapProvider: process.env.NUXT_PUBLIC_MAP_PROVIDER || 'leaflet',
+      yandexMapsApiKey: process.env.NUXT_PUBLIC_YANDEX_MAPS_API_KEY || '',
     },
   },
   routeRules: {

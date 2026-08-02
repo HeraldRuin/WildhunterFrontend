@@ -30,10 +30,28 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   select: [id: number]
 }>()
+
+const config = useRuntimeConfig()
+const provider = computed(() => (
+  String(config.public.mapProvider || 'leaflet') === 'yandex' ? 'yandex' : 'leaflet'
+))
 </script>
 
 <template>
+  <SearchBasesMapYandex
+    v-if="provider === 'yandex'"
+    :lat="props.lat"
+    :lng="props.lng"
+    :zoom="props.zoom"
+    :markers="props.markers"
+    :active-id="props.activeId"
+    :fit-version="props.fitVersion"
+    :measure-mode="props.measureMode"
+    :measure-origin-point="props.measureOriginPoint"
+    @select="emit('select', $event)"
+  />
   <SearchBasesMapLeaflet
+    v-else
     :lat="props.lat"
     :lng="props.lng"
     :zoom="props.zoom"
