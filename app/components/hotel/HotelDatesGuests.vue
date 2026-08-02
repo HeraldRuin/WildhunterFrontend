@@ -20,9 +20,8 @@ const blocksStyle = computed(() => ({
   '--hotel-booking-blocks-width': props.blocksWidth,
 }))
 
-const DEFAULT_CHECK_IN = '04.02.26'
-const DEFAULT_CHECK_OUT = '05.02.26'
 const maxAdults = 100
+const emptyDatesLabel = 'Пожалуйста выберите дату'
 
 function queryString(key: string): string {
   const value = route.query[key]
@@ -39,13 +38,10 @@ function adultsFromQuery() {
   return Math.min(maxAdults, Math.floor(count))
 }
 
-const checkIn = ref<Date | null>(
-  parseDisplayDate(queryString('checkIn')) ?? parseDisplayDate(DEFAULT_CHECK_IN),
-)
-const checkOut = ref<Date | null>(
-  parseDisplayDate(queryString('checkOut')) ?? parseDisplayDate(DEFAULT_CHECK_OUT),
-)
+const checkIn = ref<Date | null>(parseDisplayDate(queryString('checkIn')))
+const checkOut = ref<Date | null>(parseDisplayDate(queryString('checkOut')))
 const adultsCount = ref(adultsFromQuery())
+const hasDatesFromSearch = Boolean(checkIn.value && checkOut.value)
 
 const isDatesOpen = ref(false)
 const isGuestsOpen = ref(false)
@@ -75,23 +71,9 @@ const checkOutLabel = computed(() =>
   checkOut.value ? formatDisplayDate(checkOut.value) : 'Выезд',
 )
 
-const hasCustomDates = computed(() => {
-  if (!checkIn.value || !checkOut.value) {
-    return false
-  }
+const hasSelectedDates = computed(() => Boolean(checkIn.value || checkOut.value))
 
-  const defaultStart = parseDisplayDate(DEFAULT_CHECK_IN)
-  const defaultEnd = parseDisplayDate(DEFAULT_CHECK_OUT)
-
-  if (!defaultStart || !defaultEnd) {
-    return true
-  }
-
-  return !(
-    startOfDay(checkIn.value).getTime() === startOfDay(defaultStart).getTime()
-    && startOfDay(checkOut.value).getTime() === startOfDay(defaultEnd).getTime()
-  )
-})
+const hasCustomDates = computed(() => Boolean(checkIn.value && checkOut.value))
 
 const isAnyDropdownOpen = computed(() => isDatesOpen.value || isGuestsOpen.value)
 
@@ -117,14 +99,37 @@ function toggleGuestsDropdown() {
 }
 
 function openDatesFor(part: 'start' | 'end') {
-  if (isDatesOpen.value && activeDatePart.value === part) {
+  const seedingCheckIn = !checkIn.value
+
+  if (!seedingCheckIn && isDatesOpen.value && activeDatePart.value === part) {
     closeDatesDropdown()
     return
   }
 
+  if (seedingCheckIn) {
+    const today = startOfDay(new Date())
+    const tomorrow = startOfDay(new Date(today))
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    checkIn.value = today
+    checkOut.value = tomorrow
+    activeDatePart.value = 'end'
+  }
+  else {
+    activeDatePart.value = part
+  }
+
   isDatesOpen.value = true
-  activeDatePart.value = part
   closeOtherDropdowns('dates')
+
+  if (seedingCheckIn) {
+    // Re-assert after DOM swap (placeholder → dates), so the same click
+    // that removed the target cannot leave the calendar closed.
+    void nextTick(() => {
+      isDatesOpen.value = true
+      activeDatePart.value = 'end'
+    })
+  }
 }
 
 function toggleDatesDropdown() {
@@ -140,6 +145,11 @@ function onDatesFieldClick(event: MouseEvent) {
   const target = event.target as HTMLElement
 
   if (target.closest('.hotel-dates-guests__date-part, .hotel-dates-guests__clear, .hotel-dates-guests__dates-chevron, .hotel-dates-guests__dropdown')) {
+    return
+  }
+
+  if (!checkIn.value || !checkOut.value) {
+    openDatesFor(checkIn.value ? 'end' : 'start')
     return
   }
 
@@ -160,8 +170,8 @@ function decrementAdults() {
 
 function clearDates(event: MouseEvent) {
   event.stopPropagation()
-  checkIn.value = parseDisplayDate(DEFAULT_CHECK_IN)
-  checkOut.value = parseDisplayDate(DEFAULT_CHECK_OUT)
+  checkIn.value = null
+  checkOut.value = null
   closeDatesDropdown()
 }
 
@@ -172,11 +182,18 @@ function clearGuests(event: MouseEvent) {
 }
 
 function handleDocumentClick(event: MouseEvent) {
-  if (!datesFieldRef.value?.contains(event.target as Node)) {
+  const target = event.target
+
+  // Ignore detached nodes from the same click that replaced the placeholder.
+  if (!(target instanceof Node) || !document.contains(target)) {
+    return
+  }
+
+  if (!datesFieldRef.value?.contains(target)) {
     closeDatesDropdown()
   }
 
-  if (!guestsFieldRef.value?.contains(event.target as Node)) {
+  if (!guestsFieldRef.value?.contains(target)) {
     isGuestsOpen.value = false
   }
 }
@@ -200,6 +217,20 @@ function handleSubmit() {
     adults: adultsCount.value,
   })
 }
+
+defineExpose({
+  getCheckPayload: () => {
+    if (!hasDatesFromSearch || !checkIn.value || !checkOut.value) {
+      return null
+    }
+
+    return {
+      checkIn: formatDisplayDate(checkIn.value),
+      checkOut: formatDisplayDate(checkOut.value),
+      adults: adultsCount.value,
+    }
+  },
+})
 </script>
 
 <template>
@@ -219,7 +250,10 @@ function handleSubmit() {
           @click="onDatesFieldClick"
         >
           <span class="hotel-dates-guests__label">Заезд – Выезд</span>
-          <div class="hotel-dates-guests__dates-control">
+          <div
+            v-if="hasSelectedDates"
+            class="hotel-dates-guests__dates-control"
+          >
             <button
               type="button"
               class="hotel-dates-guests__date-part"
@@ -240,6 +274,12 @@ function handleSubmit() {
               {{ checkOutLabel }}
             </button>
           </div>
+          <span
+            v-else
+            class="hotel-dates-guests__placeholder"
+          >
+            {{ emptyDatesLabel }}
+          </span>
           <button
             v-if="hasCustomDates"
             type="button"
@@ -459,6 +499,20 @@ function handleSubmit() {
   padding-right: 28px;
   border: none;
   background: transparent;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  color: #1c211c;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hotel-dates-guests__placeholder {
+  display: block;
+  width: 100%;
+  padding-right: 28px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 16px;
   font-weight: 500;
