@@ -352,6 +352,26 @@ function setMeasureTarget(lat: number, lng: number) {
 
   measureTarget = leaflet.latLng(lat, lng)
   syncMeasureGraphics()
+  fitMeasurePoints()
+}
+
+/** Zoom out (never in) so origin and target are both in view. */
+function fitMeasurePoints() {
+  if (!map || !leaflet || !measureOrigin || !measureTarget) {
+    return
+  }
+
+  const view = map.getBounds()
+  if (view.contains(measureOrigin) && view.contains(measureTarget)) {
+    return
+  }
+
+  map.flyToBounds(leaflet.latLngBounds([measureOrigin, measureTarget]), {
+    padding: [64, 64],
+    // Cap at current zoom so we only zoom out / pan, never zoom in.
+    maxZoom: map.getZoom(),
+    duration: 0.55,
+  })
 }
 
 /** With a single base, auto-pick it as the measure end after placing origin. */
