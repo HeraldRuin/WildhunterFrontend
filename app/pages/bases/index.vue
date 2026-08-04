@@ -169,21 +169,26 @@ const { data: searchResult, refresh, pending: searchPending } = useAsyncData(
   },
   {
     lazy: true,
-    // Manual refresh so we can drive the results spinner ourselves.
+    // Запросом управляет watch(searchRequest) — иначе кэш/lazy и смена query расходятся.
+    immediate: false,
     watch: false,
     default: emptySearchResult,
     getCachedData: (key, nuxtApp) => {
+      // Ключ один (`hotel-search`) без query — кэш можно брать только для каталога.
+      // Иначе после /bases без дат сюда попадали все отели, а поиск с location/dates не шёл.
+      if (queryString('checkIn') || queryString('checkOut')) {
+        return undefined
+      }
+
       const cached = getCachedPageData<NormalizedSearchResult>(key, nuxtApp)
       if (cached) {
         return cached
       }
 
       // С главной уже есть тот же каталог — показываем сразу, без повторного ожидания API.
-      if (!queryString('checkIn') && !queryString('checkOut')) {
-        const homeOffers = getCachedPageData<OfferItem[]>('home-hotel-offers', nuxtApp)
-        if (homeOffers?.length) {
-          return toCatalogResult(homeOffers)
-        }
+      const homeOffers = getCachedPageData<OfferItem[]>('home-hotel-offers', nuxtApp)
+      if (homeOffers?.length) {
+        return toCatalogResult(homeOffers)
       }
     },
   },
@@ -201,7 +206,23 @@ watch(
   { deep: true },
 )
 
-watch(searchRequest, async () => {
+watch(searchRequest, async (req, prev) => {
+  // Каталог уже есть (с главной / из payload) и запрос не изменился — не дёргаем API снова.
+  if (
+    req.catalog
+    && (searchResult.value?.items.length ?? 0) > 0
+    && (
+      !prev
+      || (
+        prev.catalog
+        && prev.page === req.page
+        && JSON.stringify(prev.body) === JSON.stringify(req.body)
+      )
+    )
+  ) {
+    return
+  }
+
   const loadId = ++searchLoadId
   isSearchLoading.value = true
 
@@ -212,6 +233,11 @@ watch(searchRequest, async () => {
       isSearchLoading.value = false
     }
   }
+}, { immediate: true })
+
+// Обратный переход на главную — без ожидания скачивания чанка.
+onMounted(() => {
+  void preloadRouteComponents('/')
 })
 
 const filteredCatalogItems = computed(() => {
