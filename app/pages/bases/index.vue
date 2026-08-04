@@ -230,7 +230,6 @@ watch(searchRequest, async (req, prev) => {
       )
     )
   ) {
-    isButtonSearching.value = false
     return
   }
 
@@ -246,7 +245,6 @@ watch(searchRequest, async (req, prev) => {
   } finally {
     if (loadId === searchLoadId) {
       isSearchLoading.value = false
-      isButtonSearching.value = false
     }
   }
 }, { immediate: true })
@@ -311,6 +309,20 @@ watch(totalPages, (pages) => {
   }
 })
 
+/** Drop empty hero fields so cleared location/animal actually leave the URL. */
+function toSearchQuery(payload: Record<string, string>) {
+  const query: Record<string, string> = {}
+
+  for (const key of ['location', 'animal', 'checkIn', 'checkOut', 'guests'] as const) {
+    const value = payload[key]?.trim()
+    if (value) {
+      query[key] = value
+    }
+  }
+
+  return query
+}
+
 async function handleSearch(payload: Record<string, string>) {
   if (isButtonSearching.value) {
     return
@@ -322,12 +334,13 @@ async function handleSearch(payload: Record<string, string>) {
   try {
     await navigateTo({
       path: '/bases',
-      query: {
-        ...payload,
-      },
+      query: toSearchQuery(payload),
     })
+    // Button spinner is owned here: watch can skip (same query) or lose a
+    // loadId race and never clear isButtonSearching.
+    await refresh()
   }
-  catch {
+  finally {
     isButtonSearching.value = false
   }
 }

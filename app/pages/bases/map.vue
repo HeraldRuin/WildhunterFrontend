@@ -144,20 +144,39 @@ watch(
   },
 )
 
+/** Drop empty hero fields so cleared location/animal actually leave the URL. */
+function toSearchQuery(payload: Record<string, string>) {
+  const query: Record<string, string> = {}
+
+  for (const key of ['location', 'animal', 'checkIn', 'checkOut', 'guests'] as const) {
+    const value = payload[key]?.trim()
+    if (value) {
+      query[key] = value
+    }
+  }
+
+  return query
+}
+
 async function handleSearch(payload: Record<string, string>) {
-  await navigateTo({
-    path: '/bases/map',
-    query: {
-      ...payload,
-    },
-  })
-  await loadMapHotels()
+  isLoading.value = true
+
+  try {
+    await navigateTo({
+      path: '/bases/map',
+      query: toSearchQuery(payload),
+    })
+    await loadMapHotels()
+  }
+  catch {
+    isLoading.value = false
+  }
 }
 </script>
 
 <template>
   <div class="bases-map-page">
-    <SearchHero @search="handleSearch" />
+    <SearchHero :loading="isLoading" @search="handleSearch" />
 
     <SearchBasesMapPanel
       :hotels="hotels"

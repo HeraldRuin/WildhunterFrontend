@@ -95,7 +95,11 @@ const datesFieldRef = ref<HTMLElement | null>(null)
 const hoveredLocationId = ref<string | null>(null)
 const hoveredAnimalId = ref<string | null>(null)
 
-const { data: locations, pending: locationsLoading } = useAsyncData<SearchLocation[]>(
+const {
+  data: locations,
+  pending: locationsLoading,
+  refresh: refreshLocations,
+} = useAsyncData<SearchLocation[]>(
   'search-locations',
   () => locationApi.getLocationItems(),
   {
@@ -104,7 +108,11 @@ const { data: locations, pending: locationsLoading } = useAsyncData<SearchLocati
   },
 )
 
-const { data: animals, pending: animalsLoading } = useAsyncData<SearchAnimal[]>(
+const {
+  data: animals,
+  pending: animalsLoading,
+  refresh: refreshAnimals,
+} = useAsyncData<SearchAnimal[]>(
   'search-animals',
   () => animalsApi.getAnimalItems(),
   {
@@ -122,6 +130,12 @@ const locationLabel = computed(() => {
     return selectedLocation.value.name
   }
 
+  // Keep showing that a location filter is active while the list loads —
+  // otherwise the field looks empty while /bases/map still filters by id.
+  if (location.value) {
+    return locationsLoading.value ? 'Загрузка...' : 'Выбранный регион'
+  }
+
   return 'Куда вы собираетесь?'
 })
 
@@ -132,6 +146,10 @@ const selectedAnimal = computed(() =>
 const animalLabel = computed(() => {
   if (selectedAnimal.value) {
     return selectedAnimal.value.title
+  }
+
+  if (animal.value) {
+    return animalsLoading.value ? 'Загрузка...' : 'Выбранное животное'
   }
 
   return 'На кого будет охота?'
@@ -387,6 +405,15 @@ function submitSearch() {
 
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
+
+  // If URL has location/animal but the cached lists are empty, refetch names for labels.
+  if (location.value && !locations.value?.length) {
+    void refreshLocations()
+  }
+
+  if (animal.value && !animals.value?.length) {
+    void refreshAnimals()
+  }
 })
 
 onUnmounted(() => {
