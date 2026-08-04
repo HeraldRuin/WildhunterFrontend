@@ -195,7 +195,17 @@ const { data: searchResult, refresh, pending: searchPending } = useAsyncData(
 )
 
 const isSearchLoading = ref(false)
-const isResultsLoading = computed(() => isSearchLoading.value || searchPending.value)
+/** Spinner on «Искать» — separate from results-area loading. */
+const isButtonSearching = ref(false)
+const hasSearchItems = computed(() => (searchResult.value?.items.length ?? 0) > 0)
+/** Full-page spinner only when there is nothing to show yet. */
+const isResultsLoading = computed(() => {
+  if (hasSearchItems.value) {
+    return false
+  }
+
+  return isSearchLoading.value || searchPending.value
+})
 let searchLoadId = 0
 
 watch(
@@ -210,7 +220,7 @@ watch(searchRequest, async (req, prev) => {
   // Каталог уже есть (с главной / из payload) и запрос не изменился — не дёргаем API снова.
   if (
     req.catalog
-    && (searchResult.value?.items.length ?? 0) > 0
+    && hasSearchItems.value
     && (
       !prev
       || (
@@ -220,17 +230,23 @@ watch(searchRequest, async (req, prev) => {
       )
     )
   ) {
+    isButtonSearching.value = false
     return
   }
 
   const loadId = ++searchLoadId
-  isSearchLoading.value = true
+  // Keep existing cards mounted while refreshing — swapping to the loading flex
+  // box reuses the same DOM node and can leave cards inside it (broken layout).
+  if (!hasSearchItems.value) {
+    isSearchLoading.value = true
+  }
 
   try {
     await refresh()
   } finally {
     if (loadId === searchLoadId) {
       isSearchLoading.value = false
+      isButtonSearching.value = false
     }
   }
 }, { immediate: true })
@@ -296,13 +312,24 @@ watch(totalPages, (pages) => {
 })
 
 async function handleSearch(payload: Record<string, string>) {
+  if (isButtonSearching.value) {
+    return
+  }
+
   currentPage.value = 1
-  await navigateTo({
-    path: '/bases',
-    query: {
-      ...payload,
-    },
-  })
+  isButtonSearching.value = true
+
+  try {
+    await navigateTo({
+      path: '/bases',
+      query: {
+        ...payload,
+      },
+    })
+  }
+  catch {
+    isButtonSearching.value = false
+  }
 }
 
 function handlePageChange(page: number) {
@@ -323,7 +350,7 @@ function handleFiltersReset() {
 
 <template>
   <div class="bases-page">
-    <SearchHero @search="handleSearch" />
+    <SearchHero :loading="isButtonSearching" @search="handleSearch" />
 
     <section class="bases-page__results">
       <div class="container bases-page__results-inner">
@@ -344,14 +371,13 @@ function handleFiltersReset() {
             Найдено баз: {{ totalCount }}
           </h1>
 
-          <!-- TEMP: карта временно отключена — вернуть NuxtLink при включении -->
-          <span
+          <NuxtLink
             v-if="hasResults"
+            :to="{ path: '/bases/map', query: route.query }"
             class="bases-page__toolbar-link bases-page__map-link"
-            aria-disabled="true"
           >
             Показать на карте
-          </span>
+          </NuxtLink>
         </div>
 
         <div
@@ -367,8 +393,13 @@ function handleFiltersReset() {
           />
 
           <div class="bases-page__main">
+            <!--
+              Use v-show (not v-if) so loading/empty/grid are separate DOM nodes.
+              v-if reuse of the same <div> was leaving offer cards inside the
+              loading flex container → crushed overlapping layout.
+            -->
             <div
-              v-if="isResultsLoading"
+              v-show="isResultsLoading"
               class="bases-page__state bases-page__state--loading"
             >
               <CommonSpinner
@@ -377,11 +408,17 @@ function handleFiltersReset() {
               />
             </div>
 
-            <div v-else-if="!offerItems.length" class="bases-page__state bases-page__state--empty">
+            <div
+              v-show="!isResultsLoading && !offerItems.length"
+              class="bases-page__state bases-page__state--empty"
+            >
               По вашему запросу базы не найдены. Попробуйте изменить фильтры.
             </div>
 
-            <div v-else class="bases-page__grid">
+            <div
+              v-show="!isResultsLoading && offerItems.length > 0"
+              class="bases-page__grid"
+            >
               <HomeOfferCard
                 v-for="(item, index) in offerItems"
                 :key="`${item.id}-${index}`"
@@ -390,6 +427,7 @@ function handleFiltersReset() {
             </div>
 
             <CommonPagination
+              v-show="!isResultsLoading && offerItems.length > 0"
               :current-page="currentPage"
               :total-pages="totalPages"
               @change="handlePageChange"

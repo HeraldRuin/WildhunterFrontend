@@ -75,12 +75,11 @@ export default defineNuxtConfig({
   },
   /**
    * Prod is served over plain HTTP/1.1 (no HTTP/2 without a real TLS domain).
-   * Default Vite/Rolldown emits dozens of tiny async chunks → browser waterfall.
-   * Merge vendor + disable CSS code-splitting so navigations need far fewer round-trips.
+   * Merge vendor JS into fewer chunks to reduce the request waterfall.
+   * Keep CSS code-splitting on — cssCodeSplit:false breaks scoped page styles in Nuxt.
    */
   vite: {
     build: {
-      cssCodeSplit: false,
       assetsInlineLimit: 4096,
       rolldownOptions: {
         output: {
