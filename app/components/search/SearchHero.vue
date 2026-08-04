@@ -3,10 +3,12 @@ const props = withDefaults(defineProps<{
   title?: string
   hideSearch?: boolean
   backgroundImage?: string
+  loading?: boolean
 }>(), {
   title: undefined,
   hideSearch: false,
   backgroundImage: undefined,
+  loading: false,
 })
 
 const emit = defineEmits<{
@@ -52,6 +54,7 @@ const backgroundStyle = computed(() => {
       <HomeHeroSearchForm
         v-if="!hideSearch"
         layout="split"
+        :loading="loading"
         @search="emit('search', $event)"
       />
     </div>
