@@ -34,34 +34,45 @@ export function useAuth() {
   const uploadsOrigin = new URL(config.public.apiBase as string).origin
 
   async function login(email: string, password: string, remember = false) {
-    const response = await auth.login({
-      email: email.trim(),
-      password,
-    })
+    try {
+      const response = await auth.login({
+        email: email.trim(),
+        password,
+      })
 
-    if (!response.success) {
+      if (!response.success) {
+        const error = response as ApiErrorResponse
+        return {
+          success: false as const,
+          message: error.message || 'Не удалось войти',
+          errors: error.errors,
+        }
+      }
+
+      const normalizedUser = normalizeAuthUser(response.user, uploadsOrigin)
+      const { invalidateProfileCache, loadProfile } = useProfile()
+
+      authToken.setSession({
+        token: response.token,
+        token_type: response.token_type,
+        user: normalizedUser,
+      }, remember)
+
+      if (normalizedUser?.id) {
+        invalidateProfileCache(normalizedUser.id)
+        await loadProfile(true)
+      }
+
+      return { success: true as const }
+    } catch (error) {
+      // $fetch throws on 4xx; API body is on error.data
+      const data = (error as { data?: ApiErrorResponse }).data
       return {
         success: false as const,
-        message: (response as ApiErrorResponse).message || 'Не удалось войти',
-        errors: (response as ApiErrorResponse).errors,
+        message: data?.message || 'Не удалось войти',
+        errors: data?.errors,
       }
     }
-
-    const normalizedUser = normalizeAuthUser(response.user, uploadsOrigin)
-    const { invalidateProfileCache, loadProfile } = useProfile()
-
-    authToken.setSession({
-      token: response.token,
-      token_type: response.token_type,
-      user: normalizedUser,
-    }, remember)
-
-    if (normalizedUser?.id) {
-      invalidateProfileCache(normalizedUser.id)
-      await loadProfile(true)
-    }
-
-    return { success: true as const }
   }
 
   function loginWithSession(session: AuthSession, remember = true) {

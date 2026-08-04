@@ -35,6 +35,15 @@ function resetForm() {
   isSubmitting.value = false
 }
 
+function hasFieldErrors(errors: unknown): errors is Record<string, string[]> {
+  return Boolean(
+    errors
+    && typeof errors === 'object'
+    && !Array.isArray(errors)
+    && Object.keys(errors).length > 0,
+  )
+}
+
 async function handleSubmit() {
   isSubmitting.value = true
   submitError.value = ''
@@ -44,18 +53,25 @@ async function handleSubmit() {
     const result = await login(email.value, password.value, rememberMe.value)
 
     if (!result.success) {
-      if (result.errors) {
+      // API often returns errors: [] with a top-level message (e.g. invalid credentials)
+      if (hasFieldErrors(result.errors)) {
         fieldErrors.value = result.errors
       } else {
-        submitError.value = result.message
+        submitError.value = result.message || 'Не удалось войти'
       }
       return
     }
 
     close()
     resetForm()
-  } catch {
-    submitError.value = 'Не удалось войти'
+  } catch (error) {
+    const data = (error as { data?: { message?: string, errors?: Record<string, string[]> } }).data
+
+    if (hasFieldErrors(data?.errors)) {
+      fieldErrors.value = data.errors
+    } else {
+      submitError.value = data?.message || 'Не удалось войти'
+    }
   } finally {
     isSubmitting.value = false
   }
