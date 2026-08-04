@@ -73,4 +73,41 @@ export default defineNuxtConfig({
     '/profile': { ssr: false },
     '/profile/**': { ssr: false },
   },
+  /**
+   * Prod is served over plain HTTP/1.1 (no HTTP/2 without a real TLS domain).
+   * Default Vite/Rolldown emits dozens of tiny async chunks → browser waterfall.
+   * Merge vendor + disable CSS code-splitting so navigations need far fewer round-trips.
+   */
+  vite: {
+    build: {
+      cssCodeSplit: false,
+      assetsInlineLimit: 4096,
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            // Prefer fewer larger files under HTTP/1.1 (6-conn limit).
+            minSize: 80_000,
+            groups: [
+              { name: 'vendor', test: /node_modules[\\/]/ },
+            ],
+          },
+        },
+      },
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return
+            }
+
+            if (id.includes('leaflet')) {
+              return 'leaflet'
+            }
+
+            return 'vendor'
+          },
+        },
+      },
+    },
+  },
 })

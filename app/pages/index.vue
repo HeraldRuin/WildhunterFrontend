@@ -10,11 +10,12 @@ function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp
     ?? nuxtApp.static.data[key] as T | undefined
 }
 
-// Без await: назад с /locations не ждёт повторный API (~4с).
+// lazy + getCachedData: назад с /bases|/locations не блокирует переход повторным API.
 const { data: locationItems } = useAsyncData(
   'home-location-offers',
   () => location.getLocationOfferItems(),
   {
+    lazy: true,
     default: () => [],
     getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
   },
@@ -24,10 +25,16 @@ const { data: offerItems } = useAsyncData(
   'home-hotel-offers',
   () => hotels.getHotelOfferItems(),
   {
+    lazy: true,
     default: () => [],
     getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
   },
 )
+
+// Пока пользователь смотрит главную — подгружаем чанк /bases (кнопка «Смотреть все»).
+onMounted(() => {
+  void preloadRouteComponents('/bases')
+})
 
 const { data: reviewItems } = useAsyncData(
   'home-reviews',

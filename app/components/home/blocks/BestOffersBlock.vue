@@ -28,6 +28,10 @@ function scrollBy(direction: 'prev' | 'next') {
   const offset = (getCardWidth(track) + getTrackGap(track)) * (direction === 'next' ? 1 : -1)
   track.scrollBy({ left: offset, behavior: 'smooth' })
 }
+
+function prefetchBasesPage() {
+  void preloadRouteComponents('/bases')
+}
 </script>
 
 <template>
@@ -63,7 +67,13 @@ function scrollBy(direction: 'prev' | 'next') {
       </div>
 
       <div class="best-offers__action">
-        <NuxtLink to="/bases" class="btn btn--primary best-offers__button">
+        <NuxtLink
+          to="/bases"
+          prefetch
+          class="btn btn--primary best-offers__button"
+          @mouseenter="prefetchBasesPage"
+          @focus="prefetchBasesPage"
+        >
           Смотреть все
         </NuxtLink>
       </div>
