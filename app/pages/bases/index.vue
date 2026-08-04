@@ -18,18 +18,26 @@ const { search: searchApi, hotels: hotelsApi } = useApi()
 const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
 const CATALOG_PER_PAGE = 12
 
-const { data: priceBounds } = await useAsyncData(
+function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {
+  return nuxtApp.payload.data[key] as T | undefined
+    ?? nuxtApp.static.data[key] as T | undefined
+}
+
+// Без await/lazy: иначе URL меняется, а страница ждёт /hotels/price-range + /hotels/offers.
+const { data: priceBounds } = useAsyncData(
   'hotel-price-range',
   () => hotelsApi.getPriceRangeBounds(),
   {
+    lazy: true,
     default: () => ({ ...DEFAULT_PRICE_BOUNDS }),
+    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
   },
 )
 
 const filters = ref<SearchFiltersState>({
   ...DEFAULT_SEARCH_FILTERS,
-  priceMin: priceBounds.value.min,
-  priceMax: priceBounds.value.max,
+  priceMin: DEFAULT_PRICE_BOUNDS.min,
+  priceMax: DEFAULT_PRICE_BOUNDS.max,
 })
 
 watch(
@@ -66,6 +74,14 @@ const emptySearchResult = (): NormalizedSearchResult => ({
   total: 0,
   totalPages: 1,
 })
+
+function toCatalogResult(items: OfferItem[]): NormalizedSearchResult {
+  return {
+    items,
+    total: items.length,
+    totalPages: Math.max(1, Math.ceil(items.length / CATALOG_PER_PAGE)),
+  }
+}
 
 function queryString(key: string): string {
   const value = route.query[key]
@@ -124,18 +140,12 @@ const searchRequest = computed(() => {
   }
 })
 
-const { data: searchResult, refresh } = await useAsyncData(
+const { data: searchResult, refresh, pending: searchPending } = useAsyncData(
   'hotel-search',
   async () => {
     try {
       if (searchRequest.value.catalog) {
-        const items = await hotelsApi.getHotelOfferItems()
-
-        return {
-          items,
-          total: items.length,
-          totalPages: Math.max(1, Math.ceil(items.length / CATALOG_PER_PAGE)),
-        }
+        return toCatalogResult(await hotelsApi.getHotelOfferItems())
       }
 
       const response = await searchApi.searchHotels(
@@ -158,13 +168,29 @@ const { data: searchResult, refresh } = await useAsyncData(
     }
   },
   {
+    lazy: true,
     // Manual refresh so we can drive the results spinner ourselves.
     watch: false,
     default: emptySearchResult,
+    getCachedData: (key, nuxtApp) => {
+      const cached = getCachedPageData<NormalizedSearchResult>(key, nuxtApp)
+      if (cached) {
+        return cached
+      }
+
+      // С главной уже есть тот же каталог — показываем сразу, без повторного ожидания API.
+      if (!queryString('checkIn') && !queryString('checkOut')) {
+        const homeOffers = getCachedPageData<OfferItem[]>('home-hotel-offers', nuxtApp)
+        if (homeOffers?.length) {
+          return toCatalogResult(homeOffers)
+        }
+      }
+    },
   },
 )
 
 const isSearchLoading = ref(false)
+const isResultsLoading = computed(() => isSearchLoading.value || searchPending.value)
 let searchLoadId = 0
 
 watch(
@@ -292,13 +318,14 @@ function handleFiltersReset() {
             Найдено баз: {{ totalCount }}
           </h1>
 
-          <NuxtLink
+          <!-- TEMP: карта временно отключена — вернуть NuxtLink при включении -->
+          <span
             v-if="hasResults"
-            :to="{ path: '/bases/map', query: route.query }"
             class="bases-page__toolbar-link bases-page__map-link"
+            aria-disabled="true"
           >
             Показать на карте
-          </NuxtLink>
+          </span>
         </div>
 
         <div
@@ -315,7 +342,7 @@ function handleFiltersReset() {
 
           <div class="bases-page__main">
             <div
-              v-if="isSearchLoading"
+              v-if="isResultsLoading"
               class="bases-page__state bases-page__state--loading"
             >
               <CommonSpinner
