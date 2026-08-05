@@ -388,11 +388,13 @@ function goToNextYear() {
 .hero-search-calendar__day--active-target {
   z-index: 2;
   background: var(--wh-orange-600);
-  outline: 1px solid var(--wh-green);
-  outline-offset: 3px;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--wh-green) 22%, transparent);
-  transform: scale(1.08);
-  animation: hero-search-day-pulse 1.2s ease-in-out infinite;
+  outline: 2px solid rgb(120 120 120 / 70%);
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 3px rgb(120 120 120 / 35%),
+    0 0 10px 2px rgb(120 120 120 / 20%);
+  transform: scale(1.1);
+  animation: hero-search-day-pulse 0.9s ease-in-out infinite;
 }
 
 .hero-search-calendar__day:not(.hero-search-calendar__day--selected):hover {
@@ -402,15 +404,21 @@ function goToNextYear() {
 @keyframes hero-search-day-pulse {
   0%,
   100% {
-    outline-offset: 3px;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--wh-green) 24%, transparent);
-    transform: scale(1.08);
+    outline-color: rgb(120 120 120 / 70%);
+    outline-offset: 2px;
+    box-shadow:
+      0 0 0 3px rgb(120 120 120 / 35%),
+      0 0 10px 2px rgb(120 120 120 / 20%);
+    transform: scale(1.1);
   }
 
   50% {
-    outline-offset: 4px;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--wh-green) 16%, transparent);
-    transform: scale(1.1);
+    outline-color: rgb(120 120 120 / 25%);
+    outline-offset: 6px;
+    box-shadow:
+      0 0 0 6px rgb(120 120 120 / 12%),
+      0 0 0 0 transparent;
+    transform: scale(1.16);
   }
 }
 </style>
