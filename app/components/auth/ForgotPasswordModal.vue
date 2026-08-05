@@ -69,6 +69,8 @@ function getApiMessage(data: unknown) {
 }
 
 function proceedToResetStep(data: unknown) {
+  submitError.value = ''
+  fieldErrors.value = {}
   resetStepHint.value = getApiMessage(data)
   step.value = 'reset'
 }
@@ -139,8 +141,6 @@ function resetForm() {
 
 async function handleEmailSubmit() {
   isSubmitting.value = true
-  submitError.value = ''
-  fieldErrors.value = {}
 
   try {
     const response = await auth.sendPasswordResetEmail({
@@ -173,8 +173,6 @@ async function handleEmailSubmit() {
 
 async function handleResetSubmit() {
   isSubmitting.value = true
-  submitError.value = ''
-  fieldErrors.value = {}
 
   try {
     const response = await auth.resetPassword({
@@ -265,6 +263,14 @@ watch(isOpen, (open) => {
         @keydown="handleKeydown"
       >
         <div class="forgot-password-modal__card">
+          <div
+            v-if="isSubmitting"
+            class="forgot-password-modal__loader"
+            aria-hidden="true"
+          >
+            <CommonSpinner variant="ring" size="lg" label="Сброс пароля" />
+          </div>
+
           <CommonModalCloseButton :disabled="isSubmitting" @click="close" />
 
           <h2 id="forgot-password-modal-title" class="forgot-password-modal__title">
@@ -369,12 +375,7 @@ watch(isOpen, (open) => {
             </p>
 
             <button type="submit" class="forgot-password-modal__submit" :disabled="isSubmitting">
-              <template v-if="step === 'email'">
-                {{ isSubmitting ? 'Отправка...' : 'Отправить ссылку для сброса пароля' }}
-              </template>
-              <template v-else>
-                {{ isSubmitting ? 'Сохранение...' : 'Сбросить пароль' }}
-              </template>
+              {{ step === 'email' ? 'Отправить ссылку для сброса пароля' : 'Сбросить пароль' }}
             </button>
           </form>
 
@@ -411,6 +412,18 @@ watch(isOpen, (open) => {
   border-radius: var(--wh-radius);
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
+}
+
+.forgot-password-modal__loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: transparent;
+  pointer-events: all;
 }
 
 .forgot-password-modal__title {
