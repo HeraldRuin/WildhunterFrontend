@@ -17,9 +17,17 @@ const emit = defineEmits<{
 const route = useRoute()
 const { location: locationApi, animals: animalsApi } = useApi()
 
-const DEFAULT_CHECK_IN = '04.02.26'
-const DEFAULT_CHECK_OUT = '05.02.26'
 const maxAdults = 100
+
+function getDefaultCheckIn() {
+  return startOfDay(new Date())
+}
+
+function getDefaultCheckOut() {
+  const tomorrow = startOfDay(new Date())
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  return tomorrow
+}
 
 function queryString(key: string): string {
   const value = route.query[key]
@@ -49,13 +57,13 @@ const location = ref(hasSearchQuery() ? queryString('location') : '')
 const animal = ref(hasSearchQuery() ? queryString('animal') : '')
 const checkIn = ref<Date | null>(
   hasSearchQuery()
-    ? (parseDisplayDate(queryString('checkIn')) ?? parseDisplayDate(DEFAULT_CHECK_IN))
-    : parseDisplayDate(DEFAULT_CHECK_IN),
+    ? (parseDisplayDate(queryString('checkIn')) ?? getDefaultCheckIn())
+    : getDefaultCheckIn(),
 )
 const checkOut = ref<Date | null>(
   hasSearchQuery()
-    ? (parseDisplayDate(queryString('checkOut')) ?? parseDisplayDate(DEFAULT_CHECK_OUT))
-    : parseDisplayDate(DEFAULT_CHECK_OUT),
+    ? (parseDisplayDate(queryString('checkOut')) ?? getDefaultCheckOut())
+    : getDefaultCheckOut(),
 )
 const adultsCount = ref(hasSearchQuery() ? adultsFromQuery() : 1)
 
@@ -66,8 +74,8 @@ function hydrateFromRoute() {
 
   location.value = queryString('location')
   animal.value = queryString('animal')
-  checkIn.value = parseDisplayDate(queryString('checkIn')) ?? parseDisplayDate(DEFAULT_CHECK_IN)
-  checkOut.value = parseDisplayDate(queryString('checkOut')) ?? parseDisplayDate(DEFAULT_CHECK_OUT)
+  checkIn.value = parseDisplayDate(queryString('checkIn')) ?? getDefaultCheckIn()
+  checkOut.value = parseDisplayDate(queryString('checkOut')) ?? getDefaultCheckOut()
   adultsCount.value = adultsFromQuery()
 }
 
@@ -193,16 +201,9 @@ const hasCustomDates = computed(() => {
     return false
   }
 
-  const defaultStart = parseDisplayDate(DEFAULT_CHECK_IN)
-  const defaultEnd = parseDisplayDate(DEFAULT_CHECK_OUT)
-
-  if (!defaultStart || !defaultEnd) {
-    return true
-  }
-
   return !(
-    startOfDay(checkIn.value).getTime() === startOfDay(defaultStart).getTime()
-    && startOfDay(checkOut.value).getTime() === startOfDay(defaultEnd).getTime()
+    startOfDay(checkIn.value).getTime() === getDefaultCheckIn().getTime()
+    && startOfDay(checkOut.value).getTime() === getDefaultCheckOut().getTime()
   )
 })
 
@@ -387,8 +388,8 @@ function clearGuests(event: MouseEvent) {
 
 function clearDates(event: MouseEvent) {
   event.stopPropagation()
-  checkIn.value = parseDisplayDate(DEFAULT_CHECK_IN)
-  checkOut.value = parseDisplayDate(DEFAULT_CHECK_OUT)
+  checkIn.value = getDefaultCheckIn()
+  checkOut.value = getDefaultCheckOut()
   closeDatesDropdown()
 }
 
