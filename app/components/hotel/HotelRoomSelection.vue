@@ -89,6 +89,16 @@ function roomTotalPrice(room: HotelRoomOption) {
   const quantity = quantities.value[room.id] ?? 0
   return quantity > 0 ? room.price * quantity : room.price
 }
+
+defineExpose({
+  getSelectedRooms: () =>
+    Object.entries(quantities.value)
+      .filter(([, quantity]) => quantity > 0)
+      .map(([roomId, quantity]) => ({
+        room_id: Number(roomId),
+        number: quantity,
+      })),
+})
 </script>
 
 <template>

@@ -6,6 +6,7 @@ import {
   useLocationApi,
   useHotelsApi,
   useAnimalsApi,
+  useBookingsApi,
   useReviewsApi,
   useRolesApi,
   useSearchApi,
@@ -24,6 +25,7 @@ export function useApi() {
   const location = useLocationApi()
   const hotels = useHotelsApi()
   const animals = useAnimalsApi()
+  const bookings = useBookingsApi()
   const roles = useRolesApi()
   const reviews = useReviewsApi()
   const services = useServicesApi()
@@ -40,6 +42,7 @@ export function useApi() {
     location,
     hotels,
     animals,
+    bookings,
     roles,
     reviews,
     services,

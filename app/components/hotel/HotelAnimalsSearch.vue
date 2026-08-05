@@ -3,7 +3,7 @@ import type { SearchAnimal } from '~/types/api'
 import { formatDisplayDate, startOfDay } from '~/utils/date'
 
 const emit = defineEmits<{
-  check: [payload: { checkIn: string, checkOut: string, adults: number, animalId: string }]
+  check: [payload: { huntDate: string, hunters: number, animalId: string }]
 }>()
 
 const maxAdults = 100
@@ -64,12 +64,6 @@ const huntDateLabel = computed(() =>
 )
 
 const hasCustomDates = computed(() => Boolean(huntDate.value))
-
-function nextDay(date: Date) {
-  const next = startOfDay(date)
-  next.setDate(next.getDate() + 1)
-  return next
-}
 
 const isAnyDropdownOpen = computed(() =>
   isDatesOpen.value || isHuntersOpen.value || isAnimalOpen.value,
@@ -208,19 +202,16 @@ onBeforeUnmount(() => {
 })
 
 function handleSubmit() {
-  const checkIn = huntDate.value ? startOfDay(huntDate.value) : null
-  const checkOut = checkIn ? nextDay(checkIn) : null
-
   emit('check', {
-    checkIn: checkIn ? formatDisplayDate(checkIn) : '',
-    checkOut: checkOut ? formatDisplayDate(checkOut) : '',
-    adults: adultsCount.value,
+    huntDate: huntDate.value ? formatDisplayDate(startOfDay(huntDate.value)) : '',
+    hunters: adultsCount.value,
     animalId: animal.value,
   })
 }
 
 defineExpose({
   getSelectedAnimalId: () => animal.value,
+  getHunters: () => adultsCount.value,
 })
 </script>
 

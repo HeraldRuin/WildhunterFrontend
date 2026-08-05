@@ -18,7 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
-const { hotels } = useApi()
+const { hotels, animals, bookings } = useApi()
 
 const hotelParams = computed(() => ({
   locationSlug: String(route.params.location || ''),
@@ -45,6 +45,8 @@ const confirmationPath = computed(() => {
 
 const availableRooms = ref<HotelRoomOption[]>([])
 const isCheckingAvailability = ref(false)
+const isCheckingAnimals = ref(false)
+const isBooking = ref(false)
 const isNoHuntConfirmOpen = ref(false)
 const isAnimalWarningOpen = ref(false)
 const isHuntDateWarningOpen = ref(false)
@@ -52,8 +54,15 @@ const hasSelectedRooms = ref(false)
 const didAutoCheckFromSearch = ref(false)
 const datesGuestsRef = ref<{
   getCheckPayload: () => { checkIn: string, checkOut: string, adults: number } | null
+  getBookingPayload: () => { checkIn: string, checkOut: string, adults: number } | null
 } | null>(null)
-const animalsSearchRef = ref<{ getSelectedAnimalId: () => string } | null>(null)
+const animalsSearchRef = ref<{
+  getSelectedAnimalId: () => string
+  getHunters: () => number
+} | null>(null)
+const roomSelectionRef = ref<{
+  getSelectedRooms: () => { room_id: number, number: number }[]
+} | null>(null)
 const isAnyModalOpen = computed(() =>
   isNoHuntConfirmOpen.value
   || isAnimalWarningOpen.value
@@ -142,10 +151,9 @@ async function handleCheck(payload: { checkIn: string, checkOut: string, adults:
   }
 }
 
-function handleAnimalsCheck(payload: {
-  checkIn: string
-  checkOut: string
-  adults: number
+async function handleAnimalsCheck(payload: {
+  huntDate: string
+  hunters: number
   animalId: string
 }) {
   if (!payload.animalId) {
@@ -153,18 +161,78 @@ function handleAnimalsCheck(payload: {
     return
   }
 
-  if (!payload.checkIn || !payload.checkOut) {
+  if (!payload.huntDate) {
     isHuntDateWarningOpen.value = true
     return
   }
 
-  void handleCheck(payload)
+  const hotelId = hotel.value?.id
+  const hunterData = parseDisplayDateToApiDate(payload.huntDate)
+  const animalId = Number(payload.animalId)
+
+  if (!hotelId || !hunterData || !Number.isFinite(animalId) || isCheckingAnimals.value) {
+    return
+  }
+
+  isCheckingAnimals.value = true
+
+  try {
+    await animals.checkAvailability({
+      hotel_id: hotelId,
+      animal_id: animalId,
+      hunter_data: hunterData,
+      hunters: payload.hunters,
+    })
+  }
+  catch {
+    // Endpoint may be unavailable yet — request is still sent for wiring.
+  }
+  finally {
+    isCheckingAnimals.value = false
+  }
 }
 
-function proceedBook() {
+async function proceedBook() {
+  if (isBooking.value) {
+    return
+  }
+
+  const hotelId = hotel.value?.id
+  const stay = datesGuestsRef.value?.getBookingPayload()
+  const rooms = roomSelectionRef.value?.getSelectedRooms() || []
+  const checkIn = stay ? parseDisplayDateToApiDate(stay.checkIn) : null
+  const checkOut = stay ? parseDisplayDateToApiDate(stay.checkOut) : null
+  const animalIdRaw = animalsSearchRef.value?.getSelectedAnimalId() || ''
+  const animalId = animalIdRaw ? Number(animalIdRaw) : undefined
+  const hunters = animalsSearchRef.value?.getHunters() ?? 1
+
+  if (!hotelId || !stay || !checkIn || !checkOut || !rooms.length) {
+    return
+  }
+
   isNoHuntConfirmOpen.value = false
-  emit('book')
-  void navigateTo(confirmationPath.value)
+  isBooking.value = true
+
+  try {
+    await bookings.create({
+      hotel_id: hotelId,
+      ...(animalId != null && Number.isFinite(animalId) ? { animal_id: animalId } : {}),
+      check_in: checkIn,
+      check_out: checkOut,
+      adults: stay.adults,
+      hunters,
+      rooms,
+    })
+
+    emit('book')
+    await navigateTo(confirmationPath.value)
+  }
+  catch {
+    // Endpoint may reject invalid payloads — keep user on the form.
+  }
+  finally {
+    isBooking.value = false
+  }
 }
 
 function handleBook() {
@@ -175,7 +243,7 @@ function handleBook() {
     return
   }
 
-  proceedBook()
+  void proceedBook()
 }
 
 function closeNoHuntConfirm() {
@@ -245,6 +313,7 @@ watch(
       </div>
 
       <HotelRoomSelection
+        ref="roomSelectionRef"
         :rooms="availableRooms"
         @selection-change="hasSelectedRooms = $event"
       />
@@ -254,6 +323,7 @@ watch(
           v-if="hasSelectedRooms"
           type="button"
           class="hotel-booking-section__book"
+          :disabled="isBooking"
           @click="handleBook"
         >
           Забронировать сейчас
@@ -289,6 +359,7 @@ watch(
               <button
                 type="button"
                 class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
+                :disabled="isBooking"
                 @click="proceedBook"
               >
                 Да
@@ -401,9 +472,14 @@ watch(
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
-.hotel-booking-section__book:hover {
+.hotel-booking-section__book:hover:not(:disabled) {
   background: color-mix(in srgb, var(--wh-green) 78%, white);
   transform: var(--wh-button-hover-lift);
+}
+
+.hotel-booking-section__book:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .hotel-booking-book-enter-active,

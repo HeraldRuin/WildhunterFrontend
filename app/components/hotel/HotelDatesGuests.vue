@@ -230,6 +230,17 @@ defineExpose({
       adults: adultsCount.value,
     }
   },
+  getBookingPayload: () => {
+    if (!checkIn.value || !checkOut.value) {
+      return null
+    }
+
+    return {
+      checkIn: formatDisplayDate(checkIn.value),
+      checkOut: formatDisplayDate(checkOut.value),
+      adults: adultsCount.value,
+    }
+  },
 })
 </script>
 

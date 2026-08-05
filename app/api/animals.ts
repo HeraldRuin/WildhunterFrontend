@@ -1,4 +1,9 @@
-import type { ApiSuccessResponse, SearchAnimal } from '~/types/api'
+import type {
+  AnimalAvailabilityRequest,
+  AnimalAvailabilityResponse,
+  ApiSuccessResponse,
+  SearchAnimal,
+} from '~/types/api'
 import { useApiClient } from './client'
 
 export function useAnimalsApi() {
@@ -22,9 +27,17 @@ export function useAnimalsApi() {
     return apiFetch<ApiSuccessResponse<SearchAnimal>>(`/animals/${id}`)
   }
 
+  function checkAvailability(body: AnimalAvailabilityRequest) {
+    return apiFetch<AnimalAvailabilityResponse>('/animals/check-availability', {
+      method: 'POST',
+      body,
+    })
+  }
+
   return {
     getAnimals,
     getAnimalItems,
     getDetail,
+    checkAvailability,
   }
 }

@@ -239,6 +239,32 @@ export interface HotelRoomAvailabilityData {
 
 export type HotelRoomAvailabilityResponse = ApiSuccessResponse<HotelRoomAvailabilityData>
 
+export interface AnimalAvailabilityRequest {
+  hotel_id: number
+  animal_id: number
+  hunter_data: string
+  hunters: number
+}
+
+export type AnimalAvailabilityResponse = ApiSuccessResponse<unknown>
+
+export interface CreateBookingRoom {
+  room_id: number
+  number: number
+}
+
+export interface CreateBookingRequest {
+  hotel_id: number
+  animal_id?: number
+  check_in: string
+  check_out: string
+  adults: number
+  hunters: number
+  rooms: CreateBookingRoom[]
+}
+
+export type CreateBookingResponse = ApiSuccessResponse<unknown>
+
 export interface SearchResultData {
   total: number
   total_pages: number
