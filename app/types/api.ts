@@ -246,7 +246,12 @@ export interface AnimalAvailabilityRequest {
   hunters: number
 }
 
-export type AnimalAvailabilityResponse = ApiSuccessResponse<unknown>
+export interface AnimalAvailabilityData {
+  available: boolean
+  price: number
+}
+
+export type AnimalAvailabilityResponse = ApiSuccessResponse<AnimalAvailabilityData> | ApiErrorResponse
 
 export interface CreateBookingRoom {
   room_id: number

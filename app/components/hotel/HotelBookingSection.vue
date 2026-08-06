@@ -2,6 +2,7 @@
 import type { HotelRoomAvailability } from '~/types/api'
 import type { HotelRoomOption } from '~/types/hotelBooking'
 import { parseDisplayDateToApiDate } from '~/utils/date'
+import { formatHotelPrice } from '~/utils/hotel'
 
 const props = withDefaults(defineProps<{
   /** Ширина всего блока, например `100%`, `90%`, `720px` */
@@ -48,10 +49,24 @@ const isCheckingAvailability = ref(false)
 const isCheckingAnimals = ref(false)
 const isBooking = ref(false)
 const isNoHuntConfirmOpen = ref(false)
+const isNoRoomConfirmOpen = ref(false)
 const isAnimalWarningOpen = ref(false)
 const isHuntDateWarningOpen = ref(false)
+const apiMessage = ref('')
+const animalAvailability = ref<{
+  hunters: number
+  price: number
+} | null>(null)
 const hasSelectedRooms = ref(false)
 const didAutoCheckFromSearch = ref(false)
+
+const animalAvailabilityTotal = computed(() => {
+  if (!animalAvailability.value) {
+    return 0
+  }
+
+  return animalAvailability.value.price * animalAvailability.value.hunters
+})
 const datesGuestsRef = ref<{
   getCheckPayload: () => { checkIn: string, checkOut: string, adults: number } | null
   getBookingPayload: () => { checkIn: string, checkOut: string, adults: number } | null
@@ -63,11 +78,39 @@ const animalsSearchRef = ref<{
 const roomSelectionRef = ref<{
   getSelectedRooms: () => { room_id: number, number: number }[]
 } | null>(null)
+const isApiMessageOpen = computed(() => Boolean(apiMessage.value))
 const isAnyModalOpen = computed(() =>
   isNoHuntConfirmOpen.value
+  || isNoRoomConfirmOpen.value
   || isAnimalWarningOpen.value
-  || isHuntDateWarningOpen.value,
+  || isHuntDateWarningOpen.value
+  || isApiMessageOpen.value,
 )
+
+function getResponseMessage(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return ''
+  }
+
+  const fetchError = error as {
+    data?: { message?: string }
+    message?: string
+  }
+
+  return fetchError.data?.message || fetchError.message || ''
+}
+
+function showApiMessage(message: string) {
+  if (!message) {
+    return
+  }
+
+  apiMessage.value = message
+}
+
+function closeApiMessage() {
+  apiMessage.value = ''
+}
 
 function tryAutoCheckFromSearch() {
   if (didAutoCheckFromSearch.value || !hotel.value?.id) {
@@ -175,17 +218,30 @@ async function handleAnimalsCheck(payload: {
   }
 
   isCheckingAnimals.value = true
+  animalAvailability.value = null
 
   try {
-    await animals.checkAvailability({
+    const response = await animals.checkAvailability({
       hotel_id: hotelId,
       animal_id: animalId,
       hunter_data: hunterData,
       hunters: payload.hunters,
     })
+
+    if (response.success && response.data?.available) {
+      animalAvailability.value = {
+        hunters: payload.hunters,
+        price: Number(response.data.price) || 0,
+      }
+      return
+    }
+
+    if (response.message) {
+      showApiMessage(response.message)
+    }
   }
-  catch {
-    // Endpoint may be unavailable yet — request is still sent for wiring.
+  catch (error) {
+    showApiMessage(getResponseMessage(error) || 'Не удалось проверить доступность')
   }
   finally {
     isCheckingAnimals.value = false
@@ -237,6 +293,12 @@ async function proceedBook() {
 
 function handleBook() {
   const animalId = animalsSearchRef.value?.getSelectedAnimalId() || ''
+  const hasRooms = (roomSelectionRef.value?.getSelectedRooms() || []).length > 0
+
+  if (!hasRooms) {
+    isNoRoomConfirmOpen.value = true
+    return
+  }
 
   if (!animalId) {
     isNoHuntConfirmOpen.value = true
@@ -250,6 +312,10 @@ function closeNoHuntConfirm() {
   isNoHuntConfirmOpen.value = false
 }
 
+function closeNoRoomConfirm() {
+  isNoRoomConfirmOpen.value = false
+}
+
 function closeAnimalWarning() {
   isAnimalWarningOpen.value = false
 }
@@ -261,8 +327,10 @@ function closeHuntDateWarning() {
 function handleConfirmKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     closeNoHuntConfirm()
+    closeNoRoomConfirm()
     closeAnimalWarning()
     closeHuntDateWarning()
+    closeApiMessage()
   }
 }
 
@@ -301,26 +369,51 @@ watch(
   <section class="hotel-booking-section" :style="sectionStyle">
     <div class="hotel-booking-section__card">
       <div class="hotel-booking-section__blocks">
-        <HotelDatesGuests
-          ref="datesGuestsRef"
-          :loading="isCheckingAvailability"
-          @check="handleCheck"
-        />
-        <HotelAnimalsSearch
-          ref="animalsSearchRef"
-          @check="handleAnimalsCheck"
-        />
-      </div>
+        <div class="hotel-booking-section__rooms-block">
+          <HotelDatesGuests
+            ref="datesGuestsRef"
+            :loading="isCheckingAvailability"
+            @check="handleCheck"
+          />
 
-      <HotelRoomSelection
-        ref="roomSelectionRef"
-        :rooms="availableRooms"
-        @selection-change="hasSelectedRooms = $event"
-      />
+          <HotelRoomSelection
+            ref="roomSelectionRef"
+            :rooms="availableRooms"
+            @selection-change="hasSelectedRooms = $event"
+          />
+        </div>
+
+        <div class="hotel-booking-section__animals-block">
+          <HotelAnimalsSearch
+            ref="animalsSearchRef"
+            @check="handleAnimalsCheck"
+          />
+
+          <div
+            v-if="animalAvailability"
+            class="hotel-booking-section__animal-result"
+          >
+            <div class="hotel-booking-section__animal-success" role="status">
+              На этот день есть охота на животное. Можете продолжить бронирование
+            </div>
+
+            <div class="hotel-booking-section__animal-summary">
+              <div class="hotel-booking-section__animal-summary-item">
+                <span class="hotel-booking-section__animal-summary-label">Всего охотников:</span>
+                <span class="hotel-booking-section__animal-summary-value">{{ animalAvailability.hunters }}</span>
+              </div>
+              <div class="hotel-booking-section__animal-summary-item">
+                <span class="hotel-booking-section__animal-summary-label">Общая стоимость:</span>
+                <span class="hotel-booking-section__animal-summary-price">₽{{ formatHotelPrice(animalAvailabilityTotal) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <Transition name="hotel-booking-book">
         <button
-          v-if="hasSelectedRooms"
+          v-if="hasSelectedRooms || animalAvailability"
           type="button"
           class="hotel-booking-section__book"
           :disabled="isBooking"
@@ -361,6 +454,42 @@ watch(
                 class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
                 :disabled="isBooking"
                 @click="proceedBook"
+              >
+                Да
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="hotel-booking-confirm">
+        <div
+          v-if="isNoRoomConfirmOpen"
+          class="hotel-booking-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hotel-no-room-confirm-title"
+          @click.self="closeNoRoomConfirm"
+        >
+          <div class="hotel-booking-confirm__card">
+            <CommonModalCloseButton @click="closeNoRoomConfirm" />
+
+            <h2 id="hotel-no-room-confirm-title" class="hotel-booking-confirm__title">
+              Вы уверены, что хотите забронировать охоту без номера?
+            </h2>
+
+            <div class="hotel-booking-confirm__actions">
+              <button
+                type="button"
+                class="hotel-booking-confirm__btn hotel-booking-confirm__btn--secondary"
+                @click="closeNoRoomConfirm"
+              >
+                Нет
+              </button>
+              <button
+                type="button"
+                class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
+                @click="closeNoRoomConfirm"
               >
                 Да
               </button>
@@ -426,6 +555,35 @@ watch(
           </div>
         </div>
       </Transition>
+
+      <Transition name="hotel-booking-confirm">
+        <div
+          v-if="isApiMessageOpen"
+          class="hotel-booking-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hotel-api-message-title"
+          @click.self="closeApiMessage"
+        >
+          <div class="hotel-booking-confirm__card">
+            <CommonModalCloseButton @click="closeApiMessage" />
+
+            <h2 id="hotel-api-message-title" class="hotel-booking-confirm__title">
+              {{ apiMessage }}
+            </h2>
+
+            <div class="hotel-booking-confirm__actions">
+              <button
+                type="button"
+                class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
+                @click="closeApiMessage"
+              >
+                Хорошо
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </Teleport>
   </section>
 </template>
@@ -450,6 +608,85 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 64px;
+}
+
+.hotel-booking-section__rooms-block {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.hotel-booking-section__animals-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.hotel-booking-section__animal-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(100%, var(--hotel-booking-blocks-width, 100%));
+}
+
+.hotel-booking-section__animal-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: 72px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: var(--wh-radius-lg);
+  background: var(--wh-white);
+  overflow: hidden;
+}
+
+.hotel-booking-section__animal-summary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px 28px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+  color: var(--wh-black-text);
+}
+
+.hotel-booking-section__animal-summary-item + .hotel-booking-section__animal-summary-item {
+  border-left: 1px solid var(--wh-field-border);
+}
+
+.hotel-booking-section__animal-summary-label {
+  color: var(--wh-black-text);
+}
+
+.hotel-booking-section__animal-summary-value {
+  font-weight: 600;
+}
+
+.hotel-booking-section__animal-summary-price {
+  font-weight: 700;
+  color: var(--wh-orange-500);
+  white-space: nowrap;
+}
+
+.hotel-booking-section__animal-success {
+  padding: 16px 20px;
+  border-radius: var(--wh-radius-lg);
+  background: color-mix(in srgb, var(--wh-green) 12%, white);
+  color: var(--wh-green);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  text-align: center;
 }
 
 .hotel-booking-section__book {
@@ -607,6 +844,15 @@ watch(
 
   .hotel-booking-section__blocks {
     gap: 48px;
+  }
+
+  .hotel-booking-section__animal-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .hotel-booking-section__animal-summary-item + .hotel-booking-section__animal-summary-item {
+    border-left: none;
+    border-top: 1px solid var(--wh-field-border);
   }
 }
 
