@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HotelRoomAvailability } from '~/types/api'
 import type { HotelRoomOption } from '~/types/hotelBooking'
-import { parseDisplayDateToApiDate } from '~/utils/date'
+import { parseDisplayDateToApiDate, startOfDay } from '~/utils/date'
 import { formatHotelPrice } from '~/utils/hotel'
 
 const props = withDefaults(defineProps<{
@@ -57,6 +57,11 @@ const apiMessage = ref('')
 const animalAvailability = ref<{
   hunters: number
   price: number
+} | null>(null)
+/** Stay dates that were set when animal availability was last confirmed. */
+const animalAvailabilityStay = ref<{
+  checkIn: number
+  checkOut: number
 } | null>(null)
 const hasSelectedRooms = ref(false)
 const didAutoCheckFromSearch = ref(false)
@@ -116,9 +121,39 @@ function closeApiMessage() {
   apiMessage.value = ''
 }
 
+function clearAnimalAvailability() {
+  animalAvailability.value = null
+  animalAvailabilityStay.value = null
+}
+
 function handleStayDatesChange(payload: { checkIn: Date | null, checkOut: Date | null }) {
+  const prevCheckIn = stayCheckIn.value
+  const prevCheckOut = stayCheckOut.value
+
   stayCheckIn.value = payload.checkIn
   stayCheckOut.value = payload.checkOut
+
+  const datesChanged = prevCheckIn?.getTime() !== payload.checkIn?.getTime()
+    || prevCheckOut?.getTime() !== payload.checkOut?.getTime()
+  const hasNewDates = Boolean(payload.checkIn && payload.checkOut)
+
+  // Clearing stay dates keeps hunt result.
+  if (!datesChanged || !hasNewDates || !animalAvailability.value || !payload.checkIn || !payload.checkOut) {
+    return
+  }
+
+  const stayAtCheck = animalAvailabilityStay.value
+  const sameStayAsCheck = Boolean(
+    stayAtCheck
+    && stayAtCheck.checkIn === startOfDay(payload.checkIn).getTime()
+    && stayAtCheck.checkOut === startOfDay(payload.checkOut).getTime(),
+  )
+
+  // Restore the same stay (e.g. 6–7 after clear) and hunt date still fits — keep result.
+  // A different period (e.g. 6–8) clears it.
+  if (!sameStayAsCheck) {
+    clearAnimalAvailability()
+  }
 }
 
 function tryAutoCheckFromSearch() {
@@ -236,7 +271,7 @@ async function handleAnimalsCheck(payload: {
   }
 
   isCheckingAnimals.value = true
-  animalAvailability.value = null
+  clearAnimalAvailability()
 
   try {
     const response = await animals.checkAvailability({
@@ -252,6 +287,12 @@ async function handleAnimalsCheck(payload: {
         hunters: payload.hunters,
         price: Number(response.data.price) || 0,
       }
+      animalAvailabilityStay.value = stayCheckIn.value && stayCheckOut.value
+        ? {
+            checkIn: startOfDay(stayCheckIn.value).getTime(),
+            checkOut: startOfDay(stayCheckOut.value).getTime(),
+          }
+        : null
       return
     }
 
