@@ -439,6 +439,7 @@ function goToNextYear() {
 
 .hero-search-calendar__day--available.hero-search-calendar__day--selected {
   box-shadow: none;
+  color: var(--wh-white);
 }
 
 .hero-search-calendar__day:not(.hero-search-calendar__day--selected):not(.hero-search-calendar__day--disabled):not(:disabled):hover {
