@@ -4,11 +4,14 @@ import { formatDisplayDate, startOfDay } from '~/utils/date'
 
 const props = withDefaults(defineProps<{
   animals?: HotelAnimalItem[]
+  /** Hotel detail still loading — show spinner in the animals field */
+  animalsPending?: boolean
   stayCheckIn?: Date | null
   stayCheckOut?: Date | null
   loading?: boolean
 }>(), {
   animals: () => [],
+  animalsPending: false,
   loading: false,
 })
 
@@ -76,10 +79,28 @@ const huntersFieldRef = ref<HTMLElement | null>(null)
 const animalFieldRef = ref<HTMLElement | null>(null)
 
 const animals = computed(() => props.animals)
+const animalsPending = computed(() => props.animalsPending)
+const animalsReady = computed(() => animals.value.length > 0)
 
 const selectedAnimal = computed(() =>
   animals.value.find(item => String(item.id) === animal.value),
 )
+
+const animalLabel = computed(() => {
+  if (animalsPending.value) {
+    return 'Загрузка...'
+  }
+
+  if (selectedAnimal.value) {
+    return selectedAnimal.value.title
+  }
+
+  if (!animalsReady.value) {
+    return 'Нет доступных животных'
+  }
+
+  return 'На кого будет охота?'
+})
 
 watch(
   animals,
@@ -103,14 +124,6 @@ function formatAdultsLabel(count: number) {
 }
 
 const huntersLabel = computed(() => formatAdultsLabel(adultsCount.value))
-
-const animalLabel = computed(() => {
-  if (selectedAnimal.value) {
-    return selectedAnimal.value.title
-  }
-
-  return 'На кого будет охота?'
-})
 
 const huntDateLabel = computed(() =>
   huntDate.value ? formatDisplayDate(huntDate.value) : emptyHuntDateLabel,
@@ -149,7 +162,7 @@ function toggleHuntersDropdown() {
 }
 
 function toggleAnimalDropdown() {
-  if (!animals.value.length) {
+  if (animalsPending.value || !animalsReady.value) {
     return
   }
 
@@ -413,14 +426,26 @@ defineExpose({
           <button
             type="button"
             class="hotel-animals-search__value"
-            :disabled="!animals.length"
+            :class="{
+              'hotel-animals-search__value--pending': animalsPending,
+              'hotel-animals-search__value--empty': !animalsPending && !animalsReady,
+            }"
+            :disabled="animalsPending || !animalsReady"
             @click="toggleAnimalDropdown"
           >
             {{ animalLabel }}
           </button>
 
+          <CommonSpinner
+            v-if="animalsPending"
+            class="hotel-animals-search__field-spinner"
+            variant="ring"
+            :size="18"
+            color="var(--wh-green)"
+            label="Загрузка животных"
+          />
           <button
-            v-if="selectedAnimal"
+            v-else-if="selectedAnimal"
             type="button"
             class="hotel-animals-search__clear"
             aria-label="Очистить животное"
@@ -430,7 +455,7 @@ defineExpose({
               <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
             </svg>
           </button>
-          <svg v-else class="hotel-animals-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
+          <svg v-else-if="animalsReady" class="hotel-animals-search__chevron" viewBox="0 0 12 8" aria-hidden="true">
             <path
               d="M1 2 6 6.5 11 2"
               fill="none"
@@ -442,7 +467,7 @@ defineExpose({
           </svg>
 
           <ul
-            v-if="isAnimalOpen && animals.length"
+            v-if="isAnimalOpen && animalsReady"
             class="hotel-animals-search__dropdown-list"
             role="listbox"
             aria-label="Животные"
@@ -610,7 +635,24 @@ defineExpose({
 }
 
 .hotel-animals-search__value:disabled {
+  cursor: not-allowed;
+}
+
+.hotel-animals-search__value--pending:disabled {
   cursor: wait;
+}
+
+.hotel-animals-search__value--empty {
+  color: var(--wh-field-error);
+}
+
+.hotel-animals-search__field-spinner {
+  position: absolute;
+  top: 50%;
+  right: 22px;
+  z-index: 1;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .hotel-animals-search__dates-control {

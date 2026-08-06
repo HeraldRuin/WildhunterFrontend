@@ -26,7 +26,9 @@ const hotelParams = computed(() => ({
   hotelSlug: String(route.params.slug || ''),
 }))
 
-const { data: hotel } = useHotelDetail(hotelParams)
+const { data: hotel, pending: hotelPending } = useHotelDetail(hotelParams)
+
+const hotelAnimals = computed(() => hotel.value?.animals ?? [])
 
 const sectionStyle = computed(() => ({
   width: props.width,
@@ -458,7 +460,8 @@ watch(
         <div class="hotel-booking-section__animals-block">
           <HotelAnimalsSearch
             ref="animalsSearchRef"
-            :animals="hotel?.animals ?? []"
+            :animals="hotelAnimals"
+            :animals-pending="hotelPending && !hotel"
             :stay-check-in="stayCheckIn"
             :stay-check-out="stayCheckOut"
             :loading="isCheckingAnimals"
