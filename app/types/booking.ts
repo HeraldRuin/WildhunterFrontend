@@ -4,9 +4,29 @@ export type BookingType = 'hotel' | 'hotel_animal' | 'animal'
 
 export type BookingActionVariant = 'danger' | 'primary' | 'success'
 
+export type BookingActionId = 'open_collection' | 'cancel_booking' | 'open_invitation' | 'select_seat' | 'add_services'
+
 export interface BookingAction {
+  id?: BookingActionId
   label: string
   variant: BookingActionVariant
+}
+
+export type CollectionParticipantStatus = 'confirmed' | 'pending'
+
+export interface CollectionParticipant {
+  id?: number
+  name: string
+  email?: string
+  status: CollectionParticipantStatus
+}
+
+export interface CollectionModalState {
+  bookingId: number
+  bookingNumber: string
+  collectionUrl?: string
+  slotsTotal: number
+  participants: CollectionParticipant[]
 }
 
 export interface BookingAccommodationDetails {

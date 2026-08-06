@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BookingTab } from '~/types/booking'
+import type { BookingAction, BookingHistoryItem, BookingTab } from '~/types/booking'
 import { getBookingsByTab } from '~/utils/bookings'
 
 definePageMeta({
@@ -12,6 +12,7 @@ useHead({
 })
 
 const notificationCount = 2
+const { open: openCollectionModal } = useCollectionModal()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -31,6 +32,12 @@ const emptyText = computed(() =>
     ? 'Нет активных приглашений'
     : 'Нет бронирований',
 )
+
+function handleBookingAction({ booking, action }: { booking: BookingHistoryItem, action: BookingAction }) {
+  if (action.id === 'open_collection') {
+    openCollectionModal(booking)
+  }
+}
 </script>
 
 <template>
@@ -71,7 +78,10 @@ const emptyText = computed(() =>
     <ProfileBookingHistoryTable
       :items="bookings"
       :empty-text="emptyText"
+      @action="handleBookingAction"
     />
+
+    <ProfileCollectionModal />
   </div>
 </template>
 

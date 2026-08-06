@@ -19,7 +19,7 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
       label: 'Обработка',
     },
     actions: [
-      { label: 'Отменить бронь', variant: 'danger' },
+      { id: 'cancel_booking', label: 'Отменить бронь', variant: 'danger' },
     ],
   },
   {
@@ -47,8 +47,8 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
       collected: 'Собрано 1/3',
     },
     actions: [
-      { label: 'Сбор', variant: 'success' },
-      { label: 'Отменить бронь', variant: 'danger' },
+      { id: 'open_collection', label: 'Сбор', variant: 'success' },
+      { id: 'cancel_booking', label: 'Отменить бронь', variant: 'danger' },
     ],
   },
   {
@@ -78,8 +78,8 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
     },
     paymentAction: 'Калькуляция',
     actions: [
-      { label: 'Выбрать место', variant: 'success' },
-      { label: 'Добавить услуги', variant: 'success' },
+      { id: 'select_seat', label: 'Выбрать место', variant: 'success' },
+      { id: 'add_services', label: 'Добавить услуги', variant: 'success' },
     ],
   },
   {
@@ -109,8 +109,8 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
     },
     paymentAction: 'Калькуляция',
     actions: [
-      { label: 'Выбрать место', variant: 'success' },
-      { label: 'Добавить услуги', variant: 'success' },
+      { id: 'select_seat', label: 'Выбрать место', variant: 'success' },
+      { id: 'add_services', label: 'Добавить услуги', variant: 'success' },
     ],
   },
 ]
@@ -140,7 +140,7 @@ export const MOCK_INVITATION_BOOKINGS: BookingHistoryItem[] = [
       subStatus: 'Ожидает ответа',
     },
     actions: [
-      { label: 'Открыть приглашение', variant: 'primary' },
+      { id: 'open_invitation', label: 'Открыть приглашение', variant: 'primary' },
     ],
     isInvitation: true,
   },
@@ -164,7 +164,7 @@ export const MOCK_INVITATION_BOOKINGS: BookingHistoryItem[] = [
       collected: 'Собрано 2/3',
     },
     actions: [
-      { label: 'Открыть сбор', variant: 'success' },
+      { id: 'open_collection', label: 'Открыть сбор', variant: 'success' },
     ],
     isInvitation: true,
   },

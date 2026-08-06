@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import type { BookingHistoryItem } from '~/types/booking'
+import type { BookingAction, BookingHistoryItem } from '~/types/booking'
 
 defineProps<{
   items: BookingHistoryItem[]
   emptyText?: string
 }>()
 
+const emit = defineEmits<{
+  action: [payload: { booking: BookingHistoryItem, action: BookingAction }]
+}>()
+
 const expandedDetails = ref<Record<number, boolean>>({})
 
 function toggleDetails(id: number) {
   expandedDetails.value[id] = !expandedDetails.value[id]
+}
+
+function handleAction(booking: BookingHistoryItem, action: BookingAction) {
+  emit('action', { booking, action })
 }
 
 function nightsLabel(count: number) {
@@ -122,6 +130,7 @@ function nightsLabel(count: number) {
                 type="button"
                 class="booking-table__action"
                 :class="`booking-table__action--${action.variant}`"
+                @click="handleAction(item, action)"
               >
                 {{ action.label }}
               </button>
