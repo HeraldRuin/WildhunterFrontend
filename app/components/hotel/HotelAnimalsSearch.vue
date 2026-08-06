@@ -2,6 +2,14 @@
 import type { SearchAnimal } from '~/types/api'
 import { formatDisplayDate, startOfDay } from '~/utils/date'
 
+const props = withDefaults(defineProps<{
+  stayCheckIn?: Date | null
+  stayCheckOut?: Date | null
+  loading?: boolean
+}>(), {
+  loading: false,
+})
+
 const emit = defineEmits<{
   check: [payload: { huntDate: string, hunters: number, animalId: string }]
 }>()
@@ -12,6 +20,48 @@ const emptyHuntDateLabel = 'Пожалуйста выберите дату'
 const { animals: animalsApi } = useApi()
 
 const huntDate = ref<Date | null>(null)
+
+const huntMinDate = computed(() => {
+  if (!props.stayCheckIn || !props.stayCheckOut) {
+    return null
+  }
+
+  const min = startOfDay(props.stayCheckIn)
+  min.setDate(min.getDate() + 1)
+
+  return min
+})
+
+const huntMaxDate = computed(() => {
+  if (!props.stayCheckIn || !props.stayCheckOut) {
+    return null
+  }
+
+  return startOfDay(props.stayCheckOut)
+})
+
+function isHuntDateAllowed(date: Date) {
+  const normalized = startOfDay(date)
+
+  if (huntMinDate.value && normalized.getTime() < huntMinDate.value.getTime()) {
+    return false
+  }
+
+  if (huntMaxDate.value && normalized.getTime() > huntMaxDate.value.getTime()) {
+    return false
+  }
+
+  return true
+}
+
+watch(
+  [huntMinDate, huntMaxDate],
+  () => {
+    if (huntDate.value && !isHuntDateAllowed(huntDate.value)) {
+      huntDate.value = null
+    }
+  },
+)
 const adultsCount = ref(1)
 const animal = ref('')
 
@@ -202,6 +252,10 @@ onBeforeUnmount(() => {
 })
 
 function handleSubmit() {
+  if (props.loading) {
+    return
+  }
+
   emit('check', {
     huntDate: huntDate.value ? formatDisplayDate(startOfDay(huntDate.value)) : '',
     hunters: adultsCount.value,
@@ -277,6 +331,8 @@ defineExpose({
               mode="single"
               v-model:start="huntDate"
               v-model:active-part="activeDatePart"
+              :min-date="huntMinDate"
+              :max-date="huntMaxDate"
               @select="onHuntDateSelect"
             />
           </div>
@@ -413,9 +469,28 @@ defineExpose({
         </div>
       </div>
 
-      <button type="submit" class="hotel-animals-search__submit">
-        <span class="hotel-animals-search__submit-label hotel-animals-search__submit-label--desktop">Проверить доступность</span>
-        <span class="hotel-animals-search__submit-label hotel-animals-search__submit-label--mobile">Искать</span>
+      <button
+        type="submit"
+        class="hotel-animals-search__submit"
+        :class="{ 'hotel-animals-search__submit--loading': loading }"
+        :disabled="loading"
+        :aria-busy="loading"
+      >
+        <CommonSpinner
+          v-if="loading"
+          variant="ring"
+          :size="22"
+          color="var(--wh-white)"
+          label="Проверяем доступность"
+        />
+        <template v-else>
+          <span class="hotel-animals-search__submit-label hotel-animals-search__submit-label--desktop">
+            Проверить доступность
+          </span>
+          <span class="hotel-animals-search__submit-label hotel-animals-search__submit-label--mobile">
+            Искать
+          </span>
+        </template>
       </button>
     </form>
   </div>
@@ -800,6 +875,9 @@ defineExpose({
 }
 
 .hotel-animals-search__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 240px;
   height: 81px;
   padding: 0 16px;
@@ -814,8 +892,18 @@ defineExpose({
   transition: background 0.15s ease;
 }
 
-.hotel-animals-search__submit:hover {
+.hotel-animals-search__submit:hover:not(:disabled) {
   background: var(--wh-orange-600);
+}
+
+.hotel-animals-search__submit--loading,
+.hotel-animals-search__submit:disabled {
+  cursor: wait;
+}
+
+.hotel-animals-search__submit:disabled:hover,
+.hotel-animals-search__submit--loading:hover {
+  background: var(--wh-orange-500);
 }
 
 .hotel-animals-search__submit-label--mobile {

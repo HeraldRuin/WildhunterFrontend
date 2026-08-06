@@ -12,6 +12,8 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   check: [payload: { checkIn: string, checkOut: string, adults: number }]
+  clear: []
+  'dates-change': [payload: { checkIn: Date | null, checkOut: Date | null }]
 }>()
 
 const route = useRoute()
@@ -76,6 +78,17 @@ const hasSelectedDates = computed(() => Boolean(checkIn.value || checkOut.value)
 const hasCustomDates = computed(() => Boolean(checkIn.value && checkOut.value))
 
 const isAnyDropdownOpen = computed(() => isDatesOpen.value || isGuestsOpen.value)
+
+watch(
+  [checkIn, checkOut],
+  ([nextCheckIn, nextCheckOut]) => {
+    emit('dates-change', {
+      checkIn: nextCheckIn,
+      checkOut: nextCheckOut,
+    })
+  },
+  { immediate: true },
+)
 
 function closeOtherDropdowns(except?: 'guests' | 'dates') {
   if (except !== 'guests') {
@@ -173,6 +186,7 @@ function clearDates(event: MouseEvent) {
   checkIn.value = null
   checkOut.value = null
   closeDatesDropdown()
+  emit('clear')
 }
 
 function clearGuests(event: MouseEvent) {
@@ -207,13 +221,13 @@ onBeforeUnmount(() => {
 })
 
 function handleSubmit() {
-  if (!checkIn.value || !checkOut.value || props.loading) {
+  if (props.loading) {
     return
   }
 
   emit('check', {
-    checkIn: formatDisplayDate(checkIn.value),
-    checkOut: formatDisplayDate(checkOut.value),
+    checkIn: checkIn.value ? formatDisplayDate(checkIn.value) : '',
+    checkOut: checkOut.value ? formatDisplayDate(checkOut.value) : '',
     adults: adultsCount.value,
   })
 }
@@ -400,14 +414,25 @@ defineExpose({
       <button
         type="submit"
         class="hotel-dates-guests__submit"
+        :class="{ 'hotel-dates-guests__submit--loading': loading }"
         :disabled="loading"
+        :aria-busy="loading"
       >
-        <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--desktop">
-          {{ loading ? 'Проверяем…' : 'Проверить наличие' }}
-        </span>
-        <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--mobile">
-          {{ loading ? '…' : 'Искать' }}
-        </span>
+        <CommonSpinner
+          v-if="loading"
+          variant="ring"
+          :size="22"
+          color="var(--wh-white)"
+          label="Проверяем наличие"
+        />
+        <template v-else>
+          <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--desktop">
+            Проверить наличие
+          </span>
+          <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--mobile">
+            Искать
+          </span>
+        </template>
       </button>
     </form>
   </div>
@@ -740,6 +765,9 @@ defineExpose({
 }
 
 .hotel-dates-guests__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 200px;
   height: 81px;
   padding: 0 16px;
@@ -758,9 +786,14 @@ defineExpose({
   background: var(--wh-orange-600);
 }
 
+.hotel-dates-guests__submit--loading,
 .hotel-dates-guests__submit:disabled {
-  opacity: 0.7;
   cursor: wait;
+}
+
+.hotel-dates-guests__submit:disabled:hover,
+.hotel-dates-guests__submit--loading:hover {
+  background: var(--wh-orange-500);
 }
 
 .hotel-dates-guests__submit-label--mobile {

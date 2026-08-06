@@ -244,6 +244,8 @@ export interface AnimalAvailabilityRequest {
   animal_id: number
   hunter_data: string
   hunters: number
+  check_in?: string
+  check_out?: string
 }
 
 export interface AnimalAvailabilityData {

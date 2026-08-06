@@ -10,8 +10,12 @@ import {
 
 const props = withDefaults(defineProps<{
   mode?: 'range' | 'single'
+  minDate?: Date | null
+  maxDate?: Date | null
 }>(), {
   mode: 'range',
+  minDate: null,
+  maxDate: null,
 })
 
 const emit = defineEmits<{
@@ -25,6 +29,7 @@ const activePart = defineModel<'start' | 'end' | null>('activePart', { default: 
 const viewMonth = ref(startOfDay(start.value ?? new Date()))
 const weekdays = getWeekdayNames()
 const isSingle = computed(() => props.mode === 'single')
+const hasDateLimits = computed(() => Boolean(props.minDate || props.maxDate))
 
 const currentMonth = computed(() => new Date(viewMonth.value.getFullYear(), viewMonth.value.getMonth(), 1))
 
@@ -83,8 +88,26 @@ watch(
   { immediate: true },
 )
 
+function isDateDisabled(date: Date) {
+  const normalized = startOfDay(date)
+
+  if (props.minDate && normalized.getTime() < startOfDay(props.minDate).getTime()) {
+    return true
+  }
+
+  if (props.maxDate && normalized.getTime() > startOfDay(props.maxDate).getTime()) {
+    return true
+  }
+
+  return false
+}
+
 function selectDate(date: Date) {
   const normalized = startOfDay(date)
+
+  if (isDateDisabled(normalized)) {
+    return
+  }
 
   if (isSingle.value) {
     start.value = normalized
@@ -221,7 +244,11 @@ function goToNextYear() {
                     (activePart === 'start' && getDayState(day.date) === 'start')
                     || (activePart === 'end' && getDayState(day.date) === 'end')
                   ),
+                'hero-search-calendar__day--available':
+                  hasDateLimits && !isDateDisabled(day.date),
+                'hero-search-calendar__day--disabled': isDateDisabled(day.date),
               }"
+              :disabled="isDateDisabled(day.date)"
               @click="selectDate(day.date)"
             >
               {{ day.date.getDate() }}
@@ -237,6 +264,7 @@ function goToNextYear() {
 .hero-search-calendar {
   width: 100%;
   min-width: 0;
+  cursor: default;
 }
 
 .hero-search-calendar__months {
@@ -397,8 +425,38 @@ function goToNextYear() {
   animation: hero-search-day-pulse 0.9s ease-in-out infinite;
 }
 
-.hero-search-calendar__day:not(.hero-search-calendar__day--selected):hover {
+.hero-search-calendar__day--available {
+  width: 30px;
+  height: 30px;
+  color: var(--wh-black-text);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1.5px rgb(28 33 28 / 35%);
+}
+
+.hero-search-calendar__day--available:hover {
+  box-shadow: inset 0 0 0 1.5px var(--wh-orange-500);
+}
+
+.hero-search-calendar__day--available.hero-search-calendar__day--selected {
+  box-shadow: none;
+}
+
+.hero-search-calendar__day:not(.hero-search-calendar__day--selected):not(.hero-search-calendar__day--disabled):not(:disabled):hover {
   background: rgb(209 101 16 / 12%);
+}
+
+.hero-search-calendar__day--disabled,
+.hero-search-calendar__day:disabled {
+  color: rgb(28 33 28 / 28%);
+  font-weight: 500;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.hero-search-calendar__day--disabled:hover,
+.hero-search-calendar__day:disabled:hover {
+  background: transparent;
+  cursor: not-allowed;
 }
 
 @keyframes hero-search-day-pulse {
