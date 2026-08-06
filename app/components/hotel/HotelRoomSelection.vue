@@ -24,7 +24,7 @@ const hasSelectedRooms = computed(() =>
 )
 
 const selectedRoomsSummary = computed(() => {
-  let guests = 0
+  let roomsCount = 0
   let total = 0
 
   for (const room of props.rooms) {
@@ -33,11 +33,11 @@ const selectedRoomsSummary = computed(() => {
       continue
     }
 
-    guests += room.capacity * quantity
+    roomsCount += quantity
     total += room.price * quantity
   }
 
-  return { guests, total }
+  return { roomsCount, total }
 })
 
 watch(
@@ -226,8 +226,8 @@ defineExpose({
       class="hotel-room-selection__summary"
     >
       <div class="hotel-room-selection__summary-item">
-        <span class="hotel-room-selection__summary-label">Всего гостей:</span>
-        <span class="hotel-room-selection__summary-value">{{ selectedRoomsSummary.guests }}</span>
+        <span class="hotel-room-selection__summary-label">Всего номеров:</span>
+        <span class="hotel-room-selection__summary-value">{{ selectedRoomsSummary.roomsCount }}</span>
       </div>
       <div class="hotel-room-selection__summary-item">
         <span class="hotel-room-selection__summary-label">Общая стоимость:</span>
