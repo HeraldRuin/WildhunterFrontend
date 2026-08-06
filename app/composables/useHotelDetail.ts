@@ -53,6 +53,12 @@ function getCachedHotelData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtAp
     return undefined
   }
 
+  // Stale cache from before hotel detail returned animals — refetch
+  const hotel = cached as { animals?: unknown }
+  if (Array.isArray(hotel.animals) && hotel.animals.length === 0) {
+    return undefined
+  }
+
   return cached as T
 }
 
