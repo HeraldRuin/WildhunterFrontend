@@ -23,6 +23,23 @@ const hasSelectedRooms = computed(() =>
   Object.values(quantities.value).some(quantity => quantity > 0),
 )
 
+const selectedRoomsSummary = computed(() => {
+  let guests = 0
+  let total = 0
+
+  for (const room of props.rooms) {
+    const quantity = quantities.value[room.id] ?? 0
+    if (quantity <= 0) {
+      continue
+    }
+
+    guests += room.capacity * quantity
+    total += room.price * quantity
+  }
+
+  return { guests, total }
+})
+
 watch(
   () => props.rooms,
   (rooms) => {
@@ -204,6 +221,20 @@ defineExpose({
       </div>
     </article>
 
+    <div
+      v-if="hasSelectedRooms"
+      class="hotel-room-selection__summary"
+    >
+      <div class="hotel-room-selection__summary-item">
+        <span class="hotel-room-selection__summary-label">Всего гостей:</span>
+        <span class="hotel-room-selection__summary-value">{{ selectedRoomsSummary.guests }}</span>
+      </div>
+      <div class="hotel-room-selection__summary-item">
+        <span class="hotel-room-selection__summary-label">Общая стоимость:</span>
+        <span class="hotel-room-selection__summary-price">₽{{ formatHotelPrice(selectedRoomsSummary.total) }}</span>
+      </div>
+    </div>
+
     <HotelGalleryLightbox
       v-model:open="lightboxOpen"
       :images="lightboxImages"
@@ -219,6 +250,50 @@ defineExpose({
   gap: 16px;
   width: min(100%, var(--hotel-booking-blocks-width, 100%));
   margin-inline: auto;
+}
+
+.hotel-room-selection__summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: 72px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: var(--wh-radius-lg);
+  background: var(--wh-white);
+  overflow: hidden;
+}
+
+.hotel-room-selection__summary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px 28px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+  color: var(--wh-black-text);
+}
+
+.hotel-room-selection__summary-item + .hotel-room-selection__summary-item {
+  border-left: 1px solid var(--wh-field-border);
+}
+
+.hotel-room-selection__summary-label {
+  color: var(--wh-black-text);
+}
+
+.hotel-room-selection__summary-value {
+  font-weight: 600;
+}
+
+.hotel-room-selection__summary-price {
+  font-weight: 700;
+  color: var(--wh-orange-500);
+  white-space: nowrap;
 }
 
 .hotel-room-selection__card {
@@ -407,6 +482,15 @@ defineExpose({
 }
 
 @media (--wh-tablet) {
+  .hotel-room-selection__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .hotel-room-selection__summary-item + .hotel-room-selection__summary-item {
+    border-left: none;
+    border-top: 1px solid var(--wh-field-border);
+  }
+
   .hotel-room-selection__card {
      gap: 16px;
     height: auto;
