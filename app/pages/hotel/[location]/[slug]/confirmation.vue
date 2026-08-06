@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatHotelPrice } from '~/utils/hotel'
+import { formatHotelPriceLabel } from '~/utils/hotel'
 
 definePageMeta({
   layout: 'home',
@@ -133,11 +133,11 @@ const bookingsLink = '/profile/bookings'
                   </div>
                   <div class="booking-confirmation__detail-row booking-confirmation__detail-row--divider booking-confirmation__detail-row--room">
                     <dt>{{ booking.roomLabel }}</dt>
-                    <dd>{{ formatHotelPrice(booking.accommodationTotal) }} ₽</dd>
+                    <dd>{{ formatHotelPriceLabel(booking.accommodationTotal) }}</dd>
                   </div>
                   <div class="booking-confirmation__detail-row booking-confirmation__detail-row--total">
                     <dt>Всего:</dt>
-                    <dd>{{ formatHotelPrice(booking.accommodationTotal) }} ₽</dd>
+                    <dd>{{ formatHotelPriceLabel(booking.accommodationTotal) }}</dd>
                   </div>
                 </dl>
               </div>
@@ -165,11 +165,11 @@ const bookingsLink = '/profile/bookings'
                   </div>
                   <div class="booking-confirmation__detail-row">
                     <dt>Организация охоты</dt>
-                    <dd>{{ formatHotelPrice(booking.organizationFee) }} ₽</dd>
+                    <dd>{{ formatHotelPriceLabel(booking.organizationFee) }}</dd>
                   </div>
                   <div class="booking-confirmation__detail-row">
                     <dt>Трофей</dt>
-                    <dd>{{ formatHotelPrice(booking.trophyFee) }} ₽</dd>
+                    <dd>{{ formatHotelPriceLabel(booking.trophyFee) }}</dd>
                   </div>
                 </dl>
               </div>
