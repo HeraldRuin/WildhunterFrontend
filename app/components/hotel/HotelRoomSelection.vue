@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HotelGalleryImage } from '~/types/api'
 import type { HotelRoomOption } from '~/types/hotelBooking'
-import { formatHotelPrice } from '~/utils/hotel'
+import { formatHotelPriceLabel } from '~/utils/hotel'
 import { pluralizeRu } from '~/utils/pluralize'
 
 const props = withDefaults(defineProps<{
@@ -88,7 +88,7 @@ function quantityOptions(max: number, price: number) {
     ...(index > 0
       ? {
           triggerLabel: pluralizeRu(index, ['номер', 'номера', 'номеров']),
-          suffix: `${formatHotelPrice(price * index)} ₽`,
+          suffix: formatHotelPriceLabel(price * index),
         }
       : {}),
   }))
@@ -204,7 +204,7 @@ defineExpose({
 
         <div class="hotel-room-selection__booking">
           <p class="hotel-room-selection__price">
-            {{ formatHotelPrice(roomTotalPrice(room)) }} ₽ / {{ nightsLabel(room.nights) }}
+            {{ formatHotelPriceLabel(roomTotalPrice(room)) }} / {{ nightsLabel(room.nights) }}
           </p>
 
           <div class="hotel-room-selection__quantity">
@@ -231,7 +231,7 @@ defineExpose({
       </div>
       <div class="hotel-room-selection__summary-item">
         <span class="hotel-room-selection__summary-label">Общая стоимость:</span>
-        <span class="hotel-room-selection__summary-price">₽{{ formatHotelPrice(selectedRoomsSummary.total) }}</span>
+        <span class="hotel-room-selection__summary-price">{{ formatHotelPriceLabel(selectedRoomsSummary.total) }}</span>
       </div>
     </div>
 

@@ -290,6 +290,11 @@ export function formatHotelPrice(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value)
 }
 
+/** Отображаемая строка цены с валютой — менять формат здесь. */
+export function formatHotelPriceLabel(value: number) {
+  return `${formatHotelPrice(value)} руб`
+}
+
 export function toRelatedOffers(items: BookableItem[]) {
   return items.map((item, index) => toOfferItem(item, index))
 }

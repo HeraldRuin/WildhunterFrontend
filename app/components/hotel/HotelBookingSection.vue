@@ -2,7 +2,7 @@
 import type { HotelRoomAvailability } from '~/types/api'
 import type { HotelRoomOption } from '~/types/hotelBooking'
 import { parseDisplayDateToApiDate, startOfDay } from '~/utils/date'
-import { formatHotelPrice } from '~/utils/hotel'
+import { formatHotelPriceLabel } from '~/utils/hotel'
 
 const props = withDefaults(defineProps<{
   /** Ширина всего блока, например `100%`, `90%`, `720px` */
@@ -474,7 +474,7 @@ watch(
               </div>
               <div class="hotel-booking-section__animal-summary-item">
                 <span class="hotel-booking-section__animal-summary-label">Общая стоимость:</span>
-                <span class="hotel-booking-section__animal-summary-price">₽{{ formatHotelPrice(animalAvailabilityTotal) }}</span>
+                <span class="hotel-booking-section__animal-summary-price">{{ formatHotelPriceLabel(animalAvailabilityTotal) }}</span>
               </div>
             </div>
           </div>
