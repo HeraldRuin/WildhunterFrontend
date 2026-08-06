@@ -37,8 +37,10 @@ const STATUS_LABELS: Record<string, string> = {
 const route = useRoute()
 const { bookings } = useApi()
 const { user } = useAuth()
+const notifications = useNotifications()
 
 const specialRequirements = ref('')
+const isSendingNotes = ref(false)
 
 const bookingCode = computed(() => String(route.query.code || '').trim())
 
@@ -115,6 +117,10 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
 
 const booking = computed(() => mapCheckoutToView(checkout.value))
 
+const canSendNotes = computed(() => {
+  return Boolean(specialRequirements.value.trim() && bookingCode.value)
+})
+
 const emailLine = computed(() => {
   const email = booking.value?.email
   return email
@@ -123,6 +129,27 @@ const emailLine = computed(() => {
 })
 
 const bookingsLink = '/profile/bookings'
+
+async function submitCustomerNotes() {
+  const notes = specialRequirements.value.trim()
+
+  if (!notes || !bookingCode.value || isSendingNotes.value) {
+    return
+  }
+
+  isSendingNotes.value = true
+
+  try {
+    const response = await bookings.updateCustomerNotes(bookingCode.value, notes)
+    notifications.success(response.message || 'Особые требования сохранены')
+  }
+  catch {
+    // Endpoint may reject invalid payloads — keep the form as is.
+  }
+  finally {
+    isSendingNotes.value = false
+  }
+}
 </script>
 
 <template>
@@ -185,7 +212,10 @@ const bookingsLink = '/profile/bookings'
           </div>
         </div>
 
-        <div class="booking-confirmation__cards">
+        <div
+          class="booking-confirmation__cards"
+          :class="{ 'booking-confirmation__cards--single': !booking.hasHunt }"
+        >
           <article class="booking-confirmation__card">
             <h2 class="booking-confirmation__card-title">Ваше проживание</h2>
 
@@ -294,8 +324,19 @@ const bookingsLink = '/profile/bookings'
             <button
               type="button"
               class="booking-confirmation__requirements-submit"
+              :class="{ 'booking-confirmation__requirements-submit--loading': isSendingNotes }"
+              :disabled="!canSendNotes || isSendingNotes"
+              :aria-busy="isSendingNotes"
+              @click="submitCustomerNotes"
             >
-              Отправить
+              <CommonSpinner
+                v-if="isSendingNotes"
+                variant="ring"
+                :size="22"
+                color="var(--wh-white)"
+                label="Отправляем"
+              />
+              <span v-else>Отправить</span>
             </button>
           </div>
         </section>
@@ -492,6 +533,15 @@ const bookingsLink = '/profile/bookings'
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   margin-bottom: 32px;
+}
+
+.booking-confirmation__cards--single {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+
+.booking-confirmation__cards--single .booking-confirmation__card {
+  width: min(100%, calc((100% - 24px) / 2));
 }
 
 .booking-confirmation__card {
@@ -696,8 +746,17 @@ const bookingsLink = '/profile/bookings'
   transition: background 0.15s ease;
 }
 
-.booking-confirmation__requirements-submit:hover {
+.booking-confirmation__requirements-submit:hover:not(:disabled) {
   background: var(--wh-orange-600);
+}
+
+.booking-confirmation__requirements-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.booking-confirmation__requirements-submit--loading {
+  cursor: wait;
 }
 
 /* Узкий десктоп: уменьшаем фото и кнопку, зелёной плашке больше места */
@@ -818,6 +877,10 @@ const bookingsLink = '/profile/bookings'
 
   .booking-confirmation__cards {
     grid-template-columns: 1fr;
+  }
+
+  .booking-confirmation__cards--single .booking-confirmation__card {
+    width: 100%;
   }
 
   .booking-confirmation__card-panel {
