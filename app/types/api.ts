@@ -307,6 +307,8 @@ export interface BookingCheckoutRoom {
 
 export interface BookingCheckoutData {
   code: string
+  booking_number: string | number
+  gateway: string | null
   created_at: string
   status: string
   type: string

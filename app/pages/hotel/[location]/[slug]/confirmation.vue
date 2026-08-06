@@ -92,9 +92,9 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
     .join(', ')
 
   return {
-    bookingNumber: data.code,
+    bookingNumber: String(data.booking_number ?? ''),
     bookingDate: formatCheckoutDate(data.created_at),
-    paymentMethod: '—',
+    paymentMethod: data.gateway?.trim() || '—',
     statusLabel: STATUS_LABELS[data.status] || data.status,
     email: user.value?.email || '',
     hotelTitle: data.hotel?.title || '',

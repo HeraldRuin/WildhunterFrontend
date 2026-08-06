@@ -282,6 +282,7 @@ function handleSubmit() {
 defineExpose({
   getSelectedAnimalId: () => animal.value,
   getHunters: () => adultsCount.value,
+  getHuntDate: () => (huntDate.value ? formatDisplayDate(startOfDay(huntDate.value)) : ''),
 })
 </script>
 

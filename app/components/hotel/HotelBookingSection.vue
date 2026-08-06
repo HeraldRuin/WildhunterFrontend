@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HotelRoomAvailability } from '~/types/api'
 import type { HotelRoomOption } from '~/types/hotelBooking'
-import { parseDisplayDateToApiDate, startOfDay } from '~/utils/date'
+import { formatApiDate, parseDisplayDate, parseDisplayDateToApiDate, startOfDay } from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 
 const props = withDefaults(defineProps<{
@@ -89,6 +89,7 @@ const datesGuestsRef = ref<{
 const animalsSearchRef = ref<{
   getSelectedAnimalId: () => string
   getHunters: () => number
+  getHuntDate: () => string
 } | null>(null)
 const roomSelectionRef = ref<{
   getSelectedRooms: () => { room_id: number, number: number }[]
@@ -323,26 +324,58 @@ async function proceedBook() {
   const hotelId = hotel.value?.id
   const stay = datesGuestsRef.value?.getBookingPayload()
   const rooms = roomSelectionRef.value?.getSelectedRooms() || []
-  const checkIn = stay ? parseDisplayDateToApiDate(stay.checkIn) : null
-  const checkOut = stay ? parseDisplayDateToApiDate(stay.checkOut) : null
+  const stayCheckIn = stay ? parseDisplayDateToApiDate(stay.checkIn) : null
+  const stayCheckOut = stay ? parseDisplayDateToApiDate(stay.checkOut) : null
   const animalIdRaw = animalsSearchRef.value?.getSelectedAnimalId() || ''
   const animalId = animalIdRaw ? Number(animalIdRaw) : undefined
   const hunters = animalsSearchRef.value?.getHunters() ?? 1
+  const hasAnimal = animalId != null && Number.isFinite(animalId)
+  const huntDateRaw = animalsSearchRef.value?.getHuntDate() || ''
+  const huntDate = huntDateRaw ? parseDisplayDateToApiDate(huntDateRaw) : null
+  const huntOnly = hasAnimal && !rooms.length
 
-  if (!hotelId || !stay || !checkIn || !checkOut || !rooms.length) {
+  let checkIn = stayCheckIn
+  let checkOut = stayCheckOut
+  let adults = stay?.adults ?? hunters
+
+  if (huntOnly) {
+    if (!huntDate) {
+      isNoHuntConfirmOpen.value = false
+      isNoRoomConfirmOpen.value = false
+      isHuntDateWarningOpen.value = true
+      return
+    }
+
+    // API still expects a stay range; for hunt-only use hunt day → next day.
+    const huntDay = parseDisplayDate(huntDateRaw)
+    checkIn = huntDate
+    checkOut = huntDay
+      ? formatApiDate(new Date(huntDay.getFullYear(), huntDay.getMonth(), huntDay.getDate() + 1))
+      : null
+    adults = hunters
+  }
+  else if (!stayCheckIn || !stayCheckOut) {
+    isNoHuntConfirmOpen.value = false
+    isNoRoomConfirmOpen.value = false
+    isStayDateWarningOpen.value = true
+    return
+  }
+
+  if (!hotelId || !checkIn || !checkOut || (!rooms.length && !hasAnimal)) {
     return
   }
 
   isNoHuntConfirmOpen.value = false
+  isNoRoomConfirmOpen.value = false
   isBooking.value = true
 
   try {
     const response = await bookings.create({
       hotel_id: hotelId,
-      ...(animalId != null && Number.isFinite(animalId) ? { animal_id: animalId } : {}),
+      ...(hasAnimal ? { animal_id: animalId } : {}),
       check_in: checkIn,
       check_out: checkOut,
-      adults: stay.adults,
+      adults,
       hunters,
       rooms,
     })
@@ -355,8 +388,8 @@ async function proceedBook() {
       },
     })
   }
-  catch {
-    // Endpoint may reject invalid payloads — keep user on the form.
+  catch (error) {
+    showApiMessage(getResponseMessage(error) || 'Не удалось создать бронирование')
   }
   finally {
     isBooking.value = false
@@ -573,7 +606,8 @@ watch(
               <button
                 type="button"
                 class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
-                @click="closeNoRoomConfirm"
+                :disabled="isBooking"
+                @click="proceedBook"
               >
                 Да
               </button>
