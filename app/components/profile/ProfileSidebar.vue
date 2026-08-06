@@ -637,7 +637,8 @@ async function handleLogout() {
   display: block;
   padding: 10px 14px;
   border: none;
-  background: none;
+  border-radius: 10px;
+  background: transparent;
 
   font-family: "Inter", sans-serif;
   font-size: 16px;
@@ -648,11 +649,11 @@ async function handleLogout() {
   color: var(--wh-white);
   text-align: left;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .profile-sidebar__footer-link:hover {
-  opacity: 0.85;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .profile-sidebar__footer-link--logout {
