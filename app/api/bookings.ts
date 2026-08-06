@@ -1,4 +1,9 @@
-import type { CreateBookingRequest, CreateBookingResponse } from '~/types/api'
+import type {
+  BookingCheckoutResponse,
+  CreateBookingRequest,
+  CreateBookingResponse,
+  UpdateCustomerNotesResponse,
+} from '~/types/api'
 import { useApiClient } from './client'
 
 export function useBookingsApi() {
@@ -11,7 +16,25 @@ export function useBookingsApi() {
     })
   }
 
+  function checkout(code: string) {
+    return apiFetch<BookingCheckoutResponse>(
+      `/bookings/${encodeURIComponent(code)}/checkout`,
+    )
+  }
+
+  function updateCustomerNotes(code: string, customerNotes: string) {
+    return apiFetch<UpdateCustomerNotesResponse>('/bookings/customer-notes', {
+      method: 'PUT',
+      body: {
+        code,
+        customer_notes: customerNotes,
+      },
+    })
+  }
+
   return {
     create,
+    checkout,
+    updateCustomerNotes,
   }
 }

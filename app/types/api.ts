@@ -270,7 +270,62 @@ export interface CreateBookingRequest {
   rooms: CreateBookingRoom[]
 }
 
-export type CreateBookingResponse = ApiSuccessResponse<unknown>
+export type CreateBookingResponse = ApiSuccessResponse<{
+  booking_code: string
+}>
+
+export type UpdateCustomerNotesResponse = ApiSuccessResponse<{
+  customer_notes: string | null
+}>
+
+export interface BookingCheckoutLocation {
+  id: number
+  name: string
+  slug?: string
+}
+
+export interface BookingCheckoutHotel {
+  id: number
+  title: string
+  slug?: string
+}
+
+export interface BookingCheckoutAnimal {
+  id: number
+  title: string
+  slug?: string
+  image_url?: string | null
+  content?: string | null
+}
+
+export interface BookingCheckoutRoom {
+  room_id: number
+  title: string | null
+  number: number
+  price: number
+}
+
+export interface BookingCheckoutData {
+  code: string
+  created_at: string
+  status: string
+  type: string
+  check_in: string
+  check_out: string
+  start_date_animal: string | null
+  location: BookingCheckoutLocation | null
+  hotel: BookingCheckoutHotel | null
+  animal: BookingCheckoutAnimal | null
+  total: number
+  amount_hunting: number
+  all_total: number
+  deposit: number
+  total_guests: number
+  total_hunting: number | null
+  rooms: BookingCheckoutRoom[]
+}
+
+export type BookingCheckoutResponse = ApiSuccessResponse<BookingCheckoutData>
 
 export interface SearchResultData {
   total: number
