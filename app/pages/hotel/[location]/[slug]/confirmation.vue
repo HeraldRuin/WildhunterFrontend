@@ -29,9 +29,9 @@ const booking = {
   hunters: 3,
   organizationFee: 10_000,
   trophyFee: 30_000,
-  specialRequirements: '',
 }
 
+const specialRequirements = ref('')
 const emailLine = `Информация о бронировании отправлена по адресу: ${booking.email}`
 const bookingsLink = '/profile/bookings'
 </script>
@@ -179,8 +179,19 @@ const bookingsLink = '/profile/bookings'
 
         <section class="booking-confirmation__requirements">
           <h2 class="booking-confirmation__requirements-title">Особые требования</h2>
-          <div class="booking-confirmation__requirements-field">
-            {{ booking.specialRequirements }}
+          <div class="booking-confirmation__requirements-row">
+            <input
+              v-model="specialRequirements"
+              type="text"
+              class="booking-confirmation__requirements-field"
+              aria-label="Особые требования"
+            >
+            <button
+              type="button"
+              class="booking-confirmation__requirements-submit"
+            >
+              Отправить
+            </button>
           </div>
         </section>
       </section>
@@ -503,7 +514,15 @@ const bookingsLink = '/profile/bookings'
   color: var(--wh-black-text);
 }
 
+.booking-confirmation__requirements-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 16px;
+}
+
 .booking-confirmation__requirements-field {
+  width: 100%;
   height: 70px;
   min-height: 70px;
   padding: 16px 18px;
@@ -513,10 +532,46 @@ const bookingsLink = '/profile/bookings'
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--wh-shadow);
-  color: var(--wh-gray-600);
-  font-size: 0.9375rem;
-  line-height: 1.5;
+  color: var(--wh-black-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 22px;
+  line-height: 1.4;
+  letter-spacing: -0.05em;
   box-sizing: border-box;
+  outline: none;
+}
+
+.booking-confirmation__requirements-field::placeholder {
+  color: var(--wh-gray-600);
+}
+
+.booking-confirmation__requirements-field:focus {
+  border-color: var(--wh-orange-500);
+}
+
+.booking-confirmation__requirements-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+  height: 70px;
+  padding: 0 24px;
+  border: none;
+  border-radius: var(--wh-radius-lg);
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 100%;
+  letter-spacing: -0.05em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.booking-confirmation__requirements-submit:hover {
+  background: var(--wh-orange-600);
 }
 
 /* Узкий десктоп: уменьшаем фото и кнопку, зелёной плашке больше места */
@@ -686,11 +741,13 @@ const bookingsLink = '/profile/bookings'
     font-size: 22px;
   }
 
-  .booking-confirmation__summary-row {
+  .booking-confirmation__summary-row,
+  .booking-confirmation__requirements-row {
     grid-template-columns: 1fr;
   }
 
-  .booking-confirmation__cta {
+  .booking-confirmation__cta,
+  .booking-confirmation__requirements-submit {
     width: 100%;
     height: 56px;
     min-height: 56px;
