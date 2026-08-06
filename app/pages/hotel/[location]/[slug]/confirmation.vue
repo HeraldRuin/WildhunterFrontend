@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import type { BookingCheckoutData } from '~/types/api'
+import {
+  countNightsBetween,
+  formatBookingDate,
+  parseBirthdayDate,
+} from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 
 definePageMeta({
@@ -9,30 +15,113 @@ useHead({
   title: 'Бронирование отправлено — WH',
 })
 
-/** Моковые данные для вёрстки — потом заменим на ответ API */
-const booking = {
-  bookingNumber: '274',
-  bookingDate: '16.04.2026',
-  paymentMethod: 'Pay Keeper',
-  statusLabel: 'Обработка',
-  email: 'bugaginio@gmail.com',
-  hotelTitle: 'Хромой кабан 2',
-  hotelImage: '',
-  checkIn: '10.04.2026',
-  checkOut: '11.04.2026',
-  nights: 1,
-  adults: 2,
-  roomLabel: '4-х местный × 1',
-  accommodationTotal: 4000,
-  animalTitle: 'Кабан',
-  huntDate: '10.04.2026',
-  hunters: 3,
-  organizationFee: 10_000,
-  trophyFee: 30_000,
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Черновик',
+  unpaid: 'Не оплачено',
+  paid: 'Оплачено',
+  processing: 'Ожидается подтверждение базой',
+  completed: 'Завершено',
+  confirmed: 'Подтверждено',
+  cancelled: 'Отменено',
+  partial_payment: 'Частичная оплата',
+  collection: 'Сбор охотников',
+  finished_collection: 'Сбор завершен',
+  invitation: 'Приглашения',
+  prepayment: 'Предоплата',
+  prepayment_collection: 'Сбор предоплаты',
+  finish_prepayment: 'Предоплата собрана',
+  bed_collection: 'Выбор койко-мест',
+  finish_bed_collection: 'Койко-места выбраны',
 }
 
+const route = useRoute()
+const { bookings } = useApi()
+const { user } = useAuth()
+
 const specialRequirements = ref('')
-const emailLine = `Информация о бронировании отправлена по адресу: ${booking.email}`
+
+const bookingCode = computed(() => String(route.query.code || '').trim())
+
+const { data: checkout, pending: checkoutPending } = useAsyncData(
+  () => `booking-checkout-${bookingCode.value}`,
+  async () => {
+    if (!bookingCode.value) {
+      return null
+    }
+
+    try {
+      const response = await bookings.checkout(bookingCode.value)
+      return response.success ? response.data : null
+    }
+    catch {
+      return null
+    }
+  },
+  {
+    watch: [bookingCode],
+  },
+)
+
+function formatCheckoutDate(value: string | null | undefined) {
+  if (!value) {
+    return ''
+  }
+
+  const parsed = parseBirthdayDate(value)
+  return parsed ? formatBookingDate(parsed) : value
+}
+
+function mapCheckoutToView(data: BookingCheckoutData | null) {
+  if (!data) {
+    return null
+  }
+
+  const checkInDate = parseBirthdayDate(data.check_in)
+  const checkOutDate = parseBirthdayDate(data.check_out)
+  const nights = checkInDate && checkOutDate
+    ? countNightsBetween(checkInDate, checkOutDate)
+    : 0
+
+  const roomLabel = data.rooms
+    .map((room) => {
+      const title = room.title?.trim() || 'Номер'
+      return `${title} × ${room.number}`
+    })
+    .join(', ')
+
+  return {
+    bookingNumber: data.code,
+    bookingDate: formatCheckoutDate(data.created_at),
+    paymentMethod: '—',
+    statusLabel: STATUS_LABELS[data.status] || data.status,
+    email: user.value?.email || '',
+    hotelTitle: data.hotel?.title || '',
+    hotelImage: '',
+    checkIn: formatCheckoutDate(data.check_in),
+    checkOut: formatCheckoutDate(data.check_out),
+    nights,
+    adults: data.total_guests,
+    roomLabel,
+    accommodationTotal: data.total,
+    animalTitle: data.animal?.title || '',
+    animalImage: data.animal?.image_url || '',
+    huntDate: formatCheckoutDate(data.start_date_animal || data.check_in),
+    hunters: data.total_hunting ?? 0,
+    organizationFee: data.amount_hunting,
+    trophyFee: 0,
+    hasHunt: Boolean(data.animal),
+  }
+}
+
+const booking = computed(() => mapCheckoutToView(checkout.value))
+
+const emailLine = computed(() => {
+  const email = booking.value?.email
+  return email
+    ? `Информация о бронировании отправлена по адресу: ${email}`
+    : 'Информация о бронировании отправлена'
+})
+
 const bookingsLink = '/profile/bookings'
 </script>
 
@@ -43,7 +132,11 @@ const bookingsLink = '/profile/bookings'
     </div>
 
     <div class="booking-confirmation__body">
-      <section class="booking-confirmation__hero">
+      <div v-if="checkoutPending" class="booking-confirmation__loading" aria-busy="true">
+        <CommonSpinner variant="ring" :size="32" color="var(--wh-green)" label="Загружаем бронирование" />
+      </div>
+
+      <section v-else-if="booking" class="booking-confirmation__hero">
         <div class="booking-confirmation__success">
           <span class="booking-confirmation__success-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="22" height="22">
@@ -144,13 +237,25 @@ const bookingsLink = '/profile/bookings'
             </div>
           </article>
 
-          <article class="booking-confirmation__card">
+          <article v-if="booking.hasHunt" class="booking-confirmation__card">
             <h2 class="booking-confirmation__card-title">Ваша охота</h2>
 
             <div class="booking-confirmation__card-panel">
               <div class="booking-confirmation__card-content">
                 <div class="booking-confirmation__card-media">
-                  <div class="booking-confirmation__card-placeholder" aria-hidden="true" />
+                  <div
+                    class="booking-confirmation__card-placeholder"
+                    :class="{ 'booking-confirmation__card-placeholder--image': booking.animalImage }"
+                    :aria-hidden="booking.animalImage ? undefined : 'true'"
+                  >
+                    <img
+                      v-if="booking.animalImage"
+                      :src="booking.animalImage"
+                      :alt="booking.animalTitle"
+                      loading="lazy"
+                      decoding="async"
+                    >
+                  </div>
                   <p class="booking-confirmation__card-caption">{{ booking.animalTitle }}</p>
                 </div>
 
@@ -167,7 +272,7 @@ const bookingsLink = '/profile/bookings'
                     <dt>Организация охоты</dt>
                     <dd>{{ formatHotelPriceLabel(booking.organizationFee) }}</dd>
                   </div>
-                  <div class="booking-confirmation__detail-row">
+                  <div v-if="booking.trophyFee > 0" class="booking-confirmation__detail-row">
                     <dt>Трофей</dt>
                     <dd>{{ formatHotelPriceLabel(booking.trophyFee) }}</dd>
                   </div>
@@ -194,6 +299,20 @@ const bookingsLink = '/profile/bookings'
             </button>
           </div>
         </section>
+      </section>
+
+      <section v-else class="booking-confirmation__hero">
+        <h1 class="booking-confirmation__title">
+          Не удалось загрузить бронирование
+        </h1>
+        <p class="booking-confirmation__subtitle">
+          Проверьте ссылку или создайте бронирование заново.
+        </p>
+        <div class="booking-confirmation__cta-wrap">
+          <NuxtLink :to="bookingsLink" class="booking-confirmation__cta">
+            Перейти в бронирования
+          </NuxtLink>
+        </div>
       </section>
     </div>
 
@@ -225,6 +344,13 @@ const bookingsLink = '/profile/bookings'
 
 .booking-confirmation__body {
   padding: 28px 0 72px;
+}
+
+.booking-confirmation__loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 240px;
 }
 
 .booking-confirmation__hero {
