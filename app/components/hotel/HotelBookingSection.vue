@@ -458,6 +458,7 @@ watch(
         <div class="hotel-booking-section__animals-block">
           <HotelAnimalsSearch
             ref="animalsSearchRef"
+            :animals="hotel?.animals ?? []"
             :stay-check-in="stayCheckIn"
             :stay-check-out="stayCheckOut"
             :loading="isCheckingAnimals"

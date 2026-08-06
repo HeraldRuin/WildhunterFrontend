@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import type { SearchAnimal } from '~/types/api'
+import type { HotelAnimalItem } from '~/types/api'
 import { formatDisplayDate, startOfDay } from '~/utils/date'
 
 const props = withDefaults(defineProps<{
+  animals?: HotelAnimalItem[]
   stayCheckIn?: Date | null
   stayCheckOut?: Date | null
   loading?: boolean
 }>(), {
+  animals: () => [],
   loading: false,
 })
 
@@ -16,8 +18,6 @@ const emit = defineEmits<{
 
 const maxAdults = 100
 const emptyHuntDateLabel = 'Пожалуйста выберите дату'
-
-const { animals: animalsApi } = useApi()
 
 const huntDate = ref<Date | null>(null)
 
@@ -75,17 +75,20 @@ const datesFieldRef = ref<HTMLElement | null>(null)
 const huntersFieldRef = ref<HTMLElement | null>(null)
 const animalFieldRef = ref<HTMLElement | null>(null)
 
-const { data: animals, pending: animalsLoading } = useAsyncData<SearchAnimal[]>(
-  'hotel-animals-search',
-  () => animalsApi.getAnimalItems(),
-  {
-    lazy: true,
-    default: () => [],
-  },
-)
+const animals = computed(() => props.animals)
 
 const selectedAnimal = computed(() =>
-  animals.value?.find(item => String(item.id) === animal.value),
+  animals.value.find(item => String(item.id) === animal.value),
+)
+
+watch(
+  animals,
+  (items) => {
+    if (animal.value && !items.some(item => String(item.id) === animal.value)) {
+      animal.value = ''
+    }
+  },
+  { immediate: true },
 )
 
 function formatAdultsLabel(count: number) {
@@ -146,7 +149,7 @@ function toggleHuntersDropdown() {
 }
 
 function toggleAnimalDropdown() {
-  if (animalsLoading.value) {
+  if (!animals.value.length) {
     return
   }
 
@@ -191,7 +194,7 @@ function decrementAdults() {
   }
 }
 
-function selectAnimal(item: SearchAnimal) {
+function selectAnimal(item: HotelAnimalItem) {
   animal.value = String(item.id)
   isAnimalOpen.value = false
   hoveredAnimalId.value = null
@@ -410,7 +413,7 @@ defineExpose({
           <button
             type="button"
             class="hotel-animals-search__value"
-            :disabled="animalsLoading"
+            :disabled="!animals.length"
             @click="toggleAnimalDropdown"
           >
             {{ animalLabel }}
@@ -439,7 +442,7 @@ defineExpose({
           </svg>
 
           <ul
-            v-if="isAnimalOpen && animals?.length"
+            v-if="isAnimalOpen && animals.length"
             class="hotel-animals-search__dropdown-list"
             role="listbox"
             aria-label="Животные"

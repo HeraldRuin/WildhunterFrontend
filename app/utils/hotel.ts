@@ -1,4 +1,4 @@
-import type { BookableItem, HotelDetail, HotelGalleryImage, HotelTermGroup, ReviewItem } from '~/types/api'
+import type { BookableItem, HotelAnimalItem, HotelDetail, HotelGalleryImage, HotelTermGroup, ReviewItem } from '~/types/api'
 import { isValidGalleryImage, shouldShowOfferImage } from '~/utils/image'
 import { MOCK_SEARCH_ITEMS, toOfferItem } from '~/utils/search'
 
@@ -93,6 +93,23 @@ function parseTerms(raw: unknown): HotelTermGroup[] {
         : [],
     }
   }).filter(group => group.terms.length)
+}
+
+function parseAnimals(raw: unknown): HotelAnimalItem[] {
+  if (!Array.isArray(raw)) {
+    return []
+  }
+
+  return raw.map((item, index) => {
+    const animal = item as Record<string, unknown>
+
+    return {
+      id: Number(animal.id ?? index + 1),
+      title: String(animal.title ?? animal.name ?? ''),
+      season: animal.season ? String(animal.season) : undefined,
+      price: animal.price != null ? Number(animal.price) : undefined,
+    }
+  }).filter(animal => animal.title && Number.isFinite(animal.id))
 }
 
 function readUrl(value: unknown): string {
@@ -279,7 +296,7 @@ export function normalizeHotelDetail(raw: unknown, params: HotelSlugParams): Hot
           }
         : undefined,
     terms: parseTerms(data.terms),
-    animals: createMockHotelDetail(params).animals,
+    animals: parseAnimals(data.animals),
     related,
     check_in_time: data.check_in_time ? String(data.check_in_time) : '14:00',
     check_out_time: data.check_out_time ? String(data.check_out_time) : '12:00',
