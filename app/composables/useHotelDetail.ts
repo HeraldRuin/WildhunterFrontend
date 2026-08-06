@@ -1,5 +1,5 @@
-import type { HotelDetailApiResponse } from '~/types/api'
-import { createMockHotelDetail, getHotelPath, normalizeHotelDetail } from '~/utils/hotel'
+import type { HotelDetail, HotelDetailApiResponse } from '~/types/api'
+import { getHotelPath, normalizeHotelDetail } from '~/utils/hotel'
 
 const HOTEL_DETAIL_TIMEOUT_MS = 4000
 
@@ -8,12 +8,12 @@ export interface HotelDetailParams {
   hotelSlug: string
 }
 
-export async function fetchHotelDetail(params: HotelDetailParams) {
+export async function fetchHotelDetail(params: HotelDetailParams): Promise<HotelDetail | null> {
   const { hotels } = useApi()
   const { locationSlug, hotelSlug } = params
 
   if (!locationSlug || !hotelSlug) {
-    return createMockHotelDetail(params)
+    return null
   }
 
   try {
@@ -30,10 +30,10 @@ export async function fetchHotelDetail(params: HotelDetailParams) {
     }
   }
   catch {
-    // API недоступен — используем мок-данные
+    // Network / timeout — caller shows error UI, never cache mock as real data
   }
 
-  return createMockHotelDetail(params)
+  return null
 }
 
 function getHotelDetailKey(params: HotelDetailParams) {
@@ -45,6 +45,11 @@ function getCachedHotelData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtAp
 
   // Prefetch may leave a Promise in payload — never treat it as ready data
   if (!cached || typeof (cached as { then?: unknown }).then === 'function') {
+    return undefined
+  }
+
+  // Failed fetches store null — do not reuse, allow refetch
+  if (cached === null) {
     return undefined
   }
 
@@ -92,7 +97,13 @@ export function prefetchHotelDetail(locationSlug?: string, hotelSlug?: string) {
   nuxtApp.payload.data[key] = request
 
   void request.then((data) => {
-    nuxtApp.payload.data[key] = data
+    if (data) {
+      nuxtApp.payload.data[key] = data
+      return
+    }
+
+    // Do not cache failed loads — otherwise mock-shaped null blocks refetch
+    delete nuxtApp.payload.data[key]
   }).catch(() => {
     delete nuxtApp.payload.data[key]
   })

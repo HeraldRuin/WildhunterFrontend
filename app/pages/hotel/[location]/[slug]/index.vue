@@ -15,17 +15,13 @@ const hotelParams = computed(() => ({
   hotelSlug: String(route.params.slug || ''),
 }))
 
-const { data: hotel } = useHotelDetail(hotelParams)
+const { data: hotel, pending: hotelPending, refresh: refreshHotel } = useHotelDetail(hotelParams)
 const placeholderHotel = computed(() => createMockHotelDetail(hotelParams.value))
-// Only blur/overlay on first load — not when cached data is already available (e.g. browser back)
-const isHotelLoading = computed(() => !hotel.value)
-const displayHotel = computed(() => {
-  if (isHotelLoading.value) {
-    return placeholderHotel.value
-  }
-
-  return hotel.value ?? placeholderHotel.value
-})
+// Blur silhouette only while loading or after a failed fetch — never treat mock as real hotel
+const isHotelLoading = computed(() => hotelPending.value && !hotel.value)
+const hasHotelError = computed(() => !hotelPending.value && !hotel.value)
+const showHotelPlaceholder = computed(() => isHotelLoading.value || hasHotelError.value)
+const displayHotel = computed(() => hotel.value ?? placeholderHotel.value)
 const { services } = useApi()
 const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
 const { isFavorite: isHotelFavorite, setFavorite, loadFavorites, isLoaded } = useFavoriteHotels()
@@ -162,6 +158,10 @@ async function handleFavoriteClick() {
 function handleBook() {
   void navigateTo(`${getHotelPath(hotelParams.value.locationSlug, hotelParams.value.hotelSlug)}/confirmation`)
 }
+
+function handleRetryHotelLoad() {
+  void refreshHotel()
+}
 </script>
 
 <template>
@@ -172,7 +172,7 @@ function handleBook() {
 
     <div
       class="hotel-page__body"
-      :class="{ 'hotel-page__body--loading': isHotelLoading }"
+      :class="{ 'hotel-page__body--loading': showHotelPlaceholder }"
       :aria-busy="isHotelLoading"
     >
       <section class="hotel-page__hero">
@@ -187,7 +187,7 @@ function handleBook() {
               :class="{ 'hotel-page__favorite--active': isFavorite }"
               :aria-label="isFavorite ? 'Убрать из избранного' : 'В избранное'"
               :aria-pressed="isFavorite"
-              :disabled="isFavoriteLoading || isHotelLoading"
+              :disabled="isFavoriteLoading || showHotelPlaceholder"
               @click="handleFavoriteClick"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -239,9 +239,9 @@ function handleBook() {
 
           <HotelGallery
             class="hotel-page__gallery"
-            :images="displayHotel.gallery"
+            :images="showHotelPlaceholder ? [] : displayHotel.gallery"
             :title="displayHotel.title"
-            :placeholder="isHotelLoading"
+            :placeholder="showHotelPlaceholder"
           />
 
           <section
@@ -269,6 +269,24 @@ function handleBook() {
           variant="ring"
           size="lg"
         />
+      </div>
+
+      <div
+        v-else-if="hasHotelError"
+        class="hotel-page__loading-overlay hotel-page__loading-overlay--error"
+        role="alert"
+      >
+        <div class="hotel-page__error">
+          <p class="hotel-page__error-title">Ошибка загрузки</p>
+          <p class="hotel-page__error-text">Не удалось загрузить данные базы. Попробуйте ещё раз.</p>
+          <button
+            type="button"
+            class="hotel-page__error-retry"
+            @click="handleRetryHotelLoad"
+          >
+            Повторить
+          </button>
+        </div>
       </div>
     </div>
 
@@ -323,6 +341,54 @@ function handleBook() {
   justify-content: center;
   padding-top: min(400px, 44vh);
   pointer-events: none;
+}
+
+.hotel-page__loading-overlay--error {
+  pointer-events: auto;
+}
+
+.hotel-page__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 320px;
+  padding: 20px 24px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: var(--wh-radius);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--wh-shadow);
+  text-align: center;
+}
+
+.hotel-page__error-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--wh-gray-900);
+}
+
+.hotel-page__error-text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--wh-gray-600);
+}
+
+.hotel-page__error-retry {
+  margin-top: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--wh-radius);
+  background: var(--wh-green);
+  color: var(--wh-white);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hotel-page__error-retry:hover {
+  opacity: 0.92;
 }
 
 .hotel-page__hero {

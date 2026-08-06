@@ -193,7 +193,7 @@ export function createMockHotelDetail(params: HotelSlugParams): HotelDetail {
       name: base.location?.name ?? '',
       slug: base.location?.slug ?? params.locationSlug,
     },
-    gallery: buildGallery({}, base.image, { useDefaultFallback: true }),
+    gallery: [],
     map_lat: 57.6261,
     map_lng: 39.8845,
     review_score: {
