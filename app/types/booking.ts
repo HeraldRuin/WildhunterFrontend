@@ -29,12 +29,20 @@ export interface CollectionModalState {
   participants: CollectionParticipant[]
 }
 
+export interface BookingRoomDetail {
+  name: string
+  capacity: number
+  quantity: number
+  pricePerDay: number
+}
+
 export interface BookingAccommodationDetails {
   checkIn: string
   checkOut: string
   nights: number
   guests: number
-  rooms?: string
+  roomsTotal?: number
+  rooms?: BookingRoomDetail[]
 }
 
 export interface BookingHuntDetails {

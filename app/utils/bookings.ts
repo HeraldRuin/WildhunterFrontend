@@ -14,6 +14,15 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
       checkOut: '06.03.26',
       nights: 3,
       guests: 1,
+      roomsTotal: 1,
+      rooms: [
+        {
+          name: 'Коттедж «Прованс»',
+          capacity: 8,
+          quantity: 1,
+          pricePerDay: 69000,
+        },
+      ],
     },
     status: {
       label: 'Обработка',
@@ -35,6 +44,15 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
       checkOut: '06.03.26',
       nights: 3,
       guests: 1,
+      roomsTotal: 1,
+      rooms: [
+        {
+          name: 'Коттедж «Прованс»',
+          capacity: 8,
+          quantity: 1,
+          pricePerDay: 69000,
+        },
+      ],
     },
     hunt: {
       date: '04.03.26',
@@ -64,6 +82,15 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
       checkOut: '06.03.26',
       nights: 3,
       guests: 2,
+      roomsTotal: 1,
+      rooms: [
+        {
+          name: 'Коттедж «Прованс»',
+          capacity: 8,
+          quantity: 1,
+          pricePerDay: 69000,
+        },
+      ],
     },
     hunt: {
       date: '04.03.26',
@@ -95,6 +122,15 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
       checkOut: '06.03.26',
       nights: 3,
       guests: 2,
+      roomsTotal: 1,
+      rooms: [
+        {
+          name: 'Коттедж «Прованс»',
+          capacity: 8,
+          quantity: 1,
+          pricePerDay: 69000,
+        },
+      ],
     },
     hunt: {
       date: '04.03.26',
@@ -129,6 +165,15 @@ export const MOCK_INVITATION_BOOKINGS: BookingHistoryItem[] = [
       checkOut: '18.03.26',
       nights: 3,
       guests: 4,
+      roomsTotal: 1,
+      rooms: [
+        {
+          name: 'Коттедж «Прованс»',
+          capacity: 8,
+          quantity: 1,
+          pricePerDay: 69000,
+        },
+      ],
     },
     hunt: {
       date: '16.03.26',
@@ -157,6 +202,15 @@ export const MOCK_INVITATION_BOOKINGS: BookingHistoryItem[] = [
       checkOut: '13.03.26',
       nights: 3,
       guests: 3,
+      roomsTotal: 1,
+      rooms: [
+        {
+          name: 'Коттедж «Прованс»',
+          capacity: 8,
+          quantity: 1,
+          pricePerDay: 69000,
+        },
+      ],
     },
     status: {
       label: 'Сбор охотников',
