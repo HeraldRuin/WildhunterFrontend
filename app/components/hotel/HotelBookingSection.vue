@@ -29,6 +29,11 @@ const hotelParams = computed(() => ({
 const { data: hotel, pending: hotelPending } = useHotelDetail(hotelParams)
 
 const hotelAnimals = computed(() => hotel.value?.animals ?? [])
+const animalWarningTitle = computed(() =>
+  hotelAnimals.value.length
+    ? 'Пожалуйста, выберите животное'
+    : 'У этой базы нет животных для охоты',
+)
 
 const sectionStyle = computed(() => ({
   width: props.width,
@@ -619,7 +624,7 @@ watch(
             <CommonModalCloseButton @click="closeAnimalWarning" />
 
             <h2 id="hotel-animal-warning-title" class="hotel-booking-confirm__title">
-              Пожалуйста, выберите животное
+              {{ animalWarningTitle }}
             </h2>
 
             <div class="hotel-booking-confirm__actions">
