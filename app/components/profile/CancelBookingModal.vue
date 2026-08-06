@@ -146,14 +146,14 @@ function handleConfirm() {
 }
 
 .cancel-booking-modal__btn--primary {
-  border: 1px solid #2f80ed;
-  background: #2f80ed;
+  border: 1px solid var(--wh-orange-500);
+  background: var(--wh-orange-500);
   color: var(--wh-white);
 }
 
 .cancel-booking-modal__btn--primary:hover {
-  border-color: #256fd1;
-  background: #256fd1;
+  border-color: var(--wh-orange-600);
+  background: var(--wh-orange-600);
 }
 
 .cancel-booking-modal-enter-active,
