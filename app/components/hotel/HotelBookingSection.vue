@@ -52,6 +52,7 @@ const isNoHuntConfirmOpen = ref(false)
 const isNoRoomConfirmOpen = ref(false)
 const isAnimalWarningOpen = ref(false)
 const isHuntDateWarningOpen = ref(false)
+const isStayDateWarningOpen = ref(false)
 const apiMessage = ref('')
 const animalAvailability = ref<{
   hunters: number
@@ -59,6 +60,8 @@ const animalAvailability = ref<{
 } | null>(null)
 const hasSelectedRooms = ref(false)
 const didAutoCheckFromSearch = ref(false)
+const stayCheckIn = ref<Date | null>(null)
+const stayCheckOut = ref<Date | null>(null)
 
 const animalAvailabilityTotal = computed(() => {
   if (!animalAvailability.value) {
@@ -84,6 +87,7 @@ const isAnyModalOpen = computed(() =>
   || isNoRoomConfirmOpen.value
   || isAnimalWarningOpen.value
   || isHuntDateWarningOpen.value
+  || isStayDateWarningOpen.value
   || isApiMessageOpen.value,
 )
 
@@ -110,6 +114,11 @@ function showApiMessage(message: string) {
 
 function closeApiMessage() {
   apiMessage.value = ''
+}
+
+function handleStayDatesChange(payload: { checkIn: Date | null, checkOut: Date | null }) {
+  stayCheckIn.value = payload.checkIn
+  stayCheckOut.value = payload.checkOut
 }
 
 function tryAutoCheckFromSearch() {
@@ -159,6 +168,11 @@ function mapAvailabilityRoom(room: HotelRoomAvailability): HotelRoomOption {
 }
 
 async function handleCheck(payload: { checkIn: string, checkOut: string, adults: number }) {
+  if (!payload.checkIn || !payload.checkOut) {
+    isStayDateWarningOpen.value = true
+    return
+  }
+
   const hotelId = hotel.value?.id
 
   if (!hotelId || isCheckingAvailability.value) {
@@ -169,6 +183,7 @@ async function handleCheck(payload: { checkIn: string, checkOut: string, adults:
   const checkOut = parseDisplayDateToApiDate(payload.checkOut)
 
   if (!checkIn || !checkOut) {
+    isStayDateWarningOpen.value = true
     return
   }
 
@@ -212,6 +227,9 @@ async function handleAnimalsCheck(payload: {
   const hotelId = hotel.value?.id
   const hunterData = parseDisplayDateToApiDate(payload.huntDate)
   const animalId = Number(payload.animalId)
+  const stay = datesGuestsRef.value?.getCheckPayload()
+  const checkIn = stay ? parseDisplayDateToApiDate(stay.checkIn) : null
+  const checkOut = stay ? parseDisplayDateToApiDate(stay.checkOut) : null
 
   if (!hotelId || !hunterData || !Number.isFinite(animalId) || isCheckingAnimals.value) {
     return
@@ -226,6 +244,7 @@ async function handleAnimalsCheck(payload: {
       animal_id: animalId,
       hunter_data: hunterData,
       hunters: payload.hunters,
+      ...(checkIn && checkOut ? { check_in: checkIn, check_out: checkOut } : {}),
     })
 
     if (response.success && response.data?.available) {
@@ -324,12 +343,17 @@ function closeHuntDateWarning() {
   isHuntDateWarningOpen.value = false
 }
 
+function closeStayDateWarning() {
+  isStayDateWarningOpen.value = false
+}
+
 function handleConfirmKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     closeNoHuntConfirm()
     closeNoRoomConfirm()
     closeAnimalWarning()
     closeHuntDateWarning()
+    closeStayDateWarning()
     closeApiMessage()
   }
 }
@@ -374,6 +398,8 @@ watch(
             ref="datesGuestsRef"
             :loading="isCheckingAvailability"
             @check="handleCheck"
+            @clear="availableRooms = []"
+            @dates-change="handleStayDatesChange"
           />
 
           <HotelRoomSelection
@@ -386,6 +412,9 @@ watch(
         <div class="hotel-booking-section__animals-block">
           <HotelAnimalsSearch
             ref="animalsSearchRef"
+            :stay-check-in="stayCheckIn"
+            :stay-check-out="stayCheckOut"
+            :loading="isCheckingAnimals"
             @check="handleAnimalsCheck"
           />
 
@@ -492,6 +521,35 @@ watch(
                 @click="closeNoRoomConfirm"
               >
                 Да
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="hotel-booking-confirm">
+        <div
+          v-if="isStayDateWarningOpen"
+          class="hotel-booking-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hotel-stay-date-warning-title"
+          @click.self="closeStayDateWarning"
+        >
+          <div class="hotel-booking-confirm__card">
+            <CommonModalCloseButton @click="closeStayDateWarning" />
+
+            <h2 id="hotel-stay-date-warning-title" class="hotel-booking-confirm__title">
+              Пожалуйста, выберите дату
+            </h2>
+
+            <div class="hotel-booking-confirm__actions">
+              <button
+                type="button"
+                class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
+                @click="closeStayDateWarning"
+              >
+                Хорошо
               </button>
             </div>
           </div>
@@ -756,8 +814,10 @@ watch(
 
 .hotel-booking-confirm__card {
   position: relative;
-  width: min(100%, 420px);
-  padding: 40px 32px 28px;
+  width: 480px;
+  min-width: min(100%, var(--wh-auth-modal-width));
+  max-width: 100%;
+  padding: 48px 36px 32px;
   border-radius: var(--wh-radius);
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
