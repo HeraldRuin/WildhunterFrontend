@@ -330,7 +330,7 @@ async function proceedBook() {
   isBooking.value = true
 
   try {
-    await bookings.create({
+    const response = await bookings.create({
       hotel_id: hotelId,
       ...(animalId != null && Number.isFinite(animalId) ? { animal_id: animalId } : {}),
       check_in: checkIn,
@@ -341,7 +341,12 @@ async function proceedBook() {
     })
 
     emit('book')
-    await navigateTo(confirmationPath.value)
+    await navigateTo({
+      path: confirmationPath.value,
+      query: {
+        code: response.data.booking_code,
+      },
+    })
   }
   catch {
     // Endpoint may reject invalid payloads — keep user on the form.
