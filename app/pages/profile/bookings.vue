@@ -26,11 +26,6 @@ const breadcrumbs = [
 const activeTab = ref<BookingTab>('my')
 const page = ref(1)
 
-const tabs: { id: BookingTab, label: string }[] = [
-  { id: 'my', label: 'Мои брони' },
-  { id: 'invitations', label: 'Приглашения' },
-]
-
 const bookingIdFilter = computed(() => {
   const raw = route.query.booking_id
   const value = Number(Array.isArray(raw) ? raw[0] : raw)
@@ -112,20 +107,7 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
 
     <CommonPageTitle divider>Бронирования</CommonPageTitle>
 
-    <div class="bookings-page__tabs" role="tablist" aria-label="Разделы бронирований">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        type="button"
-        role="tab"
-        class="bookings-page__tab"
-        :class="{ 'bookings-page__tab--active': activeTab === tab.id }"
-        :aria-selected="activeTab === tab.id"
-        @click="activeTab = tab.id"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
+    <ProfileBookingHistoryTabs v-model="activeTab" />
 
     <div v-if="historyPending && !bookings.length" class="bookings-page__loading" aria-live="polite">
       <CommonSpinner variant="ring" size="lg" label="Загрузка бронирований" />
@@ -205,42 +187,10 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   line-height: 1;
 }
 
-.bookings-page__tabs {
-  display: flex;
-  gap: 28px;
-  margin-bottom: 16px;
-}
 
-.bookings-page__tab {
-  position: relative;
-  padding: 10px 0 12px;
-  border: none;
-  background: none;
-  color: var(--wh-gray-400);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
 
-.bookings-page__tab:hover {
-  color: var(--wh-gray-600);
-}
 
-.bookings-page__tab--active {
-  color: var(--wh-orange-500);
-}
 
-.bookings-page__tab--active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px 2px 0 0;
-  background: var(--wh-orange-500);
-}
 
 .bookings-page__loading {
   display: flex;
@@ -257,13 +207,8 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     padding: 12px 8px 32px;
   }
 
-  .bookings-page__header,
-  .bookings-page__tabs {
+  .bookings-page__header {
     width: 100%;
-  }
-
-  .bookings-page__tabs {
-    gap: 20px;
   }
 }
 </style>
