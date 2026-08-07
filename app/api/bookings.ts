@@ -2,6 +2,7 @@ import type {
   BookingCheckoutResponse,
   BookingHistoryQuery,
   BookingHistoryResponse,
+  CancelBookingResponse,
   ConfirmBookingResponse,
   CreateBookingRequest,
   CreateBookingResponse,
@@ -38,6 +39,15 @@ export function useBookingsApi() {
     )
   }
 
+  function cancel(code: string) {
+    return apiFetch<CancelBookingResponse>(
+      `/bookings/${encodeURIComponent(code)}/cancel`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
   function checkout(code: string) {
     return apiFetch<BookingCheckoutResponse>(
       `/bookings/${encodeURIComponent(code)}/checkout`,
@@ -58,6 +68,7 @@ export function useBookingsApi() {
     create,
     history,
     confirm,
+    cancel,
     checkout,
     updateCustomerNotes,
   }

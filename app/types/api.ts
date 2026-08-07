@@ -284,6 +284,12 @@ export type ConfirmBookingResponse = ApiSuccessResponse<{
   status: string
 }>
 
+export type CancelBookingResponse = ApiSuccessResponse<{
+  id: number
+  code: string
+  status: string
+}>
+
 export interface BookingCheckoutLocation {
   id: number
   name: string
