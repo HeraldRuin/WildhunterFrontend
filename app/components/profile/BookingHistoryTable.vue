@@ -283,8 +283,9 @@ onBeforeUnmount(() => {
 .booking-table-empty {
   padding: 48px 24px;
   text-align: center;
-  color: var(--wh-gray-500);
+  color: var(--wh-gray-900);
   font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .booking-table-scroll {

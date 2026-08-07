@@ -82,7 +82,7 @@ const emptyText = computed(() => {
 
   return statusFilter.value === 'invitation'
     ? 'Нет активных приглашений'
-    : 'Нет бронирований'
+    : 'Список истории бронирований пуст'
 })
 
 watch(statusFilter, () => {
