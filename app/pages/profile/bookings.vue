@@ -14,11 +14,13 @@ useHead({
 
 const route = useRoute()
 const { bookings: bookingsApi } = useApi()
+const notifications = useNotifications()
 
 const notificationCount = 2
 const { open: openCollectionModal } = useCollectionModal()
 const { open: openCancelBookingModal } = useCancelBookingModal()
 const { open: openAddServicesModal } = useAddServicesModal()
+const { open: openConfirmModal } = useConfirmModal()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -37,6 +39,7 @@ const {
   data: historyResponse,
   pending: historyPending,
   error: historyError,
+  refresh: refreshHistory,
 } = await useAsyncData(
   () => `profile-booking-history-${statusFilter.value ?? 'all'}-${page.value}-${bookingIdFilter.value ?? 'none'}`,
   () => bookingsApi.history({
@@ -79,6 +82,27 @@ watch(statusFilter, () => {
   page.value = 1
 })
 
+async function confirmBooking(booking: BookingHistoryItem) {
+  try {
+    const response = await bookingsApi.confirm(booking.code)
+
+    if ('success' in response && response.success) {
+      notifications.success(response.message || 'Бронь успешно подтверждена')
+      await refreshHistory()
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось подтвердить бронь')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось подтвердить бронь')
+    throw error
+  }
+
+  throw new Error('confirm_failed')
+}
+
 function handleBookingAction({ booking, action }: { booking: BookingHistoryItem, action: BookingAction }) {
   if (action.id === 'open_collection' || action.id === 'start_collection') {
     openCollectionModal(booking)
@@ -87,6 +111,14 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
 
   if (action.id === 'cancel_booking') {
     openCancelBookingModal(booking)
+    return
+  }
+
+  if (action.id === 'confirm_booking') {
+    openConfirmModal({
+      title: 'Вы уверены, что хотите подтвердить бронь?',
+      onConfirm: () => confirmBooking(booking),
+    })
     return
   }
 
