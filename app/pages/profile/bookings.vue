@@ -103,6 +103,27 @@ async function confirmBooking(booking: BookingHistoryItem) {
   throw new Error('confirm_failed')
 }
 
+async function cancelBooking(booking: BookingHistoryItem) {
+  try {
+    const response = await bookingsApi.cancel(booking.code)
+
+    if ('success' in response && response.success) {
+      notifications.success(response.message || 'Бронь успешно отменена')
+      await refreshHistory()
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось отменить бронь')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось отменить бронь')
+    throw error
+  }
+
+  throw new Error('cancel_failed')
+}
+
 function handleBookingAction({ booking, action }: { booking: BookingHistoryItem, action: BookingAction }) {
   if (action.id === 'open_collection' || action.id === 'start_collection') {
     openCollectionModal(booking)
@@ -110,7 +131,7 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   }
 
   if (action.id === 'cancel_booking') {
-    openCancelBookingModal(booking)
+    openCancelBookingModal(booking, () => cancelBooking(booking))
     return
   }
 
