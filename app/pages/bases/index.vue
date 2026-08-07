@@ -180,16 +180,9 @@ const { data: searchResult, refresh, pending: searchPending } = useAsyncData(
         return undefined
       }
 
-      const cached = getCachedPageData<NormalizedSearchResult>(key, nuxtApp)
-      if (cached) {
-        return cached
-      }
-
-      // С главной уже есть тот же каталог — показываем сразу, без повторного ожидания API.
-      const homeOffers = getCachedPageData<OfferItem[]>('home-hotel-offers', nuxtApp)
-      if (homeOffers?.length) {
-        return toCatalogResult(homeOffers)
-      }
+      // Кэш `home-hotel-offers` здесь использовать нельзя: на главной API
+      // возвращает только лучшие предложения, а не полный каталог.
+      return getCachedPageData<NormalizedSearchResult>(key, nuxtApp)
     },
   },
 )
@@ -217,7 +210,7 @@ watch(
 )
 
 watch(searchRequest, async (req, prev) => {
-  // Каталог уже есть (с главной / из payload) и запрос не изменился — не дёргаем API снова.
+  // Полный каталог уже есть в кэше /bases и запрос не изменился — не дёргаем API снова.
   if (
     req.catalog
     && hasSearchItems.value
@@ -367,10 +360,7 @@ function handleFiltersReset() {
 
     <section class="bases-page__results">
       <div class="container bases-page__results-inner">
-        <div
-          class="bases-page__toolbar"
-          :class="{ 'bases-page__toolbar--empty': !hasResults }"
-        >
+        <div class="bases-page__toolbar">
           <button
             v-show="!mobileFiltersOpen"
             type="button"
@@ -380,8 +370,8 @@ function handleFiltersReset() {
             Фильтры
           </button>
 
-          <h1 v-if="hasResults" class="bases-page__title">
-            Найдено баз: {{ totalCount }}
+          <h1 class="bases-page__title">
+            {{ isResultsLoading ? 'Загрузка баз…' : `Найдено баз: ${totalCount}` }}
           </h1>
 
           <NuxtLink
@@ -560,15 +550,7 @@ function handleFiltersReset() {
   color: var(--wh-gray-900);
 }
 
-.bases-page__toolbar--empty {
-  display: none;
-}
-
 @media (--wh-tablet) {
-  .bases-page__toolbar--empty {
-    display: flex;
-  }
-
   .bases-page__layout {
     grid-template-columns: 1fr;
   }
