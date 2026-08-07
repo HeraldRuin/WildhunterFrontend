@@ -110,15 +110,16 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: 896px;
-  max-width: 100%;
+  width: 100%;
   height: 31px;
   margin-bottom: 20px;
   padding: 0;
   box-sizing: border-box;
-  background: var(--wh-white);
-  border-radius: var(--wh-radius);
   overflow: visible;
+}
+
+.bookings-page :deep(.page-title--divider) {
+  width: 100%;
 }
 
 .bookings-page__notifications {
@@ -163,12 +164,10 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   display: flex;
   gap: 28px;
   margin-bottom: 16px;
-  border-bottom: 1px solid var(--wh-gray-200);
 }
 
 .bookings-page__tab {
   position: relative;
-  margin-bottom: -1px;
   padding: 10px 0 12px;
   border: none;
   background: none;
