@@ -154,7 +154,7 @@ onBeforeUnmount(() => {
           <tr v-for="item in items" :key="item.id">
             <td class="booking-table__number">{{ item.number }}</td>
             <td class="booking-table__date">{{ item.date }}</td>
-            <td>
+            <td class="booking-table__base">
               <NuxtLink
                 v-if="item.baseUrl"
                 :to="item.baseUrl"
@@ -226,16 +226,18 @@ onBeforeUnmount(() => {
               </button>
             </td>
             <td class="booking-table__actions">
-              <button
-                v-for="(action, index) in item.actions"
-                :key="`${item.id}-${index}`"
-                type="button"
-                class="booking-table__action"
-                :class="`booking-table__action--${action.variant}`"
-                @click="handleAction(item, action)"
-              >
-                {{ action.label }}
-              </button>
+              <div class="booking-table__actions-list">
+                <button
+                  v-for="(action, index) in item.actions"
+                  :key="`${item.id}-${index}`"
+                  type="button"
+                  class="booking-table__action"
+                  :class="`booking-table__action--${action.variant}`"
+                  @click="handleAction(item, action)"
+                >
+                  {{ action.label }}
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -293,8 +295,8 @@ onBeforeUnmount(() => {
 .booking-table th,
 .booking-table td {
   padding: 14px 12px;
-  border-bottom: 1px solid var(--wh-gray-200);
-  border-right: 1px solid var(--wh-gray-200);
+  border-bottom: 1px solid var(--wh-gray-400);
+  border-right: 1px solid var(--wh-gray-400);
   vertical-align: middle;
   text-align: left;
 }
@@ -322,9 +324,11 @@ onBeforeUnmount(() => {
 
 .booking-table th:first-child,
 .booking-table th:nth-child(2),
+.booking-table th:nth-child(3),
 .booking-table th:nth-child(4),
 .booking-table__number,
 .booking-table__date,
+.booking-table__base,
 .booking-table__type {
   width: 1%;
   white-space: nowrap;
@@ -339,9 +343,16 @@ onBeforeUnmount(() => {
 
 .booking-table th:nth-child(6),
 .booking-table__status {
-  width: 160px;
-  min-width: 140px;
-  max-width: 180px;
+  width: 220px;
+  min-width: 200px;
+  max-width: 240px;
+}
+
+.booking-table th:nth-child(8),
+.booking-table td.booking-table__actions {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
 }
 
 .booking-table th:nth-child(7),
@@ -424,18 +435,18 @@ onBeforeUnmount(() => {
   color: var(--wh-orange-600);
 }
 
-.booking-table__actions {
+.booking-table__actions-list {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 6px;
-  min-width: 130px;
 }
 
 .booking-table__action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 140px;
   padding: 7px 10px;
   border-radius: 999px;
   border: 1.5px solid transparent;
