@@ -14,6 +14,7 @@ useHead({
 const notificationCount = 2
 const { open: openCollectionModal } = useCollectionModal()
 const { open: openCancelBookingModal } = useCancelBookingModal()
+const { open: openAddServicesModal } = useAddServicesModal()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -42,6 +43,11 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
 
   if (action.id === 'cancel_booking') {
     openCancelBookingModal(booking)
+    return
+  }
+
+  if (action.id === 'add_services') {
+    openAddServicesModal(booking)
   }
 }
 </script>
@@ -89,6 +95,7 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
 
     <ProfileCollectionModal />
     <ProfileCancelBookingModal />
+    <ProfileAddServicesModal />
   </div>
 </template>
 
