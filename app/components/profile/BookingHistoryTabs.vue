@@ -106,6 +106,7 @@ function selectTab(tabId: string | undefined) {
         v-if="isBaseAdmin && dropdownOptions.length"
         v-model="dropdownValue"
         class="booking-history-tabs__status-select"
+        :class="{ 'booking-history-tabs__status-select--active': Boolean(dropdownValue) }"
         placeholder="Статусы"
         no-margin
         :options="dropdownOptions"
@@ -135,21 +136,35 @@ function selectTab(tabId: string | undefined) {
   position: relative;
   padding: 10px 0 12px;
   border: none;
-  border-bottom: 2px solid transparent;
   background: none;
   color: var(--wh-gray-400);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s ease;
+}
+
+.booking-history-tabs__tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--wh-orange-500);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0s;
 }
 
 .booking-history-tabs__tab:hover {
   color: var(--wh-gray-600);
 }
 
-.booking-history-tabs__tab--active {
-  border-bottom-color: var(--wh-orange-500);
+.booking-history-tabs__tab--active::after {
+  transform: scaleX(1);
+  transition: transform 0.28s ease;
 }
 
 .booking-history-tabs--admin .booking-history-tabs__tab {
@@ -182,6 +197,14 @@ function selectTab(tabId: string | undefined) {
   line-height: 1.3;
 }
 
+.booking-history-tabs__status-select--active :deep(.select-field__trigger) {
+  border-color: var(--wh-orange-500);
+}
+
+.booking-history-tabs__status-select--active :deep(.select-field__trigger:hover),
+.booking-history-tabs__status-select--active :deep(.select-field--open .select-field__trigger) {
+  border-color: var(--wh-orange-600);
+}
 
 .booking-history-tabs__status-select :deep(.select-field__list) {
   font-size: 0.9rem;
