@@ -155,7 +155,7 @@ function selectTab(tabId: string | undefined) {
   background: var(--wh-orange-500);
   transform: scaleX(0);
   transform-origin: center;
-  transition: transform 0s;
+  transition: transform 0.28s ease;
 }
 
 .booking-history-tabs__tab:hover {
@@ -164,7 +164,10 @@ function selectTab(tabId: string | undefined) {
 
 .booking-history-tabs__tab--active::after {
   transform: scaleX(1);
-  transition: transform 0.28s ease;
+}
+
+.booking-history-tabs__tab:not(.booking-history-tabs__tab--active)::after {
+  transition-duration: 0s;
 }
 
 .booking-history-tabs--admin .booking-history-tabs__tab {
