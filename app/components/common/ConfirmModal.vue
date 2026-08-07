@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { isOpen, close } = useCancelBookingModal()
+const { isOpen, isSubmitting, options, close, confirm } = useConfirmModal()
 
 useBodyScrollLock(isOpen)
 
@@ -14,48 +14,46 @@ function handleKeydown(event: KeyboardEvent) {
     close()
   }
 }
-
-function handleConfirm() {
-  close()
-}
 </script>
 
 <template>
   <Teleport to="body">
-    <Transition name="cancel-booking-modal">
+    <Transition name="confirm-modal">
       <div
-        v-if="isOpen"
-        class="cancel-booking-modal"
+        v-if="isOpen && options"
+        class="confirm-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="cancel-booking-modal-title"
+        aria-labelledby="confirm-modal-title"
         @click="handleBackdropClick"
         @keydown="handleKeydown"
       >
-        <div class="cancel-booking-modal__card">
-          <CommonModalCloseButton @click="close" />
+        <div class="confirm-modal__card">
+          <CommonModalCloseButton :disabled="isSubmitting" @click="close" />
 
-          <h2 id="cancel-booking-modal-title" class="cancel-booking-modal__title">
-            Вы уверены, что хотите отменить бронь?
+          <h2 id="confirm-modal-title" class="confirm-modal__title">
+            {{ options.title }}
           </h2>
 
-          <div class="cancel-booking-modal__actions">
+          <div class="confirm-modal__actions">
             <button
               type="button"
-              class="cancel-booking-modal__btn cancel-booking-modal__btn--secondary"
+              class="confirm-modal__btn confirm-modal__btn--secondary"
+              :disabled="isSubmitting"
               @click="close"
             >
-              <span class="cancel-booking-modal__icon" aria-hidden="true">✖</span>
-              Отменить
+              <span class="confirm-modal__icon" aria-hidden="true">✖</span>
+              {{ options.cancelLabel }}
             </button>
 
             <button
               type="button"
-              class="cancel-booking-modal__btn cancel-booking-modal__btn--primary"
-              @click="handleConfirm"
+              class="confirm-modal__btn confirm-modal__btn--primary"
+              :disabled="isSubmitting"
+              @click="confirm"
             >
-              <span class="cancel-booking-modal__icon" aria-hidden="true">✔</span>
-              Подтвердить
+              <span class="confirm-modal__icon" aria-hidden="true">✔</span>
+              {{ options.confirmLabel }}
             </button>
           </div>
         </div>
@@ -65,7 +63,7 @@ function handleConfirm() {
 </template>
 
 <style scoped>
-.cancel-booking-modal {
+.confirm-modal {
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -76,7 +74,7 @@ function handleConfirm() {
   isolation: isolate;
 }
 
-.cancel-booking-modal::before {
+.confirm-modal::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -87,7 +85,7 @@ function handleConfirm() {
   pointer-events: none;
 }
 
-.cancel-booking-modal__card {
+.confirm-modal__card {
   position: relative;
   width: min(100%, 520px);
   padding: 28px 28px 24px;
@@ -98,7 +96,7 @@ function handleConfirm() {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.cancel-booking-modal__title {
+.confirm-modal__title {
   margin: 0 48px 40px 0;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 1.05rem;
@@ -107,14 +105,14 @@ function handleConfirm() {
   color: var(--wh-gray-900);
 }
 
-.cancel-booking-modal__actions {
+.confirm-modal__actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
 }
 
-.cancel-booking-modal__btn {
+.confirm-modal__btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -126,58 +124,63 @@ function handleConfirm() {
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
-.cancel-booking-modal__icon {
+.confirm-modal__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.confirm-modal__icon {
   font-size: 0.85rem;
   line-height: 1;
 }
 
-.cancel-booking-modal__btn--secondary {
+.confirm-modal__btn--secondary {
   border: 1px solid var(--wh-field-border-active);
   background: var(--wh-white);
   color: var(--wh-gray-900);
 }
 
-.cancel-booking-modal__btn--secondary:hover {
+.confirm-modal__btn--secondary:hover:not(:disabled) {
   border-color: var(--wh-gray-900);
   background: var(--wh-gray-100);
 }
 
-.cancel-booking-modal__btn--primary {
+.confirm-modal__btn--primary {
   border: 1px solid var(--wh-orange-500);
   background: var(--wh-orange-500);
   color: var(--wh-white);
 }
 
-.cancel-booking-modal__btn--primary:hover {
+.confirm-modal__btn--primary:hover:not(:disabled) {
   border-color: var(--wh-orange-600);
   background: var(--wh-orange-600);
 }
 
-.cancel-booking-modal-enter-active,
-.cancel-booking-modal-leave-active {
+.confirm-modal-enter-active,
+.confirm-modal-leave-active {
   transition: visibility 0.2s linear;
 }
 
-.cancel-booking-modal-enter-from,
-.cancel-booking-modal-leave-to {
+.confirm-modal-enter-from,
+.confirm-modal-leave-to {
   visibility: visible;
 }
 
-.cancel-booking-modal-enter-from .cancel-booking-modal__card,
-.cancel-booking-modal-leave-to .cancel-booking-modal__card {
+.confirm-modal-enter-from .confirm-modal__card,
+.confirm-modal-leave-to .confirm-modal__card {
   opacity: 0;
   transform: translateY(8px);
 }
 
 @media (--wh-mobile) {
-  .cancel-booking-modal__actions {
+  .confirm-modal__actions {
     flex-direction: column-reverse;
   }
 
-  .cancel-booking-modal__btn {
+  .confirm-modal__btn {
     width: 100%;
   }
 }

@@ -135,7 +135,7 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     />
 
     <ProfileCollectionModal />
-    <ProfileCancelBookingModal />
+    <CommonConfirmModal />
     <ProfileAddServicesModal />
   </div>
 </template>
