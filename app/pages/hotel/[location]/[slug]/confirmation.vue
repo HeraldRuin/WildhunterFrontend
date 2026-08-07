@@ -98,7 +98,7 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
     statusLabel: STATUS_LABELS[data.status] || data.status,
     email: user.value?.email || '',
     hotelTitle: data.hotel?.title || '',
-    hotelImage: '',
+    hotelImage: data.hotel?.image_url || '',
     checkIn: formatCheckoutDate(data.check_in),
     checkOut: formatCheckoutDate(data.check_out),
     nights,

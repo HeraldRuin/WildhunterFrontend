@@ -288,6 +288,7 @@ export interface BookingCheckoutHotel {
   id: number
   title: string
   slug?: string
+  image_url?: string | null
 }
 
 export interface BookingCheckoutAnimal {
