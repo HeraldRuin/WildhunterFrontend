@@ -371,11 +371,23 @@ function handleFiltersReset() {
           </button>
 
           <h1 class="bases-page__title">
-            {{ isResultsLoading ? 'Загрузка баз…' : `Найдено баз: ${totalCount}` }}
+            <span>Найдено баз:</span>
+            <span
+              class="bases-page__count"
+            >
+              {{ totalCount || '' }}
+            </span>
           </h1>
 
+          <span
+            v-if="isResultsLoading"
+            class="bases-page__toolbar-link bases-page__map-link bases-page__map-link--disabled"
+            aria-disabled="true"
+          >
+            Показать на карте
+          </span>
           <NuxtLink
-            v-if="hasResults"
+            v-else
             :to="{ path: '/bases/map', query: route.query }"
             class="bases-page__toolbar-link bases-page__map-link"
           >
@@ -470,6 +482,10 @@ function handleFiltersReset() {
 
 .bases-page__title {
   grid-column: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   margin: 0;
   font-family: "UNCAGE", sans-serif;
   font-size: 32px;
@@ -479,6 +495,12 @@ function handleFiltersReset() {
   text-align: center;
   color: var(--wh-gray-900);
   white-space: nowrap;
+}
+
+.bases-page__count {
+  display: inline-block;
+  width: 3ch;
+  text-align: left;
 }
 
 .bases-page__toolbar-link {
@@ -507,6 +529,12 @@ function handleFiltersReset() {
 
 .bases-page__map-link {
   justify-self: end;
+}
+
+.bases-page__map-link--disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: default;
 }
 
 .bases-page__layout {
