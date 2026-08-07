@@ -295,8 +295,13 @@ onBeforeUnmount(() => {
   padding: 14px 12px;
   border-bottom: 1px solid var(--wh-gray-200);
   border-right: 1px solid var(--wh-gray-200);
-  vertical-align: top;
+  vertical-align: middle;
   text-align: left;
+}
+
+.booking-table th:nth-child(-n+4),
+.booking-table td:nth-child(-n+4) {
+  text-align: center;
 }
 
 .booking-table th:last-child,
