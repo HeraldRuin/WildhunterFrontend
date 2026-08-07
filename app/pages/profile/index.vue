@@ -107,6 +107,21 @@ watch(avatarPreview, () => {
 
 const showAvatarPreview = computed(() => Boolean(avatarPreview.value) && !avatarPreviewFailed.value)
 
+const isAvatarHistoryEmpty = computed(() =>
+  isAvatarHistoryOpen.value
+  && !avatarHistoryLoading.value
+  && !avatarHistoryError.value
+  && avatarHistory.value.length === 0,
+)
+
+const isAvatarHistoryPanelVisible = computed(() =>
+  isAvatarHistoryOpen.value && !isAvatarHistoryEmpty.value,
+)
+
+const isAvatarFileBtnVisible = computed(() =>
+  !isAvatarHistoryOpen.value || isAvatarHistoryEmpty.value,
+)
+
 function handleAvatarPreviewError() {
   avatarPreviewFailed.value = true
 }
@@ -421,6 +436,7 @@ function handleAvatarChange(event: Event) {
   clearFieldError('avatar')
 
   if (file) {
+    isAvatarHistoryOpen.value = false
     avatarObjectUrl.value = URL.createObjectURL(file)
   }
 }
@@ -690,7 +706,7 @@ async function handleSubmit() {
                       title="Ранее загруженные"
                       aria-label="Выбрать из ранее загруженных"
                       :aria-expanded="isAvatarHistoryOpen"
-                      :disabled="isSubmitting"
+                      :disabled="isSubmitting || Boolean(avatarFile)"
                       @click="toggleAvatarHistory"
                     >
                       <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -704,9 +720,15 @@ async function handleSubmit() {
                         />
                       </svg>
                     </button>
+                    <span
+                      v-if="isAvatarHistoryEmpty"
+                      class="profile-form__avatar-history-empty"
+                    >
+                      Нет сохранённых фото
+                    </span>
                   </div>
                   <div
-                    v-if="isAvatarHistoryOpen"
+                    v-if="isAvatarHistoryPanelVisible"
                     class="profile-form__avatar-history"
                   >
                     <p v-if="avatarHistoryLoading" class="profile-form__avatar-history-message">
@@ -717,12 +739,6 @@ async function handleSubmit() {
                       class="profile-form__avatar-history-message profile-form__avatar-history-message--error"
                     >
                       {{ avatarHistoryError }}
-                    </p>
-                    <p
-                      v-else-if="avatarHistory.length === 0"
-                      class="profile-form__avatar-history-message"
-                    >
-                      Нет сохранённых фото
                     </p>
                     <div v-else class="profile-form__avatar-history-grid">
                       <button
@@ -741,7 +757,7 @@ async function handleSubmit() {
                     </div>
                   </div>
                   <label
-                    v-else
+                    v-if="isAvatarFileBtnVisible"
                     class="profile-form__file-btn"
                     :class="{ 'profile-form__file-btn--error': getFieldError('avatar') }"
                   >
@@ -1048,6 +1064,18 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+}
+
+.profile-form__avatar-history-empty {
+  flex: 1;
+  min-width: 0;
+  color: var(--wh-gray-400);
+  font-size: 14px;
+  line-height: 130%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .profile-form__avatar-history-btn {
