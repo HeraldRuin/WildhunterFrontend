@@ -61,6 +61,7 @@ export interface BookingHuntDetails {
 }
 
 export interface BookingStatusInfo {
+  code?: string
   label: string
   timer?: string
   collected?: string

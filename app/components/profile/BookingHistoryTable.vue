@@ -202,7 +202,13 @@ onBeforeUnmount(() => {
               </template>
             </td>
             <td class="booking-table__status">
-              <div>{{ item.status.label }}</div>
+              <div
+                :class="{
+                  'booking-table__status-label--danger': item.status.code === 'processing',
+                }"
+              >
+                {{ item.status.label }}
+              </div>
               <div v-if="item.status.timer" class="booking-table__status-meta">
                 {{ item.status.timer }}
               </div>
@@ -412,6 +418,10 @@ onBeforeUnmount(() => {
 
 .booking-table__details-btn:hover {
   background: #138496;
+}
+
+.booking-table__status-label--danger {
+  color: var(--wh-field-error);
 }
 
 .booking-table__status-meta {

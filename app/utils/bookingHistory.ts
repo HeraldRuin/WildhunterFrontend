@@ -93,6 +93,7 @@ function buildStatus(item: BookingHistoryItemDto) {
   const status = item.status
   const collection = item.collection
   const result: BookingHistoryItem['status'] = {
+    code: status,
     label: item.status_label || item.status_for_user || item.status,
   }
 
