@@ -48,3 +48,14 @@ export function shouldShowOfferImage(image?: string | null) {
 export function isValidGalleryImage(image: { large?: string, medium?: string, thumb?: string }) {
   return [image.large, image.medium, image.thumb].some(url => shouldShowOfferImage(url))
 }
+
+/** Canonical key so /media/{id}/thumb|medium|large count as one photo. */
+export function getGalleryImageKey(image: { large?: string, medium?: string, thumb?: string }) {
+  const url = (image.large || image.medium || image.thumb || '').trim()
+
+  if (!url) {
+    return ''
+  }
+
+  return toMediaImageSize(url, 'large') || url
+}

@@ -1,5 +1,5 @@
 import type { BookableItem, HotelAnimalItem, HotelDetail, HotelGalleryImage, HotelTermGroup, ReviewItem } from '~/types/api'
-import { isValidGalleryImage, shouldShowOfferImage } from '~/utils/image'
+import { getGalleryImageKey, isValidGalleryImage, shouldShowOfferImage } from '~/utils/image'
 import { MOCK_SEARCH_ITEMS, toOfferItem } from '~/utils/search'
 
 export interface HotelSlugParams {
@@ -149,13 +149,32 @@ function toGalleryImage(item: unknown): HotelGalleryImage | null {
   return isValidGalleryImage(image) ? image : null
 }
 
+function dedupeGalleryImages(images: HotelGalleryImage[]): HotelGalleryImage[] {
+  const seen = new Set<string>()
+  const unique: HotelGalleryImage[] = []
+
+  for (const image of images) {
+    const key = getGalleryImageKey(image)
+    if (!key || seen.has(key)) {
+      continue
+    }
+
+    seen.add(key)
+    unique.push(image)
+  }
+
+  return unique
+}
+
 function buildGallery(
   data: Record<string, unknown>,
   fallbackImage: string,
   options: { useDefaultFallback?: boolean } = {},
 ): HotelGalleryImage[] {
   const gallery = Array.isArray(data.gallery)
-    ? data.gallery.map(toGalleryImage).filter((item): item is HotelGalleryImage => Boolean(item))
+    ? dedupeGalleryImages(
+        data.gallery.map(toGalleryImage).filter((item): item is HotelGalleryImage => Boolean(item)),
+      )
     : []
 
   if (gallery.length) {

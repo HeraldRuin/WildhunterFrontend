@@ -42,11 +42,6 @@ function syncCollapsedThumbCount() {
   collapsedThumbCount.value = TABLET_THUMB_TIER_NARROW
 }
 
-const galleryLayoutClass = computed(() => ({
-  'hotel-gallery--expanded': expanded.value,
-  [`hotel-gallery--thumbs-${collapsedThumbCount.value}`]: !expanded.value,
-}))
-
 let tabletMediaQuery: MediaQueryList | null = null
 
 function handleTabletMediaChange() {
@@ -54,7 +49,14 @@ function handleTabletMediaChange() {
 }
 
 const visibleImages = computed(() => props.images.filter(image => isValidGalleryImage(image)))
+const isSingleImage = computed(() => visibleImages.value.length === 1)
 const isEmpty = computed(() => !props.placeholder && visibleImages.value.length === 0)
+
+const galleryLayoutClass = computed(() => ({
+  'hotel-gallery--expanded': expanded.value,
+  'hotel-gallery--single': isSingleImage.value,
+  [`hotel-gallery--thumbs-${collapsedThumbCount.value}`]: !expanded.value && !isSingleImage.value,
+}))
 
 const activeIndex = ref(0)
 const expanded = ref(false)
@@ -621,7 +623,10 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <div class="hotel-gallery__thumbs">
+    <div
+      v-if="!isSingleImage"
+      class="hotel-gallery__thumbs"
+    >
       <button
         v-for="(image, index) in thumbImages"
         :key="`${thumbSrc(image)}-${index}`"
@@ -674,6 +679,10 @@ onBeforeUnmount(() => {
   gap: 8px;
   width: 100%;
   height: 520px;
+}
+
+.hotel-gallery--single {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .hotel-gallery__main.hotel-gallery__skeleton,
@@ -894,6 +903,12 @@ onBeforeUnmount(() => {
     margin-inline: 0;
   }
 
+  .hotel-gallery--single {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    aspect-ratio: 2 / 1;
+  }
+
   .hotel-gallery--placeholder .hotel-gallery__main,
   .hotel-gallery__main {
     grid-column: 1;
@@ -902,6 +917,11 @@ onBeforeUnmount(() => {
     height: 100%;
     min-height: 0;
     aspect-ratio: auto;
+  }
+
+  .hotel-gallery--single .hotel-gallery__main {
+    grid-column: 1;
+    grid-row: 1;
   }
 
   .hotel-gallery--placeholder .hotel-gallery__thumbs,
