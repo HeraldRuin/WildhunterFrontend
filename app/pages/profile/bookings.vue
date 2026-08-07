@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BookingAction, BookingHistoryItem, BookingTab } from '~/types/booking'
-import { getBookingsByTab } from '~/utils/bookings'
+import { mapBookingHistoryItem } from '~/utils/bookingHistory'
 
 definePageMeta({
   layout: 'profile',
@@ -10,6 +10,9 @@ definePageMeta({
 useHead({
   title: 'Бронирования — WH',
 })
+
+const route = useRoute()
+const { bookings: bookingsApi } = useApi()
 
 const notificationCount = 2
 const { open: openCollectionModal } = useCollectionModal()
@@ -21,22 +24,59 @@ const breadcrumbs = [
   { label: 'Бронирования' },
 ]
 const activeTab = ref<BookingTab>('my')
+const page = ref(1)
 
 const tabs: { id: BookingTab, label: string }[] = [
   { id: 'my', label: 'Мои брони' },
   { id: 'invitations', label: 'Приглашения' },
 ]
 
-const bookings = computed(() => getBookingsByTab(activeTab.value))
+const bookingIdFilter = computed(() => {
+  const raw = route.query.booking_id
+  const value = Number(Array.isArray(raw) ? raw[0] : raw)
+  return Number.isFinite(value) && value > 0 ? value : undefined
+})
 
-const emptyText = computed(() =>
-  activeTab.value === 'invitations'
-    ? 'Нет активных приглашений'
-    : 'Нет бронирований',
+const historyStatus = computed(() =>
+  activeTab.value === 'invitations' ? 'invitation' : undefined,
 )
 
+const {
+  data: historyResponse,
+  pending: historyPending,
+  error: historyError,
+} = await useAsyncData(
+  () => `profile-booking-history-${activeTab.value}-${page.value}-${bookingIdFilter.value ?? 'all'}`,
+  () => bookingsApi.history({
+    page: page.value,
+    status: historyStatus.value,
+    booking_id: bookingIdFilter.value,
+  }),
+  {
+    watch: [activeTab, page, bookingIdFilter],
+  },
+)
+
+const bookings = computed<BookingHistoryItem[]>(() =>
+  (historyResponse.value?.data?.bookings?.items ?? []).map(mapBookingHistoryItem),
+)
+
+const emptyText = computed(() => {
+  if (historyError.value) {
+    return 'Не удалось загрузить бронирования'
+  }
+
+  return activeTab.value === 'invitations'
+    ? 'Нет активных приглашений'
+    : 'Нет бронирований'
+})
+
+watch(activeTab, () => {
+  page.value = 1
+})
+
 function handleBookingAction({ booking, action }: { booking: BookingHistoryItem, action: BookingAction }) {
-  if (action.id === 'open_collection') {
+  if (action.id === 'open_collection' || action.id === 'start_collection') {
     openCollectionModal(booking)
     return
   }
@@ -87,7 +127,12 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
       </button>
     </div>
 
+    <div v-if="historyPending && !bookings.length" class="bookings-page__loading" aria-live="polite">
+      <CommonSpinner variant="ring" size="lg" label="Загрузка бронирований" />
+    </div>
+
     <ProfileBookingHistoryTable
+      v-else
       :items="bookings"
       :empty-text="emptyText"
       @action="handleBookingAction"
@@ -195,6 +240,16 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   height: 2px;
   border-radius: 2px 2px 0 0;
   background: var(--wh-orange-500);
+}
+
+.bookings-page__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: var(--wh-radius);
+  background: var(--wh-white);
 }
 
 @media (--wh-tablet) {

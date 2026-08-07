@@ -329,6 +329,125 @@ export interface BookingCheckoutData {
 
 export type BookingCheckoutResponse = ApiSuccessResponse<BookingCheckoutData>
 
+export type BookingHistoryStatusFilter =
+  | 'invitation'
+  | 'cancelled'
+  | 'processing'
+  | 'confirmed'
+  | 'collection'
+  | 'finished_collection'
+  | 'prepayment_collection'
+  | 'finish_prepayment'
+  | 'bed_collection'
+  | 'finish_bed_collection'
+  | 'paid'
+  | 'completed'
+  | string
+
+export interface BookingHistoryQuery {
+  status?: BookingHistoryStatusFilter
+  booking_id?: number
+  page?: number
+}
+
+export interface BookingHistoryActionDto {
+  code: string
+  label: string
+}
+
+export interface BookingHistoryRoomDto {
+  room_id: number
+  title: string | null
+  number: number
+  price: number
+  adults: number
+}
+
+export interface BookingHistoryItemDto {
+  id: number
+  booking_number: string | number
+  code: string
+  created_at: string
+  type: string
+  type_text: string
+  status: string
+  status_for_user: string
+  status_label: string
+  display_status: string
+  is_paid: boolean
+  is_master_hunter: boolean
+  is_invited: boolean
+  invitation_accepted: boolean
+  hotel: {
+    id: number
+    title: string
+    slug?: string
+    collection_timer_hours?: number | null
+    paid_timer_hours?: number | null
+    bed_timer_hours?: number | null
+  } | null
+  creator: {
+    id: number
+    user_name?: string | null
+    first_name?: string | null
+    last_name?: string | null
+    email?: string | null
+    phone?: string | null
+  } | null
+  details: {
+    start_date: string | null
+    end_date: string | null
+    duration_days: number
+    total_guests: number
+    start_date_animal: string | null
+    total_hunting: number | null
+    animal: {
+      id: number
+      title: string
+    } | null
+    rooms: BookingHistoryRoomDto[]
+  }
+  collection: {
+    accepted_count: number
+    total_needed: number
+    paid_count: number
+    collection_end_at: string | null
+    paid_end_at: string | null
+    beds_end_at: string | null
+  }
+  payment: {
+    prepaid_total: number
+    base_total: number
+    total: number
+  }
+  available_actions: BookingHistoryActionDto[]
+}
+
+export interface BookingHistoryPagination {
+  current_page: number
+  per_page: number
+  total: number
+  last_page: number
+  has_more_pages: boolean
+}
+
+export interface BookingHistoryData {
+  role: string
+  hotel: {
+    id: number
+    title: string
+    slug?: string
+  } | null
+  statuses: string[]
+  dropdown_statuses: string[]
+  bookings: {
+    items: BookingHistoryItemDto[]
+    pagination: BookingHistoryPagination
+  }
+}
+
+export type BookingHistoryResponse = ApiSuccessResponse<BookingHistoryData>
+
 export interface SearchResultData {
   total: number
   total_pages: number

@@ -4,7 +4,15 @@ export type BookingType = 'hotel' | 'hotel_animal' | 'animal'
 
 export type BookingActionVariant = 'danger' | 'primary' | 'success'
 
-export type BookingActionId = 'open_collection' | 'cancel_booking' | 'open_invitation' | 'select_seat' | 'add_services'
+export type BookingActionId =
+  | 'open_collection'
+  | 'start_collection'
+  | 'cancel_booking'
+  | 'open_invitation'
+  | 'select_seat'
+  | 'add_services'
+  | 'prepayment'
+  | 'calculating'
 
 export interface BookingAction {
   id?: BookingActionId

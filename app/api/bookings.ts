@@ -1,5 +1,7 @@
 import type {
   BookingCheckoutResponse,
+  BookingHistoryQuery,
+  BookingHistoryResponse,
   CreateBookingRequest,
   CreateBookingResponse,
   UpdateCustomerNotesResponse,
@@ -13,6 +15,16 @@ export function useBookingsApi() {
     return apiFetch<CreateBookingResponse>('/bookings', {
       method: 'POST',
       body,
+    })
+  }
+
+  function history(query: BookingHistoryQuery = {}) {
+    return apiFetch<BookingHistoryResponse>('/bookings/history', {
+      query: {
+        page: query.page ?? 1,
+        ...(query.status ? { status: query.status } : {}),
+        ...(query.booking_id ? { booking_id: query.booking_id } : {}),
+      },
     })
   }
 
@@ -34,6 +46,7 @@ export function useBookingsApi() {
 
   return {
     create,
+    history,
     checkout,
     updateCustomerNotes,
   }
