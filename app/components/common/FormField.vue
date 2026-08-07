@@ -368,7 +368,7 @@ function onPaste(event: ClipboardEvent) {
 }
 
 .form-field__input--textarea {
-  resize: vertical;
+  resize: none;
   min-height: 132px;
 }
 
