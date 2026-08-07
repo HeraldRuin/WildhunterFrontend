@@ -68,16 +68,16 @@ const failedMainUrls = ref(new Set<string>())
 const loadedThumbUrls = ref(new Set<string>())
 
 const thumbImages = computed(() => {
-  const rest = visibleImages.value.slice(1)
+  const all = visibleImages.value
 
   if (expanded.value) {
-    return rest
+    return all
   }
 
-  return rest.slice(0, collapsedThumbCount.value)
+  return all.slice(0, collapsedThumbCount.value)
 })
 
-const hasMore = computed(() => visibleImages.value.length > 1 + collapsedThumbCount.value)
+const hasMore = computed(() => visibleImages.value.length > collapsedThumbCount.value)
 
 const activeImage = computed(() => visibleImages.value[activeIndex.value] ?? visibleImages.value[0])
 
@@ -281,7 +281,7 @@ function scheduleIdlePrefetch(urls: string[]) {
 }
 
 function prefetchVisibleLarges(images: HotelGalleryImage[]) {
-  const visibleCount = Math.min(images.length, 1 + collapsedThumbCount.value)
+  const visibleCount = Math.min(images.length, collapsedThumbCount.value)
 
   for (let index = 0; index < visibleCount; index += 1) {
     const large = images[index]?.large
@@ -408,11 +408,11 @@ function handleThumbClick(thumbIndex: number) {
     return
   }
 
-  selectImage(thumbIndex + 1)
+  selectImage(thumbIndex)
 }
 
 function handleThumbHover(thumbIndex: number) {
-  const item = visibleImages.value[thumbIndex + 1]
+  const item = visibleImages.value[thumbIndex]
   if (item?.large) {
     prefetchLarge(item.large, 'high')
   }
@@ -627,11 +627,11 @@ onBeforeUnmount(() => {
         :key="`${thumbSrc(image)}-${index}`"
         type="button"
         class="hotel-gallery__thumb"
-        :class="{ 'hotel-gallery__thumb--active': index + 1 === activeIndex }"
+        :class="{ 'hotel-gallery__thumb--active': index === activeIndex }"
         :aria-label="
           !expanded && hasMore && index === thumbImages.length - 1
             ? 'Показать еще'
-            : `Показать фото ${index + 2}`
+            : `Показать фото ${index + 1}`
         "
         @click="handleThumbClick(index)"
         @mouseenter="handleThumbHover(index)"
@@ -640,7 +640,7 @@ onBeforeUnmount(() => {
         <img
           :ref="bindThumbImg"
           :src="thumbSrc(image)"
-          :alt="`${title} — фото ${index + 2}`"
+          :alt="`${title} — фото ${index + 1}`"
           :loading="expanded ? 'lazy' : 'eager'"
           decoding="async"
           :fetchpriority="index < 2 ? 'high' : 'auto'"
