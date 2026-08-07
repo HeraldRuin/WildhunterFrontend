@@ -3,6 +3,7 @@ import type { BookingHistoryItem } from '~/types/booking'
 export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
   {
     id: 1,
+    code: 'mock-1',
     number: '222',
     date: '03.03.26',
     baseName: 'Хромой кабан 2',
@@ -33,6 +34,7 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
   },
   {
     id: 2,
+    code: 'mock-2',
     number: '222',
     date: '03.03.26',
     baseName: 'Хромой кабан 2',
@@ -71,6 +73,7 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
   },
   {
     id: 3,
+    code: 'mock-3',
     number: '222',
     date: '03.03.26',
     baseName: 'Хромой кабан 2',
@@ -111,6 +114,7 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
   },
   {
     id: 4,
+    code: 'mock-4',
     number: '222',
     date: '03.03.26',
     baseName: 'Хромой кабан 2',
@@ -154,6 +158,7 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
 export const MOCK_INVITATION_BOOKINGS: BookingHistoryItem[] = [
   {
     id: 101,
+    code: 'mock-101',
     number: '198',
     date: '28.02.26',
     baseName: 'Охотбаза «Сосновый бор»',
@@ -191,6 +196,7 @@ export const MOCK_INVITATION_BOOKINGS: BookingHistoryItem[] = [
   },
   {
     id: 102,
+    code: 'mock-102',
     number: '175',
     date: '20.02.26',
     baseName: 'Хромой кабан 2',

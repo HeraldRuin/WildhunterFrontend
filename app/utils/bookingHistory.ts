@@ -10,6 +10,7 @@ import { formatDisplayDate, parseBirthdayDate } from '~/utils/date'
 
 const ACTION_ID_MAP: Record<string, BookingActionId> = {
   cancel: 'cancel_booking',
+  confirm: 'confirm_booking',
   open_collection: 'open_collection',
   start_collection: 'start_collection',
   open_invitation: 'open_invitation',
@@ -21,6 +22,7 @@ const ACTION_ID_MAP: Record<string, BookingActionId> = {
 
 const ACTION_VARIANT_MAP: Record<string, BookingActionVariant> = {
   cancel: 'danger',
+  confirm: 'success',
   open_collection: 'success',
   start_collection: 'success',
   open_invitation: 'primary',
@@ -173,6 +175,7 @@ export function mapBookingHistoryItem(item: BookingHistoryItemDto): BookingHisto
 
   return {
     id: item.id,
+    code: item.code,
     number: String(item.booking_number ?? item.id),
     date: formatHistoryDate(item.created_at),
     baseName: item.hotel?.title || '—',

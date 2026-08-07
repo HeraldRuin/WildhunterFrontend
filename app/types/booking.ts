@@ -8,6 +8,7 @@ export type BookingActionId =
   | 'open_collection'
   | 'start_collection'
   | 'cancel_booking'
+  | 'confirm_booking'
   | 'open_invitation'
   | 'select_seat'
   | 'add_services'
@@ -69,6 +70,7 @@ export interface BookingStatusInfo {
 
 export interface BookingHistoryItem {
   id: number
+  code: string
   number: string
   date: string
   baseName: string

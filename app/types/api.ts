@@ -278,6 +278,12 @@ export type UpdateCustomerNotesResponse = ApiSuccessResponse<{
   customer_notes: string | null
 }>
 
+export type ConfirmBookingResponse = ApiSuccessResponse<{
+  id: number
+  code: string
+  status: string
+}>
+
 export interface BookingCheckoutLocation {
   id: number
   name: string
