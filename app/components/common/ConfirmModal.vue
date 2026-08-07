@@ -108,8 +108,9 @@ function handleKeydown(event: KeyboardEvent) {
 .confirm-modal__actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
+  justify-content: center;
+  gap: 32px;
+  padding-left: 28px;
 }
 
 .confirm-modal__btn {
