@@ -155,14 +155,15 @@ onBeforeUnmount(() => {
             <td class="booking-table__number">{{ item.number }}</td>
             <td class="booking-table__date">{{ item.date }}</td>
             <td class="booking-table__base">
-              <NuxtLink
+              <a
                 v-if="item.baseUrl"
-                :to="item.baseUrl"
+                :href="item.baseUrl"
                 class="booking-table__base-link"
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 {{ item.baseName }}
-              </NuxtLink>
+              </a>
               <span v-else>{{ item.baseName }}</span>
             </td>
             <td class="booking-table__type">{{ item.typeLabel }}</td>
@@ -274,7 +275,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .booking-table-wrap {
   background: var(--wh-white);
-  border: 1px solid var(--wh-gray-200);
+  border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
   overflow: hidden;
 }
@@ -375,13 +376,16 @@ onBeforeUnmount(() => {
 }
 
 .booking-table__base-link {
-  color: var(--wh-green);
+  color: #4aa3d9;
   font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
   transition: color 0.15s ease;
 }
 
 .booking-table__base-link:hover {
-  color: var(--wh-green);
+  color: #2f8fc9;
+  text-decoration: underline;
 }
 
 .booking-table__type {

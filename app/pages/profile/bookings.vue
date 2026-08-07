@@ -64,9 +64,16 @@ const dropdownStatuses = computed(() =>
   historyResponse.value?.data?.dropdown_statuses ?? [],
 )
 
-const bookings = computed<BookingHistoryItem[]>(() =>
-  (historyResponse.value?.data?.bookings?.items ?? []).map(mapBookingHistoryItem),
-)
+const bookings = computed<BookingHistoryItem[]>(() => {
+  const rootHotel = historyResponse.value?.data?.hotel
+
+  return (historyResponse.value?.data?.bookings?.items ?? []).map(item =>
+    mapBookingHistoryItem(item, {
+      hotelSlug: rootHotel?.slug,
+      locationSlug: rootHotel?.location?.slug,
+    }),
+  )
+})
 
 const emptyText = computed(() => {
   if (historyError.value) {

@@ -376,6 +376,18 @@ export interface BookingHistoryRoomDto {
   adults: number
 }
 
+export interface BookingHistoryHotelDto {
+  id: number
+  title: string
+  slug?: string | null
+  location?: {
+    slug?: string | null
+  } | null
+  collection_timer_hours?: number | null
+  paid_timer_hours?: number | null
+  bed_timer_hours?: number | null
+}
+
 export interface BookingHistoryItemDto {
   id: number
   booking_number: string | number
@@ -391,13 +403,9 @@ export interface BookingHistoryItemDto {
   is_master_hunter: boolean
   is_invited: boolean
   invitation_accepted: boolean
-  hotel: {
-    id: number
-    title: string
-    slug?: string
-    collection_timer_hours?: number | null
-    paid_timer_hours?: number | null
-    bed_timer_hours?: number | null
+  hotel: BookingHistoryHotelDto | null
+  location?: {
+    slug?: string | null
   } | null
   creator: {
     id: number
@@ -446,11 +454,7 @@ export interface BookingHistoryPagination {
 
 export interface BookingHistoryData {
   role: string
-  hotel: {
-    id: number
-    title: string
-    slug?: string
-  } | null
+  hotel: BookingHistoryHotelDto | null
   statuses: string[]
   dropdown_statuses: string[]
   bookings: {

@@ -7,6 +7,7 @@ import type {
   BookingType,
 } from '~/types/booking'
 import { formatDisplayDate, parseBirthdayDate } from '~/utils/date'
+import { getHotelPath } from '~/utils/hotel'
 
 const ACTION_ID_MAP: Record<string, BookingActionId> = {
   cancel: 'cancel_booking',
@@ -142,7 +143,13 @@ function buildStatus(item: BookingHistoryItemDto) {
   return result
 }
 
-export function mapBookingHistoryItem(item: BookingHistoryItemDto): BookingHistoryItem {
+export function mapBookingHistoryItem(
+  item: BookingHistoryItemDto,
+  fallback?: {
+    hotelSlug?: string | null
+    locationSlug?: string | null
+  },
+): BookingHistoryItem {
   const type = mapType(item.type)
   const { actions, paymentAction } = mapActions(item.available_actions || [])
   const details = item.details
@@ -174,12 +181,25 @@ export function mapBookingHistoryItem(item: BookingHistoryItemDto): BookingHisto
         }
       : undefined
 
+  const hotelSlug = String(
+    item.hotel?.slug || fallback?.hotelSlug || '',
+  ).trim()
+  const locationSlug = String(
+    item.hotel?.location?.slug
+    || item.location?.slug
+    || fallback?.locationSlug
+    || '',
+  ).trim()
+
   return {
     id: item.id,
     code: item.code,
     number: String(item.booking_number ?? item.id),
     date: formatHistoryDate(item.created_at),
     baseName: item.hotel?.title || '—',
+    baseUrl: hotelSlug && locationSlug
+      ? getHotelPath(locationSlug, hotelSlug)
+      : undefined,
     type,
     typeLabel: item.type_text || item.type,
     accommodation,
