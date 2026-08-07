@@ -135,6 +135,10 @@ const navItems = computed<NavItem[]>(() => {
     return settingsSubNavItems
   }
 
+  if (isBaseAdmin.value) {
+    return baseNavItems.filter(item => item.to !== '/profile/weapons')
+  }
+
   return baseNavItems
 })
 

@@ -4,10 +4,6 @@ definePageMeta({
   middleware: 'auth',
 })
 
-useHead({
-  title: 'Лицензия на оружие — WH',
-})
-
 import type { UserWeapon, WeaponOption } from '~/types/user'
 import { formatApiDate, formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
 import { createEmptyWeapon } from '~/utils/user'
@@ -28,8 +24,21 @@ type WeaponField =
 
 const { profile, pending, error, loadProfile, patchCachedProfile } = useProfile()
 const { user } = useAuth()
+const { isBaseAdmin } = useUserRole()
 const { weapons: weaponsApi } = useApi()
 const notifications = useNotifications()
+
+// Если роль уже известна (из сессии) — сразу на штатную 404
+if (import.meta.client && isBaseAdmin.value) {
+  window.location.replace('/404')
+}
+
+useHead({
+  title: 'Лицензия на оружие — WH',
+})
+
+
+
 
 const notificationCount = 0
 const pulseUnsavedSave = ref(false)
@@ -553,18 +562,31 @@ function handleLicenseDateDocumentClick(event: MouseEvent) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadProfile()
+
+  // Жёсткий уход на штатную 404 — без createError/navigateTo (они давали 500)
+  if (isBaseAdmin.value) {
+    window.location.replace('/404')
+    return
+  }
+
   void bootWeaponsPage()
   document.addEventListener('click', handleLicenseDateDocumentClick)
 })
 
 onActivated(() => {
+  if (isBaseAdmin.value) {
+    return
+  }
+
   void refreshHunterBilletOnPageEnter()
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleLicenseDateDocumentClick)
 })
+
 
 function stopSavePulse() {
   pulseUnsavedSave.value = false
