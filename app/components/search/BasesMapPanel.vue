@@ -23,13 +23,6 @@ const isGridList = computed(() => listColumns.value === 2)
 const isGridMulti = computed(() => isGridList.value && props.hotels.length > 1)
 /** Collapsed strip + compact thumbs: content is dense; page dots steal width and mislead. */
 const isCollapsedGridList = computed(() => isListCollapsed.value && isGridList.value)
-const showListPageDots = computed(() => {
-  if (isCollapsedGridList.value) {
-    return false
-  }
-
-  return props.hotels.length > 0 && listPageCount.value > 1
-})
 
 const listEl = ref<HTMLElement | null>(null)
 const listPageCount = ref(1)
@@ -99,6 +92,12 @@ function onListScroll() {
   }
 
   listPageIndex.value = getListPageIndex(el, listPageCount.value)
+}
+
+function onListTransitionEnd(event: TransitionEvent) {
+  if (event.propertyName === 'grid-template-columns') {
+    updateListPages()
+  }
 }
 
 function scrollListToPage(index: number) {
@@ -347,11 +346,11 @@ async function searchMeasurePoint() {
             <div
               class="bases-map-page__controls-wrap"
               :class="{
-                'bases-map-page__controls-wrap--with-dots': showListPageDots,
+                'bases-map-page__controls-wrap--with-dots': !isCollapsedGridList && hotels.length > 0 && listPageCount > 1,
               }"
             >
               <div
-                v-if="showListPageDots"
+                v-if="!isCollapsedGridList && hotels.length > 0 && listPageCount > 1"
                 class="bases-map-page__controls-spacer"
                 aria-hidden="true"
               />
@@ -547,11 +546,11 @@ async function searchMeasurePoint() {
               <div
                 class="bases-map-page__list-wrap"
                 :class="{
-                  'bases-map-page__list-wrap--with-dots': showListPageDots,
+                  'bases-map-page__list-wrap--with-dots': !isCollapsedGridList && hotels.length > 0 && listPageCount > 1,
                 }"
               >
                 <div
-                  v-if="showListPageDots"
+                  v-if="!isCollapsedGridList && hotels.length > 0 && listPageCount > 1"
                   class="bases-map-page__list-dots"
                   role="tablist"
                   aria-label="Страницы списка баз"
@@ -582,6 +581,7 @@ async function searchMeasurePoint() {
                   :aria-busy="loading"
                   aria-label="Список баз"
                   @scroll.passive="onListScroll"
+                  @transitionend="onListTransitionEnd"
                 >
                   <div
                     v-if="loading && !hotels.length"
