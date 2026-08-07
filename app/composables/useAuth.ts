@@ -51,12 +51,15 @@ export function useAuth() {
 
       const normalizedUser = normalizeAuthUser(response.user, uploadsOrigin)
       const { invalidateProfileCache, loadProfile } = useProfile()
+      const { setCurrentPassword } = useCurrentPassword()
 
       authToken.setSession({
         token: response.token,
         token_type: response.token_type,
         user: normalizedUser,
       }, remember)
+
+      setCurrentPassword(password)
 
       if (normalizedUser?.id) {
         invalidateProfileCache(normalizedUser.id)

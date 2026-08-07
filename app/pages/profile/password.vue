@@ -10,7 +10,7 @@ useHead({
 
 const { user: userApi } = useApi()
 const notifications = useNotifications()
-const { loadCurrentPassword, refreshCurrentPassword } = useCurrentPassword()
+const { loadCurrentPassword, refreshCurrentPassword, setCurrentPassword } = useCurrentPassword()
 
 const notificationCount = 0
 
@@ -166,7 +166,7 @@ function handleGeneratePassword() {
 }
 
 type PendingSubmitResult =
-  | { kind: 'success', message: string }
+  | { kind: 'success', message: string, nextPassword?: string }
   | { kind: 'validation', data: unknown }
   | { kind: 'fail', message: string }
 
@@ -176,12 +176,20 @@ function finishSubmittingOverlay() {
   showSubmittingOverlay.value = false
 }
 
-async function applySuccess(message: string) {
+async function applySuccess(message: string, nextPassword = '') {
   fieldErrors.value = {}
   submitError.value = ''
   notifications.success(message)
   resetFormFields()
-  currentPassword.value = (await refreshCurrentPassword()) || ''
+
+  const fromApi = await refreshCurrentPassword()
+  const password = fromApi || nextPassword || null
+
+  if (password && !fromApi) {
+    setCurrentPassword(password)
+  }
+
+  currentPassword.value = password || ''
 }
 
 function applyFail(message: string) {
@@ -191,7 +199,7 @@ function applyFail(message: string) {
 
 function applySubmitResult(result: PendingSubmitResult) {
   if (result.kind === 'success') {
-    void applySuccess(result.message)
+    void applySuccess(result.message, result.nextPassword)
     return
   }
 
@@ -258,6 +266,7 @@ async function handleSubmit() {
       settleSubmitResult({
         kind: 'success',
         message: response.message || 'Пароль успешно изменён',
+        nextPassword: newPassword.value,
       }, useOverlay)
       return
     }

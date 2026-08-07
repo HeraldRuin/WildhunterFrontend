@@ -6,6 +6,7 @@ const { isOpen, close } = useRegisterModal()
 const { open: openLoginModal } = useLoginModal()
 const { roles: rolesApi, auth } = useApi()
 const { loginWithSession } = useAuth()
+const notifications = useNotifications()
 
 const firstName = ref('')
 const lastName = ref('')
@@ -185,11 +186,17 @@ async function handleSubmit() {
     })
 
     if (response.success) {
+      const { setCurrentPassword } = useCurrentPassword()
+
       loginWithSession({
         token: response.token,
         token_type: response.token_type,
         user: response.user,
       })
+      setCurrentPassword(password.value)
+      if (response.message) {
+        notifications.success(response.message)
+      }
       close()
       return
     }

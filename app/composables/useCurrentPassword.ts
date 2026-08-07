@@ -26,9 +26,26 @@ export function useCurrentPassword() {
     sessionStorage.removeItem(CACHE_KEY)
   }
 
+  function readSessionCache() {
+    if (!import.meta.client) {
+      return null
+    }
+
+    return sessionStorage.getItem(CACHE_KEY)
+  }
+
   async function loadCurrentPassword(force = false) {
-    if (!force && cachedPassword.value) {
-      return cachedPassword.value
+    if (!force) {
+      if (cachedPassword.value) {
+        return cachedPassword.value
+      }
+
+      // useState после SSR может остаться null — подтягиваем sessionStorage
+      const fromStorage = readSessionCache()
+      if (fromStorage) {
+        cachedPassword.value = fromStorage
+        return fromStorage
+      }
     }
 
     try {
@@ -36,19 +53,29 @@ export function useCurrentPassword() {
 
       if ('success' in response && response.success) {
         const password = response.data?.current_password || null
-        persist(password)
-        return password
+
+        // Не затираем локальный кэш (логин/регистрация), если API вернул null
+        if (password) {
+          persist(password)
+          return password
+        }
+
+        return cachedPassword.value || readSessionCache()
       }
     } catch {
       // Поле остаётся пустым — пользователь введёт пароль вручную.
     }
 
-    return cachedPassword.value
+    return cachedPassword.value || readSessionCache()
   }
 
   async function refreshCurrentPassword() {
     persist(null)
     return loadCurrentPassword(true)
+  }
+
+  function setCurrentPassword(password: string | null) {
+    persist(password)
   }
 
   function clearCurrentPassword() {
@@ -59,6 +86,7 @@ export function useCurrentPassword() {
     cachedPassword,
     loadCurrentPassword,
     refreshCurrentPassword,
+    setCurrentPassword,
     clearCurrentPassword,
   }
 }
