@@ -153,7 +153,7 @@ onBeforeUnmount(() => {
         <tbody>
           <tr v-for="item in items" :key="item.id">
             <td class="booking-table__number">{{ item.number }}</td>
-            <td>{{ item.date }}</td>
+            <td class="booking-table__date">{{ item.date }}</td>
             <td>
               <NuxtLink
                 v-if="item.baseUrl"
@@ -294,8 +294,14 @@ onBeforeUnmount(() => {
 .booking-table td {
   padding: 14px 12px;
   border-bottom: 1px solid var(--wh-gray-200);
+  border-right: 1px solid var(--wh-gray-200);
   vertical-align: top;
   text-align: left;
+}
+
+.booking-table th:last-child,
+.booking-table td:last-child {
+  border-right: none;
 }
 
 .booking-table th {
@@ -307,6 +313,38 @@ onBeforeUnmount(() => {
 
 .booking-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.booking-table th:first-child,
+.booking-table th:nth-child(2),
+.booking-table th:nth-child(4),
+.booking-table__number,
+.booking-table__date,
+.booking-table__type {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.booking-table th:nth-child(5),
+.booking-table__details {
+  width: 180px;
+  min-width: 160px;
+  max-width: 200px;
+}
+
+.booking-table th:nth-child(6),
+.booking-table__status {
+  width: 160px;
+  min-width: 140px;
+  max-width: 180px;
+}
+
+.booking-table th:nth-child(7),
+.booking-table__payment {
+  width: 130px;
+  min-width: 110px;
+  max-width: 150px;
+  white-space: nowrap;
 }
 
 .booking-table__number {
@@ -332,7 +370,7 @@ onBeforeUnmount(() => {
   display: block;
   margin-top: 6px;
   font-weight: 700;
-  color: var(--wh-gray-900);
+  color: var(--wh-gray-600);
 }
 
 .booking-table__details strong:first-child {
@@ -362,7 +400,7 @@ onBeforeUnmount(() => {
 
 .booking-table__status-meta {
   margin-top: 4px;
-  color: var(--wh-gray-500);
+  color: var(--wh-gray-600);
   font-size: 0.78rem;
 }
 
