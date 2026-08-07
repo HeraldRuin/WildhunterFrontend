@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { BookingAction, BookingHistoryItem, BookingTab } from '~/types/booking'
+import type { BookingAction, BookingHistoryItem } from '~/types/booking'
+import { ROLE_HUNTER } from '~/utils/roles'
 import { mapBookingHistoryItem } from '~/utils/bookingHistory'
 
 definePageMeta({
@@ -23,7 +24,7 @@ const breadcrumbs = [
   { label: 'Главная', to: '/' },
   { label: 'Бронирования' },
 ]
-const activeTab = ref<BookingTab>('my')
+const statusFilter = ref<string | undefined>(undefined)
 const page = ref(1)
 
 const bookingIdFilter = computed(() => {
@@ -32,24 +33,32 @@ const bookingIdFilter = computed(() => {
   return Number.isFinite(value) && value > 0 ? value : undefined
 })
 
-const historyStatus = computed(() =>
-  activeTab.value === 'invitations' ? 'invitation' : undefined,
-)
-
 const {
   data: historyResponse,
   pending: historyPending,
   error: historyError,
 } = await useAsyncData(
-  () => `profile-booking-history-${activeTab.value}-${page.value}-${bookingIdFilter.value ?? 'all'}`,
+  () => `profile-booking-history-${statusFilter.value ?? 'all'}-${page.value}-${bookingIdFilter.value ?? 'none'}`,
   () => bookingsApi.history({
     page: page.value,
-    status: historyStatus.value,
+    status: statusFilter.value,
     booking_id: bookingIdFilter.value,
   }),
   {
-    watch: [activeTab, page, bookingIdFilter],
+    watch: [statusFilter, page, bookingIdFilter],
   },
+)
+
+const historyRole = computed(() =>
+  historyResponse.value?.data?.role || ROLE_HUNTER,
+)
+
+const tabStatuses = computed(() =>
+  historyResponse.value?.data?.statuses ?? [],
+)
+
+const dropdownStatuses = computed(() =>
+  historyResponse.value?.data?.dropdown_statuses ?? [],
 )
 
 const bookings = computed<BookingHistoryItem[]>(() =>
@@ -61,12 +70,12 @@ const emptyText = computed(() => {
     return 'Не удалось загрузить бронирования'
   }
 
-  return activeTab.value === 'invitations'
+  return statusFilter.value === 'invitation'
     ? 'Нет активных приглашений'
     : 'Нет бронирований'
 })
 
-watch(activeTab, () => {
+watch(statusFilter, () => {
   page.value = 1
 })
 
@@ -107,7 +116,12 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
 
     <CommonPageTitle divider>Бронирования</CommonPageTitle>
 
-    <ProfileBookingHistoryTabs v-model="activeTab" />
+    <ProfileBookingHistoryTabs
+      v-model="statusFilter"
+      :role="historyRole"
+      :tab-statuses="tabStatuses"
+      :dropdown-statuses="dropdownStatuses"
+    />
 
     <div v-if="historyPending && !bookings.length" class="bookings-page__loading" aria-live="polite">
       <CommonSpinner variant="ring" size="lg" label="Загрузка бронирований" />
@@ -186,11 +200,6 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   font-weight: 700;
   line-height: 1;
 }
-
-
-
-
-
 
 .bookings-page__loading {
   display: flex;
