@@ -346,11 +346,11 @@ async function searchMeasurePoint() {
             <div
               class="bases-map-page__controls-wrap"
               :class="{
-                'bases-map-page__controls-wrap--with-dots': !isCollapsedGridList && hotels.length > 0 && listPageCount > 1,
+                'bases-map-page__controls-wrap--with-dots': !isCollapsedGridList && hotels.length > 0,
               }"
             >
               <div
-                v-if="!isCollapsedGridList && hotels.length > 0 && listPageCount > 1"
+                v-if="!isCollapsedGridList && hotels.length > 0"
                 class="bases-map-page__controls-spacer"
                 aria-hidden="true"
               />
@@ -546,7 +546,7 @@ async function searchMeasurePoint() {
               <div
                 class="bases-map-page__list-wrap"
                 :class="{
-                  'bases-map-page__list-wrap--with-dots': !isCollapsedGridList && hotels.length > 0 && listPageCount > 1,
+                  'bases-map-page__list-wrap--with-dots': !isCollapsedGridList && hotels.length > 0,
                 }"
               >
                 <div
@@ -566,6 +566,11 @@ async function searchMeasurePoint() {
                     @click="scrollListToPage(page - 1)"
                   />
                 </div>
+                <div
+                  v-else-if="!isCollapsedGridList && hotels.length > 0"
+                  class="bases-map-page__list-dots"
+                  aria-hidden="true"
+                />
 
                 <aside
                   ref="listEl"
@@ -718,6 +723,14 @@ async function searchMeasurePoint() {
               </div>
 
               <div class="bases-map-page__map-wrap">
+                <div
+                  class="bases-map-page__map-skeleton"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span class="bases-map-page__map-spinner" aria-hidden="true" />
+                  <span>Загрузка карты</span>
+                </div>
                 <SearchBasesMap
                   :lat="mapLat"
                   :lng="mapLng"
@@ -1193,12 +1206,47 @@ async function searchMeasurePoint() {
 }
 
 .bases-map-page__map-wrap {
+  position: relative;
   flex: 1;
   min-width: 0;
   min-height: 0;
   border-radius: 12px;
-  background: #e8e8e8;
+  background: var(--wh-white, #ffffff);
   overflow: hidden;
+}
+
+.bases-map-page__map-wrap :deep(.bases-map-wrap),
+.bases-map-page__map-wrap :deep(.bases-map) {
+  position: relative;
+  z-index: 1;
+}
+
+.bases-map-page__map-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--wh-white, #ffffff);
+  color: var(--wh-gray-700, #4a4f4a);
+  font-family: "Inter", sans-serif;
+}
+
+.bases-map-page__map-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--wh-gray-300, #d4d4d4);
+  border-top-color: var(--wh-gray-700, #4a4f4a);
+  border-radius: 50%;
+  animation: bases-map-page-spinner 0.8s linear infinite;
+}
+
+@keyframes bases-map-page-spinner {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 960px) {

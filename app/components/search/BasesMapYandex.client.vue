@@ -54,6 +54,7 @@ const emit = defineEmits<{
 
 const mapEl = ref<HTMLElement | null>(null)
 const mapError = ref('')
+const isMapLoading = ref(true)
 
 let ymapsApi: YmapsApi | null = null
 let map: (YmapsMap & { getCenter: () => YmapsCoords }) | null = null
@@ -736,11 +737,13 @@ onMounted(async () => {
       else {
         focusActive()
       }
+      isMapLoading.value = false
     })
   }
   catch (error) {
     console.error('[BasesMapYandex] init failed', error)
     mapError.value = 'Не удалось загрузить Яндекс.Карты. Проверьте API-ключ.'
+    isMapLoading.value = false
   }
 })
 
@@ -872,6 +875,15 @@ onBeforeUnmount(() => {
     >
       {{ mapError }}
     </p>
+    <div
+      v-else-if="isMapLoading"
+      class="bases-map__skeleton"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="bases-map__spinner" aria-hidden="true" />
+      <span>Загрузка карты</span>
+    </div>
   </div>
 </template>
 
@@ -923,6 +935,35 @@ onBeforeUnmount(() => {
   font-size: 14px;
   line-height: 1.4;
   background: var(--wh-gray-200, #dddddd);
+}
+
+.bases-map__skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 12px;
+  background: var(--wh-white, #ffffff);
+  color: var(--wh-gray-700, #4a4f4a);
+  font-family: "Inter", sans-serif;
+}
+
+.bases-map__spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--wh-gray-300, #d4d4d4);
+  border-top-color: var(--wh-gray-700, #4a4f4a);
+  border-radius: 50%;
+  animation: bases-map-spinner 0.8s linear infinite;
+}
+
+@keyframes bases-map-spinner {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .bases-map :deep(.bases-map-pin-root) {
