@@ -111,7 +111,8 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
     hunters: data.total_hunting ?? 0,
     organizationFee: data.amount_hunting,
     trophyFee: 0,
-    hasHunt: Boolean(data.animal),
+    hasAccommodation: data.type === 'hotel' || data.type === 'hotel_animal',
+    hasHunt: data.type === 'animal' || data.type === 'hotel_animal',
   }
 }
 
@@ -214,9 +215,9 @@ async function submitCustomerNotes() {
 
         <div
           class="booking-confirmation__cards"
-          :class="{ 'booking-confirmation__cards--single': !booking.hasHunt }"
+          :class="{ 'booking-confirmation__cards--single': !(booking.hasAccommodation && booking.hasHunt) }"
         >
-          <article class="booking-confirmation__card">
+          <article v-if="booking.hasAccommodation" class="booking-confirmation__card">
             <h2 class="booking-confirmation__card-title">Ваше проживание</h2>
 
             <div class="booking-confirmation__card-panel">
