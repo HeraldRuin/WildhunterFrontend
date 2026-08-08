@@ -22,6 +22,7 @@ function handleKeydown(event: KeyboardEvent) {
       <div
         v-if="isOpen && options"
         class="confirm-modal"
+        :class="{ 'confirm-modal--transparent-backdrop': options.transparentBackdrop }"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-modal-title"
@@ -50,9 +51,17 @@ function handleKeydown(event: KeyboardEvent) {
               type="button"
               class="confirm-modal__btn confirm-modal__btn--primary"
               :disabled="isSubmitting"
+              :aria-busy="isSubmitting"
               @click="confirm"
             >
-              <span class="confirm-modal__icon" aria-hidden="true">✔</span>
+              <CommonSpinner
+                v-if="isSubmitting"
+                variant="ring"
+                :size="18"
+                color="var(--wh-white)"
+                label="Выполнение"
+              />
+              <span v-else class="confirm-modal__icon" aria-hidden="true">✔</span>
               {{ options.confirmLabel }}
             </button>
           </div>
@@ -66,7 +75,7 @@ function handleKeydown(event: KeyboardEvent) {
 .confirm-modal {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 1001;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -83,6 +92,12 @@ function handleKeydown(event: KeyboardEvent) {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   pointer-events: none;
+}
+
+.confirm-modal--transparent-backdrop::before {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .confirm-modal__card {

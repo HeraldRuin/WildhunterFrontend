@@ -1,9 +1,26 @@
 <script setup lang="ts">
-const { isOpen, state, close } = useCollectionModal()
+const emit = defineEmits<{
+  extended: []
+}>()
+
+const { isOpen, isContentHidden, state, close, hide, reopen } = useCollectionModal()
+const { bookings: bookingsApi } = useApi()
+const notifications = useNotifications()
+const { open: openConfirmModal } = useConfirmModal()
 
 useBodyScrollLock(isOpen)
 
 const inviteQueries = ref<string[]>([])
+const timerNow = ref(Date.now())
+let timerInterval: ReturnType<typeof setInterval> | undefined
+
+const canExtendCollection = computed(() => {
+  const timerEndAt = state.value?.timerEndAt
+  if (!timerEndAt) return state.value?.timerExpired ?? false
+
+  const end = new Date(timerEndAt).getTime()
+  return Number.isFinite(end) && end <= timerNow.value
+})
 
 const emptySlotCount = computed(() => {
   if (!state.value) return 0
@@ -11,12 +28,27 @@ const emptySlotCount = computed(() => {
 })
 
 watch(isOpen, (open) => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = undefined
+  }
+
   if (!open) {
     inviteQueries.value = []
     return
   }
 
+  timerNow.value = Date.now()
+  timerInterval = setInterval(() => {
+    timerNow.value = Date.now()
+  }, 1_000)
   inviteQueries.value = Array.from({ length: emptySlotCount.value }, () => '')
+})
+
+onUnmounted(() => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+  }
 })
 
 watch(emptySlotCount, (count) => {
@@ -48,6 +80,46 @@ function copyCollectionLink() {
   const absolute = new URL(url, window.location.origin).toString()
   void navigator.clipboard?.writeText(absolute)
 }
+
+async function extendCollection() {
+  const bookingCode = state.value?.bookingCode
+  if (!bookingCode) return
+
+  try {
+    const response = await bookingsApi.extendCollection(bookingCode)
+
+    if (response.success) {
+      notifications.success(response.message || 'Сбор успешно продлён')
+      close()
+      emit('extended')
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось продлить сбор')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось продлить сбор')
+    throw error
+  }
+
+  throw new Error('extend_collection_failed')
+}
+
+function requestCollectionExtension() {
+  if (!canExtendCollection.value) return
+
+  hide()
+  openConfirmModal({
+    title: 'Вы уверены, что хотите продлить сбор?',
+    confirmLabel: 'Продлить',
+    onConfirm: extendCollection,
+    onCancel: () => {
+      setTimeout(reopen, 200)
+    },
+    transparentBackdrop: true,
+  })
+}
 </script>
 
 <template>
@@ -62,7 +134,7 @@ function copyCollectionLink() {
         @click="handleBackdropClick"
         @keydown="handleKeydown"
       >
-        <div class="collection-modal__card">
+        <div v-show="!isContentHidden" class="collection-modal__card">
           <CommonModalCloseButton @click="close" />
 
           <header class="collection-modal__header">
@@ -117,7 +189,12 @@ function copyCollectionLink() {
           </div>
 
           <footer class="collection-modal__footer">
-            <button type="button" class="collection-modal__btn collection-modal__btn--accent">
+            <button
+              type="button"
+              class="collection-modal__btn collection-modal__btn--accent"
+              :disabled="!canExtendCollection"
+              @click="requestCollectionExtension"
+            >
               Продлить сбор
             </button>
             <button type="button" class="collection-modal__btn">
@@ -300,6 +377,13 @@ function copyCollectionLink() {
 
 .collection-modal__btn--accent:hover {
   background: #3aa89d;
+}
+
+.collection-modal__btn:disabled {
+  background: var(--wh-gray-400);
+  color: var(--wh-gray-600);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .collection-modal-enter-active,

@@ -3,12 +3,15 @@ export interface ConfirmModalOptions {
   confirmLabel?: string
   cancelLabel?: string
   onConfirm?: () => void | Promise<void>
+  onCancel?: () => void
+  transparentBackdrop?: boolean
 }
 
 const isOpen = ref(false)
 const isSubmitting = ref(false)
-const options = ref<Required<Pick<ConfirmModalOptions, 'title' | 'confirmLabel' | 'cancelLabel'>> & {
+const options = ref<Required<Pick<ConfirmModalOptions, 'title' | 'confirmLabel' | 'cancelLabel' | 'transparentBackdrop'>> & {
   onConfirm?: ConfirmModalOptions['onConfirm']
+  onCancel?: ConfirmModalOptions['onCancel']
 } | null>(null)
 
 export function useConfirmModal() {
@@ -18,6 +21,8 @@ export function useConfirmModal() {
       confirmLabel: next.confirmLabel ?? 'Подтвердить',
       cancelLabel: next.cancelLabel ?? 'Отменить',
       onConfirm: next.onConfirm,
+      onCancel: next.onCancel,
+      transparentBackdrop: next.transparentBackdrop ?? false,
     }
     isOpen.value = true
   }
@@ -25,8 +30,10 @@ export function useConfirmModal() {
   function close() {
     if (isSubmitting.value) return
 
+    const onCancel = options.value?.onCancel
     isOpen.value = false
     options.value = null
+    onCancel?.()
   }
 
   async function confirm() {
