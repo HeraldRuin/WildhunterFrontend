@@ -1,6 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'http://109.172.31.240/api'
-const uploadsOrigin = new URL(apiBase).origin
+const apiUrl = new URL(apiBase)
+const uploadsOrigin = apiUrl.origin
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -64,6 +65,11 @@ export default defineNuxtConfig({
     public: {
       apiBase: 'http://localhost:8000/api',
       apiVersion: 'v1',
+      reverbKey: process.env.NUXT_PUBLIC_REVERB_KEY || '',
+      reverbHost: process.env.NUXT_PUBLIC_REVERB_HOST || apiUrl.hostname,
+      reverbPort: Number(process.env.NUXT_PUBLIC_REVERB_PORT || (apiUrl.protocol === 'https:' ? 443 : 8080)),
+      reverbScheme: process.env.NUXT_PUBLIC_REVERB_SCHEME || apiUrl.protocol.replace(':', ''),
+      broadcastAuthUrl: process.env.NUXT_PUBLIC_BROADCAST_AUTH_URL || `${apiUrl.origin}/broadcasting/auth`,
       /** `leaflet` (OSM) or `yandex` — switch via NUXT_PUBLIC_MAP_PROVIDER */
       mapProvider: process.env.NUXT_PUBLIC_MAP_PROVIDER || 'leaflet',
       yandexMapsApiKey: process.env.NUXT_PUBLIC_YANDEX_MAPS_API_KEY || '',
