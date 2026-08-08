@@ -290,6 +290,18 @@ export type CancelBookingResponse = ApiSuccessResponse<{
   status: string
 }>
 
+export type StartCollectionResponse = ApiSuccessResponse<{
+  id: number
+  code: string
+  status: string
+}>
+
+export type ExtendCollectionResponse = ApiSuccessResponse<{
+  id: number
+  code: string
+  status: string
+}>
+
 export interface BookingCheckoutLocation {
   id: number
   name: string

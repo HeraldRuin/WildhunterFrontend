@@ -6,6 +6,8 @@ import type {
   ConfirmBookingResponse,
   CreateBookingRequest,
   CreateBookingResponse,
+  ExtendCollectionResponse,
+  StartCollectionResponse,
   UpdateCustomerNotesResponse,
 } from '~/types/api'
 import { useApiClient } from './client'
@@ -48,6 +50,24 @@ export function useBookingsApi() {
     )
   }
 
+  function startCollection(code: string) {
+    return apiFetch<StartCollectionResponse>(
+      `/bookings/${encodeURIComponent(code)}/start-collection`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
+  function extendCollection(code: string) {
+    return apiFetch<ExtendCollectionResponse>(
+      `/bookings/${encodeURIComponent(code)}/extend-collection`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
   function checkout(code: string) {
     return apiFetch<BookingCheckoutResponse>(
       `/bookings/${encodeURIComponent(code)}/checkout`,
@@ -69,6 +89,8 @@ export function useBookingsApi() {
     history,
     confirm,
     cancel,
+    startCollection,
+    extendCollection,
     checkout,
     updateCustomerNotes,
   }
