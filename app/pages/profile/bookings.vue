@@ -29,6 +29,21 @@ const breadcrumbs = [
 ]
 const statusFilter = ref<string | undefined>(undefined)
 const page = ref(1)
+const timerNow = ref(Date.now())
+let timerInterval: ReturnType<typeof setInterval> | undefined
+
+onMounted(() => {
+  timerNow.value = Date.now()
+  timerInterval = setInterval(() => {
+    timerNow.value = Date.now()
+  }, 1_000)
+})
+
+onUnmounted(() => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+  }
+})
 
 const bookingIdFilter = computed(() => {
   const raw = route.query.booking_id
@@ -72,7 +87,7 @@ const bookings = computed<BookingHistoryItem[]>(() => {
     mapBookingHistoryItem(item, {
       hotelSlug: rootHotel?.slug,
       locationSlug: rootHotel?.location?.slug,
-    }),
+    }, timerNow.value),
   )
 })
 
@@ -169,8 +184,31 @@ async function cancelBooking(booking: BookingHistoryItem) {
   throw new Error('cancel_failed')
 }
 
+async function startCollection(booking: BookingHistoryItem) {
+  try {
+    const response = await bookingsApi.startCollection(booking.code)
+
+    if (response.success) {
+      notifications.success(response.message || 'Сбор охотников запущен')
+      await refreshHistory()
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось запустить сбор охотников')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось запустить сбор охотников')
+  }
+}
+
 function handleBookingAction({ booking, action }: { booking: BookingHistoryItem, action: BookingAction }) {
-  if (action.id === 'open_collection' || action.id === 'start_collection') {
+  if (action.id === 'start_collection') {
+    void startCollection(booking)
+    return
+  }
+
+  if (action.id === 'open_collection') {
     openCollectionModal(booking)
     return
   }
@@ -232,7 +270,7 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
       @action="handleBookingAction"
     />
 
-    <ProfileCollectionModal />
+    <ProfileCollectionModal @extended="refreshHistory" />
     <CommonConfirmModal />
     <ProfileAddServicesModal />
   </div>
