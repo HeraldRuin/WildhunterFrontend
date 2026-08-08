@@ -204,11 +204,12 @@ onBeforeUnmount(() => {
             </td>
             <td class="booking-table__status">
               <div
+                class="booking-table__status-label"
                 :class="{
                   'booking-table__status-label--danger': item.status.code === 'processing',
                 }"
               >
-                {{ item.status.label }}
+                {{ item.status.label }}<template v-if="item.status.timerHours"> ({{ item.status.timerHours }} ч)</template>
               </div>
               <div
                 v-if="item.status.timer"
@@ -403,11 +404,15 @@ onBeforeUnmount(() => {
   display: block;
   margin-top: 6px;
   font-weight: 700;
-  color: var(--wh-gray-600);
+  color: var(--wh-gray-900);
 }
 
 .booking-table__details strong:first-child {
   margin-top: 0;
+}
+
+.booking-table__details > div:not(.booking-table__details-more) {
+  color: var(--wh-gray-600);
 }
 
 .booking-table__details-more {
@@ -429,6 +434,11 @@ onBeforeUnmount(() => {
 
 .booking-table__details-btn:hover {
   background: #138496;
+}
+
+.booking-table__status-label {
+  color: var(--wh-black-text);
+  font-weight: 700;
 }
 
 .booking-table__status-label--danger {
