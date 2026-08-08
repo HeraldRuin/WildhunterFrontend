@@ -25,14 +25,16 @@ const emptyHuntDateLabel = 'Пожалуйста выберите дату'
 const huntDate = ref<Date | null>(null)
 
 const huntMinDate = computed(() => {
+  const today = startOfDay(new Date())
+
   if (!props.stayCheckIn || !props.stayCheckOut) {
-    return null
+    return today
   }
 
   const min = startOfDay(props.stayCheckIn)
   min.setDate(min.getDate() + 1)
 
-  return min
+  return min.getTime() > today.getTime() ? min : today
 })
 
 const huntMaxDate = computed(() => {

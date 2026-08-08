@@ -245,7 +245,9 @@ function goToNextYear() {
                     || (activePart === 'end' && getDayState(day.date) === 'end')
                   ),
                 'hero-search-calendar__day--available':
-                  hasDateLimits && !isDateDisabled(day.date),
+                  hasDateLimits
+                  && !isSingle
+                  && !isDateDisabled(day.date),
                 'hero-search-calendar__day--disabled': isDateDisabled(day.date),
               }"
               :disabled="isDateDisabled(day.date)"
