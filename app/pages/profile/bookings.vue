@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BookingStatusUpdatedPayload } from '~/composables/useBookingStatusChannel'
 import type { BookingAction, BookingHistoryItem } from '~/types/booking'
 import { ROLE_HUNTER } from '~/utils/roles'
 import { mapBookingHistoryItem } from '~/utils/bookingHistory'
@@ -74,6 +75,43 @@ const bookings = computed<BookingHistoryItem[]>(() => {
     }),
   )
 })
+
+function applyBookingStatusUpdate(payload: BookingStatusUpdatedPayload) {
+  const response = historyResponse.value
+
+  if (!response?.data.bookings.items.some(booking => booking.id === payload.booking_id)) {
+    return
+  }
+
+  historyResponse.value = {
+    ...response,
+    data: {
+      ...response.data,
+      bookings: {
+        ...response.data.bookings,
+        items: response.data.bookings.items.map(booking =>
+          booking.id === payload.booking_id
+            ? {
+                ...booking,
+                status: payload.status,
+                status_for_user: payload.status,
+                status_label: payload.status_label,
+                display_status: payload.status,
+              }
+            : booking,
+        ),
+      },
+    },
+  }
+}
+
+const { syncSubscriptions } = useBookingStatusChannel(applyBookingStatusUpdate)
+
+watch(
+  () => historyResponse.value?.data?.bookings?.items.map(item => item.id) ?? [],
+  syncSubscriptions,
+  { immediate: true },
+)
 
 const emptyText = computed(() => {
   if (historyError.value) {
