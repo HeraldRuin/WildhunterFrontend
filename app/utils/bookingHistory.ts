@@ -101,6 +101,7 @@ function buildStatus(item: BookingHistoryItemDto, now: number) {
 
   if (status === 'collection') {
     result.timerEndAt = collection.collection_end_at || undefined
+    result.timerHours = item.hotel?.collection_timer_hours || undefined
     result.timer = formatRemainingTimer(collection.collection_end_at, now)
       || (item.hotel?.collection_timer_hours
         ? `${item.hotel.collection_timer_hours} ч`

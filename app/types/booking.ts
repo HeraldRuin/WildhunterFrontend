@@ -68,6 +68,7 @@ export interface BookingStatusInfo {
   label: string
   timer?: string
   timerEndAt?: string
+  timerHours?: number
   collected?: string
   paid?: string
   subStatus?: string
