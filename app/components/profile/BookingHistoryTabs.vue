@@ -137,7 +137,7 @@ function selectTab(tabId: string | undefined) {
   padding: 10px 0 12px;
   border: none;
   background: none;
-  color: var(--wh-gray-400);
+  color: var(--wh-gray-900);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -159,7 +159,7 @@ function selectTab(tabId: string | undefined) {
 }
 
 .booking-history-tabs__tab:hover {
-  color: var(--wh-gray-600);
+  color: var(--wh-gray-900);
 }
 
 .booking-history-tabs__tab--active::after {
