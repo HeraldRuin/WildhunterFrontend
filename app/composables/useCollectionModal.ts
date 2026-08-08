@@ -5,6 +5,7 @@ import type {
 } from '~/types/booking'
 
 const isOpen = ref(false)
+const isContentHidden = ref(false)
 const state = ref<CollectionModalState | null>(null)
 
 const MOCK_PARTICIPANTS: CollectionParticipant[] = [
@@ -55,8 +56,11 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
 
   return {
     bookingId: booking.id,
+    bookingCode: booking.code,
     bookingNumber: booking.number,
     collectionUrl: `/profile/bookings?collection=${booking.id}`,
+    timerEndAt: booking.status.timerEndAt,
+    timerExpired: booking.status.timer === '00 мин 00 сек',
     slotsTotal,
     participants: MOCK_PARTICIPANTS.slice(0, confirmedCount),
   }
@@ -65,18 +69,34 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
 export function useCollectionModal() {
   function open(booking: BookingHistoryItem) {
     state.value = buildMockState(booking)
+    isContentHidden.value = false
     isOpen.value = true
   }
 
   function close() {
     isOpen.value = false
+    isContentHidden.value = false
     state.value = null
+  }
+
+  function hide() {
+    isContentHidden.value = true
+  }
+
+  function reopen() {
+    if (state.value) {
+      isContentHidden.value = false
+      isOpen.value = true
+    }
   }
 
   return {
     isOpen: readonly(isOpen),
+    isContentHidden: readonly(isContentHidden),
     state: readonly(state),
     open,
     close,
+    hide,
+    reopen,
   }
 }

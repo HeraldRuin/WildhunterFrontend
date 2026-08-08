@@ -39,24 +39,25 @@ function formatHistoryDate(value: string | null | undefined) {
   return parsed ? formatDisplayDate(parsed) : value
 }
 
-function formatRemainingTimer(endAt: string | null | undefined) {
+function formatRemainingTimer(endAt: string | null | undefined, now: number) {
   if (!endAt) return undefined
 
   const end = new Date(endAt).getTime()
   if (Number.isNaN(end)) return undefined
 
-  const diffMs = end - Date.now()
-  if (diffMs <= 0) return '0 мин'
+  const diffMs = end - now
+  if (diffMs <= 0) return '00 мин 00 сек'
 
-  const totalMinutes = Math.floor(diffMs / 60000)
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
+  const totalSeconds = Math.floor(diffMs / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
 
   if (hours > 0) {
-    return `${hours} ч ${String(minutes).padStart(2, '0')} мин`
+    return `${hours} ч ${String(minutes).padStart(2, '0')} мин ${String(seconds).padStart(2, '0')} сек`
   }
 
-  return `${minutes} мин`
+  return `${minutes} мин ${String(seconds).padStart(2, '0')} сек`
 }
 
 function mapType(type: string): BookingType {
@@ -90,7 +91,7 @@ function mapActions(actions: BookingHistoryActionDto[]): {
   return { actions: mapped, paymentAction }
 }
 
-function buildStatus(item: BookingHistoryItemDto) {
+function buildStatus(item: BookingHistoryItemDto, now: number) {
   const status = item.status
   const collection = item.collection
   const result: BookingHistoryItem['status'] = {
@@ -99,7 +100,8 @@ function buildStatus(item: BookingHistoryItemDto) {
   }
 
   if (status === 'collection') {
-    result.timer = formatRemainingTimer(collection.collection_end_at)
+    result.timerEndAt = collection.collection_end_at || undefined
+    result.timer = formatRemainingTimer(collection.collection_end_at, now)
       || (item.hotel?.collection_timer_hours
         ? `${item.hotel.collection_timer_hours} ч`
         : undefined)
@@ -109,7 +111,7 @@ function buildStatus(item: BookingHistoryItemDto) {
   }
 
   if (status === 'prepayment_collection') {
-    result.timer = formatRemainingTimer(collection.paid_end_at)
+    result.timer = formatRemainingTimer(collection.paid_end_at, now)
       || (item.hotel?.paid_timer_hours ? `${item.hotel.paid_timer_hours} ч` : undefined)
     if (collection.accepted_count > 0) {
       result.paid = `Оплачено ${collection.paid_count}/${collection.accepted_count}`
@@ -125,7 +127,7 @@ function buildStatus(item: BookingHistoryItemDto) {
     }
     if (status === 'bed_collection') {
       result.subStatus = 'Предоплата собрана'
-      result.timer = formatRemainingTimer(collection.beds_end_at)
+      result.timer = formatRemainingTimer(collection.beds_end_at, now)
         || (item.hotel?.bed_timer_hours ? `${item.hotel.bed_timer_hours} ч` : undefined)
     }
     if (collection.total_needed > 0) {
@@ -149,6 +151,7 @@ export function mapBookingHistoryItem(
     hotelSlug?: string | null
     locationSlug?: string | null
   },
+  now = Date.now(),
 ): BookingHistoryItem {
   const type = mapType(item.type)
   const { actions, paymentAction } = mapActions(item.available_actions || [])
@@ -204,7 +207,7 @@ export function mapBookingHistoryItem(
     typeLabel: item.type_text || item.type,
     accommodation,
     hunt,
-    status: buildStatus(item),
+    status: buildStatus(item, now),
     paymentAction,
     actions,
     isInvitation: Boolean(item.is_invited),

@@ -32,8 +32,11 @@ export interface CollectionParticipant {
 
 export interface CollectionModalState {
   bookingId: number
+  bookingCode: string
   bookingNumber: string
   collectionUrl?: string
+  timerEndAt?: string
+  timerExpired: boolean
   slotsTotal: number
   participants: CollectionParticipant[]
 }
@@ -64,6 +67,7 @@ export interface BookingStatusInfo {
   code?: string
   label: string
   timer?: string
+  timerEndAt?: string
   collected?: string
   paid?: string
   subStatus?: string

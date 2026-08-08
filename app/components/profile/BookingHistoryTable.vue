@@ -210,7 +210,13 @@ onBeforeUnmount(() => {
               >
                 {{ item.status.label }}
               </div>
-              <div v-if="item.status.timer" class="booking-table__status-meta">
+              <div
+                v-if="item.status.timer"
+                class="booking-table__status-meta"
+                :class="{
+                  'booking-table__status-meta--expired': item.status.timer === '00 мин 00 сек',
+                }"
+              >
                 {{ item.status.timer }}
               </div>
               <div v-if="item.status.collected" class="booking-table__status-meta">
@@ -433,6 +439,10 @@ onBeforeUnmount(() => {
   margin-top: 4px;
   color: var(--wh-gray-600);
   font-size: 0.78rem;
+}
+
+.booking-table__status-meta--expired {
+  color: var(--wh-field-error);
 }
 
 .booking-table__payment-btn {
