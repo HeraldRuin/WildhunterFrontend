@@ -283,9 +283,8 @@ onUnmounted(() => {
 .auth-user-menu__dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
   right: 0;
-  width: 100%;
+  width: 260px;
   z-index: 1100;
   padding: 6px 8px;
   border: 1px solid var(--wh-gray);
