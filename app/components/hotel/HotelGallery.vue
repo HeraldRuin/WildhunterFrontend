@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
 import type { HotelGalleryImage } from '~/types/api'
 import { isValidGalleryImage } from '~/utils/image'
 
@@ -132,8 +133,10 @@ function isThumbLoaded(image: HotelGalleryImage) {
   return Boolean(src && loadedThumbUrls.value.has(src))
 }
 
-function markThumbLoaded(event: Event) {
-  const img = event.target as HTMLImageElement | null
+function markThumbLoaded(event: Event | HTMLImageElement) {
+  const img = event instanceof HTMLImageElement
+    ? event
+    : event.target as HTMLImageElement | null
   const src = img?.currentSrc || img?.src
   if (!src || loadedThumbUrls.value.has(src)) {
     return
@@ -144,14 +147,14 @@ function markThumbLoaded(event: Event) {
   loadedThumbUrls.value = next
 }
 
-function bindThumbImg(el: Element | null) {
+function bindThumbImg(el: Element | ComponentPublicInstance | null) {
   if (!(el instanceof HTMLImageElement)) {
     return
   }
 
   // Cached images may skip @load if complete before the listener is attached.
   if (el.complete && el.naturalWidth > 0) {
-    markThumbLoaded({ target: el } as Event)
+    markThumbLoaded(el)
   }
 }
 

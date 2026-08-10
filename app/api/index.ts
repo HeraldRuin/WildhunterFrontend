@@ -2,8 +2,16 @@ export { useApiClient } from './client'
 export { useConfigApi } from './config'
 export { useHomeApi } from './home'
 export { useAuthApi } from './auth'
-export type { LoginPayload, RegisterPayload, PasswordEmailPayload, PasswordResetPayload, PasswordResponse } from './auth'
-export type { AuthSuccessResponse, AuthUser, AuthSession, LoginResponse, RegisterResponse } from '~/types/auth'
+export type {
+  LoginPayload,
+  LoginResponse,
+  RegisterPayload,
+  RegisterResponse,
+  PasswordEmailPayload,
+  PasswordResetPayload,
+  PasswordResponse,
+} from './auth'
+export type { AuthSuccessResponse, AuthUser, AuthSession } from '~/types/auth'
 export { useSearchApi } from './search'
 export { useLocationApi, mapLocationOfferToItem } from './location'
 export { useHotelsApi, mapHotelOfferToItem } from './hotels'

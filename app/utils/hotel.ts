@@ -200,11 +200,21 @@ function buildGallery(
 }
 
 function findMockHotel(params: HotelSlugParams) {
-  return MOCK_SEARCH_ITEMS.find(item =>
+  const match = MOCK_SEARCH_ITEMS.find(item =>
     item.slug === params.hotelSlug
     && item.location?.slug === params.locationSlug,
   ) ?? MOCK_SEARCH_ITEMS.find(item => item.slug === params.hotelSlug)
-    ?? MOCK_SEARCH_ITEMS[0]
+
+  if (match) {
+    return match
+  }
+
+  const fallback = MOCK_SEARCH_ITEMS[0]
+  if (!fallback) {
+    throw new Error('Mock hotel data is empty')
+  }
+
+  return fallback
 }
 
 export function createMockHotelDetail(params: HotelSlugParams): HotelDetail {

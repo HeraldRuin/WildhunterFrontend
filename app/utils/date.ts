@@ -92,7 +92,7 @@ export function parseBirthdayDate(value: string) {
   const russianMatch = trimmed.match(/^(\d{1,2})\s+([а-яё]+)\s+(\d{4})/i)
   if (russianMatch) {
     const day = Number(russianMatch[1])
-    const monthName = russianMatch[2].toLowerCase()
+    const monthName = russianMatch[2]!.toLowerCase()
     const year = Number(russianMatch[3])
     const month = MONTH_NAMES_GENITIVE.findIndex(name => name === monthName)
 

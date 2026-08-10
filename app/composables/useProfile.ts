@@ -322,7 +322,8 @@ export function useProfile() {
     pending.value = true
     error.value = null
 
-    const request = (async () => {
+    let request!: Promise<void>
+    request = (async () => {
       try {
         const [response, roles] = await Promise.all([
           userApi.getUser(userId),

@@ -116,7 +116,7 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
   }
 }
 
-const booking = computed(() => mapCheckoutToView(checkout.value))
+const booking = computed(() => mapCheckoutToView(checkout.value ?? null))
 
 const canSendNotes = computed(() => {
   return Boolean(specialRequirements.value.trim() && bookingCode.value)

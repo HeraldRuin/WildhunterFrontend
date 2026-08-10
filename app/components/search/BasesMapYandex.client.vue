@@ -135,7 +135,7 @@ function escapeHtml(value: string) {
 
 function tooltipHtml(items: BasesMapMarker[]) {
   if (items.length === 1) {
-    return escapeHtml(items[0].title)
+    return escapeHtml(items[0]!.title)
   }
 
   const rows = items
@@ -287,8 +287,14 @@ function buildClusters(): MarkerCluster[] {
         }
 
         const nearGroup = groupIndexes.some((index) => {
-          const dx = points[index].point.x - points[j].point.x
-          const dy = points[index].point.y - points[j].point.y
+          const groupPoint = points[index]
+          const candidatePoint = points[j]
+          if (!groupPoint || !candidatePoint) {
+            return false
+          }
+
+          const dx = groupPoint.point.x - candidatePoint.point.x
+          const dy = groupPoint.point.y - candidatePoint.point.y
           return Math.hypot(dx, dy) <= CLUSTER_PIXEL_DISTANCE
         })
 
@@ -300,7 +306,10 @@ function buildClusters(): MarkerCluster[] {
       }
     }
 
-    const items = groupIndexes.map((index) => points[index].item)
+    const items = groupIndexes.flatMap((index) => {
+      const point = points[index]
+      return point ? [point.item] : []
+    })
     const lat = items.reduce((sum, item) => sum + item.lat, 0) / items.length
     const lng = items.reduce((sum, item) => sum + item.lng, 0) / items.length
 
@@ -478,6 +487,10 @@ function applySingleBaseTargetIfNeeded() {
   }
 
   const hotel = props.markers[0]
+  if (!hotel) {
+    return
+  }
+
   setMeasureTarget(hotel.lat, hotel.lng)
   emit('select', hotel.id)
 }
@@ -601,6 +614,9 @@ function syncMarkers() {
       }
 
       const item = cluster.items[0]
+      if (!item) {
+        return
+      }
 
       if (props.measureMode) {
         if (measureOrigin) {
@@ -637,7 +653,10 @@ function fitClusterBounds(items: BasesMapMarker[]) {
     }
 
     if (items.length === 1) {
-      map.setCenter([items[0].lat, items[0].lng], Math.min(props.zoom, 15), { duration: 250 })
+      const item = items[0]
+      if (item) {
+        map.setCenter([item.lat, item.lng], Math.min(props.zoom, 15), { duration: 250 })
+      }
       return
     }
 
@@ -671,6 +690,10 @@ function fitAllMarkers() {
 
     if (props.markers.length === 1) {
       const hotel = props.markers[0]
+      if (!hotel) {
+        return
+      }
+
       map.setCenter([hotel.lat, hotel.lng], Math.min(props.zoom, 10), { duration: 300 })
       return
     }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DivIcon, LatLng, Map as LeafletMap, Marker, Polyline, Tooltip } from 'leaflet'
+import type { DivIcon, LatLng, LeafletEvent, Map as LeafletMap, Marker, Polyline, Tooltip } from 'leaflet'
 import { DEFAULT_MAP_CENTER, formatMapDistance, type BasesMapMarker } from '~/utils/map'
 import { formatBasesCount } from '~/utils/pluralize'
 
@@ -47,7 +47,7 @@ const CLUSTER_PIXEL_DISTANCE = 32
 
 const mapEl = ref<HTMLElement | null>(null)
 let map: LeafletMap | null = null
-let leaflet: typeof import('leaflet').default | null = null
+let leaflet: typeof import('leaflet') | null = null
 let mapResizeObserver: ResizeObserver | null = null
 const clusterLayers: Marker[] = []
 
@@ -147,8 +147,14 @@ function buildClusters(): MarkerCluster[] {
         }
 
         const nearGroup = groupIndexes.some((index) => {
-          const dx = points[index].point.x - points[j].point.x
-          const dy = points[index].point.y - points[j].point.y
+          const groupPoint = points[index]
+          const candidatePoint = points[j]
+          if (!groupPoint || !candidatePoint) {
+            return false
+          }
+
+          const dx = groupPoint.point.x - candidatePoint.point.x
+          const dy = groupPoint.point.y - candidatePoint.point.y
           return Math.hypot(dx, dy) <= CLUSTER_PIXEL_DISTANCE
         })
 
@@ -160,7 +166,10 @@ function buildClusters(): MarkerCluster[] {
       }
     }
 
-    const items = groupIndexes.map((index) => points[index].item)
+    const items = groupIndexes.flatMap((index) => {
+      const point = points[index]
+      return point ? [point.item] : []
+    })
     const lat = items.reduce((sum, item) => sum + item.lat, 0) / items.length
     const lng = items.reduce((sum, item) => sum + item.lng, 0) / items.length
 
@@ -177,7 +186,7 @@ function buildClusters(): MarkerCluster[] {
 
 function tooltipHtml(items: BasesMapMarker[]) {
   if (items.length === 1) {
-    return escapeHtml(items[0].title)
+    return escapeHtml(items[0]!.title)
   }
 
   const rows = items
@@ -376,6 +385,10 @@ function applySingleBaseTargetIfNeeded() {
   }
 
   const hotel = props.markers[0]
+  if (!hotel) {
+    return
+  }
+
   setMeasureTarget(hotel.lat, hotel.lng)
   emit('select', hotel.id)
 }
@@ -430,8 +443,8 @@ function syncMarkers() {
       tooltip.options.offset = leaflet.point(...tooltipOffsetForDirection(direction))
     })
 
-    marker.on('tooltipopen', (event) => {
-      const tooltip = event.tooltip
+    marker.on('tooltipopen', (event: LeafletEvent) => {
+      const tooltip = (event as LeafletEvent & { tooltip?: Tooltip }).tooltip
       if (!tooltip || !map) {
         return
       }
@@ -469,6 +482,9 @@ function syncMarkers() {
       }
 
       const item = cluster.items[0]
+      if (!item) {
+        return
+      }
 
       if (props.measureMode) {
         if (measureOrigin) {
@@ -529,10 +545,12 @@ function syncMeasureModeCursor() {
 }
 
 onMounted(async () => {
-  const [{ default: L }] = await Promise.all([
+  const [leafletModule] = await Promise.all([
     import('leaflet'),
     import('leaflet/dist/leaflet.css'),
   ])
+  const L = (leafletModule as { default?: typeof import('leaflet') }).default
+    ?? leafletModule
 
   leaflet = L
   await nextTick()

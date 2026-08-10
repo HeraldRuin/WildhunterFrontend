@@ -77,8 +77,8 @@ export function parseMapCoordinates(input: string): { lat: number, lng: number }
     return null
   }
 
-  const lat = Number(match[1].replace(',', '.'))
-  const lng = Number(match[2].replace(',', '.'))
+  const lat = Number(match[1]!.replace(',', '.'))
+  const lng = Number(match[2]!.replace(',', '.'))
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     return null

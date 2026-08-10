@@ -171,7 +171,6 @@ const { data: searchResult, refresh, pending: searchPending } = useAsyncData(
     lazy: true,
     // Запросом управляет watch(searchRequest) — иначе кэш/lazy и смена query расходятся.
     immediate: false,
-    watch: false,
     default: emptySearchResult,
     getCachedData: (key, nuxtApp) => {
       // Ключ один (`hotel-search`) без query — кэш можно брать только для каталога.

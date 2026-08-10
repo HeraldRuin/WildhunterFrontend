@@ -25,8 +25,10 @@ const SIZE_PRESETS: Record<'sm' | 'md' | 'lg', number> = {
 }
 
 const sizePx = computed(() => {
-  if (typeof props.size === 'number' && Number.isFinite(props.size)) {
-    return Math.max(12, props.size)
+  if (typeof props.size === 'number') {
+    return Number.isFinite(props.size)
+      ? Math.max(12, props.size)
+      : SIZE_PRESETS.md
   }
 
   return SIZE_PRESETS[props.size] ?? SIZE_PRESETS.md

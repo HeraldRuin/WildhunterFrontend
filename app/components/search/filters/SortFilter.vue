@@ -12,7 +12,7 @@ const rootRef = ref<HTMLElement | null>(null)
 const hoveredValue = ref<SearchSortOption | null>(null)
 
 const selectedLabel = computed(() =>
-  options.find(option => option.value === model.value)?.label ?? options[0].label,
+  options.find(option => option.value === model.value)?.label ?? 'Рекомендованные',
 )
 
 function toggle() {

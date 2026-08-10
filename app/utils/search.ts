@@ -167,5 +167,3 @@ export function toOfferItem(item: BookableItem, index = 0): OfferItem {
     rating: MOCK_RATINGS[index % MOCK_RATINGS.length] ?? 0,
   }
 }
-
-export { formatBasesCount } from '~/utils/pluralize'

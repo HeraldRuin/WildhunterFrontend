@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { InputHTMLAttributes } from 'vue'
+
 defineOptions({ inheritAttrs: false })
 
 const attrs = useAttrs()
@@ -73,8 +75,10 @@ const hasTrailing = computed(() => Boolean(slots.trailing))
 
 const inputAttrs = computed(() => ({
   ...attrs,
-  ...(props.digitsOnly ? { inputmode: 'numeric' } : {}),
-}))
+  inputmode: props.digitsOnly
+    ? 'numeric'
+    : attrs.inputmode as InputHTMLAttributes['inputmode'],
+}) as InputHTMLAttributes)
 
 /** Пустое / пробельное значение → '', чтобы браузер показал placeholder */
 const displayValue = computed(() => {

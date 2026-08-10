@@ -17,6 +17,7 @@ export interface AuthSession {
 
 export interface AuthSuccessResponse {
   success: true
+  message?: string
   token: string
   token_type: string
   expires_in_minutes?: number | null
