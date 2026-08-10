@@ -8,15 +8,19 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
+  saved: []
 }>()
 
 const isOpen = computed(() => Boolean(props.booking))
-const { user: userApi } = useApi()
+const { user: userApi, bookings: bookingsApi } = useApi()
+const notifications = useNotifications()
 const query = ref('')
 const users = ref<UserSearchItem[]>([])
 const selectedUserId = ref<number | null>(null)
 const isSearching = ref(false)
 const searchError = ref('')
+const submitError = ref('')
+const isSaving = ref(false)
 let searchRequestId = 0
 let skipNextSearch = false
 
@@ -28,7 +32,9 @@ function resetSearch() {
   users.value = []
   selectedUserId.value = null
   searchError.value = ''
+  submitError.value = ''
   isSearching.value = false
+  isSaving.value = false
   searchRequestId += 1
 }
 
@@ -53,11 +59,57 @@ function handleQueryInput(event: Event) {
 
 function selectUser(user: UserSearchItem) {
   selectedUserId.value = user.id
+  submitError.value = ''
   const userId = String(user.id)
 
   if (query.value !== userId) {
     skipNextSearch = true
     query.value = userId
+  }
+}
+
+function responseErrorMessage(response: {
+  message?: string
+  errors?: Record<string, string[]>
+}) {
+  return response.errors?.user_id?.[0]
+    || response.message
+    || 'Не удалось изменить заказчика'
+}
+
+async function saveCustomer() {
+  if (!props.booking || selectedUserId.value === null || isSaving.value) {
+    submitError.value = 'Выберите заказчика'
+    return
+  }
+
+  submitError.value = ''
+  isSaving.value = true
+
+  try {
+    const response = await bookingsApi.changeUser(props.booking.code, selectedUserId.value)
+
+    if (!response.success) {
+      submitError.value = responseErrorMessage(response)
+      return
+    }
+
+    notifications.success(response.message || 'Заказчик успешно изменён')
+    emit('saved')
+    close()
+  }
+  catch (error) {
+    const data = (error as {
+      data?: {
+        message?: string
+        errors?: Record<string, string[]>
+      }
+    }).data
+
+    submitError.value = responseErrorMessage(data ?? {})
+  }
+  finally {
+    isSaving.value = false
   }
 }
 
@@ -149,7 +201,7 @@ function handleKeydown(event: KeyboardEvent) {
             Найти нового заказчика по ID:
           </h2>
 
-          <form class="customer-modal__form" @submit.prevent>
+          <form class="customer-modal__form" @submit.prevent="saveCustomer">
             <input
               :value="query"
               type="text"
@@ -190,17 +242,24 @@ function handleKeydown(event: KeyboardEvent) {
                 >
                   Выбрать
                 </button>
+                <span v-else class="customer-modal__selected-dot" aria-label="Выбрано" />
               </div>
             </div>
 
             <CommonSaveButton
               type="submit"
+              class="customer-modal__save"
               width="160px"
               mobile-width="100%"
               :disabled="selectedUserId === null"
+              :loading="isSaving"
             >
               Сохранить
             </CommonSaveButton>
+
+            <div v-if="submitError" class="customer-modal__message customer-modal__message--error">
+              {{ submitError }}
+            </div>
           </form>
         </div>
       </div>
@@ -310,7 +369,21 @@ function handleKeydown(event: KeyboardEvent) {
 .customer-modal__select {
   flex-shrink: 0;
   padding: 8px 14px;
+  background: var(--wh-green);
   font-size: 0.82rem;
+}
+
+.customer-modal__select:hover {
+  background: var(--wh-green);
+}
+
+.customer-modal__selected-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  margin-right: 18px;
+  border-radius: 50%;
+  background: var(--wh-orange-500);
 }
 
 .customer-modal-enter-active,

@@ -290,6 +290,7 @@ function openCustomerModal(booking: BookingHistoryItem) {
     <ProfileCustomerModal
       :booking="customerModalBooking"
       @close="customerModalBooking = null"
+      @saved="refreshHistory"
     />
   </div>
 </template>

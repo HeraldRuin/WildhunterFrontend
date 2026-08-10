@@ -1,4 +1,6 @@
 import type {
+  ApiErrorResponse,
+  ApiSuccessResponse,
   BookingCheckoutResponse,
   BookingHistoryQuery,
   BookingHistoryResponse,
@@ -84,6 +86,18 @@ export function useBookingsApi() {
     })
   }
 
+  function changeUser(code: string, userId: number) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/change-user`,
+      {
+        method: 'POST',
+        body: {
+          user_id: userId,
+        },
+      },
+    )
+  }
+
   return {
     create,
     history,
@@ -93,5 +107,6 @@ export function useBookingsApi() {
     extendCollection,
     checkout,
     updateCustomerNotes,
+    changeUser,
   }
 }
