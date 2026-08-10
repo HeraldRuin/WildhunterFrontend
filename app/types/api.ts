@@ -381,6 +381,16 @@ export interface BookingHistoryActionDto {
   label: string
 }
 
+export interface BookingCollectionInvitationDto {
+  invitation_id: number
+  hunter_id: number
+  user_name?: string | null
+  name: string
+  email: string | null
+  status: string
+  is_accepted: boolean
+}
+
 export interface BookingHistoryRoomDto {
   room_id: number
   title: string | null
@@ -447,6 +457,7 @@ export interface BookingHistoryItemDto {
     accepted_count: number
     total_needed: number
     paid_count: number
+    invitations?: BookingCollectionInvitationDto[]
     collection_end_at: string | null
     paid_end_at: string | null
     beds_end_at: string | null

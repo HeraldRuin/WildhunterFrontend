@@ -30,6 +30,16 @@ export interface CollectionParticipant {
   status: CollectionParticipantStatus
 }
 
+export interface BookingInvitationParticipant {
+  invitationId: number
+  hunterId: number
+  userName?: string
+  name: string
+  email?: string
+  status: string
+  isAccepted: boolean
+}
+
 export interface CollectionModalState {
   bookingId: number
   bookingCode: string
@@ -90,6 +100,8 @@ export interface BookingHistoryItem {
   paymentAction?: string
   actions: BookingAction[]
   isInvitation?: boolean
+  invitationAccepted?: boolean
   invitationAcceptedAt?: string
+  collectionInvitations?: BookingInvitationParticipant[]
   collectionUrl?: string
 }

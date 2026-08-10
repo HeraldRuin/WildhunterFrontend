@@ -68,7 +68,7 @@ function mapType(type: string): BookingType {
   return 'hotel'
 }
 
-function mapActions(actions: BookingHistoryActionDto[]): {
+function mapActions(actions: BookingHistoryActionDto[], isAcceptedInvitation = false): {
   actions: BookingAction[]
   paymentAction?: string
 } {
@@ -85,7 +85,7 @@ function mapActions(actions: BookingHistoryActionDto[]): {
       id: ACTION_ID_MAP[action.code],
       label:
         action.code === 'open_collection' || action.code === 'start_collection'
-          ? 'Собрать охотников'
+          ? (isAcceptedInvitation ? 'Сбор охотников' : 'Собрать охотников')
           : action.label,
       variant: ACTION_VARIANT_MAP[action.code] ?? 'success',
     })
@@ -158,7 +158,10 @@ export function mapBookingHistoryItem(
   now = Date.now(),
 ): BookingHistoryItem {
   const type = mapType(item.type)
-  const { actions, paymentAction } = mapActions(item.available_actions || [])
+  const { actions, paymentAction } = mapActions(
+    item.available_actions || [],
+    Boolean(item.is_invited && item.invitation_accepted),
+  )
   const details = item.details
   const rooms = details.rooms || []
 
@@ -223,7 +226,17 @@ export function mapBookingHistoryItem(
     paymentAction,
     actions,
     isInvitation: Boolean(item.is_invited),
+    invitationAccepted: Boolean(item.invitation_accepted),
     invitationAcceptedAt: item.invitation_accepted_at || undefined,
+    collectionInvitations: (item.collection.invitations || []).map(invitation => ({
+      invitationId: invitation.invitation_id,
+      hunterId: invitation.hunter_id,
+      userName: invitation.user_name || undefined,
+      name: invitation.name,
+      email: invitation.email || undefined,
+      status: invitation.status,
+      isAccepted: invitation.is_accepted,
+    })),
     collectionUrl: item.invitation_url || undefined,
   }
 }
