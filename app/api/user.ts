@@ -44,6 +44,19 @@ export type UpdateUserResponse =
   | ApiSuccessResponse<unknown>
   | ApiErrorResponse
 
+export interface UserSearchItem {
+  id: number
+  nik?: string | null
+  user_name?: string | null
+  first_name?: string | null
+  last_name?: string | null
+}
+
+export type UserSearchResponse =
+  | ApiSuccessResponse<UserSearchItem[]>
+  | ApiSuccessResponse<{ data?: UserSearchItem[], items?: UserSearchItem[] }>
+  | ApiErrorResponse
+
 function appendFormValue(body: FormData, key: string, value: string | undefined) {
   if (value == null) {
     return
@@ -57,6 +70,12 @@ export function useUserApi() {
 
   function getUser(id: number | string) {
     return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(`/user/${id}`)
+  }
+
+  function searchUsers(query: string) {
+    return apiFetch<UserSearchResponse>('/user/search', {
+      query: { query },
+    })
   }
 
   function getCurrentPassword() {
@@ -102,6 +121,7 @@ export function useUserApi() {
 
   return {
     getUser,
+    searchUsers,
     getCurrentPassword,
     changePassword,
     updateUser,
