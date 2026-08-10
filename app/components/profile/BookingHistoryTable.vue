@@ -448,20 +448,20 @@ onBeforeUnmount(() => {
 }
 
 .booking-table__details-btn {
-  padding: 6px 14px;
+  padding: 0;
   border: none;
-  border-radius: 6px;
-  background: #17a2b8;
-  color: var(--wh-white);
+  background: transparent;
+  color: var(--wh-orange-500);
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .booking-table__details-btn:hover {
-  background: #138496;
+  background: transparent;
+  opacity: 0.7;
 }
 
 .booking-table__status-label {
