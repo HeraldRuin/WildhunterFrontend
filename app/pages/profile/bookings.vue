@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BookingStatusUpdatedPayload } from '~/composables/useBookingStatusChannel'
 import type { BookingAction, BookingHistoryItem } from '~/types/booking'
-import { ROLE_HUNTER } from '~/utils/roles'
+import { ROLE_BASE_ADMIN, ROLE_HUNTER } from '~/utils/roles'
 import { mapBookingHistoryItem } from '~/utils/bookingHistory'
 
 definePageMeta({
@@ -30,6 +30,7 @@ const breadcrumbs = [
 const statusFilter = ref<string | undefined>(undefined)
 const page = ref(1)
 const timerNow = ref(Date.now())
+const customerModalBooking = ref<BookingHistoryItem | null>(null)
 let timerInterval: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
@@ -70,6 +71,12 @@ const {
 
 const historyRole = computed(() =>
   historyResponse.value?.data?.role || ROLE_HUNTER,
+)
+const isHunter = computed(() =>
+  historyRole.value.trim().toLowerCase() === ROLE_HUNTER,
+)
+const isBaseAdmin = computed(() =>
+  historyRole.value.trim().toLowerCase() === ROLE_BASE_ADMIN,
 )
 
 const tabStatuses = computed(() =>
@@ -230,6 +237,10 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     openAddServicesModal(booking)
   }
 }
+
+function openCustomerModal(booking: BookingHistoryItem) {
+  customerModalBooking.value = booking
+}
 </script>
 
 <template>
@@ -267,12 +278,19 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
       v-else
       :items="bookings"
       :empty-text="emptyText"
+      :show-details-buttons="isHunter"
+      :show-customer="isBaseAdmin"
       @action="handleBookingAction"
+      @customer="openCustomerModal"
     />
 
     <ProfileCollectionModal @extended="refreshHistory" />
     <CommonConfirmModal />
     <ProfileAddServicesModal />
+    <ProfileCustomerModal
+      :booking="customerModalBooking"
+      @close="customerModalBooking = null"
+    />
   </div>
 </template>
 

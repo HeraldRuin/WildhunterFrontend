@@ -81,6 +81,7 @@ export interface BookingHistoryItem {
   date: string
   baseName: string
   baseUrl?: string
+  customerName?: string
   type: BookingType
   typeLabel: string
   accommodation?: BookingAccommodationDetails

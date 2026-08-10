@@ -4,10 +4,13 @@ import type { BookingAction, BookingHistoryItem, BookingRoomDetail } from '~/typ
 const props = defineProps<{
   items: BookingHistoryItem[]
   emptyText?: string
+  showDetailsButtons?: boolean
+  showCustomer?: boolean
 }>()
 
 const emit = defineEmits<{
   action: [payload: { booking: BookingHistoryItem, action: BookingAction }]
+  customer: [booking: BookingHistoryItem]
 }>()
 
 const openDetailsId = ref<number | null>(null)
@@ -142,7 +145,7 @@ onBeforeUnmount(() => {
           <tr>
             <th>№ брони</th>
             <th>Дата брони</th>
-            <th>Охотн. База</th>
+            <th>{{ showCustomer ? 'Заказчик' : 'Охотн. База' }}</th>
             <th>Тип</th>
             <th>Детали</th>
             <th>Статус</th>
@@ -155,16 +158,26 @@ onBeforeUnmount(() => {
             <td class="booking-table__number">{{ item.number }}</td>
             <td class="booking-table__date">{{ item.date }}</td>
             <td class="booking-table__base">
-              <a
-                v-if="item.baseUrl"
-                :href="item.baseUrl"
-                class="booking-table__base-link"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                v-if="showCustomer"
+                type="button"
+                class="booking-table__customer-btn"
+                @click="emit('customer', item)"
               >
-                {{ item.baseName }}
-              </a>
-              <span v-else>{{ item.baseName }}</span>
+                {{ item.customerName ?? '—' }}
+              </button>
+              <template v-else>
+                <a
+                  v-if="item.baseUrl"
+                  :href="item.baseUrl"
+                  class="booking-table__base-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ item.baseName }}
+                </a>
+                <span v-else>{{ item.baseName }}</span>
+              </template>
             </td>
             <td class="booking-table__type">{{ item.typeLabel }}</td>
             <td class="booking-table__details">
@@ -178,7 +191,7 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div
-                  v-if="item.accommodation.rooms?.length"
+                  v-if="showDetailsButtons && item.accommodation.rooms?.length"
                   class="booking-table__details-more"
                 >
                   <button
@@ -392,6 +405,21 @@ onBeforeUnmount(() => {
 }
 
 .booking-table__base-link:hover {
+  color: #2f8fc9;
+  text-decoration: underline;
+}
+
+.booking-table__customer-btn {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #4aa3d9;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.booking-table__customer-btn:hover {
   color: #2f8fc9;
   text-decoration: underline;
 }

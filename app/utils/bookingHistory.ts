@@ -197,6 +197,13 @@ export function mapBookingHistoryItem(
     || fallback?.locationSlug
     || '',
   ).trim()
+  const customerName = [
+    item.creator?.first_name,
+    item.creator?.last_name,
+  ].filter(Boolean).join(' ')
+    || item.creator?.user_name
+    || item.creator?.email
+    || '—'
 
   return {
     id: item.id,
@@ -207,6 +214,7 @@ export function mapBookingHistoryItem(
     baseUrl: hotelSlug && locationSlug
       ? getHotelPath(locationSlug, hotelSlug)
       : undefined,
+    customerName,
     type,
     typeLabel: item.type_text || item.type,
     accommodation,
