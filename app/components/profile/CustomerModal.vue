@@ -18,10 +18,12 @@ const selectedUserId = ref<number | null>(null)
 const isSearching = ref(false)
 const searchError = ref('')
 let searchRequestId = 0
+let skipNextSearch = false
 
 useBodyScrollLock(isOpen)
 
 function resetSearch() {
+  skipNextSearch = false
   query.value = ''
   users.value = []
   selectedUserId.value = null
@@ -51,7 +53,12 @@ function handleQueryInput(event: Event) {
 
 function selectUser(user: UserSearchItem) {
   selectedUserId.value = user.id
-  query.value = String(user.id)
+  const userId = String(user.id)
+
+  if (query.value !== userId) {
+    skipNextSearch = true
+    query.value = userId
+  }
 }
 
 watch(
@@ -62,6 +69,11 @@ watch(
 )
 
 watch(query, async (value) => {
+  if (skipNextSearch) {
+    skipNextSearch = false
+    return
+  }
+
   const normalizedQuery = value.trim()
   const requestId = ++searchRequestId
 
