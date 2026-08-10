@@ -39,6 +39,7 @@ const page = ref(1)
 const timerNow = ref(Date.now())
 const customerModalBooking = ref<BookingHistoryItem | null>(null)
 const invitationModalBooking = ref<BookingHistoryItem | null>(null)
+const collectionInvitationsModalBooking = ref<BookingHistoryItem | null>(null)
 let timerInterval: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
@@ -244,12 +245,21 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   }
 
   if (action.id === 'open_collection') {
+    if (booking.isInvitation && booking.invitationAccepted) {
+      collectionInvitationsModalBooking.value = booking
+      return
+    }
+
     openCollectionModal(booking)
     return
   }
 
   if (action.id === 'open_invitation') {
-    invitationModalBooking.value = booking
+    if (booking.invitationAccepted) {
+      collectionInvitationsModalBooking.value = booking
+    } else {
+      invitationModalBooking.value = booking
+    }
     return
   }
 
@@ -323,6 +333,10 @@ function openCustomerModal(booking: BookingHistoryItem) {
       @close="invitationModalBooking = null"
       @accepted="refreshHistory"
       @declined="refreshHistory"
+    />
+    <ProfileCollectionInvitationsModal
+      :booking="collectionInvitationsModalBooking"
+      @close="collectionInvitationsModalBooking = null"
     />
     <CommonConfirmModal />
     <ProfileAddServicesModal />
