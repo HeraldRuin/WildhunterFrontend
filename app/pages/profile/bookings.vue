@@ -15,6 +15,7 @@ useHead({
 
 const route = useRoute()
 const { bookings: bookingsApi } = useApi()
+const { user } = useAuth()
 const notifications = useNotifications()
 
 const notificationCount = 2
@@ -128,10 +129,19 @@ function applyBookingStatusUpdate(payload: BookingStatusUpdatedPayload) {
 }
 
 const { syncSubscriptions } = useBookingStatusChannel(applyBookingStatusUpdate)
+const { subscribe: subscribeToHistory } = useBookingHistoryChannel(() => {
+  void refreshHistory()
+})
 
 watch(
   () => historyResponse.value?.data?.bookings?.items.map(item => item.id) ?? [],
   syncSubscriptions,
+  { immediate: true },
+)
+
+watch(
+  () => user.value?.id,
+  subscribeToHistory,
   { immediate: true },
 )
 
