@@ -161,6 +161,11 @@ function onDatesFieldClick(event: MouseEvent) {
     return
   }
 
+  if (isDatesOpen.value) {
+    closeDatesDropdown()
+    return
+  }
+
   if (!checkIn.value || !checkOut.value) {
     openDatesFor(checkIn.value ? 'end' : 'start')
     return

@@ -443,10 +443,15 @@ function displayLicenseDate(value: string) {
   return parsed ? formatBirthdayDate(parsed) : value
 }
 
-function openLicenseDateCalendar(index: number) {
+function toggleLicenseDateCalendar(index: number) {
   const weapon = weapons.value[index]
 
   if (!weapon) {
+    return
+  }
+
+  if (openLicenseDateIndex.value === index) {
+    openLicenseDateIndex.value = null
     return
   }
 
@@ -1072,15 +1077,14 @@ const hasNewWeapon = computed(() =>
                     :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_date') : ''"
                     :open="openLicenseDateIndex === card.index"
                     readonly
-                    @focus="openLicenseDateCalendar(card.index)"
-                    @click.stop="openLicenseDateCalendar(card.index)"
+                    @click.stop="toggleLicenseDateCalendar(card.index)"
                   >
                     <template #trailing>
                       <button
                         type="button"
                         class="profile-weapon__calendar-icon"
                         aria-label="Открыть календарь"
-                        @click.stop="openLicenseDateCalendar(card.index)"
+                        @click.stop="toggleLicenseDateCalendar(card.index)"
                       >
                         <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
                           <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />

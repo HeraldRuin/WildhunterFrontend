@@ -280,6 +280,11 @@ function onDatesFieldClick(event: MouseEvent) {
     return
   }
 
+  if (isDatesOpen.value) {
+    closeDatesDropdown()
+    return
+  }
+
   openDatesFor('start')
 }
 
