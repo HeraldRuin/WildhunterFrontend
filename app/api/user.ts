@@ -50,6 +50,7 @@ export interface UserSearchItem {
   user_name?: string | null
   first_name?: string | null
   last_name?: string | null
+  email?: string | null
 }
 
 export type UserSearchResponse =
@@ -74,6 +75,15 @@ export function useUserApi() {
 
   function searchUsers(query: string, bookingId: number) {
     return apiFetch<UserSearchResponse>('/user/search', {
+      query: {
+        query,
+        booking_id: bookingId,
+      },
+    })
+  }
+
+  function searchHunters(query: string, bookingId: number) {
+    return apiFetch<UserSearchResponse>('/user/search-hunters', {
       query: {
         query,
         booking_id: bookingId,
@@ -125,6 +135,7 @@ export function useUserApi() {
   return {
     getUser,
     searchUsers,
+    searchHunters,
     getCurrentPassword,
     changePassword,
     updateUser,
