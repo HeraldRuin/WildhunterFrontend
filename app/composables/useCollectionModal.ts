@@ -53,6 +53,13 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
     slotsTotal,
     MOCK_PARTICIPANTS.length,
   )
+  const invitedParticipants: CollectionParticipant[] = (booking.collectionInvitations ?? [])
+    .map(invitation => ({
+      id: invitation.hunterId,
+      name: invitation.name,
+      email: invitation.email,
+      status: invitation.isAccepted ? 'confirmed' : 'pending',
+    }))
 
   return {
     bookingId: booking.id,
@@ -62,7 +69,9 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
     timerEndAt: booking.status.timerEndAt,
     timerExpired: booking.status.timer === '00 мин 00 сек',
     slotsTotal,
-    participants: MOCK_PARTICIPANTS.slice(0, confirmedCount),
+    participants: invitedParticipants.length
+      ? invitedParticipants
+      : MOCK_PARTICIPANTS.slice(0, confirmedCount),
   }
 }
 
@@ -90,6 +99,19 @@ export function useCollectionModal() {
     }
   }
 
+  function addParticipant(participant: CollectionParticipant) {
+    if (!state.value) return
+
+    const participantIndex = state.value.participants.findIndex(item => item.id === participant.id)
+
+    if (participantIndex >= 0) {
+      state.value.participants[participantIndex] = participant
+      return
+    }
+
+    state.value.participants.push(participant)
+  }
+
   return {
     isOpen: readonly(isOpen),
     isContentHidden: readonly(isContentHidden),
@@ -98,5 +120,6 @@ export function useCollectionModal() {
     close,
     hide,
     reopen,
+    addParticipant,
   }
 }

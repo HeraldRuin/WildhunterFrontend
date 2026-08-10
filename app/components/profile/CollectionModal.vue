@@ -5,7 +5,7 @@ const emit = defineEmits<{
   extended: []
 }>()
 
-const { isOpen, isContentHidden, state, close, hide, reopen } = useCollectionModal()
+const { isOpen, isContentHidden, state, close, hide, reopen, addParticipant } = useCollectionModal()
 const { bookings: bookingsApi, user: userApi } = useApi()
 const notifications = useNotifications()
 const { open: openConfirmModal } = useConfirmModal()
@@ -231,6 +231,49 @@ async function extendCollection() {
   throw new Error('extend_collection_failed')
 }
 
+async function inviteHunter(hunter: UserSearchItem) {
+  const bookingCode = state.value?.bookingCode
+  if (!bookingCode) return
+
+  try {
+    const response = await bookingsApi.inviteHunter(bookingCode, hunter.id)
+
+    if (response.success) {
+      addParticipant({
+        id: hunter.id,
+        name: hunterName(hunter),
+        email: hunter.email || undefined,
+        status: 'pending',
+      })
+      notifications.success(response.message || 'Приглашение отправлено')
+      reopen()
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось пригласить охотника')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось пригласить охотника')
+    throw error
+  }
+
+  throw new Error('invite_hunter_failed')
+}
+
+function requestHunterInvitation(hunter: UserSearchItem) {
+  hide()
+  openConfirmModal({
+    title: `Пригласить охотника ${hunterName(hunter)}?`,
+    confirmLabel: 'Пригласить',
+    onConfirm: () => inviteHunter(hunter),
+    onCancel: () => {
+      setTimeout(reopen, 200)
+    },
+    transparentBackdrop: true,
+  })
+}
+
 function requestCollectionExtension() {
   if (!canExtendCollection.value) return
 
@@ -295,10 +338,10 @@ function requestCollectionExtension() {
               </div>
 
               <span
-                v-if="participant.status === 'confirmed'"
                 class="collection-modal__badge"
+                :class="{ 'collection-modal__badge--pending': participant.status === 'pending' }"
               >
-                Подтвержден
+                {{ participant.status === 'confirmed' ? 'Подтвержден' : 'Ожидает подтверждения' }}
               </span>
             </div>
 
@@ -360,6 +403,7 @@ function requestCollectionExtension() {
                   v-if="selectedHunters[index]"
                   type="button"
                   class="collection-modal__invite-button"
+                  @click="requestHunterInvitation(selectedHunters[index]!)"
                 >
                   Пригласить
                 </button>
@@ -501,6 +545,11 @@ function requestCollectionExtension() {
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
+}
+
+.collection-modal__badge--pending {
+  background: var(--wh-gray-600);
+  color: var(--wh-white);
 }
 
 .collection-modal__invite-input {

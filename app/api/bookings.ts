@@ -71,6 +71,18 @@ export function useBookingsApi() {
     )
   }
 
+  function inviteHunter(code: string, hunterId: number) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/invite-hunter`,
+      {
+        method: 'POST',
+        body: {
+          hunter_id: hunterId,
+        },
+      },
+    )
+  }
+
   function acceptInvitation(code: string) {
     return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/accept-invitation`,
@@ -124,6 +136,7 @@ export function useBookingsApi() {
     cancel,
     startCollection,
     extendCollection,
+    inviteHunter,
     acceptInvitation,
     declineInvitation,
     checkout,
