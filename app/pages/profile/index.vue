@@ -326,12 +326,12 @@ function handlePhonePaste(event: ClipboardEvent) {
   clearFieldError('phone')
 }
 
-function openBirthdayCalendar() {
+function toggleBirthdayCalendar() {
   if (isFormLoading.value || isSubmitting.value) {
     return
   }
 
-  isBirthdayOpen.value = true
+  isBirthdayOpen.value = !isBirthdayOpen.value
   birthdayActivePart.value = 'start'
 }
 
@@ -629,8 +629,7 @@ async function handleSubmit() {
                 :readonly="isFormLoading || isSubmitting"
                 :reveal="revealValues"
                 :open="isBirthdayOpen"
-                @focus="openBirthdayCalendar"
-                @click.stop="openBirthdayCalendar"
+                @click.stop="toggleBirthdayCalendar"
                 @update:model-value="setProfileField('birthday', $event)"
               >
                 <template #trailing>
@@ -639,7 +638,7 @@ async function handleSubmit() {
                     class="profile-form__calendar-icon"
                     aria-label="Открыть календарь"
                     :disabled="isFormLoading || isSubmitting"
-                    @click.stop="openBirthdayCalendar"
+                    @click.stop="toggleBirthdayCalendar"
                   >
                     <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
                       <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />
