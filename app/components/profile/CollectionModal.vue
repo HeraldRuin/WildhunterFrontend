@@ -1,18 +1,26 @@
 <script setup lang="ts">
+import type { UserSearchItem } from '~/api/user'
+
 const emit = defineEmits<{
   extended: []
 }>()
 
 const { isOpen, isContentHidden, state, close, hide, reopen } = useCollectionModal()
-const { bookings: bookingsApi } = useApi()
+const { bookings: bookingsApi, user: userApi } = useApi()
 const notifications = useNotifications()
 const { open: openConfirmModal } = useConfirmModal()
 
 useBodyScrollLock(isOpen)
 
 const inviteQueries = ref<string[]>([])
+const searchResults = ref<UserSearchItem[]>([])
+const activeSearchIndex = ref<number | null>(null)
+const isSearching = ref(false)
+const searchError = ref('')
 const timerNow = ref(Date.now())
 let timerInterval: ReturnType<typeof setInterval> | undefined
+let searchTimeout: ReturnType<typeof setTimeout> | undefined
+let searchRequestId = 0
 
 const canExtendCollection = computed(() => {
   const timerEndAt = state.value?.timerEndAt
@@ -35,6 +43,7 @@ watch(isOpen, (open) => {
 
   if (!open) {
     inviteQueries.value = []
+    resetHunterSearch()
     return
   }
 
@@ -49,6 +58,9 @@ onUnmounted(() => {
   if (timerInterval) {
     clearInterval(timerInterval)
   }
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
 })
 
 watch(emptySlotCount, (count) => {
@@ -60,6 +72,82 @@ watch(emptySlotCount, (count) => {
   }
   inviteQueries.value = next
 })
+
+function resetHunterSearch() {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+    searchTimeout = undefined
+  }
+  searchRequestId += 1
+  searchResults.value = []
+  activeSearchIndex.value = null
+  isSearching.value = false
+  searchError.value = ''
+}
+
+function hunterName(hunter: UserSearchItem) {
+  return [hunter.first_name, hunter.last_name].filter(Boolean).join(' ') || 'Имя не указано'
+}
+
+function hunterNickname(hunter: UserSearchItem) {
+  return hunter.nik || hunter.user_name || 'ник не задан'
+}
+
+function handleInviteInput(index: number) {
+  const query = inviteQueries.value[index]?.trim() ?? ''
+
+  activeSearchIndex.value = index
+  searchResults.value = []
+  searchError.value = ''
+
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+
+  if (!query) {
+    isSearching.value = false
+    searchRequestId += 1
+    return
+  }
+
+  searchTimeout = setTimeout(() => {
+    void searchHunters(query, index)
+  }, 300)
+}
+
+async function searchHunters(query: string, index: number) {
+  const bookingId = state.value?.bookingId
+  if (!bookingId) return
+
+  const requestId = ++searchRequestId
+  isSearching.value = true
+
+  try {
+    const response = await userApi.searchHunters(query, bookingId)
+    if (requestId !== searchRequestId || activeSearchIndex.value !== index) return
+
+    if (!response.success || !('data' in response)) {
+      searchError.value = response.message || 'Не удалось найти охотников'
+      return
+    }
+
+    const data = response.data
+    searchResults.value = Array.isArray(data)
+      ? data
+      : data.items ?? data.data ?? []
+  }
+  catch (error) {
+    if (requestId !== searchRequestId) return
+
+    const data = (error as { data?: { message?: string } }).data
+    searchError.value = data?.message || 'Не удалось найти охотников'
+  }
+  finally {
+    if (requestId === searchRequestId) {
+      isSearching.value = false
+    }
+  }
+}
 
 function handleBackdropClick(event: MouseEvent) {
   if (event.target === event.currentTarget) {
@@ -188,15 +276,49 @@ function requestCollectionExtension() {
               </span>
             </div>
 
-            <input
+            <div
               v-for="(_, index) in inviteQueries"
               :key="`invite-${index}`"
-              v-model="inviteQueries[index]"
-              type="text"
-              class="collection-modal__invite-input"
-              placeholder="Ник / Фамилия / email / ID"
-              autocomplete="off"
+              class="collection-modal__invite-field"
             >
+              <input
+                v-model="inviteQueries[index]"
+                type="text"
+                class="collection-modal__invite-input"
+                placeholder="Ник / Фамилия / email / ID"
+                autocomplete="off"
+                @focus="handleInviteInput(index)"
+                @input="handleInviteInput(index)"
+              >
+
+              <div
+                v-if="activeSearchIndex === index && inviteQueries[index]?.trim()"
+                class="collection-modal__search-results"
+              >
+                <div v-if="isSearching" class="collection-modal__search-message">
+                  Поиск…
+                </div>
+                <div v-else-if="searchError" class="collection-modal__search-message collection-modal__search-message--error">
+                  {{ searchError }}
+                </div>
+                <div v-else-if="!searchResults.length" class="collection-modal__search-message">
+                  Охотники не найдены
+                </div>
+                <div
+                  v-for="hunter in searchResults"
+                  v-else
+                  :key="hunter.id"
+                  class="collection-modal__search-result"
+                >
+                  <div>
+                    ID: {{ hunter.id }} (ник {{ hunterNickname(hunter) }}) {{ hunterName(hunter) }}
+                  </div>
+                  <div v-if="hunter.email" class="collection-modal__search-result-email">
+                    {{ hunter.email }}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <footer class="collection-modal__footer">
@@ -355,6 +477,62 @@ function requestCollectionExtension() {
 .collection-modal__invite-input:focus {
   border-color: var(--wh-field-border-active);
   box-shadow: 0 0 0 3px var(--wh-field-focus-ring);
+}
+
+.collection-modal__invite-field {
+  position: relative;
+}
+
+.collection-modal__search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 10;
+  width: 100%;
+  max-height: 230px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 4px;
+  background: var(--wh-white);
+  overflow-y: auto;
+}
+
+.collection-modal__search-result {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--wh-gray-200);
+  color: var(--wh-gray-900);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.collection-modal__search-result:hover {
+  background-color: #e8883a;
+  color: var(--wh-white);
+}
+
+.collection-modal__search-result:last-child {
+  border-bottom: none;
+}
+
+.collection-modal__search-result-email {
+  margin-top: 3px;
+  color: var(--wh-gray-600);
+  font-size: 0.75rem;
+}
+
+.collection-modal__search-result:hover .collection-modal__search-result-email {
+  color: var(--wh-white);
+}
+
+.collection-modal__search-message {
+  padding: 12px;
+  color: var(--wh-gray-600);
+  font-size: 0.82rem;
+}
+
+.collection-modal__search-message--error {
+  color: var(--wh-field-error);
 }
 
 .collection-modal__footer {
