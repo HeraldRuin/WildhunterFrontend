@@ -358,7 +358,7 @@ function requestCollectionExtension() {
   padding: 10px 16px;
   border: none;
   border-radius: 8px;
-  background: #2a9d8f;
+  background: var(--wh-green);
   color: var(--wh-white);
   font-size: 0.88rem;
   font-weight: 600;
@@ -368,15 +368,15 @@ function requestCollectionExtension() {
 }
 
 .collection-modal__btn:hover {
-  background: #238b7e;
+  background: #466144;
 }
 
 .collection-modal__btn--accent {
-  background: #4db6ac;
+  background: var(--wh-green);
 }
 
 .collection-modal__btn--accent:hover {
-  background: #3aa89d;
+  background: #466144;
 }
 
 .collection-modal__btn:disabled {

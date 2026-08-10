@@ -72,9 +72,12 @@ export function useUserApi() {
     return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(`/user/${id}`)
   }
 
-  function searchUsers(query: string) {
+  function searchUsers(query: string, bookingId: number) {
     return apiFetch<UserSearchResponse>('/user/search', {
-      query: { query },
+      query: {
+        query,
+        booking_id: bookingId,
+      },
     })
   }
 

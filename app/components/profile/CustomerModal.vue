@@ -140,10 +140,15 @@ watch(query, async (value) => {
     return
   }
 
+  const bookingId = props.booking?.id
+  if (!bookingId) {
+    return
+  }
+
   isSearching.value = true
 
   try {
-    const response = await userApi.searchUsers(normalizedQuery)
+    const response = await userApi.searchUsers(normalizedQuery, bookingId)
     if (requestId !== searchRequestId) return
 
     if (!response.success || !('data' in response)) {
@@ -316,6 +321,7 @@ function handleKeydown(event: KeyboardEvent) {
 .customer-modal__input {
   width: 100%;
   height: 36px;
+  margin: 8px 0;
   padding: 0 14px;
   border: 1px solid var(--wh-gray-400);
   background: var(--wh-white);
