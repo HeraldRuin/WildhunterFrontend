@@ -13,6 +13,7 @@ const { open: openConfirmModal } = useConfirmModal()
 useBodyScrollLock(isOpen)
 
 const inviteQueries = ref<string[]>([])
+const selectedHunters = ref<Array<UserSearchItem | null>>([])
 const searchResults = ref<UserSearchItem[]>([])
 const activeSearchIndex = ref<number | null>(null)
 const isSearching = ref(false)
@@ -43,6 +44,7 @@ watch(isOpen, (open) => {
 
   if (!open) {
     inviteQueries.value = []
+    selectedHunters.value = []
     resetHunterSearch()
     return
   }
@@ -52,6 +54,7 @@ watch(isOpen, (open) => {
     timerNow.value = Date.now()
   }, 1_000)
   inviteQueries.value = Array.from({ length: emptySlotCount.value }, () => '')
+  selectedHunters.value = Array.from({ length: emptySlotCount.value }, () => null)
 })
 
 onUnmounted(() => {
@@ -71,6 +74,12 @@ watch(emptySlotCount, (count) => {
     next.push('')
   }
   inviteQueries.value = next
+
+  const nextSelected = selectedHunters.value.slice(0, count)
+  while (nextSelected.length < count) {
+    nextSelected.push(null)
+  }
+  selectedHunters.value = nextSelected
 })
 
 function resetHunterSearch() {
@@ -93,9 +102,20 @@ function hunterNickname(hunter: UserSearchItem) {
   return hunter.nik || hunter.user_name || 'ник не задан'
 }
 
+function hunterInputLabel(hunter: UserSearchItem) {
+  return hunter.nik || hunter.user_name || hunterName(hunter)
+}
+
 function handleInviteInput(index: number) {
+  const selectedHunter = selectedHunters.value[index]
   const query = inviteQueries.value[index]?.trim() ?? ''
 
+  if (selectedHunter && query === hunterInputLabel(selectedHunter)) {
+    resetHunterSearch()
+    return
+  }
+
+  selectedHunters.value[index] = null
   activeSearchIndex.value = index
   searchResults.value = []
   searchError.value = ''
@@ -113,6 +133,12 @@ function handleInviteInput(index: number) {
   searchTimeout = setTimeout(() => {
     void searchHunters(query, index)
   }, 300)
+}
+
+function selectHunter(hunter: UserSearchItem, index: number) {
+  selectedHunters.value[index] = hunter
+  inviteQueries.value[index] = hunterInputLabel(hunter)
+  resetHunterSearch()
 }
 
 async function searchHunters(query: string, index: number) {
@@ -281,42 +307,62 @@ function requestCollectionExtension() {
               :key="`invite-${index}`"
               class="collection-modal__invite-field"
             >
-              <input
-                v-model="inviteQueries[index]"
-                type="text"
-                class="collection-modal__invite-input"
-                placeholder="Ник / Фамилия / email / ID"
-                autocomplete="off"
-                @focus="handleInviteInput(index)"
-                @input="handleInviteInput(index)"
-              >
+              <div class="collection-modal__invite-control">
+                <div class="collection-modal__invite-input-wrap">
+                  <input
+                    v-model="inviteQueries[index]"
+                    type="text"
+                    class="collection-modal__invite-input"
+                    placeholder="Ник / Фамилия / email / ID"
+                    autocomplete="off"
+                    @focus="handleInviteInput(index)"
+                    @input="handleInviteInput(index)"
+                  >
 
-              <div
-                v-if="activeSearchIndex === index && inviteQueries[index]?.trim()"
-                class="collection-modal__search-results"
-              >
-                <div v-if="isSearching" class="collection-modal__search-message">
-                  Поиск…
+                  <div
+                    v-if="activeSearchIndex === index && inviteQueries[index]?.trim()"
+                    class="collection-modal__search-results"
+                  >
+                    <div v-if="isSearching" class="collection-modal__search-message">
+                      Поиск…
+                    </div>
+                    <div v-else-if="searchError" class="collection-modal__search-message collection-modal__search-message--error">
+                      {{ searchError }}
+                    </div>
+                    <div v-else-if="!searchResults.length" class="collection-modal__search-message">
+                      Охотники не найдены
+                    </div>
+                    <div
+                      v-for="hunter in searchResults"
+                      v-else
+                      :key="hunter.id"
+                      class="collection-modal__search-result"
+                      @click="selectHunter(hunter, index)"
+                    >
+                      <div>
+                        ID: {{ hunter.id }} (ник {{ hunterNickname(hunter) }}) {{ hunterName(hunter) }}
+                      </div>
+                      <div v-if="hunter.email" class="collection-modal__search-result-email">
+                        {{ hunter.email }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    v-if="selectedHunters[index]?.email"
+                    class="collection-modal__selected-email"
+                  >
+                    {{ selectedHunters[index]?.email }}
+                  </div>
                 </div>
-                <div v-else-if="searchError" class="collection-modal__search-message collection-modal__search-message--error">
-                  {{ searchError }}
-                </div>
-                <div v-else-if="!searchResults.length" class="collection-modal__search-message">
-                  Охотники не найдены
-                </div>
-                <div
-                  v-for="hunter in searchResults"
-                  v-else
-                  :key="hunter.id"
-                  class="collection-modal__search-result"
+
+                <button
+                  v-if="selectedHunters[index]"
+                  type="button"
+                  class="collection-modal__invite-button"
                 >
-                  <div>
-                    ID: {{ hunter.id }} (ник {{ hunterNickname(hunter) }}) {{ hunterName(hunter) }}
-                  </div>
-                  <div v-if="hunter.email" class="collection-modal__search-result-email">
-                    {{ hunter.email }}
-                  </div>
-                </div>
+                  Пригласить
+                </button>
               </div>
             </div>
           </div>
@@ -481,6 +527,43 @@ function requestCollectionExtension() {
 
 .collection-modal__invite-field {
   position: relative;
+}
+
+.collection-modal__invite-control {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.collection-modal__invite-input-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.collection-modal__selected-email {
+  margin-top: 4px;
+  color: var(--wh-gray-600);
+  font-size: 0.75rem;
+}
+
+.collection-modal__invite-button {
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 8px;
+  background: var(--wh-white);
+  color: #4aa3d9;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.collection-modal__invite-button:hover {
+  border-color: #e8883a;
+  background: #e8883a;
+  color: var(--wh-white);
 }
 
 .collection-modal__search-results {
