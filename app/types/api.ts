@@ -415,6 +415,7 @@ export interface BookingHistoryItemDto {
   is_master_hunter: boolean
   is_invited: boolean
   invitation_accepted: boolean
+  invitation_url?: string | null
   hotel: BookingHistoryHotelDto | null
   location?: {
     slug?: string | null

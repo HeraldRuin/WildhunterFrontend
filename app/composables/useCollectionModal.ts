@@ -58,7 +58,7 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
     bookingId: booking.id,
     bookingCode: booking.code,
     bookingNumber: booking.number,
-    collectionUrl: `/profile/bookings?collection=${booking.id}`,
+    collectionUrl: booking.collectionUrl,
     timerEndAt: booking.status.timerEndAt,
     timerExpired: booking.status.timer === '00 мин 00 сек',
     slotsTotal,

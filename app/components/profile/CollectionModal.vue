@@ -73,12 +73,23 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-function copyCollectionLink() {
+async function copyCollectionLink() {
   const url = state.value?.collectionUrl
-  if (!url || !import.meta.client) return
+  if (!import.meta.client) return
+
+  if (!url) {
+    notifications.error('Ссылка на сбор недоступна')
+    return
+  }
 
   const absolute = new URL(url, window.location.origin).toString()
-  void navigator.clipboard?.writeText(absolute)
+
+  try {
+    await navigator.clipboard.writeText(absolute)
+    notifications.success('Ссылка скопирована в буфер обмена')
+  } catch {
+    notifications.error('Не удалось скопировать ссылку')
+  }
 }
 
 async function extendCollection() {
@@ -316,7 +327,7 @@ function requestCollectionExtension() {
   flex-shrink: 0;
   padding: 5px 10px;
   border-radius: 6px;
-  background: #7cb342;
+  background: var(--wh-orange-500);
   color: var(--wh-white);
   font-size: 0.75rem;
   font-weight: 600;

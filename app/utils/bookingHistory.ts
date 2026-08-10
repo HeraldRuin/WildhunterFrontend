@@ -223,5 +223,6 @@ export function mapBookingHistoryItem(
     paymentAction,
     actions,
     isInvitation: Boolean(item.is_invited),
+    collectionUrl: item.invitation_url || undefined,
   }
 }
