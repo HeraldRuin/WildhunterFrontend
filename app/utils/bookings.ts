@@ -67,7 +67,7 @@ export const MOCK_MY_BOOKINGS: BookingHistoryItem[] = [
       collected: 'Собрано 1/3',
     },
     actions: [
-      { id: 'open_collection', label: 'Сбор', variant: 'success' },
+      { id: 'open_collection', label: 'Собрать охотников', variant: 'success' },
       { id: 'cancel_booking', label: 'Отменить бронь', variant: 'danger' },
     ],
   },
@@ -224,7 +224,7 @@ export const MOCK_INVITATION_BOOKINGS: BookingHistoryItem[] = [
       collected: 'Собрано 2/3',
     },
     actions: [
-      { id: 'open_collection', label: 'Открыть сбор', variant: 'success' },
+      { id: 'open_collection', label: 'Собрать охотников', variant: 'success' },
     ],
     isInvitation: true,
   },

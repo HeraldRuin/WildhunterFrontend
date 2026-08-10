@@ -83,7 +83,10 @@ function mapActions(actions: BookingHistoryActionDto[]): {
 
     mapped.push({
       id: ACTION_ID_MAP[action.code],
-      label: action.label,
+      label:
+        action.code === 'open_collection' || action.code === 'start_collection'
+          ? 'Собрать охотников'
+          : action.label,
       variant: ACTION_VARIANT_MAP[action.code] ?? 'success',
     })
   }
