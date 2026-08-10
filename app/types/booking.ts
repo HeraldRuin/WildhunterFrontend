@@ -90,5 +90,6 @@ export interface BookingHistoryItem {
   paymentAction?: string
   actions: BookingAction[]
   isInvitation?: boolean
+  invitationAcceptedAt?: string
   collectionUrl?: string
 }

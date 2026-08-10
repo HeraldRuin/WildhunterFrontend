@@ -372,6 +372,7 @@ export type BookingHistoryStatusFilter =
 export interface BookingHistoryQuery {
   status?: BookingHistoryStatusFilter
   booking_id?: number
+  code?: string
   page?: number
 }
 
@@ -415,6 +416,7 @@ export interface BookingHistoryItemDto {
   is_master_hunter: boolean
   is_invited: boolean
   invitation_accepted: boolean
+  invitation_accepted_at?: string | null
   invitation_url?: string | null
   hotel: BookingHistoryHotelDto | null
   location?: {

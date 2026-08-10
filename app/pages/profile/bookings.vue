@@ -28,10 +28,17 @@ const breadcrumbs = [
   { label: 'Главная', to: '/' },
   { label: 'Бронирования' },
 ]
-const statusFilter = ref<string | undefined>(undefined)
+const routeStatus = computed(() => {
+  const status = route.query.status
+  return Array.isArray(status) ? status[0] : status
+})
+const statusFilter = ref<string | undefined>(
+  routeStatus.value === 'invitation' ? 'invitation' : undefined,
+)
 const page = ref(1)
 const timerNow = ref(Date.now())
 const customerModalBooking = ref<BookingHistoryItem | null>(null)
+const invitationModalBooking = ref<BookingHistoryItem | null>(null)
 let timerInterval: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
@@ -53,20 +60,27 @@ const bookingIdFilter = computed(() => {
   return Number.isFinite(value) && value > 0 ? value : undefined
 })
 
+const invitationCode = computed(() => {
+  const raw = route.query.code
+  const value = String(Array.isArray(raw) ? raw[0] ?? '' : raw ?? '').trim()
+  return value || undefined
+})
+
 const {
   data: historyResponse,
   pending: historyPending,
   error: historyError,
   refresh: refreshHistory,
 } = await useAsyncData(
-  () => `profile-booking-history-${statusFilter.value ?? 'all'}-${page.value}-${bookingIdFilter.value ?? 'none'}`,
+  () => `profile-booking-history-${statusFilter.value ?? 'all'}-${page.value}-${bookingIdFilter.value ?? 'none'}-${invitationCode.value ?? 'no-code'}`,
   () => bookingsApi.history({
     page: page.value,
     status: statusFilter.value,
     booking_id: bookingIdFilter.value,
+    code: invitationCode.value,
   }),
   {
-    watch: [statusFilter, page, bookingIdFilter],
+    watch: [statusFilter, page, bookingIdFilter, invitationCode],
   },
 )
 
@@ -159,6 +173,10 @@ watch(statusFilter, () => {
   page.value = 1
 })
 
+watch(routeStatus, (status) => {
+  statusFilter.value = status === 'invitation' ? 'invitation' : undefined
+})
+
 async function confirmBooking(booking: BookingHistoryItem) {
   try {
     const response = await bookingsApi.confirm(booking.code)
@@ -230,6 +248,11 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     return
   }
 
+  if (action.id === 'open_invitation') {
+    invitationModalBooking.value = booking
+    return
+  }
+
   if (action.id === 'cancel_booking') {
     openCancelBookingModal(booking, () => cancelBooking(booking))
     return
@@ -295,6 +318,12 @@ function openCustomerModal(booking: BookingHistoryItem) {
     />
 
     <ProfileCollectionModal @extended="refreshHistory" />
+    <ProfileInvitationModal
+      :booking="invitationModalBooking"
+      @close="invitationModalBooking = null"
+      @accepted="refreshHistory"
+      @declined="refreshHistory"
+    />
     <CommonConfirmModal />
     <ProfileAddServicesModal />
     <ProfileCustomerModal

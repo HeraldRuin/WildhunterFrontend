@@ -30,6 +30,7 @@ export function useBookingsApi() {
         page: query.page ?? 1,
         ...(query.status ? { status: query.status } : {}),
         ...(query.booking_id ? { booking_id: query.booking_id } : {}),
+        ...(query.code ? { code: query.code } : {}),
       },
     })
   }
@@ -64,6 +65,24 @@ export function useBookingsApi() {
   function extendCollection(code: string) {
     return apiFetch<ExtendCollectionResponse>(
       `/bookings/${encodeURIComponent(code)}/extend-collection`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
+  function acceptInvitation(code: string) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/accept-invitation`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
+  function declineInvitation(code: string) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/decline-invitation`,
       {
         method: 'POST',
       },
@@ -105,6 +124,8 @@ export function useBookingsApi() {
     cancel,
     startCollection,
     extendCollection,
+    acceptInvitation,
+    declineInvitation,
     checkout,
     updateCustomerNotes,
     changeUser,
