@@ -926,7 +926,7 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 240px;
+  flex: 0 0 397px;
   height: 81px;
   padding: 0 16px;
   border: none;

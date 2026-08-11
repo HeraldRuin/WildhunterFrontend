@@ -455,14 +455,16 @@ defineExpose({
 .hotel-dates-guests__title {
   width: min(100%, var(--hotel-booking-blocks-width, 100%));
   margin: 0;
-  font-family: 'UNCAGE', 'Manrope', system-ui, sans-serif;
+
+  font-family: UNCAGE, Manrope, system-ui, sans-serif;
   font-size: 32px;
   font-weight: 400;
   font-style: normal;
-  line-height: 1.3;
-  letter-spacing: -0.03em;
+  line-height: 130%;
+  letter-spacing: -0.96px;
   text-align: center;
   text-transform: uppercase;
+
   color: var(--wh-gray-900);
 }
 
@@ -773,7 +775,7 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 200px;
+  flex: 0 0 397px;
   height: 81px;
   padding: 0 16px;
   border: none;
