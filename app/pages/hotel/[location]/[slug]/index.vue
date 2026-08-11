@@ -412,9 +412,12 @@ function handleRetryHotelLoad() {
 
 .hotel-page__title {
   margin: 0;
-  font-size: clamp(1.5rem, 2.8vw, 2rem);
-  font-weight: 800;
-  line-height: 1.25;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 130%;
+  letter-spacing: -0.05em;
   color: var(--wh-gray-900);
   text-transform: uppercase;
 }
@@ -539,7 +542,7 @@ function handleRetryHotelLoad() {
   font-weight: 600;
   font-style: normal;
   line-height: 130%;
-  letter-spacing: -1px;
+  letter-spacing: -0.05em;
   color: var(--wh-gray-600);
 }
 
@@ -556,7 +559,12 @@ function handleRetryHotelLoad() {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 0.98rem;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 130%;
+  letter-spacing: -0.05em;
   color: var(--wh-green);
 }
 
