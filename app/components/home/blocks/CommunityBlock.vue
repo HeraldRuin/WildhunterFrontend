@@ -164,8 +164,10 @@ async function handleSubmit() {
           </button>
 
           <div v-if="variant !== 'centered'" class="community-block__social">
-            <a href="#" class="community-block__social-btn">Telegram</a>
-            <a href="#" class="community-block__social-btn">Max</a>
+            <a href="https://t.me/wild_hunter_ru" class="community-block__social-btn">Telegram</a>
+            <span class="community-block__social-btn community-block__social-btn--disabled" aria-disabled="true">
+              Max
+            </span>
           </div>
         </form>
       </div>
@@ -370,6 +372,12 @@ async function handleSubmit() {
 .community-block__social-btn:hover {
   background: var(--wh-orange-600);
   transform: var(--wh-button-hover-lift);
+}
+
+.community-block__social-btn--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .community-block--plain {
