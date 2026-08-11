@@ -99,7 +99,7 @@ function scrollBy(direction: 'prev' | 'next') {
   grid-template-columns: 30px minmax(0, 1fr) 30px;
   align-items: center;
   gap: 16px;
-  width: 100%;
+  width: 139%;
 }
 
 .reviews-block__track {

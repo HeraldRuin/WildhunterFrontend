@@ -118,6 +118,10 @@ function toggleItem(id: number) {
   gap: 48px;
 }
 
+.faq-block__inner.container {
+  width: min(100% - 32px, 1600px);
+}
+
 .faq-block__title {
   margin: 0;
   font-family: UNCAGE;

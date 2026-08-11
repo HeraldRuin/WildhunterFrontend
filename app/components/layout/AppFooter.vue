@@ -124,6 +124,11 @@ const socials = [
   padding-block: 56px 40px;
 }
 
+.footer__main.container,
+.footer__bottom-inner.container {
+  width: min(100% - 32px, 1600px);
+}
+
 .footer__grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
