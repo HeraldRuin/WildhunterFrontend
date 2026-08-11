@@ -388,7 +388,11 @@ watch(isOpen, (open) => {
               <span>
                 Мною прочитаны и принимаются
                 <NuxtLink to="/terms" class="register-modal__terms-link" @click="close">
-                  Условия использования и Политика конфиденциальности
+                  Условия использования
+                </NuxtLink>
+                и
+                <NuxtLink to="/politika_konfidencialnosti" class="register-modal__terms-link" @click="close">
+                  Политика конфиденциальности
                 </NuxtLink>
               </span>
             </label>
@@ -432,7 +436,7 @@ watch(isOpen, (open) => {
 
 .register-modal__card {
   position: relative;
-  width: 592px;
+  width: 789px;
   min-width: min(100%, var(--wh-auth-modal-width));
   padding: 40px 36px 32px;
   border-radius: var(--wh-radius);
@@ -454,11 +458,14 @@ watch(isOpen, (open) => {
 
 .register-modal__title {
   margin: 0 0 28px;
-  font-size: 1.75rem;
-  font-weight: 800;
+  font-family: UNCAGE, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 32px;
+  line-height: 130%;
+  letter-spacing: -0.96px;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--wh-gray-900);
 }
 
@@ -590,7 +597,7 @@ watch(isOpen, (open) => {
   margin-top: 4px;
   padding: 14px 24px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--wh-radius-lg);
   background: var(--wh-orange-500);
   color: var(--wh-white);
   font-size: 1rem;

@@ -205,7 +205,7 @@ watch(isOpen, (open) => {
 
 .login-modal__card {
   position: relative;
-  width: 480px;
+  width: 533px;
   min-width: min(100%, var(--wh-auth-modal-width));
   padding: 40px 36px 32px;
   border-radius: var(--wh-radius);
@@ -227,11 +227,17 @@ watch(isOpen, (open) => {
 
 .login-modal__title {
   margin: 0 0 28px;
-  font-size: 1.75rem;
-  font-weight: 800;
+
+  font-family: UNCAGE, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 32px;
+  line-height: 130%;
+  letter-spacing: -0.96px;
+
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+
   color: var(--wh-gray-900);
 }
 
@@ -306,7 +312,7 @@ watch(isOpen, (open) => {
   margin-top: 8px;
   padding: 14px 24px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--wh-radius-lg);
   background: var(--wh-orange-500);
   color: var(--wh-white);
   font-size: 1rem;
