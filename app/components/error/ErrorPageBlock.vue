@@ -11,7 +11,7 @@ const errorLabel = computed(() => {
   const code = Number(props.statusCode)
 
   if (code === 404) {
-    return 'Страница не найдена'
+    return 'Ошибка сервера'
   }
 
   if (code === 403) {
@@ -122,9 +122,13 @@ function goHome() {
 
 .error-card__label {
   margin: 0 0 32px;
+  font-family: UNCAGE, sans-serif;
+  font-weight: 400;
+  font-style: normal;
   font-size: 32px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  line-height: 130%;
+  letter-spacing: -0.96px;
+  text-align: center;
   text-transform: uppercase;
 }
 
@@ -137,7 +141,7 @@ function goHome() {
   min-height: 48px;
   padding: 0 32px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--wh-radius-lg);
   background: var(--wh-orange-500);
   color: var(--wh-white);
   font-size: 1rem;
