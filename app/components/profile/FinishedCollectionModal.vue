@@ -10,12 +10,37 @@ const emit = defineEmits<{
 }>()
 
 const { user } = useAuth()
+const { open: openConfirmModal } = useConfirmModal()
 const isOpen = computed(() => Boolean(props.booking))
+const replacingInvitationId = ref<number | null>(null)
+const replacementQuery = ref('')
 
 useBodyScrollLock(isOpen)
 
+watch(() => props.booking, () => {
+  replacingInvitationId.value = null
+  replacementQuery.value = ''
+})
+
 function isCurrentUser(hunterId: number) {
   return Number(hunterId) === Number(user.value?.id)
+}
+
+function startReplacing(invitationId: number) {
+  replacingInvitationId.value = invitationId
+  replacementQuery.value = ''
+}
+
+function stopReplacing() {
+  replacingInvitationId.value = null
+  replacementQuery.value = ''
+}
+
+function requestHunterDeletion() {
+  openConfirmModal({
+    title: 'Вы уверены, что хотите удалить охотника?',
+    confirmLabel: 'Удалить',
+  })
 }
 
 function close() {
@@ -96,11 +121,37 @@ function handleKeydown(event: KeyboardEvent) {
               </div>
 
               <div
-                v-if="!isCurrentUser(invitation.hunterId)"
+                v-if="replacingInvitationId === invitation.invitationId"
+                class="finished-collection-modal__replacement"
+              >
+                <input
+                  v-model="replacementQuery"
+                  type="text"
+                  placeholder="Ник / Фамилия / email / ID охотника"
+                  autocomplete="off"
+                >
+                <button type="button" class="finished-collection-modal__save">
+                  Сохранить
+                </button>
+                <button type="button" class="finished-collection-modal__cancel" @click="stopReplacing">
+                  Отмена
+                </button>
+              </div>
+
+              <div
+                v-else-if="!isCurrentUser(invitation.hunterId)"
                 class="finished-collection-modal__actions"
               >
-                <button type="button">Заменить</button>
-                <button type="button" class="finished-collection-modal__delete">Удалить</button>
+                <button type="button" @click="startReplacing(invitation.invitationId)">
+                  Заменить
+                </button>
+                <button
+                  type="button"
+                  class="finished-collection-modal__delete"
+                  @click="requestHunterDeletion"
+                >
+                  Удалить
+                </button>
               </div>
             </div>
 
@@ -233,6 +284,43 @@ function handleKeydown(event: KeyboardEvent) {
   color: #d75b69;
 }
 
+.finished-collection-modal__replacement {
+  display: flex;
+  flex: 0 1 440px;
+  gap: 7px;
+}
+
+.finished-collection-modal__replacement input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--wh-gray-300);
+  color: var(--wh-gray-900);
+  font: inherit;
+  outline: none;
+}
+
+.finished-collection-modal__replacement input:focus {
+  border-color: var(--wh-green);
+}
+
+.finished-collection-modal__replacement button {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 2px;
+  color: var(--wh-white);
+  font: inherit;
+  cursor: pointer;
+}
+
+.finished-collection-modal__save {
+  background: #2eae4f;
+}
+
+.finished-collection-modal__cancel {
+  background: var(--wh-gray-600);
+}
+
 .finished-collection-modal__empty {
   margin: 0;
   padding: 18px;
@@ -268,6 +356,17 @@ function handleKeydown(event: KeyboardEvent) {
   .finished-collection-modal__participant {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .finished-collection-modal__replacement {
+    width: 100%;
+    flex-basis: auto;
+    flex-wrap: wrap;
+    padding: 10px;
+  }
+
+  .finished-collection-modal__replacement input {
+    width: 100%;
   }
 }
 </style>
