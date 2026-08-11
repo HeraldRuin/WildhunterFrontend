@@ -487,12 +487,6 @@ watch(
             @clear="availableRooms = []"
             @dates-change="handleStayDatesChange"
           />
-
-          <HotelRoomSelection
-            ref="roomSelectionRef"
-            :rooms="availableRooms"
-            @selection-change="hasSelectedRooms = $event"
-          />
         </div>
 
         <div class="hotel-booking-section__animals-block">
@@ -504,6 +498,12 @@ watch(
             :stay-check-out="stayCheckOut"
             :loading="isCheckingAnimals"
             @check="handleAnimalsCheck"
+          />
+
+          <HotelRoomSelection
+            ref="roomSelectionRef"
+            :rooms="availableRooms"
+            @selection-change="hasSelectedRooms = $event"
           />
 
           <div
@@ -530,10 +530,9 @@ watch(
 
       <Transition name="hotel-booking-book">
         <button
-          v-if="hasSelectedRooms || animalAvailability"
           type="button"
           class="hotel-booking-section__book"
-          :disabled="isBooking"
+          :disabled="isBooking || !(hasSelectedRooms || animalAvailability)"
           @click="handleBook"
         >
           Забронировать сейчас
