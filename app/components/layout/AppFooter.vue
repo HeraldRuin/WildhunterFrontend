@@ -31,7 +31,7 @@ const legalLinks = [
 ]
 
 const socials = [
-  { label: 'Max', href: '#', src: '/icons/max.png' },
+  // { label: 'Max', href: '#', src: '/icons/max.png' },
   { label: 'Telegram', href: 'https://t.me/wild_hunter_ru', src: '/icons/telegram.png' },
   { label: 'VK', href: 'https://vk.ru/wild_hunter_ru', src: '/icons/vk.png' },
 ]
