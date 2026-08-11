@@ -1,5 +1,8 @@
 <script setup lang="ts">
-setPageLayout('home')
+definePageMeta({
+  layout: 'home',
+  alias: '/politika_konfidencialnosti',
+})
 
 useHead({
   title: 'Политика конфиденциальности',
