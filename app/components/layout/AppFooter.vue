@@ -24,7 +24,7 @@ const columns = [
 ]
 
 const legalLinks = [
-  { label: 'Политика конфиденциальности', to: '/privacy' },
+  { label: 'Политика конфиденциальности', to: '/politika_konfidencialnosti' },
   { label: 'Согласие на обработку персональных данных', to: '/personal-data' },
   { label: 'Правила и условия', to: '/terms' },
   { label: 'Оферта', to: '/offer' },
