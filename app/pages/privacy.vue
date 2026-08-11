@@ -1,7 +1,5 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: 'home',
-})
+setPageLayout('home')
 
 useHead({
   title: 'Политика конфиденциальности',
@@ -226,54 +224,57 @@ useHead({
 }
 
 .privacy-content {
-  max-width: 1120px;
-  padding-block: 72px 88px;
+  max-width: 1200px;
+  padding-block: 40px 72px;
   color: var(--wh-black-text);
 }
 
-.privacy-content h1,
-.privacy-content h2,
-.privacy-content h3 {
+.privacy-content h1 {
   font-family: 'UNCAGE', sans-serif;
   font-weight: 400;
   text-transform: uppercase;
+  margin: 0 0 24px;
+  font-size: 24px;
+  line-height: 1.2;
+  text-align: center;
 }
 
-.privacy-content h1 {
-  margin: 0 0 16px;
-  font-size: clamp(32px, 4vw, 52px);
-  line-height: 1.1;
+.privacy-content h2,
+.privacy-content h3 {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-transform: none;
 }
 
 .privacy-content h2 {
-  margin: 0 0 48px;
-  font-size: clamp(20px, 2.3vw, 30px);
-  line-height: 1.25;
+  margin: 0 0 22px;
 }
 
 .privacy-content h3 {
-  margin: 40px 0 18px;
-  font-size: clamp(19px, 2vw, 26px);
-  line-height: 1.3;
+  margin: 24px 0 18px;
 }
 
 .privacy-content p,
 .privacy-content li {
-  font-size: 17px;
-  line-height: 1.65;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .privacy-content p {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
+  text-align: justify;
 }
 
 .privacy-content ul {
-  margin: 0 0 20px;
-  padding-left: 24px;
+  margin: 0 0 18px;
+  padding-left: 20px;
 }
 
 .privacy-content li + li {
-  margin-top: 8px;
+  margin-top: 5px;
 }
 
 @media (--wh-tablet) {
@@ -286,7 +287,8 @@ useHead({
   }
 
   .privacy-content {
-    padding-block: 56px 72px;
+    max-width: 900px;
+    padding-block: 32px 64px;
   }
 }
 
@@ -301,16 +303,17 @@ useHead({
   }
 
   .privacy-content {
-    padding-block: 40px 56px;
+    padding-block: 24px 48px;
   }
 
-  .privacy-content h2 {
-    margin-bottom: 36px;
+  .privacy-content h1 {
+    font-size: 20px;
   }
 
   .privacy-content p,
   .privacy-content li {
-    font-size: 15px;
+    font-size: 13px;
+    text-align: left;
   }
 }
 </style>
