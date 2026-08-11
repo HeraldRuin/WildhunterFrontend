@@ -40,6 +40,7 @@ const timerNow = ref(Date.now())
 const customerModalBooking = ref<BookingHistoryItem | null>(null)
 const invitationModalBooking = ref<BookingHistoryItem | null>(null)
 const collectionInvitationsModalBooking = ref<BookingHistoryItem | null>(null)
+const finishedCollectionModalBooking = ref<BookingHistoryItem | null>(null)
 let timerInterval: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
@@ -239,6 +240,14 @@ async function startCollection(booking: BookingHistoryItem) {
 }
 
 function handleBookingAction({ booking, action }: { booking: BookingHistoryItem, action: BookingAction }) {
+  if (
+    booking.status.code === 'prepayment_collection'
+    && (action.id === 'open_collection' || action.id === 'start_collection')
+  ) {
+    finishedCollectionModalBooking.value = booking
+    return
+  }
+
   if (action.id === 'start_collection') {
     void startCollection(booking)
     return
@@ -341,6 +350,10 @@ function openCustomerModal(booking: BookingHistoryItem) {
     <ProfileCollectionInvitationsModal
       :booking="collectionInvitationsModalBooking"
       @close="collectionInvitationsModalBooking = null"
+    />
+    <ProfileFinishedCollectionModal
+      :booking="finishedCollectionModalBooking"
+      @close="finishedCollectionModalBooking = null"
     />
     <CommonConfirmModal />
     <ProfileAddServicesModal />
