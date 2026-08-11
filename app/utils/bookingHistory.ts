@@ -121,6 +121,8 @@ function buildStatus(item: BookingHistoryItemDto, now: number) {
   }
 
   if (status === 'prepayment_collection') {
+    result.subStatus = 'Сбор завершен'
+    result.timerHours = item.hotel?.paid_timer_hours || undefined
     result.timer = formatRemainingTimer(collection.paid_end_at, now)
       || (item.hotel?.paid_timer_hours ? `${item.hotel.paid_timer_hours} ч` : undefined)
     if (collection.accepted_count > 0) {

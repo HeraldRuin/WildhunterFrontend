@@ -233,15 +233,34 @@ onBeforeUnmount(() => {
               >
                 {{ item.status.timer }}
               </div>
-              <div v-if="item.status.collected" class="booking-table__status-meta">
-                {{ item.status.collected }}
-              </div>
-              <div v-if="item.status.subStatus" class="booking-table__status-meta">
-                {{ item.status.subStatus }}
-              </div>
-              <div v-if="item.status.paid" class="booking-table__status-meta">
-                {{ item.status.paid }}
-              </div>
+              <template v-if="item.status.code === 'prepayment_collection'">
+                <div v-if="item.status.paid" class="booking-table__status-meta">
+                  {{ item.status.paid }}
+                </div>
+                <div
+                  v-if="item.status.subStatus"
+                  class="booking-table__status-meta booking-table__status-meta--substatus"
+                >
+                  {{ item.status.subStatus }}
+                </div>
+                <div v-if="item.status.collected" class="booking-table__status-meta">
+                  {{ item.status.collected }}
+                </div>
+              </template>
+              <template v-else>
+                <div v-if="item.status.collected" class="booking-table__status-meta">
+                  {{ item.status.collected }}
+                </div>
+                <div
+                  v-if="item.status.subStatus"
+                  class="booking-table__status-meta booking-table__status-meta--substatus"
+                >
+                  {{ item.status.subStatus }}
+                </div>
+                <div v-if="item.status.paid" class="booking-table__status-meta">
+                  {{ item.status.paid }}
+                </div>
+              </template>
             </td>
             <td class="booking-table__payment">
               <button
@@ -481,6 +500,13 @@ onBeforeUnmount(() => {
 
 .booking-table__status-meta--expired {
   color: var(--wh-field-error);
+}
+
+.booking-table__status-meta--substatus {
+  margin-top: 16px;
+  color: var(--wh-black-text);
+  font-size: inherit;
+  font-weight: 700;
 }
 
 .booking-table__payment-btn {
