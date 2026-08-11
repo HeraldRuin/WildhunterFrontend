@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'UNCAGE';
+  src: url('../fonts/uncage-variable.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
 :root {
   /* Breakpoints — синхронно с app/assets/css/breakpoints.css */
   --wh-bp-tablet: 1024px;
