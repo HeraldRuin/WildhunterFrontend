@@ -2,11 +2,11 @@
 const steps = [
   {
     number: 1,
-    text: 'выбираете охоту и собираете смету',
+    text: 'Выбираете охоту\nи собираете смету',
   },
   {
     number: 2,
-    text: 'Видите прозрачный итог и условия',
+    text: 'Видите прозрачный\nитог и условия',
   },
   {
     number: 3,
@@ -50,13 +50,13 @@ const steps = [
             >
               <div class="how-it-works__connector-desktop">
                 <svg class="how-it-works__line" viewBox="0 0 100 2" preserveAspectRatio="none" aria-hidden="true">
-                  <line x1="0" y1="1" x2="100" y2="1" pathLength="100" stroke="currentColor" stroke-width="2" stroke-dasharray="18 2.5" vector-effect="non-scaling-stroke" />
+                  <line x1="0" y1="1" x2="100" y2="1" pathLength="100" stroke="currentColor" stroke-width="2" stroke-dasharray="18 8" vector-effect="non-scaling-stroke" />
                 </svg>
                 <svg class="how-it-works__arrow" width="8" height="10" viewBox="0 0 8 10" aria-hidden="true">
                   <path d="M1 1l5 4-5 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
                 <svg class="how-it-works__line" viewBox="0 0 100 2" preserveAspectRatio="none" aria-hidden="true">
-                  <line x1="0" y1="1" x2="100" y2="1" pathLength="100" stroke="currentColor" stroke-width="2" stroke-dasharray="18 2.5" vector-effect="non-scaling-stroke" />
+                  <line x1="0" y1="1" x2="100" y2="1" pathLength="100" stroke="currentColor" stroke-width="2" stroke-dasharray="18 8" vector-effect="non-scaling-stroke" />
                 </svg>
               </div>
 
@@ -110,9 +110,11 @@ const steps = [
 
 .how-it-works__title {
   margin: 0;
-  font-size: clamp(1.75rem, 3vw, 2.25rem);
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-family: UNCAGE, serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 44px;
+  line-height: 110%;
   text-transform: uppercase;
   text-align: center;
   color: var(--wh-gray-900);
@@ -120,7 +122,7 @@ const steps = [
 
 .how-it-works__flow {
   display: flex;
-  width: 100%;
+  width: 140%;
 }
 
 .how-it-works__step-col {
@@ -148,10 +150,16 @@ const steps = [
   min-width: 88px;
   padding: 10px 18px;
   border-radius: 999px;
-  background: #5f7256;
+  background: var(--wh-green);
   color: var(--wh-white);
-  font-size: 0.95rem;
-  font-weight: 600;
+
+  font-family: Inter, sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 120%;
+  letter-spacing: -0.9px;
+
   white-space: nowrap;
 }
 
@@ -161,7 +169,7 @@ const steps = [
   left: calc(50% + 40px);
   z-index: 0;
   width: calc(100% - 80px);
-  color: #c4b59a;
+  color: var(--wh-orange-500);
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -211,6 +219,7 @@ const steps = [
   line-height: 1.3;
   letter-spacing: -0.05em;
   text-align: center;
+  white-space: pre-line;
   color: var(--wh-gray-900);
 }
 

@@ -3,6 +3,8 @@ import type { UserSearchItem } from '~/api/user'
 
 const emit = defineEmits<{
   extended: []
+  cancelled: []
+  finished: []
 }>()
 
 const { isOpen, isContentHidden, state, close, hide, reopen, addParticipant } = useCollectionModal()
@@ -29,6 +31,17 @@ const canExtendCollection = computed(() => {
 
   const end = new Date(timerEndAt).getTime()
   return Number.isFinite(end) && end <= timerNow.value
+})
+
+const canFinishCollection = computed(() => {
+  if (!state.value) return false
+
+  const required = state.value.slotsTotal
+  const accepted = state.value.participants.filter(
+    participant => participant.status === 'confirmed',
+  ).length
+
+  return accepted >= required
 })
 
 const emptySlotCount = computed(() => {
@@ -80,6 +93,12 @@ watch(emptySlotCount, (count) => {
     nextSelected.push(null)
   }
   selectedHunters.value = nextSelected
+})
+
+watch(canExtendCollection, (expired) => {
+  if (expired) {
+    resetHunterSearch()
+  }
 })
 
 function resetHunterSearch() {
@@ -261,6 +280,84 @@ async function inviteHunter(hunter: UserSearchItem) {
   throw new Error('invite_hunter_failed')
 }
 
+async function cancelCollection() {
+  const bookingCode = state.value?.bookingCode
+  if (!bookingCode) return
+
+  try {
+    const response = await bookingsApi.cancelCollection(bookingCode)
+
+    if (response.success) {
+      notifications.success(response.message || 'Сбор отменён')
+      close()
+      emit('cancelled')
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось отменить сбор')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось отменить сбор')
+    throw error
+  }
+
+  throw new Error('cancel_collection_failed')
+}
+
+async function finishCollection() {
+  const bookingCode = state.value?.bookingCode
+  if (!bookingCode) return
+
+  try {
+    const response = await bookingsApi.finishCollection(bookingCode)
+
+    if (response.success) {
+      notifications.success(response.message || 'Сбор завершён')
+      close()
+      emit('finished')
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось завершить сбор')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось завершить сбор')
+    throw error
+  }
+
+  throw new Error('finish_collection_failed')
+}
+
+function requestCollectionCancellation() {
+  hide()
+  openConfirmModal({
+    title: 'Вы уверены, что хотите отменить сбор?',
+    confirmLabel: 'Отменить сбор',
+    onConfirm: cancelCollection,
+    onCancel: () => {
+      setTimeout(reopen, 200)
+    },
+    transparentBackdrop: true,
+  })
+}
+
+function requestCollectionFinish() {
+  if (!canFinishCollection.value) return
+
+  hide()
+  openConfirmModal({
+    title: 'Вы уверены, что хотите завершить сбор?',
+    confirmLabel: 'Завершить сбор',
+    onConfirm: finishCollection,
+    onCancel: () => {
+      setTimeout(reopen, 200)
+    },
+    transparentBackdrop: true,
+  })
+}
+
 function requestHunterInvitation(hunter: UserSearchItem) {
   hide()
   openConfirmModal({
@@ -358,6 +455,7 @@ function requestCollectionExtension() {
                     class="collection-modal__invite-input"
                     placeholder="Ник / Фамилия / email / ID"
                     autocomplete="off"
+                    :disabled="canExtendCollection"
                     @focus="handleInviteInput(index)"
                     @input="handleInviteInput(index)"
                   >
@@ -420,10 +518,19 @@ function requestCollectionExtension() {
             >
               Продлить сбор
             </button>
-            <button type="button" class="collection-modal__btn">
+            <button
+              type="button"
+              class="collection-modal__btn"
+              @click="requestCollectionCancellation"
+            >
               Отменить сбор
             </button>
-            <button type="button" class="collection-modal__btn">
+            <button
+              type="button"
+              class="collection-modal__btn"
+              :disabled="!canFinishCollection"
+              @click="requestCollectionFinish"
+            >
               Завершить сбор
             </button>
             <button type="button" class="collection-modal__btn">
@@ -572,6 +679,12 @@ function requestCollectionExtension() {
 .collection-modal__invite-input:focus {
   border-color: var(--wh-field-border-active);
   box-shadow: 0 0 0 3px var(--wh-field-focus-ring);
+}
+
+.collection-modal__invite-input:disabled {
+  background: var(--wh-gray-100);
+  color: var(--wh-gray-500);
+  cursor: not-allowed;
 }
 
 .collection-modal__invite-field {

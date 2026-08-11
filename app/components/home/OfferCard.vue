@@ -69,7 +69,7 @@ onMounted(() => {
 })
 
 function formatPrice(value: number) {
-  return new Intl.NumberFormat('ru-RU').format(value)
+  return new Intl.NumberFormat('ru-RU').format(value).replace(/\s/g, '.')
 }
 
 function getErrorMessage(error: unknown) {

@@ -84,9 +84,11 @@ function scrollBy(direction: 'prev' | 'next') {
 
 .reviews-block__title {
   margin: 0;
-  font-size: clamp(1.75rem, 3vw, 2.25rem);
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-family: UNCAGE;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 44px;
+  line-height: 110%;
   text-transform: uppercase;
   text-align: center;
   color: var(--wh-gray-900);
@@ -103,7 +105,7 @@ function scrollBy(direction: 'prev' | 'next') {
 .reviews-block__track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: calc((100% - 40px) / 3);
+  grid-auto-columns: 388px;
   gap: 20px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -117,6 +119,8 @@ function scrollBy(direction: 'prev' | 'next') {
 }
 
 .reviews-block__slide {
+  width: 388px;
+  height: 277px;
   scroll-snap-align: start;
   min-width: 0;
 }
@@ -132,6 +136,10 @@ function scrollBy(direction: 'prev' | 'next') {
 
   .reviews-block__track {
     grid-auto-columns: calc((100% - 20px) / 2);
+  }
+
+  .reviews-block__slide {
+    width: 100%;
   }
 }
 

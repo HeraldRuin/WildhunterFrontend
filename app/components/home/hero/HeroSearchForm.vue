@@ -700,8 +700,9 @@ onUnmounted(() => {
   display: flex;
   align-items: stretch;
   gap: 2px;
-  width: 1200px;
+  width: 1416px;
   max-width: 100%;
+  margin-inline: auto;
   height: 81px;
   background: transparent;
   box-shadow: none;
@@ -721,7 +722,7 @@ onUnmounted(() => {
 
 .hero-search--split {
   gap: 2px;
-  width: 1200px;
+  width: 1416px;
   max-width: 100%;
   background: transparent;
   box-shadow: none;
@@ -743,7 +744,8 @@ onUnmounted(() => {
 
 .hero-search__field {
   position: relative;
-  flex: 1;
+  flex: 1 1 344px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1158,7 +1160,7 @@ onUnmounted(() => {
 .hero-search__submit {
   position: relative;
   z-index: 1;
-  flex: 0 0 148px;
+  flex: 0 0 158px;
   height: 81px;
   border: none;
   border-radius: var(--wh-radius-lg);
@@ -1202,6 +1204,7 @@ onUnmounted(() => {
   }
 
   .hero-search__field {
+    width: auto;
     height: auto;
     min-height: 72px;
   }

@@ -107,11 +107,7 @@ async function handleSubmit() {
       <div class="community-block__content">
         <h2 class="community-block__title">
           <span class="community-block__title-line">Присоединяйтесь</span>
-          <span class="community-block__title-line">
-            <span class="community-block__title-word">к</span>
-            <span class="community-block__title-word">нашему</span>
-          </span>
-          <span class="community-block__title-line">сообществу</span>
+          <span class="community-block__title-line">к нашему сообществу</span>
         </h2>
 
         <form class="community-block__form" @submit.prevent="handleSubmit">
@@ -201,18 +197,6 @@ async function handleSubmit() {
   object-position: 26% 10%;
 }
 
-.community-block__media::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(17, 24, 39, 0.05) 0%,
-    rgba(17, 24, 39, 0.18) 45%,
-    rgba(17, 24, 39, 0.55) 100%
-  );
-}
-
 .community-block__inner {
   position: relative;
   z-index: 1;
@@ -245,6 +229,10 @@ async function handleSubmit() {
 
 .community-block__title-line {
   display: block;
+}
+
+.community-block__title-line:nth-child(2) {
+  white-space: nowrap;
 }
 
 .community-block__title-line:nth-child(2),
@@ -284,7 +272,8 @@ async function handleSubmit() {
 }
 
 .community-block__field input::placeholder {
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.55);
+  opacity: 1;
 }
 
 .community-block__error {
@@ -346,6 +335,7 @@ async function handleSubmit() {
 .community-block__submit {
   width: 372px;
   margin-top: 4px;
+  border-radius: var(--wh-radius-lg);
   padding-block: 14px;
   font-family: Inter, sans-serif;
   font-size: 18px;
@@ -365,7 +355,7 @@ async function handleSubmit() {
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  border-radius: 999px;
+  border-radius: var(--wh-radius-lg);
   background: var(--wh-orange-500);
   color: var(--wh-white);
 
@@ -447,7 +437,7 @@ async function handleSubmit() {
   }
 
   .community-block__title {
-    width: min(100%, 360px);
+    width: 440px;
     min-height: auto;
     font-size: 32px;
   }
@@ -475,11 +465,11 @@ async function handleSubmit() {
 
   .community-block__title-line:nth-child(2),
   .community-block__title-line:nth-child(3) {
-    display: block;
+    display: inline;
   }
 
   .community-block__title-line:nth-child(2)::after {
-    content: none;
+    content: ' ';
   }
 
   .community-block--centered .community-block__title-line:nth-child(2),

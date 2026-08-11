@@ -120,9 +120,11 @@ function toggleItem(id: number) {
 
 .faq-block__title {
   margin: 0;
-  font-size: clamp(1.75rem, 3vw, 2.25rem);
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-family: UNCAGE;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 44px;
+  line-height: 110%;
   text-transform: uppercase;
   text-align: center;
   color: var(--wh-gray-900);
@@ -173,10 +175,16 @@ function toggleItem(id: number) {
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  background: #5f7256;
+  background: var(--wh-green);
   color: var(--wh-white);
-  font-size: 0.875rem;
-  font-weight: 700;
+
+  font-family: Inter, sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 120%;
+  letter-spacing: -0.9px;
+
   flex-shrink: 0;
 }
 
@@ -253,6 +261,7 @@ function toggleItem(id: number) {
   flex: 0 0 auto;
   min-width: 168px;
   padding-inline: 36px;
+  border-radius: var(--wh-radius-lg);
   white-space: nowrap;
 }
 

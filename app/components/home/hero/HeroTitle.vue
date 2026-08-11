@@ -22,11 +22,12 @@
   margin: 0 auto;
   max-width: 858px;
   text-align: center;
-  font-family: 'UNCAGE', 'Manrope', system-ui, sans-serif;
+  font-family: 'UNCAGE';
   font-size: 56px;
   font-weight: 400;
   line-height: 1;
   letter-spacing: -0.03em;
+  text-transform: uppercase;
   color: #ffffff;
 }
 

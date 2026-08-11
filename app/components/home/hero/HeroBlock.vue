@@ -39,8 +39,9 @@ function handleSearch(payload: Record<string, string>) {
   position: relative;
   width: 100%;
   height: 810px;
-  background-size: cover;
+  background-size: 100% 100%;
   background-position: center;
+  background-repeat: no-repeat;
   color: var(--wh-white);
 }
 
@@ -69,7 +70,7 @@ function handleSearch(payload: Record<string, string>) {
   top: 518px;
   left: 50%;
   z-index: 1;
-  width: 1200px;
+  width: 1500px;
   max-width: calc(100% - 24px);
   transform: translateX(-50%);
 }

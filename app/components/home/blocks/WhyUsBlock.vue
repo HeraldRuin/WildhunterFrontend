@@ -2,17 +2,17 @@
 const items = [
   {
     number: '01.',
-    title: 'Планируй охоту под себя',
+    title: 'Планируй охоту\nпод себя',
     text: 'Индивидуальные и групповые форматы, выбор региона, сезона и вида добычи',
   },
   {
     number: '02.',
-    title: 'Проверенные организаторы и условия',
+    title: 'Проверенные\nорганизаторы и условия',
     text: 'Платформа собирает лучшие варианты и помогает выбрать надежный вариант',
   },
   {
     number: '03.',
-    title: 'Прозрачные калькуляции и расходы',
+    title: 'Прозрачные\nкалькуляции и расходы',
     text: 'Все платежи и траты фиксируются в системе, видно распределение средств',
   },
 ]
@@ -52,10 +52,17 @@ const items = [
   gap: 48px;
 }
 
+.why-us__inner.container {
+  width: min(100% - 32px, 1589px);
+}
+
 .why-us__title {
   margin: 0;
-  font-size: clamp(1.75rem, 3vw, 2.25rem);
-  font-weight: 800;
+  font-family: UNCAGE;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 44px;
+  line-height: 110%;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--wh-black-text);
@@ -63,7 +70,8 @@ const items = [
 
 .why-us__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 519px));
+  justify-content: center;
   gap: 16px;
   width: 100%;
 }
@@ -81,7 +89,7 @@ const items = [
 .why-us__number {
   display: block;
   margin-bottom: 28px;
-  font-family: "UNCAGE", sans-serif;
+  font-family: "UNCAGE";
   font-size: 44px;
   font-weight: 400;
   line-height: 110%;
@@ -97,6 +105,7 @@ const items = [
   font-weight: 600;
   line-height: 130%;
   letter-spacing: -0.05em;
+  white-space: pre-line;
 }
 
 .why-us__card-text {

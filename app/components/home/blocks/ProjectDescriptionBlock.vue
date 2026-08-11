@@ -7,7 +7,7 @@ const columns = [
 
 <template>
   <section class="project-description">
-    <div class="container">
+    <div class="container project-description__container">
       <div class="project-description__frame">
         <h2 class="project-description__title">Описание проекта</h2>
 
@@ -31,31 +31,40 @@ const columns = [
   background: #52714f;
 }
 
+.project-description__container {
+  width: min(100% - 32px, 1500px);
+}
+
 .project-description__frame {
-  padding: clamp(28px, 4vw, 40px);
+  padding-block: clamp(36px, 4.5vw, 48px);
 }
 
 .project-description__title {
   margin: 0 auto clamp(28px, 4vw, 36px);
   max-width: 455px;
-  font-family: 'UNCAGE', 'Manrope', system-ui, sans-serif;
-  font-size: 44px;
+  font-family: UNCAGE;
   font-weight: 400;
-  line-height: 1.1;
+  font-style: normal;
+  font-size: 44px;
+  line-height: 110%;
   letter-spacing: -0.05em;
   text-align: center;
+  text-transform: uppercase;
   color: #ffffff;
 }
 
 .project-description__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 768px));
+  justify-content: start;
   gap: clamp(24px, 4vw, 48px);
 }
 
 .project-description__text {
   margin: 0;
-  max-width: 592px;
+  width: 768px;
+  max-width: 100%;
+  min-height: 220px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 18px;
   font-weight: 400;
@@ -64,12 +73,22 @@ const columns = [
   color: #ffffff;
 }
 
+.project-description__text:first-child {
+  width: 768px;
+}
+
 @media (--wh-tablet) {
   .project-description__grid {
     grid-template-columns: 1fr;
+    justify-content: stretch;
     gap: 24px;
     max-width: 640px;
     margin-inline: auto;
+  }
+
+  .project-description__text,
+  .project-description__text:first-child {
+    width: 100%;
   }
 }
 </style>

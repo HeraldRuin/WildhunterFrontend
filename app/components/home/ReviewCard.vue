@@ -5,7 +5,7 @@ const props = defineProps<{
   item: ReviewItem
 }>()
 
-const maxLines = 4
+const maxLines = 6
 const textWrapRef = ref<HTMLElement | null>(null)
 const hasOverflow = ref(false)
 const isAtBottom = ref(false)
@@ -128,7 +128,7 @@ onUnmounted(() => {
   gap: 20px;
   padding: 28px;
   border-radius: 18px;
-  background: #5f7256;
+  background: var(--wh-green);
   color: var(--wh-white);
 }
 
@@ -199,8 +199,13 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 1.8em;
-  background: linear-gradient(to bottom, rgb(95 114 86 / 0), #5f7256 72%);
+  height: 3.2em;
+  background: linear-gradient(
+    to bottom,
+    rgba(82, 113, 79, 0),
+    rgba(82, 113, 79, 0.72) 65%,
+    #52714f
+  );
   pointer-events: none;
 }
 

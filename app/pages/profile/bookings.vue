@@ -327,7 +327,11 @@ function openCustomerModal(booking: BookingHistoryItem) {
       @customer="openCustomerModal"
     />
 
-    <ProfileCollectionModal @extended="refreshHistory" />
+    <ProfileCollectionModal
+      @extended="refreshHistory"
+      @cancelled="refreshHistory"
+      @finished="refreshHistory"
+    />
     <ProfileInvitationModal
       :booking="invitationModalBooking"
       @close="invitationModalBooking = null"

@@ -71,6 +71,24 @@ export function useBookingsApi() {
     )
   }
 
+  function cancelCollection(code: string) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/cancel-collection`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
+  function finishCollection(code: string) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/finish-collection`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
   function inviteHunter(code: string, hunterId: number) {
     return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/invite-hunter`,
@@ -136,6 +154,8 @@ export function useBookingsApi() {
     cancel,
     startCollection,
     extendCollection,
+    cancelCollection,
+    finishCollection,
     inviteHunter,
     acceptInvitation,
     declineInvitation,

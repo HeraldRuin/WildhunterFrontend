@@ -97,9 +97,12 @@ function scrollBy(direction: 'prev' | 'next') {
 
 .best-locations__title {
   margin: 0;
-  font-size: clamp(1.75rem, 3vw, 2.25rem);
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-family: UNCAGE;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 44px;
+  line-height: 110%;
+  letter-spacing: -2.2px;
   text-transform: uppercase;
   text-align: center;
   color: var(--wh-gray-900);
@@ -110,7 +113,7 @@ function scrollBy(direction: 'prev' | 'next') {
   grid-template-columns: 30px minmax(0, 1fr) 30px;
   align-items: center;
   gap: 16px;
-  width: 100%;
+  width: 131%;
 }
 
 .best-locations__track {
@@ -133,6 +136,8 @@ function scrollBy(direction: 'prev' | 'next') {
 
 .best-locations__slide {
   width: var(--best-locations-card-width);
+  height: var(--best-locations-card-height);
+  aspect-ratio: auto;
   flex-shrink: 0;
   scroll-snap-align: start;
 }
@@ -150,6 +155,7 @@ function scrollBy(direction: 'prev' | 'next') {
 
 .best-locations__button {
   min-width: 180px;
+  border-radius: var(--wh-radius-lg);
 }
 
 @media (--wh-tablet) {
