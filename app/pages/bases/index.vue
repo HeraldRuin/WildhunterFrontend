@@ -461,6 +461,10 @@ function handleFiltersReset() {
   background: var(--wh-white);
 }
 
+.bases-page :deep(.search-top__tagline) {
+  width: auto;
+}
+
 .bases-page__results {
   padding: 80px 0 104px;
 }
