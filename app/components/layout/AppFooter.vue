@@ -24,10 +24,10 @@ const columns = [
 ]
 
 const legalLinks = [
-  { label: 'Правила и условия', to: '/terms' },
-  { label: 'Оферта', to: '/offer' },
   { label: 'Политика конфиденциальности', to: '/privacy' },
   { label: 'Согласие на обработку персональных данных', to: '/personal-data' },
+  { label: 'Правила и условия', to: '/terms' },
+  { label: 'Оферта', to: '/offer' },
 ]
 
 const socials = [

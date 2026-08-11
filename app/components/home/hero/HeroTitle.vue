@@ -20,7 +20,7 @@
   flex-direction: column;
   gap: 0;
   margin: 0 auto;
-  max-width: 858px;
+  max-width: 870px;
   text-align: center;
   font-family: 'UNCAGE';
   font-size: 56px;
