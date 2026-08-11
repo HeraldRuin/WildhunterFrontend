@@ -387,7 +387,7 @@ async function handleSubmit() {
 .community-block--centered .community-block__inner {
   justify-content: center;
   align-items: center;
-  min-height: 390px;
+  min-height: 520px;
   padding: 64px 24px;
 }
 

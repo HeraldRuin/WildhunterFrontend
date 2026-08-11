@@ -4,7 +4,7 @@ import type { SearchSortOption } from '~/types/api'
 const model = defineModel<SearchSortOption>({ required: true })
 
 const options: Array<{ value: SearchSortOption, label: string }> = [
-  { value: 'recommended', label: 'Рекомендованные' }
+  { value: 'recommended', label: 'Рекомендуемые' }
 ]
 
 const isOpen = ref(false)
@@ -12,7 +12,7 @@ const rootRef = ref<HTMLElement | null>(null)
 const hoveredValue = ref<SearchSortOption | null>(null)
 
 const selectedLabel = computed(() =>
-  options.find(option => option.value === model.value)?.label ?? 'Рекомендованные',
+  options.find(option => option.value === model.value)?.label ?? 'Рекомендуемые',
 )
 
 function toggle() {
