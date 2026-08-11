@@ -68,7 +68,11 @@ function mapType(type: string): BookingType {
   return 'hotel'
 }
 
-function mapActions(actions: BookingHistoryActionDto[], isAcceptedInvitation = false): {
+function mapActions(
+  actions: BookingHistoryActionDto[],
+  status: string,
+  isAcceptedInvitation = false,
+): {
   actions: BookingAction[]
   paymentAction?: string
 } {
@@ -85,7 +89,9 @@ function mapActions(actions: BookingHistoryActionDto[], isAcceptedInvitation = f
       id: ACTION_ID_MAP[action.code],
       label:
         action.code === 'open_collection' || action.code === 'start_collection'
-          ? (isAcceptedInvitation ? 'Сбор охотников' : 'Собрать охотников')
+          ? (isAcceptedInvitation || status === 'prepayment_collection'
+              ? 'Сбор охотников'
+              : 'Собрать охотников')
           : action.label,
       variant: ACTION_VARIANT_MAP[action.code] ?? 'success',
     })
@@ -160,6 +166,7 @@ export function mapBookingHistoryItem(
   const type = mapType(item.type)
   const { actions, paymentAction } = mapActions(
     item.available_actions || [],
+    item.status,
     Boolean(item.is_invited && item.invitation_accepted),
   )
   const details = item.details
