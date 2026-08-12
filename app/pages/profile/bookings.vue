@@ -645,7 +645,6 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 .bookings-page__content {
   display: flex;
-  flex: 1;
   flex-direction: column;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
