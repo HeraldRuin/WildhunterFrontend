@@ -84,6 +84,7 @@ export interface BookingStatusInfo {
   collected?: string
   paid?: string
   subStatus?: string
+  collectionStatus?: string
 }
 
 export interface BookingHistoryItem {

@@ -141,8 +141,9 @@ function buildStatus(item: BookingHistoryItemDto, now: number) {
     }
     if (status === 'bed_collection') {
       result.subStatus = 'Предоплата собрана'
+      result.collectionStatus = 'Сбор завершен'
+      result.timerHours = item.hotel?.bed_timer_hours || undefined
       result.timer = formatRemainingTimer(collection.beds_end_at, now)
-        || (item.hotel?.bed_timer_hours ? `${item.hotel.bed_timer_hours} ч` : undefined)
     }
     if (collection.total_needed > 0) {
       result.collected = `Собрано ${collection.accepted_count}/${collection.total_needed}`
