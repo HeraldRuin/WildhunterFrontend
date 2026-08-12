@@ -141,13 +141,16 @@ const expiredPrepaymentCodes = computed(() =>
     .map(booking => booking.code),
 )
 
-watch(expiredPrepaymentCodes, (codes) => {
+watch(expiredPrepaymentCodes, (codes, previousCodes) => {
+  const previouslyExpired = new Set(previousCodes)
+
   for (const code of codes) {
+    if (previouslyExpired.has(code)) continue
     if (expiredPrepaymentRequests.has(code)) continue
 
     void expirePrepaymentOnce(code)
   }
-}, { immediate: true })
+})
 
 function expirePrepaymentOnce(code: string) {
   const activeRequest = expiredPrepaymentRequests.get(code)
