@@ -250,6 +250,26 @@ onBeforeUnmount(() => {
                   {{ item.status.collected }}
                 </div>
               </template>
+              <template v-else-if="item.status.code === 'bed_collection'">
+                <div
+                  v-if="item.status.subStatus"
+                  class="booking-table__status-meta booking-table__status-meta--substatus"
+                >
+                  {{ item.status.subStatus }}
+                </div>
+                <div v-if="item.status.paid" class="booking-table__status-meta">
+                  {{ item.status.paid }}
+                </div>
+                <div
+                  v-if="item.status.collectionStatus"
+                  class="booking-table__status-meta booking-table__status-meta--substatus"
+                >
+                  {{ item.status.collectionStatus }}
+                </div>
+                <div v-if="item.status.collected" class="booking-table__status-meta">
+                  {{ item.status.collected }}
+                </div>
+              </template>
               <template v-else>
                 <div v-if="item.status.collected" class="booking-table__status-meta">
                   {{ item.status.collected }}
