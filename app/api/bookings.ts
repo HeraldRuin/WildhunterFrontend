@@ -89,6 +89,28 @@ export function useBookingsApi() {
     )
   }
 
+  function replaceHunter(code: string, oldHunterId: number, hunterId: number) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/replace-hunter`,
+      {
+        method: 'POST',
+        body: {
+          old_hunter_id: oldHunterId,
+          hunter_id: hunterId,
+        },
+      },
+    )
+  }
+
+  function expirePrepayment(code: string) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/expire-prepayment`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
   function inviteHunter(code: string, hunterId: number) {
     return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/invite-hunter`,
@@ -156,6 +178,8 @@ export function useBookingsApi() {
     extendCollection,
     cancelCollection,
     finishCollection,
+    replaceHunter,
+    expirePrepayment,
     inviteHunter,
     acceptInvitation,
     declineInvitation,
