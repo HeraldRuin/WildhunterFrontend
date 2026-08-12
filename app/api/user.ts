@@ -91,6 +91,15 @@ export function useUserApi() {
     })
   }
 
+  function searchReplacementHunters(query: string, bookingId: number) {
+    return apiFetch<UserSearchResponse>('/user/search-replacement-hunters', {
+      query: {
+        query,
+        booking_id: bookingId,
+      },
+    })
+  }
+
   function getCurrentPassword() {
     return apiFetch<CurrentPasswordResponse>('/user/current-password')
   }
@@ -136,6 +145,7 @@ export function useUserApi() {
     getUser,
     searchUsers,
     searchHunters,
+    searchReplacementHunters,
     getCurrentPassword,
     changePassword,
     updateUser,
