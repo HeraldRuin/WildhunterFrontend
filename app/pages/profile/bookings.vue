@@ -322,19 +322,23 @@ function openCustomerModal(booking: BookingHistoryItem) {
       :dropdown-statuses="dropdownStatuses"
     />
 
-    <div v-if="historyPending && !bookings.length" class="bookings-page__loading" aria-live="polite">
-      <CommonSpinner variant="ring" size="lg" label="Загрузка бронирований" />
-    </div>
+    <div class="bookings-page__content">
+      <Transition name="bookings-fade" mode="out-in" appear>
+        <div v-if="historyPending" class="bookings-page__loading" aria-live="polite">
+          <CommonSpinner variant="ring" size="lg" label="Загрузка бронирований" />
+        </div>
 
-    <ProfileBookingHistoryTable
-      v-else
-      :items="bookings"
-      :empty-text="emptyText"
-      :show-details-buttons="isHunter"
-      :show-customer="isBaseAdmin"
-      @action="handleBookingAction"
-      @customer="openCustomerModal"
-    />
+        <ProfileBookingHistoryTable
+          v-else
+          :items="bookings"
+          :empty-text="emptyText"
+          :show-details-buttons="isHunter"
+          :show-customer="isBaseAdmin"
+          @action="handleBookingAction"
+          @customer="openCustomerModal"
+        />
+      </Transition>
+    </div>
 
     <ProfileCollectionModal
       @extended="refreshHistory"
@@ -367,7 +371,11 @@ function openCustomerModal(booking: BookingHistoryItem) {
 
 <style scoped>
 .bookings-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   padding: 20px 40px 48px;
+  box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
 }
 
@@ -426,14 +434,37 @@ function openCustomerModal(booking: BookingHistoryItem) {
   line-height: 1;
 }
 
+.bookings-page__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  border: 1px solid var(--wh-gray-400);
+  border-radius: var(--wh-radius);
+  background: var(--wh-white);
+  overflow: hidden;
+}
+
+.bookings-page__content :deep(.booking-table-wrap) {
+  border: none;
+  border-radius: 0;
+}
+
 .bookings-page__loading {
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
   min-height: 220px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: var(--wh-radius);
-  background: var(--wh-white);
+}
+
+.bookings-fade-enter-active,
+.bookings-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.bookings-fade-enter-from,
+.bookings-fade-leave-to {
+  opacity: 0;
 }
 
 @media (--wh-tablet) {

@@ -313,6 +313,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .booking-table-wrap {
+  flex: 1;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
