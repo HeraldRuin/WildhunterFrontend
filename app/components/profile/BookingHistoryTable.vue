@@ -6,6 +6,7 @@ const props = defineProps<{
   emptyText?: string
   showDetailsButtons?: boolean
   showCustomer?: boolean
+  showCalculation?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -228,7 +229,9 @@ onBeforeUnmount(() => {
                 v-if="item.status.timer"
                 class="booking-table__status-meta"
                 :class="{
-                  'booking-table__status-meta--expired': item.status.timer === '00 мин 00 сек',
+                  'booking-table__status-meta--expired':
+                    item.status.timer === '00 мин 00 сек'
+                    || item.status.timer === 'Время оплаты истекло',
                 }"
               >
                 {{ item.status.timer }}
@@ -262,15 +265,7 @@ onBeforeUnmount(() => {
                 </div>
               </template>
             </td>
-            <td class="booking-table__payment">
-              <button
-                v-if="item.paymentAction"
-                type="button"
-                class="booking-table__payment-btn"
-              >
-                {{ item.paymentAction }}
-              </button>
-            </td>
+            <td class="booking-table__payment" />
             <td class="booking-table__actions">
               <div class="booking-table__actions-list">
                 <button
@@ -282,6 +277,17 @@ onBeforeUnmount(() => {
                   @click="handleAction(item, action)"
                 >
                   {{ action.label }}
+                </button>
+                <button
+                  v-if="
+                    showCalculation
+                    && item.status.code === 'prepayment_collection'
+                    && item.paymentAction
+                  "
+                  type="button"
+                  class="booking-table__action booking-table__action--primary"
+                >
+                  {{ item.paymentAction }}
                 </button>
               </div>
             </td>
