@@ -43,7 +43,8 @@ const invitationModalBooking = ref<BookingHistoryItem | null>(null)
 const collectionInvitationsModalBooking = ref<BookingHistoryItem | null>(null)
 const finishedCollectionModalBooking = ref<BookingHistoryItem | null>(null)
 const prepaymentModalBooking = ref<BookingHistoryItem | null>(null)
-const expiredPrepaymentRequests = new Set<string>()
+const expiredPrepaymentRequests = new Map<string, Promise<boolean>>()
+const completedPrepaymentExpirations = reactive(new Set<string>())
 let timerInterval: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
@@ -110,18 +111,31 @@ const dropdownStatuses = computed(() =>
 const bookings = computed<BookingHistoryItem[]>(() => {
   const rootHotel = historyResponse.value?.data?.hotel
 
-  return (historyResponse.value?.data?.bookings?.items ?? []).map(item =>
-    mapBookingHistoryItem(item, {
+  return (historyResponse.value?.data?.bookings?.items ?? []).map((item) => {
+    const booking = mapBookingHistoryItem(item, {
       hotelSlug: rootHotel?.slug,
       locationSlug: rootHotel?.location?.slug,
-    }, timerNow.value),
-  )
+    }, timerNow.value)
+
+    if (completedPrepaymentExpirations.has(booking.code)) {
+      return {
+        ...booking,
+        status: {
+          ...booking.status,
+          timer: '00 мин 00 сек',
+        },
+      }
+    }
+
+    return booking
+  })
 })
 
 const expiredPrepaymentCodes = computed(() =>
   bookings.value
     .filter(booking =>
       booking.status.code === 'prepayment_collection'
+      && booking.isMasterHunter
       && booking.status.timer === '00 мин 00 сек',
     )
     .map(booking => booking.code),
@@ -131,18 +145,54 @@ watch(expiredPrepaymentCodes, (codes) => {
   for (const code of codes) {
     if (expiredPrepaymentRequests.has(code)) continue
 
-    expiredPrepaymentRequests.add(code)
-    void expirePrepayment(code)
+    void expirePrepaymentOnce(code)
   }
 }, { immediate: true })
 
-async function expirePrepayment(code: string) {
+function expirePrepaymentOnce(code: string) {
+  const activeRequest = expiredPrepaymentRequests.get(code)
+  if (activeRequest) return activeRequest
+
+  const request = expirePrepayment(code)
+
+  expiredPrepaymentRequests.set(code, request)
+
+  return request
+}
+
+async function expirePrepayment(code: string): Promise<boolean> {
   try {
     const response = await bookingsApi.expirePrepayment(code)
 
     if (response.success) {
-      await refreshHistory()
-      return
+      completedPrepaymentExpirations.add(code)
+
+      const openedBooking = finishedCollectionModalBooking.value?.code === code
+        ? finishedCollectionModalBooking.value
+        : null
+
+      const [, refreshedBookingResponse] = await Promise.all([
+        refreshHistory(),
+        openedBooking
+          ? bookingsApi.history({ booking_id: openedBooking.id })
+          : Promise.resolve(null),
+      ])
+
+      if (openedBooking && refreshedBookingResponse?.success) {
+        const refreshedItem = refreshedBookingResponse.data.bookings.items.find(
+          item => item.code === code,
+        )
+        const rootHotel = refreshedBookingResponse.data.hotel
+
+        if (refreshedItem) {
+          finishedCollectionModalBooking.value = mapBookingHistoryItem(refreshedItem, {
+            hotelSlug: rootHotel?.slug,
+            locationSlug: rootHotel?.location?.slug,
+          }, timerNow.value)
+        }
+      }
+
+      return true
     }
 
     notifications.error(response.message || 'Не удалось завершить сбор предоплаты')
@@ -151,6 +201,27 @@ async function expirePrepayment(code: string) {
     const data = (error as { data?: { message?: string } }).data
     notifications.error(data?.message || 'Не удалось завершить сбор предоплаты')
   }
+
+  return false
+}
+
+async function openFinishedCollectionModal(booking: BookingHistoryItem) {
+  if (
+    booking.isMasterHunter
+    && booking.status.code === 'prepayment_collection'
+    && booking.status.timer === '00 мин 00 сек'
+  ) {
+    const wasAlreadyRequested = expiredPrepaymentRequests.has(booking.code)
+    const success = await expirePrepaymentOnce(booking.code)
+
+    if (!success && wasAlreadyRequested) {
+      expiredPrepaymentRequests.delete(booking.code)
+      await expirePrepaymentOnce(booking.code)
+    }
+  }
+
+  finishedCollectionModalBooking.value = bookings.value.find(item => item.code === booking.code)
+    ?? booking
 }
 
 function applyBookingStatusUpdate(payload: BookingStatusUpdatedPayload) {
@@ -282,7 +353,7 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     booking.status.code === 'prepayment_collection'
     && (action.id === 'open_collection' || action.id === 'start_collection')
   ) {
-    finishedCollectionModalBooking.value = booking
+    void openFinishedCollectionModal(booking)
     return
   }
 
@@ -348,6 +419,8 @@ async function handleHunterReplaced(
   }
 
   const bookingCode = currentBooking.code
+  completedPrepaymentExpirations.delete(bookingCode)
+  expiredPrepaymentRequests.delete(bookingCode)
   const hunterName = [hunter.first_name, hunter.last_name].filter(Boolean).join(' ')
     || hunter.nik
     || hunter.user_name
@@ -423,6 +496,7 @@ async function handleHunterReplaced(
           :empty-text="emptyText"
           :show-details-buttons="isHunter"
           :show-customer="isBaseAdmin"
+          :show-calculation="isBaseAdmin"
           @action="handleBookingAction"
           @customer="openCustomerModal"
         />
