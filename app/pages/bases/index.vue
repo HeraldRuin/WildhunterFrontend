@@ -2,7 +2,11 @@
 import type { HotelSearchBody, OfferItem, SearchFiltersState } from '~/types/api'
 import { mapHotelOfferToItem } from '~/api/hotels'
 import { parseDisplayDateToApiDate } from '~/utils/date'
-import { DEFAULT_SEARCH_FILTERS, matchesReviewRatingFilter } from '~/utils/search'
+import {
+  countOffersByReviewRating,
+  DEFAULT_SEARCH_FILTERS,
+  matchesReviewRatingFilter,
+} from '~/utils/search'
 
 definePageMeta({
   layout: 'home',
@@ -246,6 +250,16 @@ onMounted(() => {
   void preloadRouteComponents('/')
 })
 
+const ratingCounts = computed(() => {
+  const items = isCatalogMode.value
+    ? searchResult.value.items.filter(item => (
+        item.price >= filters.value.priceMin && item.price <= filters.value.priceMax
+      ))
+    : searchResult.value.items
+
+  return countOffersByReviewRating(items)
+})
+
 const filteredCatalogItems = computed(() => {
   if (!isCatalogMode.value) {
     return searchResult.value.items
@@ -403,6 +417,7 @@ function handleFiltersReset() {
             v-model:mobile-open="mobileFiltersOpen"
             :price-bound-min="priceBounds.min"
             :price-bound-max="priceBounds.max"
+            :rating-counts="ratingCounts"
             @reset="handleFiltersReset"
           />
 

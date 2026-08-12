@@ -10,10 +10,12 @@ const props = withDefaults(defineProps<{
   mobileOpen?: boolean
   priceBoundMin?: number
   priceBoundMax?: number
+  ratingCounts?: Record<string, number>
 }>(), {
   mobileOpen: false,
   priceBoundMin: 0,
   priceBoundMax: 15000,
+  ratingCounts: () => ({}),
 })
 
 const emit = defineEmits<{
@@ -108,6 +110,7 @@ function closeMobile() {
       >
         <SearchFiltersRatingFilter
           :model-value="localFilters.ratings"
+          :counts="ratingCounts"
           @update:model-value="updateField('ratings', $event)"
         />
       </SearchFiltersFilterSection>

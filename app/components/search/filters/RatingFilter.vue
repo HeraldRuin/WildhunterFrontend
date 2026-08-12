@@ -5,6 +5,10 @@ const model = defineModel<string[]>({ required: true })
 
 const { reviews: reviewsApi } = useApi()
 
+defineProps<{
+  counts: Record<string, number>
+}>()
+
 const { data: options, pending } = useAsyncData<ReviewRatingOption[]>(
   'search-review-ratings',
   () => reviewsApi.getRatingItems(),
@@ -44,6 +48,9 @@ function toggle(value: string) {
           >
           <span class="search-filters-rating__checkmark" />
           <span>{{ option.label }}</span>
+          <span class="search-filters-rating__count">
+            {{ counts[option.value] ?? 0 }}
+          </span>
         </label>
       </li>
     </ul>
@@ -75,10 +82,18 @@ function toggle(value: string) {
 .search-filters-rating__option {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   font-size: 0.9375rem;
   color: var(--wh-gray-900);
   cursor: pointer;
+}
+
+.search-filters-rating__checkmark {
+  margin-right: 4px;
+}
+
+.search-filters-rating__count {
+  white-space: nowrap;
 }
 
 .search-filters-rating__option input {

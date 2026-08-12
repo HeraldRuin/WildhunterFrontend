@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { LocationItem, OfferItem, SearchFiltersState } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
-import { DEFAULT_SEARCH_FILTERS, matchesReviewRatingFilter } from '~/utils/search'
+import {
+  countOffersByReviewRating,
+  DEFAULT_SEARCH_FILTERS,
+  matchesReviewRatingFilter,
+} from '~/utils/search'
 
 definePageMeta({
   layout: 'home',
@@ -159,6 +163,12 @@ const filteredOffers = computed(() => {
   })
 })
 
+const ratingCounts = computed(() => countOffersByReviewRating(
+  locationHotels.value.filter(item => (
+    item.price >= filters.value.priceMin && item.price <= filters.value.priceMax
+  )),
+))
+
 const totalCount = computed(() => filteredOffers.value.length)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / perPage)))
 const countReady = computed(() => !hotelsPending.value && totalCount.value > 0)
@@ -283,6 +293,7 @@ function handleFiltersReset() {
             v-model:mobile-open="mobileFiltersOpen"
             :price-bound-min="priceBounds.min"
             :price-bound-max="priceBounds.max"
+            :rating-counts="ratingCounts"
             class="location-page__filters"
             @reset="handleFiltersReset"
           />
