@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { UserSearchItem } from '~/api/user'
 import type { BookingStatusUpdatedPayload } from '~/composables/useBookingStatusChannel'
 import type { BookingAction, BookingHistoryItem } from '~/types/booking'
 import { ROLE_BASE_ADMIN, ROLE_HUNTER } from '~/utils/roles'
@@ -41,6 +42,8 @@ const customerModalBooking = ref<BookingHistoryItem | null>(null)
 const invitationModalBooking = ref<BookingHistoryItem | null>(null)
 const collectionInvitationsModalBooking = ref<BookingHistoryItem | null>(null)
 const finishedCollectionModalBooking = ref<BookingHistoryItem | null>(null)
+const prepaymentModalBooking = ref<BookingHistoryItem | null>(null)
+const expiredPrepaymentRequests = new Set<string>()
 let timerInterval: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
@@ -114,6 +117,41 @@ const bookings = computed<BookingHistoryItem[]>(() => {
     }, timerNow.value),
   )
 })
+
+const expiredPrepaymentCodes = computed(() =>
+  bookings.value
+    .filter(booking =>
+      booking.status.code === 'prepayment_collection'
+      && booking.status.timer === '00 мин 00 сек',
+    )
+    .map(booking => booking.code),
+)
+
+watch(expiredPrepaymentCodes, (codes) => {
+  for (const code of codes) {
+    if (expiredPrepaymentRequests.has(code)) continue
+
+    expiredPrepaymentRequests.add(code)
+    void expirePrepayment(code)
+  }
+}, { immediate: true })
+
+async function expirePrepayment(code: string) {
+  try {
+    const response = await bookingsApi.expirePrepayment(code)
+
+    if (response.success) {
+      await refreshHistory()
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось завершить сбор предоплаты')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось завершить сбор предоплаты')
+  }
+}
 
 function applyBookingStatusUpdate(payload: BookingStatusUpdatedPayload) {
   const response = historyResponse.value
@@ -272,6 +310,11 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     return
   }
 
+  if (action.id === 'prepayment') {
+    prepaymentModalBooking.value = booking
+    return
+  }
+
   if (action.id === 'cancel_booking') {
     openCancelBookingModal(booking, () => cancelBooking(booking))
     return
@@ -292,6 +335,52 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
 
 function openCustomerModal(booking: BookingHistoryItem) {
   customerModalBooking.value = booking
+}
+
+async function handleHunterReplaced(
+  { oldHunterId, hunter }: { oldHunterId: number, hunter: UserSearchItem },
+  done: () => void,
+) {
+  const currentBooking = finishedCollectionModalBooking.value
+  if (!currentBooking) {
+    done()
+    return
+  }
+
+  const bookingCode = currentBooking.code
+  const hunterName = [hunter.first_name, hunter.last_name].filter(Boolean).join(' ')
+    || hunter.nik
+    || hunter.user_name
+    || 'Имя не указано'
+
+  finishedCollectionModalBooking.value = {
+    ...currentBooking,
+    collectionInvitations: currentBooking.collectionInvitations?.map(invitation =>
+      invitation.hunterId === oldHunterId
+        ? {
+            ...invitation,
+            hunterId: hunter.id,
+            userName: hunter.nik || hunter.user_name || undefined,
+            name: hunterName,
+            email: hunter.email || undefined,
+            status: 'pending',
+            isAccepted: false,
+            prepaymentPaid: false,
+            prepaymentPaidStatus: 'pending',
+          }
+        : invitation,
+    ),
+  }
+
+  await nextTick()
+  done()
+
+  await refreshHistory()
+  if (finishedCollectionModalBooking.value?.code === bookingCode) {
+    finishedCollectionModalBooking.value = bookings.value.find(
+      booking => booking.code === bookingCode,
+    ) ?? null
+  }
 }
 </script>
 
@@ -358,6 +447,11 @@ function openCustomerModal(booking: BookingHistoryItem) {
     <ProfileFinishedCollectionModal
       :booking="finishedCollectionModalBooking"
       @close="finishedCollectionModalBooking = null"
+      @replaced="handleHunterReplaced"
+    />
+    <ProfilePrepaymentModal
+      :booking="prepaymentModalBooking"
+      @close="prepaymentModalBooking = null"
     />
     <CommonConfirmModal />
     <ProfileAddServicesModal />
