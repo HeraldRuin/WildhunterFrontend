@@ -254,8 +254,22 @@ function applyBookingStatusUpdate(payload: BookingStatusUpdatedPayload) {
 }
 
 const { syncSubscriptions } = useBookingStatusChannel(applyBookingStatusUpdate)
+
+async function refreshHistoryFromChannel() {
+  const openedFinishedCollectionCode = finishedCollectionModalBooking.value?.code
+
+  await refreshHistory()
+
+  if (
+    openedFinishedCollectionCode
+    && !bookings.value.some(booking => booking.code === openedFinishedCollectionCode)
+  ) {
+    finishedCollectionModalBooking.value = null
+  }
+}
+
 const { subscribe: subscribeToHistory } = useBookingHistoryChannel(() => {
-  void refreshHistory()
+  void refreshHistoryFromChannel()
 })
 
 watch(
@@ -455,6 +469,32 @@ async function handleHunterReplaced(
     ) ?? null
   }
 }
+
+async function handleHunterRemoved(hunterId: number, done: () => void) {
+  const currentBooking = finishedCollectionModalBooking.value
+  if (!currentBooking) {
+    done()
+    return
+  }
+
+  const bookingCode = currentBooking.code
+  finishedCollectionModalBooking.value = {
+    ...currentBooking,
+    collectionInvitations: currentBooking.collectionInvitations?.filter(
+      invitation => invitation.hunterId !== hunterId,
+    ),
+  }
+
+  await nextTick()
+  done()
+
+  await refreshHistory()
+  if (finishedCollectionModalBooking.value?.code === bookingCode) {
+    finishedCollectionModalBooking.value = bookings.value.find(
+      booking => booking.code === bookingCode,
+    ) ?? null
+  }
+}
 </script>
 
 <template>
@@ -522,6 +562,7 @@ async function handleHunterReplaced(
       :booking="finishedCollectionModalBooking"
       @close="finishedCollectionModalBooking = null"
       @replaced="handleHunterReplaced"
+      @removed="handleHunterRemoved"
     />
     <ProfilePrepaymentModal
       :booking="prepaymentModalBooking"

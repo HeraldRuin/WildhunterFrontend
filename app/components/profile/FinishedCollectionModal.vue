@@ -12,6 +12,7 @@ const emit = defineEmits<{
     payload: { oldHunterId: number, hunter: UserSearchItem },
     done: () => void,
   ]
+  removed: [hunterId: number, done: () => void]
 }>()
 
 const { user } = useAuth()
@@ -25,6 +26,7 @@ const selectedHunter = ref<UserSearchItem | null>(null)
 const searchResults = ref<UserSearchItem[]>([])
 const isSearching = ref(false)
 const isReplacing = ref(false)
+const removingHunterId = ref<number | null>(null)
 const hasSearched = ref(false)
 const searchError = ref('')
 let searchTimeout: ReturnType<typeof setTimeout> | undefined
@@ -187,10 +189,39 @@ async function replaceHunter(oldHunterId: number) {
   }
 }
 
-function requestHunterDeletion() {
+async function removeHunter(hunterId: number) {
+  const bookingCode = props.booking?.code
+  if (!bookingCode || removingHunterId.value !== null) return
+
+  removingHunterId.value = hunterId
+
+  try {
+    const response = await bookingsApi.removeHunter(bookingCode, hunterId)
+
+    if (response.success) {
+      await new Promise<void>((resolve) => {
+        emit('removed', hunterId, resolve)
+      })
+      notifications.success(response.message || 'Охотник удалён')
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось удалить охотника')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось удалить охотника')
+  }
+  finally {
+    removingHunterId.value = null
+  }
+}
+
+function requestHunterDeletion(hunterId: number) {
   openConfirmModal({
     title: 'Вы уверены, что хотите удалить охотника?',
     confirmLabel: 'Удалить',
+    onConfirm: () => removeHunter(hunterId),
   })
 }
 
@@ -245,7 +276,8 @@ function handleKeydown(event: KeyboardEvent) {
               class="finished-collection-modal__participant"
               :class="{
                 'finished-collection-modal__participant--loading':
-                  isReplacing && replacingInvitationId === invitation.invitationId,
+                  (isReplacing && replacingInvitationId === invitation.invitationId)
+                  || removingHunterId === invitation.hunterId,
               }"
             >
               <div class="finished-collection-modal__participant-main">
@@ -348,17 +380,23 @@ function handleKeydown(event: KeyboardEvent) {
                 <button
                   type="button"
                   class="finished-collection-modal__delete"
-                  @click="requestHunterDeletion"
+                  @click="requestHunterDeletion(invitation.hunterId)"
                 >
                   Удалить
                 </button>
               </div>
 
               <div
-                v-if="isReplacing && replacingInvitationId === invitation.invitationId"
+                v-if="(isReplacing && replacingInvitationId === invitation.invitationId)
+                  || removingHunterId === invitation.hunterId"
                 class="finished-collection-modal__loading"
               >
-                <CommonSpinner size="md" label="Замена охотника" />
+                <CommonSpinner
+                  size="md"
+                  :label="removingHunterId === invitation.hunterId
+                    ? 'Удаление охотника'
+                    : 'Замена охотника'"
+                />
               </div>
             </div>
 

@@ -102,6 +102,18 @@ export function useBookingsApi() {
     )
   }
 
+  function removeHunter(code: string, hunterId: number) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/remove-hunter`,
+      {
+        method: 'DELETE',
+        body: {
+          hunter_id: hunterId,
+        },
+      },
+    )
+  }
+
   function expirePrepayment(code: string) {
     return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/expire-prepayment`,
@@ -179,6 +191,7 @@ export function useBookingsApi() {
     cancelCollection,
     finishCollection,
     replaceHunter,
+    removeHunter,
     expirePrepayment,
     inviteHunter,
     acceptInvitation,
