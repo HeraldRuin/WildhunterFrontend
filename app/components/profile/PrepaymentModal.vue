@@ -9,6 +9,9 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const { bookings } = useApi()
+const notifications = useNotifications()
+const isPaying = ref(false)
 const isOpen = computed(() => Boolean(props.booking))
 
 useBodyScrollLock(isOpen)
@@ -26,6 +29,69 @@ function handleBackdropClick(event: MouseEvent) {
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     close()
+  }
+}
+
+function getPaymentUrl(value: unknown): string | null {
+  if (typeof value === 'string' && /^(?:https?:)?\/\//.test(value)) {
+    return value
+  }
+
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const record = value as Record<string, unknown>
+  const keys = [
+    'url',
+    'payment_url',
+    'paymentUrl',
+    'payment_link',
+    'redirect_url',
+    'redirectUrl',
+    'link',
+  ]
+
+  for (const key of keys) {
+    if (typeof record[key] === 'string' && record[key]) {
+      return record[key]
+    }
+  }
+
+  return getPaymentUrl(record.data)
+}
+
+async function pay() {
+  if (!props.booking || isPaying.value) {
+    return
+  }
+
+  const paymentTab = window.open('', '_blank')
+  isPaying.value = true
+
+  try {
+    const response = await bookings.markPrepaymentPaid(props.booking.code)
+
+    if (!response.success) {
+      paymentTab?.close()
+      notifications.error(response.message || 'Не удалось выполнить оплату')
+      return
+    }
+
+    const paymentUrl = getPaymentUrl(response)
+
+    if (paymentUrl) {
+      paymentTab?.location.replace(paymentUrl)
+    } else if (paymentTab) {
+      paymentTab.document.title = 'Результат оплаты'
+      paymentTab.document.body.textContent = JSON.stringify(response, null, 2)
+    }
+  } catch (error) {
+    paymentTab?.close()
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось выполнить оплату')
+  } finally {
+    isPaying.value = false
   }
 }
 </script>
@@ -50,8 +116,13 @@ function handleKeydown(event: KeyboardEvent) {
           </h2>
 
           <div class="prepayment-modal__footer">
-            <button type="button" class="prepayment-modal__pay">
-              Оплатить
+            <button
+              type="button"
+              class="prepayment-modal__pay"
+              :disabled="isPaying"
+              @click="pay"
+            >
+              {{ isPaying ? 'Открываем…' : 'Оплатить' }}
             </button>
           </div>
         </div>

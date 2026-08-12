@@ -123,6 +123,16 @@ export function useBookingsApi() {
     )
   }
 
+  function markPrepaymentPaid(code: string) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/prepayment-paid`,
+      {
+        method: 'POST',
+        body: {},
+      },
+    )
+  }
+
   function inviteHunter(code: string, hunterId: number) {
     return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/invite-hunter`,
@@ -193,6 +203,7 @@ export function useBookingsApi() {
     replaceHunter,
     removeHunter,
     expirePrepayment,
+    markPrepaymentPaid,
     inviteHunter,
     acceptInvitation,
     declineInvitation,
