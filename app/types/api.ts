@@ -389,6 +389,8 @@ export interface BookingCollectionInvitationDto {
   email: string | null
   status: string
   is_accepted: boolean
+  prepayment_paid?: boolean
+  prepayment_paid_status?: string | null
 }
 
 export interface BookingHistoryRoomDto {

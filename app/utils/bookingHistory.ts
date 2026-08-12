@@ -123,8 +123,9 @@ function buildStatus(item: BookingHistoryItemDto, now: number) {
   if (status === 'prepayment_collection') {
     result.subStatus = 'Сбор завершен'
     result.timerHours = item.hotel?.paid_timer_hours || undefined
-    result.timer = formatRemainingTimer(collection.paid_end_at, now)
-      || (item.hotel?.paid_timer_hours ? `${item.hotel.paid_timer_hours} ч` : undefined)
+    result.timer = collection.paid_end_at
+      ? formatRemainingTimer(collection.paid_end_at, now) || '00 мин 00 сек'
+      : '00 мин 00 сек'
     if (collection.accepted_count > 0) {
       result.paid = `Оплачено ${collection.paid_count}/${collection.accepted_count}`
     }
@@ -136,6 +137,7 @@ function buildStatus(item: BookingHistoryItemDto, now: number) {
   if (status === 'finish_prepayment' || status === 'bed_collection' || status === 'finish_bed_collection') {
     if (status === 'finish_prepayment') {
       result.subStatus = 'Сбор завершён'
+      result.timer = '00 мин 00 сек'
     }
     if (status === 'bed_collection') {
       result.subStatus = 'Предоплата собрана'
@@ -234,6 +236,7 @@ export function mapBookingHistoryItem(
     status: buildStatus(item, now),
     paymentAction,
     actions,
+    isMasterHunter: Boolean(item.is_master_hunter),
     isInvitation: Boolean(item.is_invited),
     invitationAccepted: Boolean(item.invitation_accepted),
     invitationAcceptedAt: item.invitation_accepted_at || undefined,
@@ -245,6 +248,8 @@ export function mapBookingHistoryItem(
       email: invitation.email || undefined,
       status: invitation.status,
       isAccepted: invitation.is_accepted,
+      prepaymentPaid: Boolean(invitation.prepayment_paid),
+      prepaymentPaidStatus: invitation.prepayment_paid_status || undefined,
     })),
     collectionUrl: item.invitation_url || undefined,
   }

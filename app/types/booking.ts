@@ -38,6 +38,8 @@ export interface BookingInvitationParticipant {
   email?: string
   status: string
   isAccepted: boolean
+  prepaymentPaid: boolean
+  prepaymentPaidStatus?: string
 }
 
 export interface CollectionModalState {
@@ -99,6 +101,7 @@ export interface BookingHistoryItem {
   status: BookingStatusInfo
   paymentAction?: string
   actions: BookingAction[]
+  isMasterHunter?: boolean
   isInvitation?: boolean
   invitationAccepted?: boolean
   invitationAcceptedAt?: string
