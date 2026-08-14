@@ -4,6 +4,7 @@ import type {
   BookingCheckoutResponse,
   BookingHistoryQuery,
   BookingHistoryResponse,
+  BookingPlacesResponse,
   CancelBookingResponse,
   ConfirmBookingResponse,
   CreateBookingRequest,
@@ -169,6 +170,37 @@ export function useBookingsApi() {
     )
   }
 
+  function places(code: string) {
+    return apiFetch<BookingPlacesResponse>(
+      `/bookings/${encodeURIComponent(code)}/places`,
+    )
+  }
+
+  function selectPlace(
+    code: string,
+    body: { room_id: number, place_number: number, room_index: number },
+  ) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/select-place`,
+      {
+        method: 'POST',
+        body,
+      },
+    )
+  }
+
+  function cancelSelectPlace(code: string, placeId: number) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/cancel-select-place`,
+      {
+        method: 'POST',
+        body: {
+          place_id: placeId,
+        },
+      },
+    )
+  }
+
   function updateCustomerNotes(code: string, customerNotes: string) {
     return apiFetch<UpdateCustomerNotesResponse>('/bookings/customer-notes', {
       method: 'PUT',
@@ -208,6 +240,9 @@ export function useBookingsApi() {
     acceptInvitation,
     declineInvitation,
     checkout,
+    places,
+    selectPlace,
+    cancelSelectPlace,
     updateCustomerNotes,
     changeUser,
   }

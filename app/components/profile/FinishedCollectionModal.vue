@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { UserSearchItem } from '~/api/user'
 import type { BookingHistoryItem, BookingInvitationParticipant } from '~/types/booking'
+import { READ_ONLY_COLLECTION_STATUSES } from '~/utils/bookingHistory'
 
 const props = defineProps<{
   booking: BookingHistoryItem | null
@@ -16,6 +17,11 @@ const emit = defineEmits<{
 }>()
 
 const { user } = useAuth()
+
+function isReadOnlyCollectionStatus(status?: string) {
+  return Boolean(status && READ_ONLY_COLLECTION_STATUSES.has(status))
+}
+
 const { bookings: bookingsApi, user: userApi } = useApi()
 const notifications = useNotifications()
 const { open: openConfirmModal } = useConfirmModal()
@@ -371,7 +377,9 @@ function handleKeydown(event: KeyboardEvent) {
               </div>
 
               <div
-                v-else-if="booking.isMasterHunter && !isCurrentUser(invitation.hunterId)"
+                v-else-if="booking.isMasterHunter
+                  && !isCurrentUser(invitation.hunterId)
+                  && !isReadOnlyCollectionStatus(booking.status.code)"
                 class="finished-collection-modal__actions"
               >
                 <button type="button" @click="startReplacing(invitation.invitationId)">

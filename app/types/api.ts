@@ -302,6 +302,46 @@ export type ExtendCollectionResponse = ApiSuccessResponse<{
   status: string
 }>
 
+export interface BookingPlaceUser {
+  id: number
+  first_name?: string | null
+  last_name?: string | null
+  user_name?: string | null
+}
+
+export interface BookingPlaceAssignment {
+  id: number
+  booking_id: number
+  room_index: number
+  room_id: number
+  place_number: number
+  user_id: number
+  user?: BookingPlaceUser | null
+}
+
+export interface BookingPlaceRoom {
+  booking_total_guests: number
+  booking_room_id: number
+  booking_number: number
+  room_id: number
+  title: string
+  number: number
+  total_guests_in_type: number
+}
+
+/** room_index → room_id → place_number → assignments */
+export type BookingPlacesMap = Record<
+  string,
+  Record<string, Record<string, BookingPlaceAssignment[]>>
+>
+
+export interface BookingPlacesData {
+  rooms: BookingPlaceRoom[]
+  places: BookingPlacesMap
+}
+
+export type BookingPlacesResponse = ApiSuccessResponse<BookingPlacesData>
+
 export interface BookingCheckoutLocation {
   id: number
   name: string

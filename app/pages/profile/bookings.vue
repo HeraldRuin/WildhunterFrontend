@@ -3,7 +3,7 @@ import type { UserSearchItem } from '~/api/user'
 import type { BookingStatusUpdatedPayload } from '~/composables/useBookingStatusChannel'
 import type { BookingAction, BookingHistoryItem } from '~/types/booking'
 import { ROLE_BASE_ADMIN, ROLE_HUNTER } from '~/utils/roles'
-import { mapBookingHistoryItem } from '~/utils/bookingHistory'
+import { FINISHED_COLLECTION_MODAL_STATUSES, mapBookingHistoryItem } from '~/utils/bookingHistory'
 
 definePageMeta({
   layout: 'profile',
@@ -43,6 +43,7 @@ const invitationModalBooking = ref<BookingHistoryItem | null>(null)
 const collectionInvitationsModalBooking = ref<BookingHistoryItem | null>(null)
 const finishedCollectionModalBooking = ref<BookingHistoryItem | null>(null)
 const prepaymentModalBooking = ref<BookingHistoryItem | null>(null)
+const bedSelectionModalBooking = ref<BookingHistoryItem | null>(null)
 const expiredPrepaymentRequests = new Map<string, Promise<boolean>>()
 const completedPrepaymentExpirations = reactive(new Set<string>())
 let timerInterval: ReturnType<typeof setInterval> | undefined
@@ -367,7 +368,8 @@ async function startCollection(booking: BookingHistoryItem) {
 
 function handleBookingAction({ booking, action }: { booking: BookingHistoryItem, action: BookingAction }) {
   if (
-    booking.status.code === 'prepayment_collection'
+    booking.status.code
+    && FINISHED_COLLECTION_MODAL_STATUSES.has(booking.status.code)
     && (action.id === 'open_collection' || action.id === 'start_collection')
   ) {
     void openFinishedCollectionModal(booking)
@@ -413,6 +415,11 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
       title: 'Вы уверены, что хотите подтвердить бронь?',
       onConfirm: () => confirmBooking(booking),
     })
+    return
+  }
+
+  if (action.id === 'select_seat') {
+    bedSelectionModalBooking.value = booking
     return
   }
 
@@ -570,6 +577,10 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
     <ProfilePrepaymentModal
       :booking="prepaymentModalBooking"
       @close="prepaymentModalBooking = null"
+    />
+    <ProfileBedSelectionModal
+      :booking="bedSelectionModalBooking"
+      @close="bedSelectionModalBooking = null"
     />
     <CommonConfirmModal />
     <ProfileAddServicesModal />
