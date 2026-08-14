@@ -9,6 +9,18 @@ import type {
 import { formatDisplayDate, parseBirthdayDate } from '~/utils/date'
 import { getHotelPath } from '~/utils/hotel'
 
+const READ_ONLY_COLLECTION_STATUSES = new Set([
+  'bed_collection',
+  'finish_bed_collection',
+])
+
+const FINISHED_COLLECTION_MODAL_STATUSES = new Set([
+  'prepayment_collection',
+  ...READ_ONLY_COLLECTION_STATUSES,
+])
+
+export { FINISHED_COLLECTION_MODAL_STATUSES, READ_ONLY_COLLECTION_STATUSES }
+
 const ACTION_ID_MAP: Record<string, BookingActionId> = {
   cancel: 'cancel_booking',
   confirm: 'confirm_booking',
@@ -88,8 +100,10 @@ function mapActions(
     mapped.push({
       id: ACTION_ID_MAP[action.code],
       label:
-        action.code === 'open_collection' || action.code === 'start_collection'
-          ? (isAcceptedInvitation || status === 'prepayment_collection'
+        action.code === 'select_place'
+          ? 'Выбрать койко-место'
+          : action.code === 'open_collection' || action.code === 'start_collection'
+          ? (isAcceptedInvitation || FINISHED_COLLECTION_MODAL_STATUSES.has(status)
               ? 'Сбор охотников'
               : 'Собрать охотников')
           : action.label,
@@ -139,11 +153,18 @@ function buildStatus(item: BookingHistoryItemDto, now: number) {
       result.subStatus = 'Сбор завершён'
       result.timer = '00 мин 00 сек'
     }
-    if (status === 'bed_collection') {
+    if (status === 'bed_collection' || status === 'finish_bed_collection') {
       result.subStatus = 'Предоплата собрана'
       result.collectionStatus = 'Сбор завершен'
-      result.timerHours = item.hotel?.bed_timer_hours || undefined
-      result.timer = formatRemainingTimer(collection.beds_end_at, now)
+      if (status === 'bed_collection') {
+        result.timerHours = item.hotel?.bed_timer_hours || undefined
+        result.timer = collection.beds_end_at
+          ? formatRemainingTimer(collection.beds_end_at, now) || '00 мин 00 сек'
+          : '00 мин 00 сек'
+      }
+      if (status === 'finish_bed_collection') {
+        result.timer = '00 мин 00 сек'
+      }
     }
     if (collection.total_needed > 0) {
       result.collected = `Собрано ${collection.accepted_count}/${collection.total_needed}`

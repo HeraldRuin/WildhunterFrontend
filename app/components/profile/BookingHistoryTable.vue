@@ -250,7 +250,7 @@ onBeforeUnmount(() => {
                   {{ item.status.collected }}
                 </div>
               </template>
-              <template v-else-if="item.status.code === 'bed_collection'">
+              <template v-else-if="item.status.code === 'bed_collection' || item.status.code === 'finish_bed_collection'">
                 <div
                   v-if="item.status.subStatus"
                   class="booking-table__status-meta booking-table__status-meta--substatus"
