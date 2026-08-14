@@ -343,18 +343,34 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
                       type="button"
                       class="bed-selection-modal__cancel"
                       :disabled="Boolean(selectingKey)"
+                      :aria-busy="selectingKey === place.key"
                       @click="cancelPlace(place)"
                     >
-                      {{ selectingKey === place.key ? 'Отмена…' : 'Отменить' }}
+                      <CommonSpinner
+                        v-if="selectingKey === place.key"
+                        variant="ring"
+                        :size="16"
+                        color="var(--wh-white)"
+                        label="Отмена выбора места"
+                      />
+                      <span v-else>Отменить</span>
                     </button>
                     <button
                       v-else
                       type="button"
                       class="bed-selection-modal__select"
                       :disabled="Boolean(selectingKey)"
+                      :aria-busy="selectingKey === place.key"
                       @click="selectPlace(place)"
                     >
-                      {{ selectingKey === place.key ? 'Выбор…' : 'Выбрать' }}
+                      <CommonSpinner
+                        v-if="selectingKey === place.key"
+                        variant="ring"
+                        :size="16"
+                        color="var(--wh-white)"
+                        label="Выбор места"
+                      />
+                      <span v-else>Выбрать</span>
                     </button>
                   </div>
                 </div>
@@ -396,7 +412,7 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
   width: min(100%, 800px);
   max-height: min(90vh, 760px);
   overflow: auto;
-  border-radius: 4px;
+  border-radius: var(--wh-radius);
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
 }
@@ -476,6 +492,11 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
 
 .bed-selection-modal__select,
 .bed-selection-modal__cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  min-height: 32px;
   padding: 6px 10px;
   border: none;
   border-radius: 4px;
@@ -485,11 +506,11 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
 }
 
 .bed-selection-modal__select {
-  background: #1d3557;
+  background: var(--wh-green);
 }
 
 .bed-selection-modal__cancel {
-  background: #e67e22;
+  background: #dc3545;
 }
 
 .bed-selection-modal__select:disabled,
