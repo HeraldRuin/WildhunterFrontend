@@ -370,6 +370,27 @@ async function markPaid(booking: BookingHistoryItem) {
   throw new Error('mark_paid_failed')
 }
 
+async function completeBooking(booking: BookingHistoryItem) {
+  try {
+    const response = await bookingsApi.complete(booking.code)
+
+    if ('success' in response && response.success) {
+      notifications.success(response.message || 'Бронь успешно завершена')
+      await refreshHistory()
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось завершить бронь')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось завершить бронь')
+    throw error
+  }
+
+  throw new Error('complete_failed')
+}
+
 async function startCollection(booking: BookingHistoryItem) {
   try {
     const response = await bookingsApi.startCollection(booking.code)
@@ -444,6 +465,14 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     openConfirmModal({
       title: 'Это действие переведет бронь в статус «Оплачено». Продолжить?',
       onConfirm: () => markPaid(booking),
+    })
+    return
+  }
+
+  if (action.id === 'complete') {
+    openConfirmModal({
+      title: 'Это действие переведет бронь в статус «Завершено». Продолжить?',
+      onConfirm: () => completeBooking(booking),
     })
     return
   }

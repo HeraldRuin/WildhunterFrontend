@@ -32,6 +32,7 @@ const ACTION_ID_MAP: Record<string, BookingActionId> = {
   prepayment: 'prepayment',
   calculating: 'calculating',
   mark_paid: 'mark_paid',
+  complete: 'complete',
 }
 
 const ACTION_VARIANT_MAP: Record<string, BookingActionVariant> = {
@@ -44,6 +45,7 @@ const ACTION_VARIANT_MAP: Record<string, BookingActionVariant> = {
   add_services: 'success',
   prepayment: 'primary',
   mark_paid: 'success',
+  complete: 'success',
 }
 
 const HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [

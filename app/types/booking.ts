@@ -15,6 +15,7 @@ export type BookingActionId =
   | 'prepayment'
   | 'calculating'
   | 'mark_paid'
+  | 'complete'
 
 export interface BookingAction {
   id?: BookingActionId

@@ -13,6 +13,7 @@ import type {
   BookingServiceTrophyItem,
   BookingServicesResponse,
   CancelBookingResponse,
+  CompleteBookingResponse,
   ConfirmBookingResponse,
   CreateBookingRequest,
   CreateBookingResponse,
@@ -65,6 +66,15 @@ export function useBookingsApi() {
   function markPaid(code: string) {
     return apiFetch<MarkPaidBookingResponse>(
       `/bookings/${encodeURIComponent(code)}/mark-paid`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
+  function complete(code: string) {
+    return apiFetch<CompleteBookingResponse>(
+      `/bookings/${encodeURIComponent(code)}/complete`,
       {
         method: 'POST',
       },
@@ -336,6 +346,7 @@ export function useBookingsApi() {
     confirm,
     cancel,
     markPaid,
+    complete,
     startCollection,
     extendCollection,
     cancelCollection,
