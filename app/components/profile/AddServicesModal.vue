@@ -829,6 +829,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Количество</span>
                   <span></span>
                 </div>
+                <div class="add-services-modal__block-list">
                 <div
                   v-for="item in items.trophies"
                   :key="item.id"
@@ -907,6 +908,7 @@ function handleKeydown(event: KeyboardEvent) {
                     </button>
                   </div>
                 </div>
+                </div>
               </section>
 
               <section v-if="isAllowed('penalty')" class="add-services-modal__block">
@@ -925,6 +927,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Охотник</span>
                   <span></span>
                 </div>
+                <div class="add-services-modal__block-list">
                 <div
                   v-for="item in items.penalties"
                   :key="item.id"
@@ -1003,6 +1006,7 @@ function handleKeydown(event: KeyboardEvent) {
                     </button>
                   </div>
                 </div>
+                </div>
               </section>
 
               <h3 v-if="showExtraGroup" class="add-services-modal__group-title">Доп. услуги:</h3>
@@ -1022,6 +1026,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Количество</span>
                   <span></span>
                 </div>
+                <div class="add-services-modal__block-list">
                 <div
                   v-for="item in items.preparations"
                   :key="item.id"
@@ -1086,6 +1091,7 @@ function handleKeydown(event: KeyboardEvent) {
                     </button>
                   </div>
                 </div>
+                </div>
               </section>
 
               <section v-if="isAllowed('food')" class="add-services-modal__block">
@@ -1103,6 +1109,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Количество чел</span>
                   <span></span>
                 </div>
+                <div class="add-services-modal__block-list">
                 <div
                   v-for="item in items.foods"
                   :key="item.id"
@@ -1161,6 +1168,7 @@ function handleKeydown(event: KeyboardEvent) {
                     </button>
                   </div>
                 </div>
+                </div>
               </section>
 
               <section v-if="isAllowed('addetional')" class="add-services-modal__block">
@@ -1179,6 +1187,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Охотник</span>
                   <span></span>
                 </div>
+                <div class="add-services-modal__block-list">
                 <div
                   v-for="item in items.additionals"
                   :key="item.id"
@@ -1255,6 +1264,7 @@ function handleKeydown(event: KeyboardEvent) {
                     </button>
                   </div>
                 </div>
+                </div>
               </section>
 
               <section v-if="isAllowed('spending')" class="add-services-modal__block">
@@ -1267,6 +1277,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Сумма</span>
                   <span>Комментарий</span>
                 </div>
+                <div class="add-services-modal__block-list">
                 <div
                   v-for="item in items.spendings"
                   :key="item.id"
@@ -1275,6 +1286,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>{{ item.hunter_name || '—' }}</span>
                   <span>{{ item.price }}</span>
                   <span>{{ item.comment }}</span>
+                </div>
                 </div>
               </section>
             </template>
@@ -1310,10 +1322,12 @@ function handleKeydown(event: KeyboardEvent) {
 
 .add-services-modal__card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(100%, 980px);
   max-height: min(90vh, 860px);
   padding: 28px 28px 24px;
-  overflow: visible;
+  overflow: hidden;
   border: 1px solid var(--wh-gray-200);
   border-radius: var(--wh-radius);
   background: var(--wh-white);
@@ -1332,8 +1346,13 @@ function handleKeydown(event: KeyboardEvent) {
 
 .add-services-modal__body {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 14px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .add-services-modal__loading {
@@ -1356,10 +1375,20 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .add-services-modal__block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   padding: 14px 16px 16px;
+  overflow: visible;
   border: 1px solid var(--wh-gray-200);
   border-radius: 8px;
   background: #f8f9fa;
+}
+
+.add-services-modal__block-list {
+  max-height: 260px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .add-services-modal__block-head {
