@@ -48,9 +48,14 @@ const ACTION_VARIANT_MAP: Record<string, BookingActionVariant> = {
 
 const HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
   { id: 'cancel_booking', label: 'Отменить бронь', variant: 'danger' },
-  { id: 'open_collection', label: 'Собрать охотников', variant: 'success' },
+  { id: 'open_collection', label: 'Сбор охотников', variant: 'success' },
   { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
   { id: 'add_services', label: 'Добавить услуги', variant: 'success' },
+]
+
+const INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
+  { id: 'open_collection', label: 'Сбор охотников', variant: 'success' },
+  { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
 ]
 
 function formatHistoryDate(value: string | null | undefined) {
@@ -94,6 +99,7 @@ function mapActions(
   status: string,
   isAcceptedInvitation = false,
   isHunter = false,
+  isMasterHunter = false,
 ): {
   actions: BookingAction[]
   paymentAction?: string
@@ -123,7 +129,9 @@ function mapActions(
 
   if (isHunter && status === 'finish_bed_collection') {
     return {
-      actions: [...HUNTER_FINISH_BED_COLLECTION_ACTIONS],
+      actions: isMasterHunter
+        ? [...HUNTER_FINISH_BED_COLLECTION_ACTIONS]
+        : [...INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS],
       paymentAction,
     }
   }
@@ -223,6 +231,7 @@ export function mapBookingHistoryItem(
     item.status,
     Boolean(item.is_invited && item.invitation_accepted),
     Boolean(fallback?.isHunter),
+    Boolean(item.is_master_hunter),
   )
   const details = item.details
   const rooms = details.rooms || []
