@@ -2,6 +2,7 @@
 import type {
   BookingServiceAdditionalItem,
   BookingServiceFoodItem,
+  BookingServicePenaltyItem,
   BookingServicePreparationItem,
   BookingServiceTrophyItem,
   BookingServiceType,
@@ -35,7 +36,14 @@ interface TrophyDraft {
   count: number
 }
 
-type DeletableServiceList = 'trophies' | 'preparations' | 'foods' | 'additionals'
+interface PenaltyDraft {
+  key: number
+  animalId: string
+  penaltyId: string
+  hunterId: string
+}
+
+type DeletableServiceList = 'trophies' | 'penalties' | 'preparations' | 'foods' | 'additionals'
 
 const ADD_SERVICES_NOTIFICATION_GROUP = 'add-services'
 
@@ -63,10 +71,12 @@ const preparationDrafts = ref<PreparationDraft[]>([])
 const foodDrafts = ref<FoodDraft[]>([])
 const additionalDrafts = ref<AdditionalDraft[]>([])
 const trophyDrafts = ref<TrophyDraft[]>([])
+const penaltyDrafts = ref<PenaltyDraft[]>([])
 const savingPreparationKey = ref<number | null>(null)
 const savingFoodKey = ref<number | null>(null)
 const savingAdditionalKey = ref<number | null>(null)
 const savingTrophyKey = ref<number | null>(null)
+const savingPenaltyKey = ref<number | null>(null)
 const deletingServiceId = ref<number | null>(null)
 
 let loadRequestId = 0
@@ -74,6 +84,7 @@ let preparationDraftKey = 0
 let foodDraftKey = 0
 let additionalDraftKey = 0
 let trophyDraftKey = 0
+let penaltyDraftKey = 0
 
 useBodyScrollLock(isOpen)
 
@@ -111,6 +122,13 @@ const trophyAnimalOptions = computed<SelectFieldOption[]>(() =>
     label: animal.title,
   })),
 )
+const penaltyAnimals = computed(() => services.value?.catalogs?.penalty_animals ?? [])
+const penaltyAnimalOptions = computed<SelectFieldOption[]>(() =>
+  penaltyAnimals.value.map(animal => ({
+    value: String(animal.id),
+    label: animal.title,
+  })),
+)
 
 watch(
   () => booking.value?.code,
@@ -137,10 +155,12 @@ function resetServices() {
   foodDrafts.value = []
   additionalDrafts.value = []
   trophyDrafts.value = []
+  penaltyDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
   savingAdditionalKey.value = null
   savingTrophyKey.value = null
+  savingPenaltyKey.value = null
   deletingServiceId.value = null
 }
 
@@ -250,6 +270,113 @@ async function saveTrophyDraft(row: TrophyDraft) {
   }
   finally {
     savingTrophyKey.value = null
+  }
+}
+
+function penaltyTypeOptions(animalId: string): SelectFieldOption[] {
+  const animal = penaltyAnimals.value.find(item => String(item.id) === animalId)
+  return (animal?.fines ?? []).map(fine => ({
+    value: String(fine.id),
+    label: fine.type,
+  }))
+}
+
+function penaltyTypeById(animalId: string, penaltyId: string): string {
+  return penaltyTypeOptions(animalId).find(option => option.value === penaltyId)?.label ?? ''
+}
+
+function onPenaltyAnimalChange(row: PenaltyDraft, animalId: string) {
+  row.animalId = animalId
+  row.penaltyId = ''
+}
+
+function addPenaltyDraft() {
+  penaltyDrafts.value.push({
+    key: ++penaltyDraftKey,
+    animalId: '',
+    penaltyId: '',
+    hunterId: '',
+  })
+}
+
+function removePenaltyDraft(key: number) {
+  penaltyDrafts.value = penaltyDrafts.value.filter(row => row.key !== key)
+}
+
+function cancelPenaltyDraft(key: number) {
+  if (savingPenaltyKey.value === key) {
+    return
+  }
+
+  removePenaltyDraft(key)
+}
+
+function canSavePenaltyDraft(row: PenaltyDraft): boolean {
+  return Boolean(row.animalId && row.penaltyId && row.hunterId)
+    && savingPenaltyKey.value === null
+}
+
+function upsertPenaltyItem(item: BookingServicePenaltyItem) {
+  if (!services.value) {
+    return
+  }
+
+  const current = services.value.items.penalties ?? []
+  const index = current.findIndex(existing => existing.id === item.id)
+  const next = [...current]
+
+  if (index >= 0) {
+    next[index] = item
+  }
+  else {
+    next.push(item)
+  }
+
+  services.value = {
+    ...services.value,
+    items: {
+      ...services.value.items,
+      penalties: next,
+    },
+  }
+}
+
+async function savePenaltyDraft(row: PenaltyDraft) {
+  const code = booking.value?.code
+  const animalId = Number(row.animalId)
+  const penaltyId = Number(row.penaltyId)
+  const hunterId = Number(row.hunterId)
+  const type = penaltyTypeById(row.animalId, row.penaltyId)
+
+  if (!code || !canSavePenaltyDraft(row) || !type) {
+    return
+  }
+
+  savingPenaltyKey.value = row.key
+
+  try {
+    const response = await bookings.storePenalty(code, {
+      animal_id: animalId,
+      penalty_id: penaltyId,
+      type,
+      hunter_id: hunterId,
+    })
+
+    if (!response.success || !response.data) {
+      notifications.error(response.message || 'Не удалось добавить штраф', 'Ошибка', notifyOptions)
+      return
+    }
+
+    upsertPenaltyItem(response.data)
+    removePenaltyDraft(row.key)
+    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось добавить штраф', 'Ошибка', notifyOptions)
+  }
+  finally {
+    savingPenaltyKey.value = null
   }
 }
 
@@ -604,10 +731,12 @@ async function loadServices(code: string) {
   foodDrafts.value = []
   additionalDrafts.value = []
   trophyDrafts.value = []
+  penaltyDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
   savingAdditionalKey.value = null
   savingTrophyKey.value = null
+  savingPenaltyKey.value = null
   deletingServiceId.value = null
 
   try {
@@ -783,21 +912,96 @@ function handleKeydown(event: KeyboardEvent) {
               <section v-if="isAllowed('penalty')" class="add-services-modal__block">
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Штрафы:</h3>
-                  <button type="button" class="add-services-modal__add" aria-label="Добавить штраф">+</button>
+                  <button
+                    type="button"
+                    class="add-services-modal__add"
+                    aria-label="Добавить штраф"
+                    @click="addPenaltyDraft"
+                  >+</button>
                 </div>
-                <div class="add-services-modal__columns add-services-modal__columns--3">
+                <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--penalty">
                   <span>Животное</span>
                   <span>Тип штрафа</span>
                   <span>Охотник</span>
+                  <span></span>
                 </div>
                 <div
                   v-for="item in items.penalties"
                   :key="item.id"
-                  class="add-services-modal__row add-services-modal__columns add-services-modal__columns--3"
+                  class="add-services-modal__form-row add-services-modal__form-row--penalty"
                 >
-                  <span>{{ item.animal_title }}</span>
-                  <span>{{ item.type }}</span>
-                  <span>{{ item.hunter_name }}</span>
+                  <div class="add-services-modal__field add-services-modal__field--animal">
+                    <span class="add-services-modal__value">{{ item.animal_title }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--type">
+                    <span class="add-services-modal__value">{{ item.type }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <span class="add-services-modal__value">{{ item.hunter_name }}</span>
+                  </div>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__delete"
+                      :disabled="deletingServiceId !== null"
+                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить штраф?', 'penalties')"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+                <div
+                  v-for="row in penaltyDrafts"
+                  :key="row.key"
+                  class="add-services-modal__form-row add-services-modal__form-row--penalty"
+                >
+                  <div class="add-services-modal__field add-services-modal__field--animal">
+                    <CommonSelectField
+                      :model-value="row.animalId"
+                      class="add-services-modal__select"
+                      placeholder="Выберите животное"
+                      no-margin
+                      :options="penaltyAnimalOptions"
+                      @update:model-value="onPenaltyAnimalChange(row, $event)"
+                    />
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--type">
+                    <CommonSelectField
+                      v-model="row.penaltyId"
+                      class="add-services-modal__select"
+                      placeholder="Выберите тип штрафа"
+                      no-margin
+                      :disabled="!row.animalId"
+                      :options="penaltyTypeOptions(row.animalId)"
+                    />
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <CommonSelectField
+                      v-model="row.hunterId"
+                      class="add-services-modal__select"
+                      placeholder="Выберите охотника"
+                      no-margin
+                      :options="hunterOptions"
+                    />
+                  </div>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__save"
+                      :disabled="!canSavePenaltyDraft(row)"
+                      @click="savePenaltyDraft(row)"
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__cancel"
+                      :disabled="savingPenaltyKey === row.key"
+                      @click="cancelPenaltyDraft(row.key)"
+                    >
+                      Отмена
+                    </button>
+                  </div>
                 </div>
               </section>
 
@@ -1242,9 +1446,19 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .add-services-modal__form-row--trophy .add-services-modal__form-actions,
+.add-services-modal__form-row--penalty .add-services-modal__form-actions,
 .add-services-modal__form-row--additional .add-services-modal__form-actions {
   width: 100%;
   justify-content: flex-end;
+  justify-self: stretch;
+}
+
+.add-services-modal__form-row--penalty {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 220px;
+}
+
+.add-services-modal__form-row--penalty .add-services-modal__field--animal {
+  width: 100%;
   justify-self: stretch;
 }
 

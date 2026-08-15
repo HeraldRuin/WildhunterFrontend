@@ -7,6 +7,7 @@ import type {
   BookingPlacesResponse,
   BookingServiceAdditionalItem,
   BookingServiceFoodItem,
+  BookingServicePenaltyItem,
   BookingServicePreparationItem,
   BookingServiceTrophyItem,
   BookingServicesResponse,
@@ -200,6 +201,19 @@ export function useBookingsApi() {
     )
   }
 
+  function storePenalty(
+    code: string,
+    body: { animal_id: number, penalty_id: number, type: string, hunter_id: number },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServicePenaltyItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/penalties`,
+      {
+        method: 'POST',
+        body,
+      },
+    )
+  }
+
   function storePreparation(
     code: string,
     body: { animal_id: number, preparation_id: number, count: number },
@@ -312,6 +326,7 @@ export function useBookingsApi() {
     places,
     services,
     storeTrophy,
+    storePenalty,
     storePreparation,
     storeFood,
     storeAdditional,
