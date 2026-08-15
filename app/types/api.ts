@@ -342,6 +342,117 @@ export interface BookingPlacesData {
 
 export type BookingPlacesResponse = ApiSuccessResponse<BookingPlacesData>
 
+export type BookingServiceType =
+  | 'trophy'
+  | 'penalty'
+  | 'preparation'
+  | 'food'
+  | 'addetional'
+  | 'spending'
+
+export type BookingServicesRole = 'baseadmin' | 'hunter'
+
+export interface BookingServiceOption {
+  id: number
+  type: string
+}
+
+export interface BookingServiceAnimalCatalog {
+  id: number
+  title: string
+  trophies?: BookingServiceOption[]
+  fines?: BookingServiceOption[]
+  preparations?: BookingServiceOption[]
+}
+
+export interface BookingServiceHunterCatalog {
+  id: number
+  name: string
+}
+
+export interface BookingServiceAdditionalCatalog {
+  id: number
+  name: string
+  calculation_type: 'individual' | 'per_person' | null
+  count: number | null
+  price: number
+}
+
+export interface BookingServicesCatalogs {
+  trophy_animals: BookingServiceAnimalCatalog[]
+  penalty_animals: BookingServiceAnimalCatalog[]
+  preparation_animals: BookingServiceAnimalCatalog[]
+  hunters: BookingServiceHunterCatalog[]
+  additionals: BookingServiceAdditionalCatalog[]
+}
+
+export interface BookingServiceTrophyItem {
+  id: number
+  animal_id: number | null
+  animal_title: string
+  type: string
+  count: number
+}
+
+export interface BookingServicePenaltyItem {
+  id: number
+  animal_id?: number | null
+  animal_title: string
+  type: string
+  count?: number
+  hunter_id: number | null
+  hunter_name: string
+}
+
+export interface BookingServicePreparationItem {
+  id: number
+  animal_id: number | null
+  animal_title: string
+  count: number
+}
+
+export interface BookingServiceFoodItem {
+  id: number
+  type?: string
+  count: number
+}
+
+export interface BookingServiceAdditionalItem {
+  id: number
+  type: string
+  calculation_type?: string | null
+  count: number
+  hunter_id?: number | null
+  hunter_name?: string
+}
+
+export interface BookingServiceSpendingItem {
+  id: number
+  price: number
+  comment: string
+  hunter_id?: number | null
+  hunter_name?: string
+}
+
+export interface BookingServicesItems {
+  trophies: BookingServiceTrophyItem[]
+  penalties: BookingServicePenaltyItem[]
+  preparations: BookingServicePreparationItem[]
+  foods: BookingServiceFoodItem[]
+  additionals: BookingServiceAdditionalItem[]
+  spendings: BookingServiceSpendingItem[]
+}
+
+export interface BookingServicesData {
+  role: BookingServicesRole
+  booking_type: 'hotel' | 'animal' | 'hotel_animal'
+  allowed_types: BookingServiceType[]
+  catalogs: BookingServicesCatalogs
+  items: BookingServicesItems
+}
+
+export type BookingServicesResponse = ApiSuccessResponse<BookingServicesData>
+
 export interface BookingCheckoutLocation {
   id: number
   name: string

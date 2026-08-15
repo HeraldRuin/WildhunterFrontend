@@ -5,6 +5,8 @@ import type {
   BookingHistoryQuery,
   BookingHistoryResponse,
   BookingPlacesResponse,
+  BookingServicePreparationItem,
+  BookingServicesResponse,
   CancelBookingResponse,
   ConfirmBookingResponse,
   CreateBookingRequest,
@@ -176,6 +178,25 @@ export function useBookingsApi() {
     )
   }
 
+  function services(code: string) {
+    return apiFetch<BookingServicesResponse>(
+      `/bookings/${encodeURIComponent(code)}/services`,
+    )
+  }
+
+  function storePreparation(
+    code: string,
+    body: { animal_id: number, preparation_id: number, count: number },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServicePreparationItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/preparations`,
+      {
+        method: 'POST',
+        body,
+      },
+    )
+  }
+
   function selectPlace(
     code: string,
     body: { room_id: number, place_number: number, room_index: number },
@@ -241,6 +262,8 @@ export function useBookingsApi() {
     declineInvitation,
     checkout,
     places,
+    services,
+    storePreparation,
     selectPlace,
     cancelSelectPlace,
     updateCustomerNotes,
