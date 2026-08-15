@@ -95,22 +95,6 @@ export interface BookingPaymentInfo {
   total: number
 }
 
-export interface BookingCalculationLine {
-  name: string
-  totalCost: number
-  myCost: number
-  hasTooltip?: boolean
-  tooltip?: string
-}
-
-export interface BookingCalculation {
-  items: BookingCalculationLine[]
-  trophies: BookingCalculationLine[]
-  additionalServices: BookingCalculationLine[]
-  prepaid: BookingCalculationLine
-  remainder: BookingCalculationLine
-}
-
 export interface BookingHistoryItem {
   id: number
   code: string

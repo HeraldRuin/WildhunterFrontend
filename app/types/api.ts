@@ -297,6 +297,35 @@ export type CompleteBookingResponse = ApiSuccessResponse<{
   status: string
 }>
 
+export interface BookingCalculationLine {
+  name: string
+  total_cost: number
+  my_cost: number
+  has_tooltip?: boolean
+}
+
+export interface BookingCalculatingData {
+  success?: boolean
+  is_baseAdmin: boolean
+  items: BookingCalculationLine[]
+  trophy_show?: boolean
+  trophies?: BookingCalculationLine[]
+  penalties_show?: boolean
+  penalties?: BookingCalculationLine[]
+  additional_services_show?: boolean
+  meals?: BookingCalculationLine[]
+  preparation?: BookingCalculationLine[]
+  addetionals?: BookingCalculationLine[]
+  spendings_show?: boolean
+  spendings?: BookingCalculationLine[]
+  all_items: BookingCalculationLine[]
+  prepaid_total?: number
+  base_total?: number
+  total?: number
+}
+
+export type BookingCalculatingResponse = ApiSuccessResponse<BookingCalculatingData>
+
 export type CancelBookingResponse = ApiSuccessResponse<{
   id: number
   code: string

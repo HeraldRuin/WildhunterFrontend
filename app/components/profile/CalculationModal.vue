@@ -1,38 +1,83 @@
 <script setup lang="ts">
-import type { BookingCalculation, BookingCalculationLine } from '~/types/booking'
+import type { BookingCalculatingData, BookingCalculationLine } from '~/types/api'
 
-const MOCK_CALCULATION: BookingCalculation = {
-  items: [
-    { name: 'Проживание, 1 сутки', totalCost: 4000, myCost: 0 },
-    {
-      name: 'Организация охоты',
-      totalCost: 60000,
-      myCost: 30000,
-      hasTooltip: true,
-      tooltip: 'За человека в сутки',
-    },
-  ],
-  trophies: [
-    { name: 'Косуля европейская (1 рог х 1шт)', totalCost: 123, myCost: 62 },
-    { name: 'Кабан (мелкий пятак х 1шт)', totalCost: 555, myCost: 278 },
-    { name: 'Кабан (мелкий пятак х 1шт)', totalCost: 555, myCost: 278 },
-  ],
-  additionalServices: [
-    { name: 'Питание', totalCost: 500, myCost: 250 },
-    { name: 'Питание', totalCost: 500, myCost: 250 },
-    { name: 'Питание', totalCost: 500, myCost: 250 },
-    { name: 'Разделка (Кабан х 3шт)', totalCost: 3000, myCost: 1500 },
-    { name: 'Снегоход', totalCost: 3333, myCost: 0 },
-  ],
-  prepaid: { name: 'Внесена предоплата', totalCost: 4000, myCost: 2000 },
-  remainder: { name: 'Остаток базе', totalCost: 69066, myCost: 30867 },
-}
+const TOOLTIP_TEXT = 'За человека в сутки'
+const CALCULATION_NOTIFICATION_GROUP = 'calculation'
 
 const { isOpen, booking, close } = useCalculationModal()
+const { bookings } = useApi()
+const notifications = useNotifications()
+const notifyOptions = { group: CALCULATION_NOTIFICATION_GROUP }
+
+const isLoading = ref(false)
+const loadError = ref('')
+const calculation = ref<BookingCalculatingData | null>(null)
+let loadRequestId = 0
 
 useBodyScrollLock(isOpen)
 
-const calculation = computed(() => MOCK_CALCULATION)
+const additionalServices = computed(() => [
+  ...(calculation.value?.meals ?? []),
+  ...(calculation.value?.preparation ?? []),
+  ...(calculation.value?.addetionals ?? []),
+])
+
+watch(
+  () => booking.value?.code,
+  (code) => {
+    if (!code) {
+      resetCalculation()
+      return
+    }
+
+    void loadCalculation(code)
+  },
+)
+
+function resetCalculation() {
+  loadRequestId += 1
+  isLoading.value = false
+  loadError.value = ''
+  calculation.value = null
+}
+
+async function loadCalculation(code: string) {
+  const requestId = ++loadRequestId
+  isLoading.value = true
+  loadError.value = ''
+  calculation.value = null
+
+  try {
+    const response = await bookings.calculating(code)
+
+    if (requestId !== loadRequestId) {
+      return
+    }
+
+    if (!response.success || !response.data) {
+      loadError.value = response.message || 'Не удалось загрузить калькуляцию'
+      notifications.error(loadError.value, 'Ошибка', notifyOptions)
+      return
+    }
+
+    calculation.value = response.data
+    loadError.value = ''
+  }
+  catch (error) {
+    if (requestId !== loadRequestId) {
+      return
+    }
+
+    const data = (error as { data?: { message?: string } }).data
+    loadError.value = data?.message || 'Не удалось загрузить калькуляцию'
+    notifications.error(loadError.value, 'Ошибка', notifyOptions)
+  }
+  finally {
+    if (requestId === loadRequestId) {
+      isLoading.value = false
+    }
+  }
+}
 
 function handleBackdropClick(event: MouseEvent) {
   if (event.target === event.currentTarget) {
@@ -71,7 +116,15 @@ function lineKey(line: BookingCalculationLine, index: number) {
           </h2>
 
           <div class="calculation-modal__body">
-            <table class="calculation-modal__table">
+            <div v-if="isLoading" class="calculation-modal__loading">
+              <CommonSpinner size="md" label="Загрузка калькуляции" />
+            </div>
+
+            <div v-else-if="loadError" class="calculation-modal__empty">
+              {{ loadError }}
+            </div>
+
+            <table v-else-if="calculation" class="calculation-modal__table">
               <thead>
                 <tr class="calculation-modal__section">
                   <th>Услуги</th>
@@ -85,69 +138,105 @@ function lineKey(line: BookingCalculationLine, index: number) {
                   :key="lineKey(item, index)"
                 >
                   <td>{{ item.name }}</td>
-                  <td>{{ item.totalCost }}</td>
+                  <td>{{ item.total_cost }}</td>
                   <td>
-                    <span>{{ item.myCost }}</span>
+                    <span>{{ item.my_cost }}</span>
                     <button
-                      v-if="item.hasTooltip"
+                      v-if="item.has_tooltip"
                       type="button"
                       class="calculation-modal__alert"
-                      :title="item.tooltip"
-                      :aria-label="item.tooltip"
+                      :title="TOOLTIP_TEXT"
+                      :aria-label="TOOLTIP_TEXT"
                     >
                       !
                     </button>
                   </td>
                 </tr>
 
-                <tr class="calculation-modal__section">
-                  <td>Трофеи</td>
-                  <td></td>
-                  <td></td>
-                </tr>
-                <tr
-                  v-for="(item, index) in calculation.trophies"
-                  :key="lineKey(item, index)"
-                >
-                  <td>{{ item.name }}</td>
-                  <td>{{ item.totalCost }}</td>
-                  <td>{{ item.myCost }}</td>
-                </tr>
+                <template v-if="calculation.trophy_show">
+                  <tr class="calculation-modal__section">
+                    <td>Трофеи</td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                  <tr
+                    v-for="(item, index) in calculation.trophies"
+                    :key="`trophy-${lineKey(item, index)}`"
+                  >
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.total_cost }}</td>
+                    <td>{{ item.my_cost }}</td>
+                  </tr>
+                </template>
 
-                <tr class="calculation-modal__section">
-                  <td>Доп. услуги</td>
-                  <td></td>
-                  <td></td>
-                </tr>
-                <tr
-                  v-for="(item, index) in calculation.additionalServices"
-                  :key="lineKey(item, index)"
-                >
-                  <td>{{ item.name }}</td>
-                  <td>{{ item.totalCost }}</td>
-                  <td>{{ item.myCost }}</td>
-                </tr>
+                <template v-if="calculation.penalties_show">
+                  <tr class="calculation-modal__section">
+                    <td>Штрафы</td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                  <tr
+                    v-for="(item, index) in calculation.penalties"
+                    :key="`penalty-${lineKey(item, index)}`"
+                  >
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.total_cost }}</td>
+                    <td>{{ item.my_cost }}</td>
+                  </tr>
+                </template>
+
+                <template v-if="calculation.additional_services_show">
+                  <tr class="calculation-modal__section">
+                    <td>Доп. услуги</td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                  <tr
+                    v-for="(item, index) in additionalServices"
+                    :key="`extra-${lineKey(item, index)}`"
+                  >
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.total_cost }}</td>
+                    <td>{{ item.my_cost }}</td>
+                  </tr>
+                </template>
+
+                <template v-if="!calculation.is_baseAdmin && calculation.spendings_show">
+                  <tr class="calculation-modal__section">
+                    <td>Расходы охотников</td>
+                    <td></td>
+                    <td class="calculation-modal__owe">Я должен</td>
+                  </tr>
+                  <tr
+                    v-for="(item, index) in calculation.spendings"
+                    :key="`spending-${lineKey(item, index)}`"
+                  >
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.total_cost }}</td>
+                    <td>{{ item.my_cost }}</td>
+                  </tr>
+                </template>
 
                 <tr class="calculation-modal__section">
                   <td>Подытог</td>
                   <td></td>
                   <td></td>
                 </tr>
-                <tr>
-                  <td>{{ calculation.prepaid.name }}</td>
-                  <td>{{ calculation.prepaid.totalCost }}</td>
-                  <td>{{ calculation.prepaid.myCost }}</td>
-                </tr>
-                <tr class="calculation-modal__owe-row">
-                  <td></td>
-                  <td></td>
-                  <td class="calculation-modal__owe">Я должен</td>
-                </tr>
-                <tr>
-                  <td>{{ calculation.remainder.name }}</td>
-                  <td>{{ calculation.remainder.totalCost }}</td>
-                  <td>{{ calculation.remainder.myCost }}</td>
-                </tr>
+                <template
+                  v-for="(item, index) in calculation.all_items"
+                  :key="`total-${lineKey(item, index)}`"
+                >
+                  <tr v-if="index === 1" class="calculation-modal__owe-row">
+                    <td></td>
+                    <td></td>
+                    <td class="calculation-modal__owe">Я должен</td>
+                  </tr>
+                  <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.total_cost }}</td>
+                    <td>{{ item.my_cost }}</td>
+                  </tr>
+                </template>
               </tbody>
             </table>
           </div>
@@ -207,6 +296,18 @@ function lineKey(line: BookingCalculationLine, index: number) {
 .calculation-modal__body {
   min-height: 0;
   overflow: auto;
+}
+
+.calculation-modal__loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+.calculation-modal__empty {
+  padding: 32px 16px;
+  color: var(--wh-gray-600);
+  text-align: center;
 }
 
 .calculation-modal__table {

@@ -1,6 +1,7 @@
 import type {
   ApiErrorResponse,
   ApiSuccessResponse,
+  BookingCalculatingResponse,
   BookingCheckoutResponse,
   BookingHistoryQuery,
   BookingHistoryResponse,
@@ -209,6 +210,12 @@ export function useBookingsApi() {
     )
   }
 
+  function calculating(code: string) {
+    return apiFetch<BookingCalculatingResponse>(
+      `/bookings/${encodeURIComponent(code)}/calculating`,
+    )
+  }
+
   function storeTrophy(
     code: string,
     body: { animal_id: number, trophy_id: number, type: string, count: number },
@@ -361,6 +368,7 @@ export function useBookingsApi() {
     checkout,
     places,
     services,
+    calculating,
     storeTrophy,
     storePenalty,
     storePreparation,
