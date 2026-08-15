@@ -27,6 +27,7 @@ const EMPTY_ITEMS: BookingServicesItems = {
 const EXTRA_SERVICE_TYPES: BookingServiceType[] = ['preparation', 'food', 'addetional']
 
 const { isOpen, booking, close } = useAddServicesModal()
+const { open: openConfirmModal } = useConfirmModal()
 const { bookings } = useApi()
 const notifications = useNotifications()
 const notifyOptions = { group: ADD_SERVICES_NOTIFICATION_GROUP }
@@ -36,6 +37,7 @@ const loadError = ref('')
 const services = ref<BookingServicesData | null>(null)
 const preparationDrafts = ref<PreparationDraft[]>([])
 const savingPreparationKey = ref<number | null>(null)
+const deletingPreparationId = ref<number | null>(null)
 
 let loadRequestId = 0
 let preparationDraftKey = 0
@@ -81,6 +83,7 @@ function resetServices() {
   services.value = null
   preparationDrafts.value = []
   savingPreparationKey.value = null
+  deletingPreparationId.value = null
 }
 
 function addPreparationDraft() {
@@ -130,6 +133,65 @@ function upsertPreparationItem(item: BookingServicePreparationItem) {
       ...services.value.items,
       preparations: next,
     },
+  }
+}
+
+function removePreparationItem(serviceId: number) {
+  if (!services.value) {
+    return
+  }
+
+  services.value = {
+    ...services.value,
+    items: {
+      ...services.value.items,
+      preparations: (services.value.items.preparations ?? []).filter(item => item.id !== serviceId),
+    },
+  }
+}
+
+function requestPreparationDeletion(item: BookingServicePreparationItem) {
+  if (deletingPreparationId.value !== null) {
+    return
+  }
+
+  openConfirmModal({
+    title: 'Вы уверены, что хотите удалить разделку?',
+    confirmLabel: 'Удалить',
+    onConfirm: () => deletePreparation(item.id),
+  })
+}
+
+async function deletePreparation(serviceId: number) {
+  const code = booking.value?.code
+
+  if (!code || deletingPreparationId.value !== null) {
+    return
+  }
+
+  deletingPreparationId.value = serviceId
+
+  try {
+    const response = await bookings.deleteService(code, serviceId)
+
+    if (!response.success) {
+      notifications.error(response.message || 'Не удалось удалить разделку', 'Ошибка', notifyOptions)
+      throw new Error('delete_preparation_failed')
+    }
+
+    removePreparationItem(serviceId)
+    notifications.success(response.message || 'Услуга удалена', 'Успех', notifyOptions)
+  }
+  catch (error) {
+    if ((error as Error).message !== 'delete_preparation_failed') {
+      const data = (error as { data?: { message?: string } }).data
+      notifications.error(data?.message || 'Не удалось удалить разделку', 'Ошибка', notifyOptions)
+    }
+
+    throw error
+  }
+  finally {
+    deletingPreparationId.value = null
   }
 }
 
@@ -192,6 +254,7 @@ async function loadServices(code: string) {
   services.value = null
   preparationDrafts.value = []
   savingPreparationKey.value = null
+  deletingPreparationId.value = null
 
   try {
     const response = await bookings.services(code)
@@ -321,20 +384,30 @@ function handleKeydown(event: KeyboardEvent) {
                     @click="addPreparationDraft"
                   >+</button>
                 </div>
-                <template v-if="items.preparations.length">
-                  <div class="add-services-modal__columns add-services-modal__columns--2">
-                    <span>Животное</span>
-                    <span>Количество</span>
+                <div
+                  v-for="item in items.preparations"
+                  :key="item.id"
+                  class="add-services-modal__form-row"
+                >
+                  <div class="add-services-modal__field add-services-modal__field--animal">
+                    <span class="add-services-modal__field-label">Животное</span>
+                    <span class="add-services-modal__value">{{ item.animal_title }}</span>
                   </div>
-                  <div
-                    v-for="item in items.preparations"
-                    :key="item.id"
-                    class="add-services-modal__row add-services-modal__columns add-services-modal__columns--2"
-                  >
-                    <span>{{ item.animal_title }}</span>
-                    <span>{{ item.count }}</span>
+                  <div class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__field-label">Количество</span>
+                    <span class="add-services-modal__value">{{ item.count }}</span>
                   </div>
-                </template>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__delete"
+                      :disabled="deletingPreparationId !== null"
+                      @click="requestPreparationDeletion(item)"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
                 <div
                   v-for="row in preparationDrafts"
                   :key="row.key"
@@ -364,7 +437,7 @@ function handleKeydown(event: KeyboardEvent) {
                     <button
                       type="button"
                       class="add-services-modal__save"
-                      :disabled="savingPreparationKey !== null"
+                      :disabled="!row.animalId || savingPreparationKey !== null"
                       @click="savePreparationDraft(row)"
                     >
                       Сохранить
@@ -632,6 +705,15 @@ function handleKeydown(event: KeyboardEvent) {
   font-weight: 500;
 }
 
+.add-services-modal__value {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  color: var(--wh-gray-900);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
 .add-services-modal__control {
   width: 100%;
   height: 38px;
@@ -693,6 +775,28 @@ function handleKeydown(event: KeyboardEvent) {
 
 .add-services-modal__cancel:hover:not(:disabled) {
   color: var(--wh-gray-900);
+}
+
+.add-services-modal__delete {
+  height: 38px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: #dc3545;
+  color: var(--wh-white);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.add-services-modal__delete:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.add-services-modal__delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .add-services-modal-enter-active,

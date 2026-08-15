@@ -197,6 +197,15 @@ export function useBookingsApi() {
     )
   }
 
+  function deleteService(code: string, serviceId: number) {
+    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/${serviceId}`,
+      {
+        method: 'DELETE',
+      },
+    )
+  }
+
   function selectPlace(
     code: string,
     body: { room_id: number, place_number: number, room_index: number },
@@ -264,6 +273,7 @@ export function useBookingsApi() {
     places,
     services,
     storePreparation,
+    deleteService,
     selectPlace,
     cancelSelectPlace,
     updateCustomerNotes,
