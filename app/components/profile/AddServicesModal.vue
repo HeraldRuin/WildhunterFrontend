@@ -4,6 +4,7 @@ import type {
   BookingServiceFoodItem,
   BookingServicePenaltyItem,
   BookingServicePreparationItem,
+  BookingServiceSpendingItem,
   BookingServiceTrophyItem,
   BookingServiceType,
   BookingServicesData,
@@ -29,6 +30,13 @@ interface AdditionalDraft {
   count: number
 }
 
+interface SpendingDraft {
+  key: number
+  hunterId: string
+  price: number
+  comment: string
+}
+
 interface TrophyDraft {
   key: number
   animalId: string
@@ -43,7 +51,8 @@ interface PenaltyDraft {
   hunterId: string
 }
 
-type DeletableServiceList = 'trophies' | 'penalties' | 'preparations' | 'foods' | 'additionals'
+type DeletableServiceList = 'trophies' | 'penalties' | 'preparations' | 'foods' | 'additionals' | 'spendings'
+type ServiceBlockId = 'trophy' | 'penalty' | 'preparation' | 'food' | 'addetional' | 'spending'
 
 const ADD_SERVICES_NOTIFICATION_GROUP = 'add-services'
 
@@ -70,19 +79,23 @@ const services = ref<BookingServicesData | null>(null)
 const preparationDrafts = ref<PreparationDraft[]>([])
 const foodDrafts = ref<FoodDraft[]>([])
 const additionalDrafts = ref<AdditionalDraft[]>([])
+const spendingDrafts = ref<SpendingDraft[]>([])
 const trophyDrafts = ref<TrophyDraft[]>([])
 const penaltyDrafts = ref<PenaltyDraft[]>([])
 const savingPreparationKey = ref<number | null>(null)
 const savingFoodKey = ref<number | null>(null)
 const savingAdditionalKey = ref<number | null>(null)
+const savingSpendingKey = ref<number | null>(null)
 const savingTrophyKey = ref<number | null>(null)
 const savingPenaltyKey = ref<number | null>(null)
 const deletingServiceId = ref<number | null>(null)
+const collapsedBlocks = ref(new Set<ServiceBlockId>())
 
 let loadRequestId = 0
 let preparationDraftKey = 0
 let foodDraftKey = 0
 let additionalDraftKey = 0
+let spendingDraftKey = 0
 let trophyDraftKey = 0
 let penaltyDraftKey = 0
 
@@ -146,6 +159,33 @@ function isAllowed(type: BookingServiceType): boolean {
   return allowedTypeSet.value.has(type)
 }
 
+function isBlockCollapsed(id: ServiceBlockId): boolean {
+  return collapsedBlocks.value.has(id)
+}
+
+function toggleBlock(id: ServiceBlockId) {
+  const next = new Set(collapsedBlocks.value)
+
+  if (next.has(id)) {
+    next.delete(id)
+  }
+  else {
+    next.add(id)
+  }
+
+  collapsedBlocks.value = next
+}
+
+function expandBlock(id: ServiceBlockId) {
+  if (!collapsedBlocks.value.has(id)) {
+    return
+  }
+
+  const next = new Set(collapsedBlocks.value)
+  next.delete(id)
+  collapsedBlocks.value = next
+}
+
 function resetServices() {
   loadRequestId += 1
   isLoading.value = false
@@ -154,14 +194,17 @@ function resetServices() {
   preparationDrafts.value = []
   foodDrafts.value = []
   additionalDrafts.value = []
+  spendingDrafts.value = []
   trophyDrafts.value = []
   penaltyDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
   savingAdditionalKey.value = null
+  savingSpendingKey.value = null
   savingTrophyKey.value = null
   savingPenaltyKey.value = null
   deletingServiceId.value = null
+  collapsedBlocks.value = new Set()
 }
 
 function trophyTypeOptions(animalId: string): SelectFieldOption[] {
@@ -182,6 +225,7 @@ function onTrophyAnimalChange(row: TrophyDraft, animalId: string) {
 }
 
 function addTrophyDraft() {
+  expandBlock('trophy')
   trophyDrafts.value.push({
     key: ++trophyDraftKey,
     animalId: '',
@@ -291,6 +335,7 @@ function onPenaltyAnimalChange(row: PenaltyDraft, animalId: string) {
 }
 
 function addPenaltyDraft() {
+  expandBlock('penalty')
   penaltyDrafts.value.push({
     key: ++penaltyDraftKey,
     animalId: '',
@@ -380,7 +425,98 @@ async function savePenaltyDraft(row: PenaltyDraft) {
   }
 }
 
+function addSpendingDraft() {
+  expandBlock('spending')
+  spendingDrafts.value.push({
+    key: ++spendingDraftKey,
+    hunterId: '',
+    price: 1,
+    comment: '',
+  })
+}
+
+function removeSpendingDraft(key: number) {
+  spendingDrafts.value = spendingDrafts.value.filter(row => row.key !== key)
+}
+
+function cancelSpendingDraft(key: number) {
+  if (savingSpendingKey.value === key) {
+    return
+  }
+
+  removeSpendingDraft(key)
+}
+
+function canSaveSpendingDraft(row: SpendingDraft): boolean {
+  return Boolean(row.hunterId && row.comment.trim())
+    && Number(row.price) >= 0
+    && savingSpendingKey.value === null
+}
+
+function upsertSpendingItem(item: BookingServiceSpendingItem) {
+  if (!services.value) {
+    return
+  }
+
+  const current = services.value.items.spendings ?? []
+  const index = current.findIndex(existing => existing.id === item.id)
+  const next = [...current]
+
+  if (index >= 0) {
+    next[index] = item
+  }
+  else {
+    next.push(item)
+  }
+
+  services.value = {
+    ...services.value,
+    items: {
+      ...services.value.items,
+      spendings: next,
+    },
+  }
+}
+
+async function saveSpendingDraft(row: SpendingDraft) {
+  const code = booking.value?.code
+  const hunterId = Number(row.hunterId)
+  const price = Number(row.price)
+  const comment = row.comment.trim()
+
+  if (!code || !canSaveSpendingDraft(row)) {
+    return
+  }
+
+  savingSpendingKey.value = row.key
+
+  try {
+    const response = await bookings.storeSpending(code, {
+      hunter_id: hunterId,
+      price,
+      comment,
+    })
+
+    if (!response.success || !response.data) {
+      notifications.error(response.message || 'Не удалось добавить трату', 'Ошибка', notifyOptions)
+      return
+    }
+
+    upsertSpendingItem(response.data)
+    removeSpendingDraft(row.key)
+    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось добавить трату', 'Ошибка', notifyOptions)
+  }
+  finally {
+    savingSpendingKey.value = null
+  }
+}
+
 function addAdditionalDraft() {
+  expandBlock('addetional')
   additionalDrafts.value.push({
     key: ++additionalDraftKey,
     additionalId: '',
@@ -482,6 +618,7 @@ async function saveAdditionalDraft(row: AdditionalDraft) {
 }
 
 function addFoodDraft() {
+  expandBlock('food')
   foodDrafts.value.push({
     key: ++foodDraftKey,
     count: 1,
@@ -562,6 +699,7 @@ async function saveFoodDraft(row: FoodDraft) {
 }
 
 function addPreparationDraft() {
+  expandBlock('preparation')
   preparationDrafts.value.push({
     key: ++preparationDraftKey,
     animalId: '',
@@ -730,14 +868,17 @@ async function loadServices(code: string) {
   preparationDrafts.value = []
   foodDrafts.value = []
   additionalDrafts.value = []
+  spendingDrafts.value = []
   trophyDrafts.value = []
   penaltyDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
   savingAdditionalKey.value = null
+  savingSpendingKey.value = null
   savingTrophyKey.value = null
   savingPenaltyKey.value = null
   deletingServiceId.value = null
+  collapsedBlocks.value = new Set()
 
   try {
     const response = await bookings.services(code)
@@ -813,16 +954,35 @@ function handleKeydown(event: KeyboardEvent) {
             </div>
 
             <template v-else>
-              <section v-if="isAllowed('trophy')" class="add-services-modal__block">
+              <section
+                v-if="isAllowed('trophy')"
+                class="add-services-modal__block"
+                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('trophy') }"
+              >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Трофеи:</h3>
-                  <button
-                    type="button"
-                    class="add-services-modal__add"
-                    aria-label="Добавить трофей"
-                    @click="addTrophyDraft"
-                  >+</button>
+                  <div class="add-services-modal__block-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__toggle"
+                      :class="{ 'add-services-modal__toggle--open': !isBlockCollapsed('trophy') }"
+                      :aria-expanded="!isBlockCollapsed('trophy')"
+                      aria-label="Свернуть трофеи"
+                      @click="toggleBlock('trophy')"
+                    >
+                      <svg class="add-services-modal__toggle-icon" viewBox="0 0 12 8" aria-hidden="true">
+                        <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__add"
+                      aria-label="Добавить трофей"
+                      @click="addTrophyDraft"
+                    >+</button>
+                  </div>
                 </div>
+                <div v-show="!isBlockCollapsed('trophy')">
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--trophy">
                   <span>Животное</span>
                   <span>Тип</span>
@@ -909,18 +1069,38 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                 </div>
                 </div>
+                </div>
               </section>
 
-              <section v-if="isAllowed('penalty')" class="add-services-modal__block">
+              <section
+                v-if="isAllowed('penalty')"
+                class="add-services-modal__block"
+                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('penalty') }"
+              >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Штрафы:</h3>
-                  <button
-                    type="button"
-                    class="add-services-modal__add"
-                    aria-label="Добавить штраф"
-                    @click="addPenaltyDraft"
-                  >+</button>
+                  <div class="add-services-modal__block-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__toggle"
+                      :class="{ 'add-services-modal__toggle--open': !isBlockCollapsed('penalty') }"
+                      :aria-expanded="!isBlockCollapsed('penalty')"
+                      aria-label="Свернуть штрафы"
+                      @click="toggleBlock('penalty')"
+                    >
+                      <svg class="add-services-modal__toggle-icon" viewBox="0 0 12 8" aria-hidden="true">
+                        <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__add"
+                      aria-label="Добавить штраф"
+                      @click="addPenaltyDraft"
+                    >+</button>
+                  </div>
                 </div>
+                <div v-show="!isBlockCollapsed('penalty')">
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--penalty">
                   <span>Животное</span>
                   <span>Тип штрафа</span>
@@ -1007,20 +1187,40 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                 </div>
                 </div>
+                </div>
               </section>
 
               <h3 v-if="showExtraGroup" class="add-services-modal__group-title">Доп. услуги:</h3>
 
-              <section v-if="isAllowed('preparation')" class="add-services-modal__block">
+              <section
+                v-if="isAllowed('preparation')"
+                class="add-services-modal__block"
+                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('preparation') }"
+              >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Разделка:</h3>
-                  <button
-                    type="button"
-                    class="add-services-modal__add"
-                    aria-label="Добавить разделку"
-                    @click="addPreparationDraft"
-                  >+</button>
+                  <div class="add-services-modal__block-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__toggle"
+                      :class="{ 'add-services-modal__toggle--open': !isBlockCollapsed('preparation') }"
+                      :aria-expanded="!isBlockCollapsed('preparation')"
+                      aria-label="Свернуть разделку"
+                      @click="toggleBlock('preparation')"
+                    >
+                      <svg class="add-services-modal__toggle-icon" viewBox="0 0 12 8" aria-hidden="true">
+                        <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__add"
+                      aria-label="Добавить разделку"
+                      @click="addPreparationDraft"
+                    >+</button>
+                  </div>
                 </div>
+                <div v-show="!isBlockCollapsed('preparation')">
                 <div class="add-services-modal__columns add-services-modal__form-row">
                   <span>Животное</span>
                   <span>Количество</span>
@@ -1092,18 +1292,38 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                 </div>
                 </div>
+                </div>
               </section>
 
-              <section v-if="isAllowed('food')" class="add-services-modal__block">
+              <section
+                v-if="isAllowed('food')"
+                class="add-services-modal__block"
+                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('food') }"
+              >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Питание:</h3>
-                  <button
-                    type="button"
-                    class="add-services-modal__add"
-                    aria-label="Добавить питание"
-                    @click="addFoodDraft"
-                  >+</button>
+                  <div class="add-services-modal__block-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__toggle"
+                      :class="{ 'add-services-modal__toggle--open': !isBlockCollapsed('food') }"
+                      :aria-expanded="!isBlockCollapsed('food')"
+                      aria-label="Свернуть питание"
+                      @click="toggleBlock('food')"
+                    >
+                      <svg class="add-services-modal__toggle-icon" viewBox="0 0 12 8" aria-hidden="true">
+                        <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__add"
+                      aria-label="Добавить питание"
+                      @click="addFoodDraft"
+                    >+</button>
+                  </div>
                 </div>
+                <div v-show="!isBlockCollapsed('food')">
                 <div class="add-services-modal__columns add-services-modal__form-row">
                   <span>Питание</span>
                   <span>Количество чел</span>
@@ -1169,18 +1389,38 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                 </div>
                 </div>
+                </div>
               </section>
 
-              <section v-if="isAllowed('addetional')" class="add-services-modal__block">
+              <section
+                v-if="isAllowed('addetional')"
+                class="add-services-modal__block"
+                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('addetional') }"
+              >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Другое:</h3>
-                  <button
-                    type="button"
-                    class="add-services-modal__add"
-                    aria-label="Добавить другое"
-                    @click="addAdditionalDraft"
-                  >+</button>
+                  <div class="add-services-modal__block-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__toggle"
+                      :class="{ 'add-services-modal__toggle--open': !isBlockCollapsed('addetional') }"
+                      :aria-expanded="!isBlockCollapsed('addetional')"
+                      aria-label="Свернуть другое"
+                      @click="toggleBlock('addetional')"
+                    >
+                      <svg class="add-services-modal__toggle-icon" viewBox="0 0 12 8" aria-hidden="true">
+                        <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__add"
+                      aria-label="Добавить другое"
+                      @click="addAdditionalDraft"
+                    >+</button>
+                  </div>
                 </div>
+                <div v-show="!isBlockCollapsed('addetional')">
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--additional">
                   <span>Название</span>
                   <span>Количество</span>
@@ -1265,27 +1505,120 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                 </div>
                 </div>
+                </div>
               </section>
 
-              <section v-if="isAllowed('spending')" class="add-services-modal__block">
+              <section
+                v-if="isAllowed('spending')"
+                class="add-services-modal__block"
+                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('spending') }"
+              >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Траты охотников:</h3>
-                  <button type="button" class="add-services-modal__add" aria-label="Добавить трату">+</button>
+                  <div class="add-services-modal__block-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__toggle"
+                      :class="{ 'add-services-modal__toggle--open': !isBlockCollapsed('spending') }"
+                      :aria-expanded="!isBlockCollapsed('spending')"
+                      aria-label="Свернуть траты охотников"
+                      @click="toggleBlock('spending')"
+                    >
+                      <svg class="add-services-modal__toggle-icon" viewBox="0 0 12 8" aria-hidden="true">
+                        <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__add"
+                      aria-label="Добавить трату"
+                      @click="addSpendingDraft"
+                    >+</button>
+                  </div>
                 </div>
-                <div class="add-services-modal__columns add-services-modal__columns--3">
-                  <span>Охотник</span>
+                <div v-show="!isBlockCollapsed('spending')">
+                <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--spending">
+                  <span>Кто платил</span>
                   <span>Сумма</span>
-                  <span>Комментарий</span>
+                  <span>Коммент</span>
+                  <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
                 <div
                   v-for="item in items.spendings"
                   :key="item.id"
-                  class="add-services-modal__row add-services-modal__columns add-services-modal__columns--3"
+                  class="add-services-modal__form-row add-services-modal__form-row--spending"
                 >
-                  <span>{{ item.hunter_name || '—' }}</span>
-                  <span>{{ item.price }}</span>
-                  <span>{{ item.comment }}</span>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <span class="add-services-modal__value">{{ item.hunter_name || '—' }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__value">{{ item.price }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--comment">
+                    <span class="add-services-modal__value">{{ item.comment }}</span>
+                  </div>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__delete"
+                      :disabled="deletingServiceId !== null"
+                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить трату?', 'spendings')"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+                <div
+                  v-for="row in spendingDrafts"
+                  :key="row.key"
+                  class="add-services-modal__form-row add-services-modal__form-row--spending"
+                >
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <CommonSelectField
+                      v-model="row.hunterId"
+                      class="add-services-modal__select"
+                      placeholder="Выберите охотника"
+                      no-margin
+                      :options="hunterOptions"
+                    />
+                  </div>
+                  <label class="add-services-modal__field add-services-modal__field--count">
+                    <input
+                      v-model.number="row.price"
+                      class="add-services-modal__control"
+                      type="number"
+                      min="0"
+                      step="1"
+                    >
+                  </label>
+                  <label class="add-services-modal__field add-services-modal__field--comment">
+                    <input
+                      v-model="row.comment"
+                      class="add-services-modal__control"
+                      type="text"
+                      placeholder="Коммент"
+                    >
+                  </label>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__save"
+                      :disabled="!canSaveSpendingDraft(row)"
+                      @click="saveSpendingDraft(row)"
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__cancel"
+                      :disabled="savingSpendingKey === row.key"
+                      @click="cancelSpendingDraft(row.key)"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
                 </div>
                 </div>
               </section>
@@ -1324,7 +1657,7 @@ function handleKeydown(event: KeyboardEvent) {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(100%, 980px);
+  width: min(100%, 1200px);
   max-height: min(90vh, 860px);
   padding: 28px 28px 24px;
   overflow: hidden;
@@ -1399,11 +1732,52 @@ function handleKeydown(event: KeyboardEvent) {
   margin-bottom: 10px;
 }
 
+.add-services-modal__block--collapsed .add-services-modal__block-head {
+  margin-bottom: 0;
+}
+
+.add-services-modal__block-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .add-services-modal__block-title {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--wh-gray-900);
+}
+
+.add-services-modal__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 6px;
+  background: var(--wh-white);
+  color: var(--wh-gray-700);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.add-services-modal__toggle:hover {
+  border-color: #4aa3d9;
+  background: var(--wh-white);
+  color: #4aa3d9;
+}
+
+.add-services-modal__toggle-icon {
+  width: 12px;
+  height: 8px;
+  transition: transform 0.2s ease;
+}
+
+.add-services-modal__toggle--open .add-services-modal__toggle-icon {
+  transform: rotate(180deg);
 }
 
 .add-services-modal__add {
@@ -1476,7 +1850,8 @@ function handleKeydown(event: KeyboardEvent) {
 
 .add-services-modal__form-row--trophy .add-services-modal__form-actions,
 .add-services-modal__form-row--penalty .add-services-modal__form-actions,
-.add-services-modal__form-row--additional .add-services-modal__form-actions {
+.add-services-modal__form-row--additional .add-services-modal__form-actions,
+.add-services-modal__form-row--spending .add-services-modal__form-actions {
   width: 100%;
   justify-content: flex-end;
   justify-self: stretch;
@@ -1498,6 +1873,20 @@ function handleKeydown(event: KeyboardEvent) {
 .add-services-modal__form-row--additional .add-services-modal__field--count {
   width: 100%;
   justify-self: stretch;
+}
+
+.add-services-modal__form-row--spending {
+  grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1.4fr) 220px;
+}
+
+.add-services-modal__form-row--spending .add-services-modal__field--count {
+  width: 100%;
+  justify-self: stretch;
+}
+
+.add-services-modal__field--comment {
+  width: 100%;
+  min-width: 0;
 }
 
 .add-services-modal__field--name,
@@ -1670,6 +2059,7 @@ function handleKeydown(event: KeyboardEvent) {
   .add-services-modal__field--count,
   .add-services-modal__field--name,
   .add-services-modal__field--hunter,
+  .add-services-modal__field--comment,
   .add-services-modal__field--type {
     width: 100%;
     justify-self: stretch;

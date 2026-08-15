@@ -9,6 +9,7 @@ import type {
   BookingServiceFoodItem,
   BookingServicePenaltyItem,
   BookingServicePreparationItem,
+  BookingServiceSpendingItem,
   BookingServiceTrophyItem,
   BookingServicesResponse,
   CancelBookingResponse,
@@ -260,6 +261,19 @@ export function useBookingsApi() {
     )
   }
 
+  function storeSpending(
+    code: string,
+    body: { hunter_id: number, price: number, comment: string },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServiceSpendingItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/spendings`,
+      {
+        method: 'POST',
+        body,
+      },
+    )
+  }
+
   function deleteService(code: string, serviceId: number) {
     return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/services/${serviceId}`,
@@ -341,6 +355,7 @@ export function useBookingsApi() {
     storePreparation,
     storeFood,
     storeAdditional,
+    storeSpending,
     deleteService,
     selectPlace,
     cancelSelectPlace,
