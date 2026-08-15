@@ -31,6 +31,7 @@ const ACTION_ID_MAP: Record<string, BookingActionId> = {
   add_services: 'add_services',
   prepayment: 'prepayment',
   calculating: 'calculating',
+  mark_paid: 'mark_paid',
 }
 
 const ACTION_VARIANT_MAP: Record<string, BookingActionVariant> = {
@@ -42,7 +43,15 @@ const ACTION_VARIANT_MAP: Record<string, BookingActionVariant> = {
   select_place: 'success',
   add_services: 'success',
   prepayment: 'primary',
+  mark_paid: 'success',
 }
+
+const HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
+  { id: 'cancel_booking', label: 'Отменить бронь', variant: 'danger' },
+  { id: 'open_collection', label: 'Собрать охотников', variant: 'success' },
+  { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
+  { id: 'add_services', label: 'Добавить услуги', variant: 'success' },
+]
 
 function formatHistoryDate(value: string | null | undefined) {
   if (!value) return ''
@@ -84,6 +93,7 @@ function mapActions(
   actions: BookingHistoryActionDto[],
   status: string,
   isAcceptedInvitation = false,
+  isHunter = false,
 ): {
   actions: BookingAction[]
   paymentAction?: string
@@ -111,12 +121,34 @@ function mapActions(
     })
   }
 
+  if (isHunter && status === 'finish_bed_collection') {
+    return {
+      actions: [...HUNTER_FINISH_BED_COLLECTION_ACTIONS],
+      paymentAction,
+    }
+  }
+
   return { actions: mapped, paymentAction }
+}
+
+function collectionNeededCount(item: BookingHistoryItemDto): number {
+  const hunting = Number(item.details?.total_hunting)
+
+  if (
+    (item.type === 'animal' || item.type === 'hotel_animal')
+    && Number.isFinite(hunting)
+    && hunting > 0
+  ) {
+    return hunting
+  }
+
+  return item.collection.total_needed || 0
 }
 
 function buildStatus(item: BookingHistoryItemDto, now: number) {
   const status = item.status
   const collection = item.collection
+  const totalNeeded = collectionNeededCount(item)
   const result: BookingHistoryItem['status'] = {
     code: status,
     label: item.status_label || item.status_for_user || item.status,
@@ -129,8 +161,8 @@ function buildStatus(item: BookingHistoryItemDto, now: number) {
       || (item.hotel?.collection_timer_hours
         ? `${item.hotel.collection_timer_hours} ч`
         : undefined)
-    if (collection.total_needed > 0) {
-      result.collected = `Собрано ${collection.accepted_count}/${collection.total_needed}`
+    if (totalNeeded > 0) {
+      result.collected = `Собрано ${collection.accepted_count}/${totalNeeded}`
     }
   }
 
@@ -143,39 +175,34 @@ function buildStatus(item: BookingHistoryItemDto, now: number) {
     if (collection.accepted_count > 0) {
       result.paid = `Оплачено ${collection.paid_count}/${collection.accepted_count}`
     }
-    if (collection.total_needed > 0) {
-      result.collected = `Собрано ${collection.accepted_count}/${collection.total_needed}`
+    if (totalNeeded > 0) {
+      result.collected = `Собрано ${collection.accepted_count}/${totalNeeded}`
     }
   }
 
-  if (status === 'finish_prepayment' || status === 'bed_collection' || status === 'finish_bed_collection') {
+  if (status === 'finish_prepayment' || status === 'bed_collection') {
     if (status === 'finish_prepayment') {
       result.subStatus = 'Сбор завершён'
       result.timer = '00 мин 00 сек'
     }
-    if (status === 'bed_collection' || status === 'finish_bed_collection') {
+    if (status === 'bed_collection') {
       result.subStatus = 'Предоплата собрана'
       result.collectionStatus = 'Сбор завершен'
-      if (status === 'bed_collection') {
-        result.timerHours = item.hotel?.bed_timer_hours || undefined
-        result.timer = collection.beds_end_at
-          ? formatRemainingTimer(collection.beds_end_at, now) || '00 мин 00 сек'
-          : '00 мин 00 сек'
-      }
-      if (status === 'finish_bed_collection') {
-        result.timer = '00 мин 00 сек'
-      }
+      result.timerHours = item.hotel?.bed_timer_hours || undefined
+      result.timer = collection.beds_end_at
+        ? formatRemainingTimer(collection.beds_end_at, now) || '00 мин 00 сек'
+        : '00 мин 00 сек'
     }
-    if (collection.total_needed > 0) {
-      result.collected = `Собрано ${collection.accepted_count}/${collection.total_needed}`
+    if (totalNeeded > 0) {
+      result.collected = `Собрано ${collection.accepted_count}/${totalNeeded}`
     }
     if (collection.accepted_count > 0) {
       result.paid = `Оплачено ${collection.paid_count}/${collection.accepted_count}`
     }
   }
 
-  if (status === 'finished_collection' && collection.total_needed > 0) {
-    result.collected = `Собрано ${collection.accepted_count}/${collection.total_needed}`
+  if (status === 'finished_collection' && totalNeeded > 0) {
+    result.collected = `Собрано ${collection.accepted_count}/${totalNeeded}`
   }
 
   return result
@@ -186,6 +213,7 @@ export function mapBookingHistoryItem(
   fallback?: {
     hotelSlug?: string | null
     locationSlug?: string | null
+    isHunter?: boolean
   },
   now = Date.now(),
 ): BookingHistoryItem {
@@ -194,6 +222,7 @@ export function mapBookingHistoryItem(
     item.available_actions || [],
     item.status,
     Boolean(item.is_invited && item.invitation_accepted),
+    Boolean(fallback?.isHunter),
   )
   const details = item.details
   const rooms = details.rooms || []
@@ -256,6 +285,11 @@ export function mapBookingHistoryItem(
     accommodation,
     hunt,
     status: buildStatus(item, now),
+    payment: {
+      prepaidTotal: item.payment?.prepaid_total ?? 0,
+      baseTotal: item.payment?.base_total ?? 0,
+      total: item.payment?.total ?? 0,
+    },
     paymentAction,
     actions,
     isMasterHunter: Boolean(item.is_master_hunter),

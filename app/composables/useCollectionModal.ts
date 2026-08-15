@@ -47,7 +47,9 @@ function parseCollected(collected?: string): { current: number, total: number } 
 
 function buildMockState(booking: BookingHistoryItem): CollectionModalState {
   const collected = parseCollected(booking.status.collected)
-  const slotsTotal = collected?.total ?? booking.hunt?.hunters ?? 3
+  const slotsTotal = booking.hunt?.hunters && booking.hunt.hunters > 0
+    ? booking.hunt.hunters
+    : (collected?.total ?? 3)
   const confirmedCount = Math.min(
     collected?.current ?? 1,
     slotsTotal,
