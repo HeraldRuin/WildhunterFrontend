@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  BookingServiceAdditionalItem,
   BookingServiceFoodItem,
   BookingServicePreparationItem,
   BookingServiceType,
@@ -18,6 +19,15 @@ interface FoodDraft {
   key: number
   count: number
 }
+
+interface AdditionalDraft {
+  key: number
+  additionalId: string
+  hunterId: string
+  count: number
+}
+
+type DeletableServiceList = 'preparations' | 'foods' | 'additionals'
 
 const ADD_SERVICES_NOTIFICATION_GROUP = 'add-services'
 
@@ -43,13 +53,16 @@ const loadError = ref('')
 const services = ref<BookingServicesData | null>(null)
 const preparationDrafts = ref<PreparationDraft[]>([])
 const foodDrafts = ref<FoodDraft[]>([])
+const additionalDrafts = ref<AdditionalDraft[]>([])
 const savingPreparationKey = ref<number | null>(null)
 const savingFoodKey = ref<number | null>(null)
-const deletingPreparationId = ref<number | null>(null)
+const savingAdditionalKey = ref<number | null>(null)
+const deletingServiceId = ref<number | null>(null)
 
 let loadRequestId = 0
 let preparationDraftKey = 0
 let foodDraftKey = 0
+let additionalDraftKey = 0
 
 useBodyScrollLock(isOpen)
 
@@ -66,6 +79,18 @@ const preparationAnimalOptions = computed<SelectFieldOption[]>(() =>
   preparationAnimals.value.map(animal => ({
     value: String(animal.id),
     label: animal.title,
+  })),
+)
+const additionalOptions = computed<SelectFieldOption[]>(() =>
+  (services.value?.catalogs?.additionals ?? []).map(item => ({
+    value: String(item.id),
+    label: item.name,
+  })),
+)
+const hunterOptions = computed<SelectFieldOption[]>(() =>
+  (services.value?.catalogs?.hunters ?? []).map(hunter => ({
+    value: String(hunter.id),
+    label: hunter.name,
   })),
 )
 
@@ -92,9 +117,112 @@ function resetServices() {
   services.value = null
   preparationDrafts.value = []
   foodDrafts.value = []
+  additionalDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
-  deletingPreparationId.value = null
+  savingAdditionalKey.value = null
+  deletingServiceId.value = null
+}
+
+function addAdditionalDraft() {
+  additionalDrafts.value.push({
+    key: ++additionalDraftKey,
+    additionalId: '',
+    hunterId: '',
+    count: 1,
+  })
+}
+
+function removeAdditionalDraft(key: number) {
+  additionalDrafts.value = additionalDrafts.value.filter(row => row.key !== key)
+}
+
+function cancelAdditionalDraft(key: number) {
+  if (savingAdditionalKey.value === key) {
+    return
+  }
+
+  removeAdditionalDraft(key)
+}
+
+function additionalNameById(additionalId: number): string {
+  return additionalOptions.value.find(item => item.value === String(additionalId))?.label ?? ''
+}
+
+function canSaveAdditionalDraft(row: AdditionalDraft): boolean {
+  return Boolean(row.additionalId && row.hunterId)
+    && Number.isInteger(Number(row.count))
+    && Number(row.count) >= 1
+    && savingAdditionalKey.value === null
+}
+
+function upsertAdditionalItem(item: BookingServiceAdditionalItem) {
+  if (!services.value) {
+    return
+  }
+
+  const current = services.value.items.additionals ?? []
+  const index = current.findIndex(existing => existing.id === item.id)
+  const next = [...current]
+
+  if (index >= 0) {
+    next[index] = item
+  }
+  else {
+    next.push(item)
+  }
+
+  services.value = {
+    ...services.value,
+    items: {
+      ...services.value.items,
+      additionals: next,
+    },
+  }
+}
+
+async function saveAdditionalDraft(row: AdditionalDraft) {
+  const code = booking.value?.code
+  const additionalId = Number(row.additionalId)
+  const hunterId = Number(row.hunterId)
+  const count = Number(row.count)
+
+  if (!code || !canSaveAdditionalDraft(row)) {
+    return
+  }
+
+  const name = additionalNameById(additionalId)
+  if (!name) {
+    notifications.error('Выберите услугу', 'Ошибка', notifyOptions)
+    return
+  }
+
+  savingAdditionalKey.value = row.key
+
+  try {
+    const response = await bookings.storeAdditional(code, {
+      additional_id: additionalId,
+      name,
+      count,
+      hunter_id: hunterId,
+    })
+
+    if (!response.success || !response.data) {
+      notifications.error(response.message || 'Не удалось добавить услугу', 'Ошибка', notifyOptions)
+      return
+    }
+
+    upsertAdditionalItem(response.data)
+    removeAdditionalDraft(row.key)
+    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось добавить услугу', 'Ошибка', notifyOptions)
+  }
+  finally {
+    savingAdditionalKey.value = null
+  }
 }
 
 function addFoodDraft() {
@@ -227,7 +355,7 @@ function upsertPreparationItem(item: BookingServicePreparationItem) {
   }
 }
 
-function removePreparationItem(serviceId: number) {
+function removeServiceItem(serviceId: number, list: DeletableServiceList) {
   if (!services.value) {
     return
   }
@@ -236,53 +364,53 @@ function removePreparationItem(serviceId: number) {
     ...services.value,
     items: {
       ...services.value.items,
-      preparations: (services.value.items.preparations ?? []).filter(item => item.id !== serviceId),
+      [list]: (services.value.items[list] ?? []).filter(item => item.id !== serviceId),
     },
   }
 }
 
-function requestPreparationDeletion(item: BookingServicePreparationItem) {
-  if (deletingPreparationId.value !== null) {
+function requestServiceDeletion(serviceId: number, title: string, list: DeletableServiceList) {
+  if (deletingServiceId.value !== null) {
     return
   }
 
   openConfirmModal({
-    title: 'Вы уверены, что хотите удалить разделку?',
+    title,
     confirmLabel: 'Удалить',
-    onConfirm: () => deletePreparation(item.id),
+    onConfirm: () => deleteBookingService(serviceId, list),
   })
 }
 
-async function deletePreparation(serviceId: number) {
+async function deleteBookingService(serviceId: number, list: DeletableServiceList) {
   const code = booking.value?.code
 
-  if (!code || deletingPreparationId.value !== null) {
+  if (!code || deletingServiceId.value !== null) {
     return
   }
 
-  deletingPreparationId.value = serviceId
+  deletingServiceId.value = serviceId
 
   try {
     const response = await bookings.deleteService(code, serviceId)
 
     if (!response.success) {
-      notifications.error(response.message || 'Не удалось удалить разделку', 'Ошибка', notifyOptions)
-      throw new Error('delete_preparation_failed')
+      notifications.error(response.message || 'Не удалось удалить услугу', 'Ошибка', notifyOptions)
+      throw new Error('delete_service_failed')
     }
 
-    removePreparationItem(serviceId)
+    removeServiceItem(serviceId, list)
     notifications.success(response.message || 'Услуга удалена', 'Успех', notifyOptions)
   }
   catch (error) {
-    if ((error as Error).message !== 'delete_preparation_failed') {
+    if ((error as Error).message !== 'delete_service_failed') {
       const data = (error as { data?: { message?: string } }).data
-      notifications.error(data?.message || 'Не удалось удалить разделку', 'Ошибка', notifyOptions)
+      notifications.error(data?.message || 'Не удалось удалить услугу', 'Ошибка', notifyOptions)
     }
 
     throw error
   }
   finally {
-    deletingPreparationId.value = null
+    deletingServiceId.value = null
   }
 }
 
@@ -345,9 +473,11 @@ async function loadServices(code: string) {
   services.value = null
   preparationDrafts.value = []
   foodDrafts.value = []
+  additionalDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
-  deletingPreparationId.value = null
+  savingAdditionalKey.value = null
+  deletingServiceId.value = null
 
   try {
     const response = await bookings.services(code)
@@ -494,8 +624,8 @@ function handleKeydown(event: KeyboardEvent) {
                     <button
                       type="button"
                       class="add-services-modal__delete"
-                      :disabled="deletingPreparationId !== null"
-                      @click="requestPreparationDeletion(item)"
+                      :disabled="deletingServiceId !== null"
+                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить разделку?', 'preparations')"
                     >
                       Удалить
                     </button>
@@ -570,7 +700,16 @@ function handleKeydown(event: KeyboardEvent) {
                     <span class="add-services-modal__field-label">Количество чел</span>
                     <span class="add-services-modal__value">{{ item.count }}</span>
                   </div>
-                  <div class="add-services-modal__form-actions" aria-hidden="true" />
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__delete"
+                      :disabled="deletingServiceId !== null"
+                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить питание?', 'foods')"
+                    >
+                      Удалить
+                    </button>
+                  </div>
                 </div>
                 <div
                   v-for="row in foodDrafts"
@@ -615,21 +754,94 @@ function handleKeydown(event: KeyboardEvent) {
               <section v-if="isAllowed('addetional')" class="add-services-modal__block">
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Другое:</h3>
-                  <button type="button" class="add-services-modal__add" aria-label="Добавить другое">+</button>
-                </div>
-                <div class="add-services-modal__columns add-services-modal__columns--3">
-                  <span>Название</span>
-                  <span>Количество</span>
-                  <span>Охотник</span>
+                  <button
+                    type="button"
+                    class="add-services-modal__add"
+                    aria-label="Добавить другое"
+                    @click="addAdditionalDraft"
+                  >+</button>
                 </div>
                 <div
                   v-for="item in items.additionals"
                   :key="item.id"
-                  class="add-services-modal__row add-services-modal__columns add-services-modal__columns--3"
+                  class="add-services-modal__form-row add-services-modal__form-row--additional"
                 >
-                  <span>{{ item.type }}</span>
-                  <span>{{ item.count }}</span>
-                  <span>{{ item.hunter_name || '—' }}</span>
+                  <div class="add-services-modal__field add-services-modal__field--name">
+                    <span class="add-services-modal__field-label">Название</span>
+                    <span class="add-services-modal__value">{{ item.type }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__field-label">Количество</span>
+                    <span class="add-services-modal__value">{{ item.count }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <span class="add-services-modal__field-label">Охотник</span>
+                    <span class="add-services-modal__value">{{ item.hunter_name || '—' }}</span>
+                  </div>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__delete"
+                      :disabled="deletingServiceId !== null"
+                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить услугу?', 'additionals')"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+                <div
+                  v-for="row in additionalDrafts"
+                  :key="row.key"
+                  class="add-services-modal__form-row add-services-modal__form-row--additional"
+                >
+                  <div class="add-services-modal__field add-services-modal__field--name">
+                    <span class="add-services-modal__field-label">Название</span>
+                    <CommonSelectField
+                      v-model="row.additionalId"
+                      class="add-services-modal__select"
+                      placeholder="Выберите услугу"
+                      no-margin
+                      :options="additionalOptions"
+                    />
+                  </div>
+                  <label class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__field-label">Количество</span>
+                    <input
+                      v-model.number="row.count"
+                      class="add-services-modal__control"
+                      type="number"
+                      min="1"
+                      step="1"
+                    >
+                  </label>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <span class="add-services-modal__field-label">Охотник</span>
+                    <CommonSelectField
+                      v-model="row.hunterId"
+                      class="add-services-modal__select"
+                      placeholder="Выберите охотника"
+                      no-margin
+                      :options="hunterOptions"
+                    />
+                  </div>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__save"
+                      :disabled="!canSaveAdditionalDraft(row)"
+                      @click="saveAdditionalDraft(row)"
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__cancel"
+                      :disabled="savingAdditionalKey === row.key"
+                      @click="cancelAdditionalDraft(row.key)"
+                    >
+                      Отмена
+                    </button>
+                  </div>
                 </div>
               </section>
 
@@ -807,6 +1019,28 @@ function handleKeydown(event: KeyboardEvent) {
   margin-top: 10px;
 }
 
+.add-services-modal__form-row--additional {
+  grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr) 220px;
+}
+
+.add-services-modal__form-row--additional .add-services-modal__field--count {
+  width: 100%;
+  justify-self: stretch;
+}
+
+.add-services-modal__form-row--additional .add-services-modal__form-actions {
+  width: 100%;
+  justify-content: flex-end;
+  justify-self: stretch;
+}
+
+.add-services-modal__field--name,
+.add-services-modal__field--hunter {
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
 .add-services-modal__field {
   display: flex;
   flex-direction: column;
@@ -972,7 +1206,9 @@ function handleKeydown(event: KeyboardEvent) {
   }
 
   .add-services-modal__field--animal,
-  .add-services-modal__field--count {
+  .add-services-modal__field--count,
+  .add-services-modal__field--name,
+  .add-services-modal__field--hunter {
     width: 100%;
     justify-self: stretch;
   }

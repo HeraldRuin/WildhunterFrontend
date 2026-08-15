@@ -5,6 +5,7 @@ import type {
   BookingHistoryQuery,
   BookingHistoryResponse,
   BookingPlacesResponse,
+  BookingServiceAdditionalItem,
   BookingServiceFoodItem,
   BookingServicePreparationItem,
   BookingServicesResponse,
@@ -208,6 +209,19 @@ export function useBookingsApi() {
     )
   }
 
+  function storeAdditional(
+    code: string,
+    body: { additional_id: number, name: string, count: number, hunter_id: number },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServiceAdditionalItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/additionals`,
+      {
+        method: 'POST',
+        body,
+      },
+    )
+  }
+
   function deleteService(code: string, serviceId: number) {
     return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/services/${serviceId}`,
@@ -285,6 +299,7 @@ export function useBookingsApi() {
     services,
     storePreparation,
     storeFood,
+    storeAdditional,
     deleteService,
     selectPlace,
     cancelSelectPlace,
