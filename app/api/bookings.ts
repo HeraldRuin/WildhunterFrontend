@@ -8,6 +8,7 @@ import type {
   BookingServiceAdditionalItem,
   BookingServiceFoodItem,
   BookingServicePreparationItem,
+  BookingServiceTrophyItem,
   BookingServicesResponse,
   CancelBookingResponse,
   ConfirmBookingResponse,
@@ -186,6 +187,19 @@ export function useBookingsApi() {
     )
   }
 
+  function storeTrophy(
+    code: string,
+    body: { animal_id: number, trophy_id: number, type: string, count: number },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServiceTrophyItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/trophies`,
+      {
+        method: 'POST',
+        body,
+      },
+    )
+  }
+
   function storePreparation(
     code: string,
     body: { animal_id: number, preparation_id: number, count: number },
@@ -297,6 +311,7 @@ export function useBookingsApi() {
     checkout,
     places,
     services,
+    storeTrophy,
     storePreparation,
     storeFood,
     storeAdditional,

@@ -3,6 +3,7 @@ import type {
   BookingServiceAdditionalItem,
   BookingServiceFoodItem,
   BookingServicePreparationItem,
+  BookingServiceTrophyItem,
   BookingServiceType,
   BookingServicesData,
   BookingServicesItems,
@@ -27,7 +28,14 @@ interface AdditionalDraft {
   count: number
 }
 
-type DeletableServiceList = 'preparations' | 'foods' | 'additionals'
+interface TrophyDraft {
+  key: number
+  animalId: string
+  trophyId: string
+  count: number
+}
+
+type DeletableServiceList = 'trophies' | 'preparations' | 'foods' | 'additionals'
 
 const ADD_SERVICES_NOTIFICATION_GROUP = 'add-services'
 
@@ -54,15 +62,18 @@ const services = ref<BookingServicesData | null>(null)
 const preparationDrafts = ref<PreparationDraft[]>([])
 const foodDrafts = ref<FoodDraft[]>([])
 const additionalDrafts = ref<AdditionalDraft[]>([])
+const trophyDrafts = ref<TrophyDraft[]>([])
 const savingPreparationKey = ref<number | null>(null)
 const savingFoodKey = ref<number | null>(null)
 const savingAdditionalKey = ref<number | null>(null)
+const savingTrophyKey = ref<number | null>(null)
 const deletingServiceId = ref<number | null>(null)
 
 let loadRequestId = 0
 let preparationDraftKey = 0
 let foodDraftKey = 0
 let additionalDraftKey = 0
+let trophyDraftKey = 0
 
 useBodyScrollLock(isOpen)
 
@@ -93,6 +104,13 @@ const hunterOptions = computed<SelectFieldOption[]>(() =>
     label: hunter.name,
   })),
 )
+const trophyAnimals = computed(() => services.value?.catalogs?.trophy_animals ?? [])
+const trophyAnimalOptions = computed<SelectFieldOption[]>(() =>
+  trophyAnimals.value.map(animal => ({
+    value: String(animal.id),
+    label: animal.title,
+  })),
+)
 
 watch(
   () => booking.value?.code,
@@ -118,10 +136,121 @@ function resetServices() {
   preparationDrafts.value = []
   foodDrafts.value = []
   additionalDrafts.value = []
+  trophyDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
   savingAdditionalKey.value = null
+  savingTrophyKey.value = null
   deletingServiceId.value = null
+}
+
+function trophyTypeOptions(animalId: string): SelectFieldOption[] {
+  const animal = trophyAnimals.value.find(item => String(item.id) === animalId)
+  return (animal?.trophies ?? []).map(trophy => ({
+    value: String(trophy.id),
+    label: trophy.type,
+  }))
+}
+
+function trophyTypeById(animalId: string, trophyId: string): string {
+  return trophyTypeOptions(animalId).find(option => option.value === trophyId)?.label ?? ''
+}
+
+function onTrophyAnimalChange(row: TrophyDraft, animalId: string) {
+  row.animalId = animalId
+  row.trophyId = ''
+}
+
+function addTrophyDraft() {
+  trophyDrafts.value.push({
+    key: ++trophyDraftKey,
+    animalId: '',
+    trophyId: '',
+    count: 1,
+  })
+}
+
+function removeTrophyDraft(key: number) {
+  trophyDrafts.value = trophyDrafts.value.filter(row => row.key !== key)
+}
+
+function cancelTrophyDraft(key: number) {
+  if (savingTrophyKey.value === key) {
+    return
+  }
+
+  removeTrophyDraft(key)
+}
+
+function canSaveTrophyDraft(row: TrophyDraft): boolean {
+  return Boolean(row.animalId && row.trophyId)
+    && Number.isInteger(Number(row.count))
+    && Number(row.count) >= 1
+    && savingTrophyKey.value === null
+}
+
+function upsertTrophyItem(item: BookingServiceTrophyItem) {
+  if (!services.value) {
+    return
+  }
+
+  const current = services.value.items.trophies ?? []
+  const index = current.findIndex(existing => existing.id === item.id)
+  const next = [...current]
+
+  if (index >= 0) {
+    next[index] = item
+  }
+  else {
+    next.push(item)
+  }
+
+  services.value = {
+    ...services.value,
+    items: {
+      ...services.value.items,
+      trophies: next,
+    },
+  }
+}
+
+async function saveTrophyDraft(row: TrophyDraft) {
+  const code = booking.value?.code
+  const animalId = Number(row.animalId)
+  const trophyId = Number(row.trophyId)
+  const count = Number(row.count)
+  const type = trophyTypeById(row.animalId, row.trophyId)
+
+  if (!code || !canSaveTrophyDraft(row) || !type) {
+    return
+  }
+
+  savingTrophyKey.value = row.key
+
+  try {
+    const response = await bookings.storeTrophy(code, {
+      animal_id: animalId,
+      trophy_id: trophyId,
+      type,
+      count,
+    })
+
+    if (!response.success || !response.data) {
+      notifications.error(response.message || 'Не удалось добавить трофей', 'Ошибка', notifyOptions)
+      return
+    }
+
+    upsertTrophyItem(response.data)
+    removeTrophyDraft(row.key)
+    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось добавить трофей', 'Ошибка', notifyOptions)
+  }
+  finally {
+    savingTrophyKey.value = null
+  }
 }
 
 function addAdditionalDraft() {
@@ -474,9 +603,11 @@ async function loadServices(code: string) {
   preparationDrafts.value = []
   foodDrafts.value = []
   additionalDrafts.value = []
+  trophyDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
   savingAdditionalKey.value = null
+  savingTrophyKey.value = null
   deletingServiceId.value = null
 
   try {
@@ -556,7 +687,12 @@ function handleKeydown(event: KeyboardEvent) {
               <section v-if="isAllowed('trophy')" class="add-services-modal__block">
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Трофеи:</h3>
-                  <button type="button" class="add-services-modal__add" aria-label="Добавить трофей">+</button>
+                  <button
+                    type="button"
+                    class="add-services-modal__add"
+                    aria-label="Добавить трофей"
+                    @click="addTrophyDraft"
+                  >+</button>
                 </div>
                 <div class="add-services-modal__columns add-services-modal__columns--3">
                   <span>Животное</span>
@@ -566,11 +702,80 @@ function handleKeydown(event: KeyboardEvent) {
                 <div
                   v-for="item in items.trophies"
                   :key="item.id"
-                  class="add-services-modal__row add-services-modal__columns add-services-modal__columns--3"
+                  class="add-services-modal__form-row add-services-modal__form-row--trophy"
                 >
-                  <span>{{ item.animal_title }}</span>
-                  <span>{{ item.type }}</span>
-                  <span>{{ item.count }}</span>
+                  <div class="add-services-modal__field add-services-modal__field--animal">
+                    <span class="add-services-modal__value">{{ item.animal_title }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--type">
+                    <span class="add-services-modal__value">{{ item.type }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__value">{{ item.count }}</span>
+                  </div>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__delete"
+                      :disabled="deletingServiceId !== null"
+                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить трофей?', 'trophies')"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+                <div
+                  v-for="row in trophyDrafts"
+                  :key="row.key"
+                  class="add-services-modal__form-row add-services-modal__form-row--trophy"
+                >
+                  <div class="add-services-modal__field add-services-modal__field--animal">
+                    <CommonSelectField
+                      :model-value="row.animalId"
+                      class="add-services-modal__select"
+                      placeholder="Животное"
+                      no-margin
+                      :options="trophyAnimalOptions"
+                      @update:model-value="onTrophyAnimalChange(row, $event)"
+                    />
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--type">
+                    <CommonSelectField
+                      v-model="row.trophyId"
+                      class="add-services-modal__select"
+                      placeholder="Тип"
+                      no-margin
+                      :disabled="!row.animalId"
+                      :options="trophyTypeOptions(row.animalId)"
+                    />
+                  </div>
+                  <label class="add-services-modal__field add-services-modal__field--count">
+                    <input
+                      v-model.number="row.count"
+                      class="add-services-modal__control"
+                      type="number"
+                      min="1"
+                      step="1"
+                    >
+                  </label>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__save"
+                      :disabled="!canSaveTrophyDraft(row)"
+                      @click="saveTrophyDraft(row)"
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__cancel"
+                      :disabled="savingTrophyKey === row.key"
+                      @click="cancelTrophyDraft(row.key)"
+                    >
+                      Отмена
+                    </button>
+                  </div>
                 </div>
               </section>
 
@@ -1014,9 +1219,26 @@ function handleKeydown(event: KeyboardEvent) {
 .add-services-modal__form-row {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: flex-end;
+  align-items: center;
   gap: 12px;
   margin-top: 10px;
+}
+
+.add-services-modal__form-row--trophy {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 120px 220px;
+}
+
+.add-services-modal__form-row--trophy .add-services-modal__field--animal,
+.add-services-modal__form-row--trophy .add-services-modal__field--count {
+  width: 100%;
+  justify-self: stretch;
+}
+
+.add-services-modal__form-row--trophy .add-services-modal__form-actions,
+.add-services-modal__form-row--additional .add-services-modal__form-actions {
+  width: 100%;
+  justify-content: flex-end;
+  justify-self: stretch;
 }
 
 .add-services-modal__form-row--additional {
@@ -1028,14 +1250,9 @@ function handleKeydown(event: KeyboardEvent) {
   justify-self: stretch;
 }
 
-.add-services-modal__form-row--additional .add-services-modal__form-actions {
-  width: 100%;
-  justify-content: flex-end;
-  justify-self: stretch;
-}
-
 .add-services-modal__field--name,
-.add-services-modal__field--hunter {
+.add-services-modal__field--hunter,
+.add-services-modal__field--type {
   width: 100%;
   position: relative;
   z-index: 5;
@@ -1208,7 +1425,8 @@ function handleKeydown(event: KeyboardEvent) {
   .add-services-modal__field--animal,
   .add-services-modal__field--count,
   .add-services-modal__field--name,
-  .add-services-modal__field--hunter {
+  .add-services-modal__field--hunter,
+  .add-services-modal__field--type {
     width: 100%;
     justify-self: stretch;
   }
