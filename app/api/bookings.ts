@@ -15,6 +15,7 @@ import type {
   ConfirmBookingResponse,
   CreateBookingRequest,
   CreateBookingResponse,
+  MarkPaidBookingResponse,
   ExtendCollectionResponse,
   StartCollectionResponse,
   UpdateCustomerNotesResponse,
@@ -54,6 +55,15 @@ export function useBookingsApi() {
   function cancel(code: string) {
     return apiFetch<CancelBookingResponse>(
       `/bookings/${encodeURIComponent(code)}/cancel`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
+  function markPaid(code: string) {
+    return apiFetch<MarkPaidBookingResponse>(
+      `/bookings/${encodeURIComponent(code)}/mark-paid`,
       {
         method: 'POST',
       },
@@ -311,6 +321,7 @@ export function useBookingsApi() {
     history,
     confirm,
     cancel,
+    markPaid,
     startCollection,
     extendCollection,
     cancelCollection,

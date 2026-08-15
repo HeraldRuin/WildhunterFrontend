@@ -348,6 +348,27 @@ async function cancelBooking(booking: BookingHistoryItem) {
   throw new Error('cancel_failed')
 }
 
+async function markPaid(booking: BookingHistoryItem) {
+  try {
+    const response = await bookingsApi.markPaid(booking.code)
+
+    if ('success' in response && response.success) {
+      notifications.success(response.message || 'Бронь отмечена как оплаченная')
+      await refreshHistory()
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось отметить бронь как оплаченную')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось отметить бронь как оплаченную')
+    throw error
+  }
+
+  throw new Error('mark_paid_failed')
+}
+
 async function startCollection(booking: BookingHistoryItem) {
   try {
     const response = await bookingsApi.startCollection(booking.code)
@@ -414,6 +435,14 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     openConfirmModal({
       title: 'Вы уверены, что хотите подтвердить бронь?',
       onConfirm: () => confirmBooking(booking),
+    })
+    return
+  }
+
+  if (action.id === 'mark_paid') {
+    openConfirmModal({
+      title: 'Это действие переведет бронь в статус «Оплачено». Продолжить?',
+      onConfirm: () => markPaid(booking),
     })
     return
   }
@@ -547,6 +576,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
           :show-details-buttons="isHunter"
           :show-customer="isBaseAdmin"
           :show-calculation="isBaseAdmin"
+          :show-hunter-calculation="isHunter"
           @action="handleBookingAction"
           @customer="openCustomerModal"
         />

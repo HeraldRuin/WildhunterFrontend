@@ -14,6 +14,7 @@ export type BookingActionId =
   | 'add_services'
   | 'prepayment'
   | 'calculating'
+  | 'mark_paid'
 
 export interface BookingAction {
   id?: BookingActionId
@@ -87,6 +88,12 @@ export interface BookingStatusInfo {
   collectionStatus?: string
 }
 
+export interface BookingPaymentInfo {
+  prepaidTotal: number
+  baseTotal: number
+  total: number
+}
+
 export interface BookingHistoryItem {
   id: number
   code: string
@@ -100,6 +107,7 @@ export interface BookingHistoryItem {
   accommodation?: BookingAccommodationDetails
   hunt?: BookingHuntDetails
   status: BookingStatusInfo
+  payment?: BookingPaymentInfo
   paymentAction?: string
   actions: BookingAction[]
   isMasterHunter?: boolean

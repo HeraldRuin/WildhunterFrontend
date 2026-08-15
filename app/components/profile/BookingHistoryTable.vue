@@ -7,6 +7,7 @@ const props = defineProps<{
   showDetailsButtons?: boolean
   showCustomer?: boolean
   showCalculation?: boolean
+  showHunterCalculation?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -226,7 +227,7 @@ onBeforeUnmount(() => {
                 {{ item.status.label }}<template v-if="item.status.timerHours"> ({{ item.status.timerHours }} ч)</template>
               </div>
               <div
-                v-if="item.status.timer"
+                v-if="item.status.timer && item.status.code !== 'finish_bed_collection'"
                 class="booking-table__status-meta"
                 :class="{
                   'booking-table__status-meta--expired':
@@ -250,7 +251,7 @@ onBeforeUnmount(() => {
                   {{ item.status.collected }}
                 </div>
               </template>
-              <template v-else-if="item.status.code === 'bed_collection' || item.status.code === 'finish_bed_collection'">
+              <template v-else-if="item.status.code === 'bed_collection'">
                 <div
                   v-if="item.status.subStatus"
                   class="booking-table__status-meta booking-table__status-meta--substatus"
@@ -285,7 +286,35 @@ onBeforeUnmount(() => {
                 </div>
               </template>
             </td>
-            <td class="booking-table__payment" />
+            <td class="booking-table__payment">
+              <button
+                v-if="
+                  showHunterCalculation
+                  && (
+                    item.status.code === 'finish_bed_collection'
+                    || item.status.code === 'paid'
+                  )
+                "
+                type="button"
+                class="booking-table__payment-btn"
+              >
+                {{ item.paymentAction || 'Калькуляция' }}
+              </button>
+              <div
+                v-else-if="
+                  showCustomer
+                  && (
+                    item.status.code === 'finish_bed_collection'
+                    || item.status.code === 'paid'
+                  )
+                "
+                class="booking-table__payment-summary"
+              >
+                <div>Внесена предоплата: {{ formatPrice(item.payment?.prepaidTotal ?? 0) }} руб</div>
+                <div>Остаток базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</div>
+                <div>Всего: {{ formatPrice(item.payment?.total ?? 0) }} руб</div>
+              </div>
+            </td>
             <td class="booking-table__actions">
               <div class="booking-table__actions-list">
                 <button
@@ -301,13 +330,16 @@ onBeforeUnmount(() => {
                 <button
                   v-if="
                     showCalculation
-                    && item.status.code === 'prepayment_collection'
-                    && item.paymentAction
+                    && (
+                      (item.status.code === 'prepayment_collection' && item.paymentAction)
+                      || item.status.code === 'finish_bed_collection'
+                      || item.status.code === 'paid'
+                    )
                   "
                   type="button"
                   class="booking-table__action booking-table__action--primary"
                 >
-                  {{ item.paymentAction }}
+                  {{ item.paymentAction || 'Калькуляция' }}
                 </button>
               </div>
             </td>
@@ -431,10 +463,16 @@ onBeforeUnmount(() => {
 
 .booking-table th:nth-child(7),
 .booking-table__payment {
-  width: 130px;
-  min-width: 110px;
-  max-width: 150px;
-  white-space: nowrap;
+  width: 180px;
+  min-width: 160px;
+  max-width: 240px;
+}
+
+.booking-table__payment-summary {
+  white-space: normal;
+  color: var(--wh-gray-900);
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .booking-table__number {

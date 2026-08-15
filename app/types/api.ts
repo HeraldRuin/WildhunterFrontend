@@ -284,6 +284,13 @@ export type ConfirmBookingResponse = ApiSuccessResponse<{
   status: string
 }>
 
+export type MarkPaidBookingResponse = ApiSuccessResponse<{
+  id: number
+  code: string
+  status: string
+  is_paid: boolean
+}>
+
 export type CancelBookingResponse = ApiSuccessResponse<{
   id: number
   code: string
@@ -615,11 +622,11 @@ export interface BookingHistoryItemDto {
     paid_end_at: string | null
     beds_end_at: string | null
   }
-  payment: {
+  payment?: {
     prepaid_total: number
     base_total: number
     total: number
-  }
+  } | null
   available_actions: BookingHistoryActionDto[]
 }
 
