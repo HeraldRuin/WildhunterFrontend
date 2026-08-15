@@ -81,11 +81,17 @@ export function useBookingHistoryChannel(
 
   function disconnect() {
     if (echo) {
-      if (subscribedUserId) {
-        echo.leave(`booking-history.${subscribedUserId}`)
+      try {
+        if (subscribedUserId) {
+          echo.leave(`booking-history.${subscribedUserId}`)
+        }
+
+        echo.disconnect()
+      }
+      catch {
+        // Обрыв WS не должен блокировать уход со страницы / выход.
       }
 
-      echo.disconnect()
       echo = null
     }
 

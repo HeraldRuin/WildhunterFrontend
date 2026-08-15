@@ -79,7 +79,7 @@ const {
   pending: historyPending,
   error: historyError,
   refresh: refreshHistory,
-} = await useAsyncData(
+} = useAsyncData(
   () => `profile-booking-history-${statusFilter.value ?? 'all'}-${page.value}-${bookingIdFilter.value ?? 'none'}-${invitationCode.value ?? 'no-code'}`,
   () => bookingsApi.history({
     page: page.value,
@@ -88,6 +88,7 @@ const {
     code: invitationCode.value,
   }),
   {
+    lazy: true,
     watch: [statusFilter, page, bookingIdFilter, invitationCode],
   },
 )

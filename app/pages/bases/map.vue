@@ -7,6 +7,7 @@ import { offerToMapHotel, type MapHotelItem } from '~/utils/map'
 
 definePageMeta({
   layout: 'home',
+  key: (route) => route.path,
 })
 
 useHead({

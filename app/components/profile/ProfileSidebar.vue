@@ -237,7 +237,29 @@ function isActive(to: string) {
 }
 
 async function handleLogout() {
-  await logout()
+  try {
+    await logout()
+  }
+  catch {
+    // Сессия уже очищена в finally — переход на главную всё равно нужен.
+  }
+
+  await navigateTo('/')
+}
+
+async function goHome(event: MouseEvent) {
+  if (
+    event.defaultPrevented
+    || event.button !== 0
+    || event.metaKey
+    || event.altKey
+    || event.ctrlKey
+    || event.shiftKey
+  ) {
+    return
+  }
+
+  event.preventDefault()
   await navigateTo('/')
 }
 </script>
@@ -427,7 +449,12 @@ async function handleLogout() {
       </nav>
 
       <div class="profile-sidebar__footer">
-        <NuxtLink to="/" class="profile-sidebar__footer-link">
+        <NuxtLink
+          to="/"
+          class="profile-sidebar__footer-link"
+          :prefetch="false"
+          @click="goHome"
+        >
           Назад на Главную
         </NuxtLink>
         <button

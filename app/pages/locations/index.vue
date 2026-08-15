@@ -4,6 +4,7 @@ import type { BreadcrumbItem } from '~/types/breadcrumb'
 
 definePageMeta({
   layout: 'home',
+  key: (route) => route.path,
 })
 
 useHead({

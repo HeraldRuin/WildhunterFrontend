@@ -9,6 +9,7 @@ import {
 
 definePageMeta({
   layout: 'home',
+  key: (route) => route.path,
 })
 
 const route = useRoute()

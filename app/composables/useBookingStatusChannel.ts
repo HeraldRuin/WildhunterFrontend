@@ -85,11 +85,17 @@ export function useBookingStatusChannel(
 
   function disconnect() {
     if (echo) {
-      for (const bookingId of subscribedBookingIds) {
-        echo.leave(`bookings.${bookingId}`)
+      try {
+        for (const bookingId of subscribedBookingIds) {
+          echo.leave(`bookings.${bookingId}`)
+        }
+
+        echo.disconnect()
+      }
+      catch {
+        // Обрыв WS не должен блокировать уход со страницы / выход.
       }
 
-      echo.disconnect()
       echo = null
     }
 

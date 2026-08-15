@@ -6,7 +6,7 @@ useAuthModalsScrollLock()
   <div>
     <NuxtRouteAnnouncer />
     <NuxtLayout>
-      <NuxtPage :page-key="(route) => route.path" />
+      <NuxtPage />
     </NuxtLayout>
     <AuthLoginModal />
     <AuthRegisterModal />

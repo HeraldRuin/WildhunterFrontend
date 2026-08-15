@@ -30,6 +30,7 @@ async function onLinkClick(to: RouteLocationRaw, event: MouseEvent) {
       <NuxtLink
         v-if="item.to"
         :to="item.to"
+        :prefetch="false"
         @click="onLinkClick(item.to, $event)"
       >
         {{ item.label }}
