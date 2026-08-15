@@ -1724,6 +1724,17 @@ function handleKeydown(event: KeyboardEvent) {
   overflow-y: auto;
 }
 
+.add-services-modal__card:has(.select-field--open),
+.add-services-modal__body:has(.select-field--open),
+.add-services-modal__block-list:has(.select-field--open) {
+  overflow: visible;
+}
+
+.add-services-modal__block:has(.select-field--open) {
+  position: relative;
+  z-index: 10;
+}
+
 .add-services-modal__block-head {
   display: flex;
   align-items: center;
