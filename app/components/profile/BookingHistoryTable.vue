@@ -44,7 +44,7 @@ function updatePopoverPosition() {
 
   const rect = button.getBoundingClientRect()
   const gap = 8
-  const estimatedWidth = 320
+  const estimatedWidth = 520
   const spaceRight = window.innerWidth - rect.right - gap
   const placeLeft = spaceRight < estimatedWidth && rect.left > spaceRight
 
@@ -659,7 +659,8 @@ onBeforeUnmount(() => {
 .booking-table__details-popover {
   position: fixed;
   z-index: 1100;
-  max-width: 320px;
+  width: 520px;
+  max-width: 520px;
   padding: 10px 12px;
   border: 1px solid var(--wh-gray-200);
   border-radius: 6px;
