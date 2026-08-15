@@ -366,6 +366,7 @@ onBeforeUnmount(() => {
         role="tooltip"
         :style="popoverStyle"
       >
+        <CommonModalCloseButton @click="closeDetails" />
         <div>
           Общее кол-во номеров: {{ openDetailsItem.accommodation.roomsTotal ?? openDetailsRooms.length }}
         </div>
@@ -662,7 +663,7 @@ onBeforeUnmount(() => {
   z-index: 1100;
   width: 520px;
   max-width: 520px;
-  padding: 10px 12px;
+  padding: 10px 32px 10px 12px;
   border: 1px solid var(--wh-gray-200);
   border-radius: 6px;
   background: var(--wh-white);
@@ -672,6 +673,18 @@ onBeforeUnmount(() => {
   font-size: 0.78rem;
   line-height: 1.45;
   pointer-events: auto;
+}
+
+.booking-table__details-popover .modal-close-button {
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+}
+
+.booking-table__details-popover .modal-close-button svg {
+  width: 14px;
+  height: 14px;
 }
 
 .booking-table__details-popover > div + div {
