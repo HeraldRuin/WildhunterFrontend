@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BookingAction, BookingHistoryItem, BookingRoomDetail } from '~/types/booking'
+import { formatHotelPriceLabel } from '~/utils/hotel'
 
 const props = defineProps<{
   items: BookingHistoryItem[]
@@ -372,7 +373,7 @@ onBeforeUnmount(() => {
           v-for="(room, roomIndex) in openDetailsRooms"
           :key="`open-room-${roomIndex}`"
         >
-          {{ room.name }}, вместимость = {{ room.capacity }}; кол-во = {{ room.quantity }}; цена = {{ formatPrice(room.pricePerDay) }} р/сут
+          {{ room.name }}, вместимость = {{ room.capacity }}, кол-во = {{ room.quantity }}, цена = {{ formatHotelPriceLabel(room.pricePerDay) }}/сут
         </div>
       </div>
     </Teleport>
@@ -665,7 +666,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--wh-gray-200);
   border-radius: 6px;
   background: var(--wh-white);
-  box-shadow: 0 4px 16px rgba(17, 24, 39, 0.18);
+  box-shadow: 0 12px 40px rgba(17, 24, 39, 0.32);
   color: var(--wh-gray-900);
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 0.78rem;
