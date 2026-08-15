@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ROLE_BASE_ADMIN, ROLE_HUNTER } from '~/utils/roles'
+import { isBaseAdminRole, ROLE_HUNTER } from '~/utils/roles'
 
 const status = defineModel<string | undefined>({ required: true })
 
@@ -33,7 +33,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const isBaseAdmin = computed(() =>
-  (props.role || '').trim().toLowerCase() === ROLE_BASE_ADMIN,
+  isBaseAdminRole(props.role),
 )
 
 const hunterTabs = [
