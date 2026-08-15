@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  BookingServiceFoodItem,
   BookingServicePreparationItem,
   BookingServiceType,
   BookingServicesData,
@@ -10,6 +11,11 @@ import type { SelectFieldOption } from '~/components/common/SelectField.vue'
 interface PreparationDraft {
   key: number
   animalId: string
+  count: number
+}
+
+interface FoodDraft {
+  key: number
   count: number
 }
 
@@ -36,11 +42,14 @@ const isLoading = ref(false)
 const loadError = ref('')
 const services = ref<BookingServicesData | null>(null)
 const preparationDrafts = ref<PreparationDraft[]>([])
+const foodDrafts = ref<FoodDraft[]>([])
 const savingPreparationKey = ref<number | null>(null)
+const savingFoodKey = ref<number | null>(null)
 const deletingPreparationId = ref<number | null>(null)
 
 let loadRequestId = 0
 let preparationDraftKey = 0
+let foodDraftKey = 0
 
 useBodyScrollLock(isOpen)
 
@@ -82,8 +91,90 @@ function resetServices() {
   loadError.value = ''
   services.value = null
   preparationDrafts.value = []
+  foodDrafts.value = []
   savingPreparationKey.value = null
+  savingFoodKey.value = null
   deletingPreparationId.value = null
+}
+
+function addFoodDraft() {
+  foodDrafts.value.push({
+    key: ++foodDraftKey,
+    count: 1,
+  })
+}
+
+function removeFoodDraft(key: number) {
+  foodDrafts.value = foodDrafts.value.filter(row => row.key !== key)
+}
+
+function cancelFoodDraft(key: number) {
+  if (savingFoodKey.value === key) {
+    return
+  }
+
+  removeFoodDraft(key)
+}
+
+function upsertFoodItem(item: BookingServiceFoodItem) {
+  if (!services.value) {
+    return
+  }
+
+  const current = services.value.items.foods ?? []
+  const index = current.findIndex(existing => existing.id === item.id)
+  const next = [...current]
+
+  if (index >= 0) {
+    next[index] = item
+  }
+  else {
+    next.push(item)
+  }
+
+  services.value = {
+    ...services.value,
+    items: {
+      ...services.value.items,
+      foods: next,
+    },
+  }
+}
+
+async function saveFoodDraft(row: FoodDraft) {
+  const code = booking.value?.code
+  const count = Number(row.count)
+
+  if (!code || savingFoodKey.value !== null) {
+    return
+  }
+
+  if (!Number.isInteger(count) || count < 1) {
+    notifications.error('Укажите количество', 'Ошибка', notifyOptions)
+    return
+  }
+
+  savingFoodKey.value = row.key
+
+  try {
+    const response = await bookings.storeFood(code, { count })
+
+    if (!response.success || !response.data) {
+      notifications.error(response.message || 'Не удалось добавить питание', 'Ошибка', notifyOptions)
+      return
+    }
+
+    upsertFoodItem(response.data)
+    removeFoodDraft(row.key)
+    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось добавить питание', 'Ошибка', notifyOptions)
+  }
+  finally {
+    savingFoodKey.value = null
+  }
 }
 
 function addPreparationDraft() {
@@ -253,7 +344,9 @@ async function loadServices(code: string) {
   loadError.value = ''
   services.value = null
   preparationDrafts.value = []
+  foodDrafts.value = []
   savingPreparationKey.value = null
+  savingFoodKey.value = null
   deletingPreparationId.value = null
 
   try {
@@ -457,19 +550,65 @@ function handleKeydown(event: KeyboardEvent) {
               <section v-if="isAllowed('food')" class="add-services-modal__block">
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Питание:</h3>
-                  <button type="button" class="add-services-modal__add" aria-label="Добавить питание">+</button>
-                </div>
-                <div class="add-services-modal__columns add-services-modal__columns--2">
-                  <span>Питание</span>
-                  <span>Количество чел</span>
+                  <button
+                    type="button"
+                    class="add-services-modal__add"
+                    aria-label="Добавить питание"
+                    @click="addFoodDraft"
+                  >+</button>
                 </div>
                 <div
                   v-for="item in items.foods"
                   :key="item.id"
-                  class="add-services-modal__row add-services-modal__columns add-services-modal__columns--2"
+                  class="add-services-modal__form-row"
                 >
-                  <span>{{ item.type || 'Питание' }}</span>
-                  <span>{{ item.count }}</span>
+                  <div class="add-services-modal__field add-services-modal__field--animal">
+                    <span class="add-services-modal__field-label">Питание</span>
+                    <span class="add-services-modal__value">{{ item.type || 'Питание' }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__field-label">Количество чел</span>
+                    <span class="add-services-modal__value">{{ item.count }}</span>
+                  </div>
+                  <div class="add-services-modal__form-actions" aria-hidden="true" />
+                </div>
+                <div
+                  v-for="row in foodDrafts"
+                  :key="row.key"
+                  class="add-services-modal__form-row"
+                >
+                  <div class="add-services-modal__field add-services-modal__field--animal">
+                    <span class="add-services-modal__field-label">Питание</span>
+                    <span class="add-services-modal__value">Питание</span>
+                  </div>
+                  <label class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__field-label">Количество чел</span>
+                    <input
+                      v-model.number="row.count"
+                      class="add-services-modal__control"
+                      type="number"
+                      min="1"
+                      step="1"
+                    >
+                  </label>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__save"
+                      :disabled="savingFoodKey !== null || !row.count || row.count < 1"
+                      @click="saveFoodDraft(row)"
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__cancel"
+                      :disabled="savingFoodKey === row.key"
+                      @click="cancelFoodDraft(row.key)"
+                    >
+                      Отмена
+                    </button>
+                  </div>
                 </div>
               </section>
 
