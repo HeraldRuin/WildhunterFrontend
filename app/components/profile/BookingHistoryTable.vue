@@ -76,6 +76,14 @@ function handleAction(booking: BookingHistoryItem, action: BookingAction) {
   emit('action', { booking, action })
 }
 
+function openCalculation(booking: BookingHistoryItem) {
+  handleAction(booking, {
+    id: 'calculating',
+    label: booking.paymentAction || 'Калькуляция',
+    variant: 'primary',
+  })
+}
+
 function nightsLabel(count: number) {
   const mod10 = count % 10
   const mod100 = count % 100
@@ -297,6 +305,7 @@ onBeforeUnmount(() => {
                 "
                 type="button"
                 class="booking-table__payment-btn"
+                @click="openCalculation(item)"
               >
                 {{ item.paymentAction || 'Калькуляция' }}
               </button>
@@ -338,6 +347,7 @@ onBeforeUnmount(() => {
                   "
                   type="button"
                   class="booking-table__action booking-table__action--primary"
+                  @click="openCalculation(item)"
                 >
                   {{ item.paymentAction || 'Калькуляция' }}
                 </button>

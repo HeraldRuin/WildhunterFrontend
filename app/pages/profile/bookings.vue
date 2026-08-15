@@ -23,6 +23,7 @@ const notificationCount = 2
 const { open: openCollectionModal } = useCollectionModal()
 const { open: openCancelBookingModal } = useCancelBookingModal()
 const { open: openAddServicesModal } = useAddServicesModal()
+const { open: openCalculationModal } = useCalculationModal()
 const { open: openConfirmModal } = useConfirmModal()
 
 const breadcrumbs = [
@@ -454,6 +455,11 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
 
   if (action.id === 'add_services') {
     openAddServicesModal(booking)
+    return
+  }
+
+  if (action.id === 'calculating') {
+    openCalculationModal(booking)
   }
 }
 
@@ -614,6 +620,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
     />
     <CommonConfirmModal />
     <ProfileAddServicesModal />
+    <ProfileCalculationModal />
     <ProfileCustomerModal
       :booking="customerModalBooking"
       @close="customerModalBooking = null"
