@@ -610,8 +610,8 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 140px;
-  padding: 7px 10px;
+  width: 168px;
+  padding: 7px 16px;
   border-radius: 999px;
   border: 1.5px solid transparent;
   font-size: 0.75rem;
