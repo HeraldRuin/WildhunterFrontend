@@ -694,10 +694,11 @@ function handleKeydown(event: KeyboardEvent) {
                     @click="addTrophyDraft"
                   >+</button>
                 </div>
-                <div class="add-services-modal__columns add-services-modal__columns--3">
+                <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--trophy">
                   <span>Животное</span>
                   <span>Тип</span>
                   <span>Количество</span>
+                  <span></span>
                 </div>
                 <div
                   v-for="item in items.trophies"
@@ -812,17 +813,20 @@ function handleKeydown(event: KeyboardEvent) {
                     @click="addPreparationDraft"
                   >+</button>
                 </div>
+                <div class="add-services-modal__columns add-services-modal__form-row">
+                  <span>Животное</span>
+                  <span>Количество</span>
+                  <span></span>
+                </div>
                 <div
                   v-for="item in items.preparations"
                   :key="item.id"
                   class="add-services-modal__form-row"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
-                    <span class="add-services-modal__field-label">Животное</span>
                     <span class="add-services-modal__value">{{ item.animal_title }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__field-label">Количество</span>
                     <span class="add-services-modal__value">{{ item.count }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
@@ -842,7 +846,6 @@ function handleKeydown(event: KeyboardEvent) {
                   class="add-services-modal__form-row"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
-                    <span class="add-services-modal__field-label">Животное</span>
                     <CommonSelectField
                       v-model="row.animalId"
                       class="add-services-modal__select"
@@ -852,7 +855,6 @@ function handleKeydown(event: KeyboardEvent) {
                     />
                   </div>
                   <label class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__field-label">Количество</span>
                     <input
                       v-model.number="row.count"
                       class="add-services-modal__control"
@@ -892,17 +894,20 @@ function handleKeydown(event: KeyboardEvent) {
                     @click="addFoodDraft"
                   >+</button>
                 </div>
+                <div class="add-services-modal__columns add-services-modal__form-row">
+                  <span>Питание</span>
+                  <span>Количество чел</span>
+                  <span></span>
+                </div>
                 <div
                   v-for="item in items.foods"
                   :key="item.id"
                   class="add-services-modal__form-row"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
-                    <span class="add-services-modal__field-label">Питание</span>
                     <span class="add-services-modal__value">{{ item.type || 'Питание' }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__field-label">Количество чел</span>
                     <span class="add-services-modal__value">{{ item.count }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
@@ -922,11 +927,9 @@ function handleKeydown(event: KeyboardEvent) {
                   class="add-services-modal__form-row"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
-                    <span class="add-services-modal__field-label">Питание</span>
                     <span class="add-services-modal__value">Питание</span>
                   </div>
                   <label class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__field-label">Количество чел</span>
                     <input
                       v-model.number="row.count"
                       class="add-services-modal__control"
@@ -966,21 +969,24 @@ function handleKeydown(event: KeyboardEvent) {
                     @click="addAdditionalDraft"
                   >+</button>
                 </div>
+                <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--additional">
+                  <span>Название</span>
+                  <span>Количество</span>
+                  <span>Охотник</span>
+                  <span></span>
+                </div>
                 <div
                   v-for="item in items.additionals"
                   :key="item.id"
                   class="add-services-modal__form-row add-services-modal__form-row--additional"
                 >
                   <div class="add-services-modal__field add-services-modal__field--name">
-                    <span class="add-services-modal__field-label">Название</span>
                     <span class="add-services-modal__value">{{ item.type }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__field-label">Количество</span>
                     <span class="add-services-modal__value">{{ item.count }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--hunter">
-                    <span class="add-services-modal__field-label">Охотник</span>
                     <span class="add-services-modal__value">{{ item.hunter_name || '—' }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
@@ -1000,7 +1006,6 @@ function handleKeydown(event: KeyboardEvent) {
                   class="add-services-modal__form-row add-services-modal__form-row--additional"
                 >
                   <div class="add-services-modal__field add-services-modal__field--name">
-                    <span class="add-services-modal__field-label">Название</span>
                     <CommonSelectField
                       v-model="row.additionalId"
                       class="add-services-modal__select"
@@ -1010,7 +1015,6 @@ function handleKeydown(event: KeyboardEvent) {
                     />
                   </div>
                   <label class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__field-label">Количество</span>
                     <input
                       v-model.number="row.count"
                       class="add-services-modal__control"
@@ -1020,7 +1024,6 @@ function handleKeydown(event: KeyboardEvent) {
                     >
                   </label>
                   <div class="add-services-modal__field add-services-modal__field--hunter">
-                    <span class="add-services-modal__field-label">Охотник</span>
                     <CommonSelectField
                       v-model="row.hunterId"
                       class="add-services-modal__select"
@@ -1224,6 +1227,10 @@ function handleKeydown(event: KeyboardEvent) {
   margin-top: 10px;
 }
 
+.add-services-modal__columns.add-services-modal__form-row {
+  margin-top: 0;
+}
+
 .add-services-modal__form-row--trophy {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 120px 220px;
 }
@@ -1287,12 +1294,6 @@ function handleKeydown(event: KeyboardEvent) {
 
 .add-services-modal__select :deep(.select-field__list) {
   font-size: 0.88rem;
-}
-
-.add-services-modal__field-label {
-  color: var(--wh-gray-600);
-  font-size: 0.75rem;
-  font-weight: 500;
 }
 
 .add-services-modal__value {
