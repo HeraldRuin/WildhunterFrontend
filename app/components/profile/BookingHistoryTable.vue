@@ -99,6 +99,16 @@ function formatPrice(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value)
 }
 
+function isPaymentVisibleStatus(code?: string) {
+  return code === 'finish_bed_collection'
+    || code === 'paid'
+    || code === 'completed'
+}
+
+function isHuntingFinishedCollection(item: BookingHistoryItem) {
+  return item.type === 'animal' && item.status.code === 'finished_collection'
+}
+
 function handleDocumentClick(event: MouseEvent) {
   if (openDetailsId.value === null) return
 
@@ -299,10 +309,7 @@ onBeforeUnmount(() => {
               <button
                 v-if="
                   showHunterCalculation
-                  && (
-                    item.status.code === 'finish_bed_collection'
-                    || item.status.code === 'paid'
-                  )
+                  && isPaymentVisibleStatus(item.status.code)
                 "
                 type="button"
                 class="booking-table__payment-btn"
@@ -311,18 +318,10 @@ onBeforeUnmount(() => {
                 {{ item.paymentAction || 'Калькуляция' }}
               </button>
               <div
-                v-else-if="
-                  showCustomer
-                  && (
-                    item.status.code === 'finish_bed_collection'
-                    || item.status.code === 'paid'
-                  )
-                "
+                v-else-if="showCustomer && isHuntingFinishedCollection(item)"
                 class="booking-table__payment-summary"
               >
-                <div>Внесена предоплата: {{ formatPrice(item.payment?.prepaidTotal ?? 0) }} руб</div>
                 <div>Остаток базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</div>
-                <div>Всего: {{ formatPrice(item.payment?.total ?? 0) }} руб</div>
               </div>
             </td>
             <td class="booking-table__actions">
@@ -342,8 +341,8 @@ onBeforeUnmount(() => {
                     showCalculation
                     && (
                       (item.status.code === 'prepayment_collection' && item.paymentAction)
-                      || item.status.code === 'finish_bed_collection'
-                      || item.status.code === 'paid'
+                      || isPaymentVisibleStatus(item.status.code)
+                      || isHuntingFinishedCollection(item)
                     )
                   "
                   type="button"
@@ -383,7 +382,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .booking-table-wrap {
+  display: flex;
+  flex-direction: column;
   flex: 1;
+  min-height: 0;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
@@ -399,13 +401,22 @@ onBeforeUnmount(() => {
 }
 
 .booking-table-scroll {
-  overflow-x: auto;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+@media (--wh-tablet) {
+  .booking-table-scroll {
+    max-height: calc(100dvh - 220px);
+  }
 }
 
 .booking-table {
   width: 100%;
   min-width: 980px;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.82rem;
   line-height: 1.45;
 }
@@ -430,6 +441,9 @@ onBeforeUnmount(() => {
 }
 
 .booking-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   background: var(--wh-gray-100);
   color: var(--wh-gray-900);
   font-weight: 700;
