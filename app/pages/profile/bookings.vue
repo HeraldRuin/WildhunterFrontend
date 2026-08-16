@@ -47,6 +47,7 @@ const prepaymentModalBooking = ref<BookingHistoryItem | null>(null)
 const bedSelectionModalBooking = ref<BookingHistoryItem | null>(null)
 const expiredPrepaymentRequests = new Map<string, Promise<boolean>>()
 const completedPrepaymentExpirations = reactive(new Set<string>())
+const collectionLoadingBookingId = ref<number | null>(null)
 let timerInterval: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
@@ -215,22 +216,31 @@ async function expirePrepayment(code: string): Promise<boolean> {
 }
 
 async function openFinishedCollectionModal(booking: BookingHistoryItem) {
-  if (
-    booking.isMasterHunter
-    && booking.status.code === 'prepayment_collection'
-    && booking.status.timer === '00 мин 00 сек'
-  ) {
-    const wasAlreadyRequested = expiredPrepaymentRequests.has(booking.code)
-    const success = await expirePrepaymentOnce(booking.code)
+  if (collectionLoadingBookingId.value !== null) return
 
-    if (!success && wasAlreadyRequested) {
-      expiredPrepaymentRequests.delete(booking.code)
-      await expirePrepaymentOnce(booking.code)
+  collectionLoadingBookingId.value = booking.id
+
+  try {
+    if (
+      booking.isMasterHunter
+      && booking.status.code === 'prepayment_collection'
+      && booking.status.timer === '00 мин 00 сек'
+    ) {
+      const wasAlreadyRequested = expiredPrepaymentRequests.has(booking.code)
+      const success = await expirePrepaymentOnce(booking.code)
+
+      if (!success && wasAlreadyRequested) {
+        expiredPrepaymentRequests.delete(booking.code)
+        await expirePrepaymentOnce(booking.code)
+      }
     }
-  }
 
-  finishedCollectionModalBooking.value = bookings.value.find(item => item.code === booking.code)
-    ?? booking
+    finishedCollectionModalBooking.value = bookings.value.find(item => item.code === booking.code)
+      ?? booking
+  }
+  finally {
+    collectionLoadingBookingId.value = null
+  }
 }
 
 function applyBookingStatusUpdate(payload: BookingStatusUpdatedPayload) {
@@ -420,6 +430,10 @@ async function completeBooking(booking: BookingHistoryItem) {
 }
 
 async function startCollection(booking: BookingHistoryItem) {
+  if (collectionLoadingBookingId.value !== null) return
+
+  collectionLoadingBookingId.value = booking.id
+
   try {
     const response = await bookingsApi.startCollection(booking.code)
 
@@ -436,6 +450,9 @@ async function startCollection(booking: BookingHistoryItem) {
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
     notifications.error(data?.message || 'Не удалось запустить сбор охотников')
+  }
+  finally {
+    collectionLoadingBookingId.value = null
   }
 }
 
@@ -647,6 +664,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
           :show-customer="isBaseAdmin"
           :show-calculation="isBaseAdmin"
           :show-hunter-calculation="isHunter"
+          :loading-collection-booking-id="collectionLoadingBookingId"
           @action="handleBookingAction"
           @customer="openCustomerModal"
         />

@@ -9,6 +9,7 @@ const props = defineProps<{
   showCustomer?: boolean
   showCalculation?: boolean
   showHunterCalculation?: boolean
+  loadingCollectionBookingId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -73,7 +74,14 @@ function toggleDetails(id: number) {
   })
 }
 
+function isCollectionActionLoading(booking: BookingHistoryItem, action: BookingAction) {
+  return props.loadingCollectionBookingId === booking.id
+    && (action.id === 'open_collection' || action.id === 'start_collection')
+}
+
 function handleAction(booking: BookingHistoryItem, action: BookingAction) {
+  if (isCollectionActionLoading(booking, action)) return
+
   emit('action', { booking, action })
 }
 
@@ -332,8 +340,17 @@ onBeforeUnmount(() => {
                   type="button"
                   class="booking-table__action"
                   :class="`booking-table__action--${action.variant}`"
+                  :disabled="isCollectionActionLoading(item, action)"
+                  :aria-busy="isCollectionActionLoading(item, action)"
                   @click="handleAction(item, action)"
                 >
+                  <CommonSpinner
+                    v-if="isCollectionActionLoading(item, action)"
+                    variant="ring"
+                    :size="14"
+                    color="var(--wh-white)"
+                    :label="action.label"
+                  />
                   {{ action.label }}
                 </button>
                 <button
@@ -626,6 +643,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   width: 168px;
   padding: 7px 16px;
   border-radius: 999px;
@@ -636,6 +654,15 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.booking-table__action:disabled {
+  cursor: default;
+}
+
+.booking-table__action[aria-busy="true"] {
+  width: auto;
+  min-width: 168px;
 }
 
 .booking-table__action--danger {
