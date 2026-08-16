@@ -5,6 +5,7 @@ import { parseDisplayDateToApiDate } from '~/utils/date'
 import {
   countOffersByReviewRating,
   DEFAULT_SEARCH_FILTERS,
+  matchesFoodFilter,
   matchesReviewRatingFilter,
 } from '~/utils/search'
 
@@ -262,19 +263,21 @@ const ratingCounts = computed(() => {
 })
 
 const filteredCatalogItems = computed(() => {
-  if (!isCatalogMode.value) {
-    return searchResult.value.items
-  }
-
   return searchResult.value.items.filter((item) => {
-    if (item.price < filters.value.priceMin || item.price > filters.value.priceMax) {
-      return false
+    if (isCatalogMode.value) {
+      if (item.price < filters.value.priceMin || item.price > filters.value.priceMax) {
+        return false
+      }
+
+      if (
+        filters.value.ratings.length
+        && !matchesReviewRatingFilter(item.rating, filters.value.ratings)
+      ) {
+        return false
+      }
     }
 
-    if (
-      filters.value.ratings.length
-      && !matchesReviewRatingFilter(item.rating, filters.value.ratings)
-    ) {
+    if (!matchesFoodFilter(item.has_food, filters.value.hasMeals)) {
       return false
     }
 
@@ -297,7 +300,7 @@ const offerItems = computed(() => {
     return filteredCatalogItems.value.slice(start, start + CATALOG_PER_PAGE)
   }
 
-  return searchResult.value.items
+  return filteredCatalogItems.value
 })
 
 const totalCount = computed(() => {

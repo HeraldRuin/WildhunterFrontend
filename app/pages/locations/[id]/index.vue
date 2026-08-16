@@ -4,6 +4,7 @@ import type { BreadcrumbItem } from '~/types/breadcrumb'
 import {
   countOffersByReviewRating,
   DEFAULT_SEARCH_FILTERS,
+  matchesFoodFilter,
   matchesReviewRatingFilter,
 } from '~/utils/search'
 
@@ -157,6 +158,10 @@ const filteredOffers = computed(() => {
       filters.value.ratings.length
       && !matchesReviewRatingFilter(item.rating, filters.value.ratings)
     ) {
+      return false
+    }
+
+    if (!matchesFoodFilter(item.has_food, filters.value.hasMeals)) {
       return false
     }
 

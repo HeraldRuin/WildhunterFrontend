@@ -38,6 +38,7 @@ export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
     image: offer.image_url,
     reviews: Number(offer.review_count) || 0,
     rating: Number(offer.star_rate) || 0,
+    has_food: Boolean(offer.has_food),
     map_lat: parseCoord(offer.map_lat),
     map_lng: parseCoord(offer.map_lng),
   }

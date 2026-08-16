@@ -151,6 +151,26 @@ export function matchesReviewRatingFilter(score: number, selected: string[]): bo
   })
 }
 
+export function matchesFoodFilter(
+  hasFood: boolean | undefined,
+  hasMeals: SearchFiltersState['hasMeals'],
+): boolean {
+  const has = Boolean(hasFood)
+
+  switch (hasMeals) {
+    case '':
+      return true
+    case 'yes':
+      return has
+    case 'no':
+      return !has
+    default: {
+      const _exhaustive: never = hasMeals
+      return _exhaustive
+    }
+  }
+}
+
 export function countOffersByReviewRating(items: OfferItem[]): Record<string, number> {
   return Object.fromEntries(
     Object.keys(REVIEW_RATING_RANGES).map(key => [

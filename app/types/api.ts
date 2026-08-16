@@ -50,6 +50,7 @@ export interface OfferItem {
   image: string
   reviews: number
   rating: number
+  has_food?: boolean
   map_lat?: number
   map_lng?: number
 }
@@ -99,6 +100,7 @@ export interface HotelOffer {
   location: SearchLocation
   price?: number | string
   review_count?: number
+  has_food?: boolean
   is_in_wishList?: boolean
   map_lat?: number | string | null
   map_lng?: number | string | null
