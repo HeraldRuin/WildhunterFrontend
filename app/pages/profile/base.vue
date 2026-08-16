@@ -32,9 +32,6 @@ const hotels: BaseHotelItem[] = [
 ]
 
 const hotelsCount = hotels.length
-const hotelsFrom = hotelsCount > 0 ? 1 : 0
-const hotelsTo = hotelsCount
-const hotelsCountText = `Показаны ${hotelsFrom} - ${hotelsTo} из ${hotelsCount} отелей`
 </script>
 
 <template>
@@ -65,8 +62,6 @@ const hotelsCountText = `Показаны ${hotelsFrom} - ${hotelsTo} из ${hot
           :item="hotel"
         />
       </div>
-
-      <p class="base-hotels__count">{{ hotelsCountText }}</p>
     </div>
 
     <p v-else class="base-hotels__empty">Нет отелей</p>
@@ -135,13 +130,6 @@ const hotelsCountText = `Показаны ${hotelsFrom} - ${hotelsTo} из ${hot
 
 .profile-page :deep(.page-title--divider) {
   width: 100%;
-}
-
-.base-hotels__count {
-  margin: 16px 0 0;
-  color: #5e6d77;
-  font-size: 13px;
-  line-height: 1.4;
 }
 
 .base-hotels__list {
