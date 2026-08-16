@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: false,
+  path: '/404',
 })
 
 setResponseStatus(404)

@@ -23,6 +23,8 @@ export { useServicesApi } from './services'
 export type { FavoriteResponse, FavoriteServiceItem } from './services'
 export { useNewsletterApi } from './newsletter'
 export type { NewsletterSubscribePayload, NewsletterSubscribeResponse } from './newsletter'
+export { useContactApi } from './contact'
+export type { ContactMessagePayload, ContactMessageResponse } from './contact'
 export { useUserApi } from './user'
 export type {
   ChangePasswordPayload,
