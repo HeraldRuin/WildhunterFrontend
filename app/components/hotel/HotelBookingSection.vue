@@ -532,10 +532,19 @@ watch(
         <button
           type="button"
           class="hotel-booking-section__book"
+          :class="{ 'hotel-booking-section__book--loading': isBooking }"
           :disabled="isBooking || !(hasSelectedRooms || animalAvailability)"
+          :aria-busy="isBooking"
           @click="handleBook"
         >
-          Забронировать сейчас
+          <CommonSpinner
+            v-if="isBooking"
+            variant="ring"
+            :size="22"
+            color="var(--wh-white)"
+            label="Создаём бронирование"
+          />
+          <span v-else>Забронировать сейчас</span>
         </button>
       </Transition>
     </div>
@@ -863,6 +872,10 @@ watch(
 .hotel-booking-section__book:disabled {
   opacity: 0.7;
   cursor: wait;
+}
+
+.hotel-booking-section__book--loading {
+  opacity: 1;
 }
 
 .hotel-booking-book-enter-active,
