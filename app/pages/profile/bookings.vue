@@ -93,19 +93,20 @@ const {
   },
 )
 
-const historyRole = computed(() =>
-  historyResponse.value?.data?.role || ROLE_HUNTER,
-)
-const isHunter = computed(() =>
-  historyRole.value.trim().toLowerCase() === ROLE_HUNTER,
-)
-const isBaseAdmin = computed(() =>
-  historyRole.value.trim().toLowerCase() === ROLE_BASE_ADMIN,
-)
+const { isBaseAdmin } = useUserRole()
+const isHunter = computed(() => !isBaseAdmin.value)
 
-const tabStatuses = computed(() =>
-  historyResponse.value?.data?.statuses ?? [],
-)
+const tabStatuses = computed(() => {
+  if (!isBaseAdmin.value) {
+    return historyResponse.value?.data?.statuses ?? []
+  }
+
+  const fromApi = (historyResponse.value?.data?.statuses ?? []).filter(
+    code => code !== 'invitation',
+  )
+
+  return fromApi.length ? fromApi : ['completed']
+})
 
 const dropdownStatuses = computed(() =>
   historyResponse.value?.data?.dropdown_statuses ?? [],
@@ -118,6 +119,7 @@ const bookings = computed<BookingHistoryItem[]>(() => {
     const booking = mapBookingHistoryItem(item, {
       hotelSlug: rootHotel?.slug,
       locationSlug: rootHotel?.location?.slug,
+      isHunter: isHunter.value,
     }, timerNow.value)
 
     if (completedPrepaymentExpirations.has(booking.code)) {
@@ -194,6 +196,7 @@ async function expirePrepayment(code: string): Promise<boolean> {
           finishedCollectionModalBooking.value = mapBookingHistoryItem(refreshedItem, {
             hotelSlug: rootHotel?.slug,
             locationSlug: rootHotel?.location?.slug,
+            isHunter: isHunter.value,
           }, timerNow.value)
         }
       }
@@ -257,20 +260,40 @@ function applyBookingStatusUpdate(payload: BookingStatusUpdatedPayload) {
       },
     },
   }
+
+  const openedBedSelection = bedSelectionModalBooking.value
+  if (openedBedSelection && openedBedSelection.id === payload.booking_id) {
+    bedSelectionModalBooking.value = {
+      ...openedBedSelection,
+      status: {
+        ...openedBedSelection.status,
+        code: payload.status,
+        label: payload.status_label,
+      },
+    }
+  }
+
+  void refreshHistoryFromChannel()
 }
 
 const { syncSubscriptions } = useBookingStatusChannel(applyBookingStatusUpdate)
 
 async function refreshHistoryFromChannel() {
   const openedFinishedCollectionCode = finishedCollectionModalBooking.value?.code
+  const openedBedSelectionCode = bedSelectionModalBooking.value?.code
 
   await refreshHistory()
 
-  if (
-    openedFinishedCollectionCode
-    && !bookings.value.some(booking => booking.code === openedFinishedCollectionCode)
-  ) {
-    finishedCollectionModalBooking.value = null
+  if (openedFinishedCollectionCode) {
+    finishedCollectionModalBooking.value = bookings.value.find(
+      booking => booking.code === openedFinishedCollectionCode,
+    ) ?? null
+  }
+
+  if (openedBedSelectionCode) {
+    bedSelectionModalBooking.value = bookings.value.find(
+      booking => booking.code === openedBedSelectionCode,
+    ) ?? null
   }
 }
 
@@ -288,6 +311,10 @@ watch(
   () => user.value?.id,
   subscribeToHistory,
   { immediate: true },
+)
+
+const isHistoryInitialLoading = computed(
+  () => historyPending.value && !historyResponse.value,
 )
 
 const emptyText = computed(() => {
@@ -399,6 +426,8 @@ async function startCollection(booking: BookingHistoryItem) {
     if (response.success) {
       notifications.success(response.message || 'Сбор охотников запущен')
       await refreshHistory()
+      const updatedBooking = bookings.value.find(item => item.code === booking.code) ?? booking
+      openCollectionModal(updatedBooking)
       return
     }
 
@@ -421,6 +450,11 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   }
 
   if (action.id === 'start_collection') {
+    if (booking.status.code === 'collection') {
+      openCollectionModal(booking)
+      return
+    }
+
     void startCollection(booking)
     return
   }
@@ -594,14 +628,14 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
     <ProfileBookingHistoryTabs
       v-model="statusFilter"
-      :role="historyRole"
+      :role="isBaseAdmin ? ROLE_BASE_ADMIN : ROLE_HUNTER"
       :tab-statuses="tabStatuses"
       :dropdown-statuses="dropdownStatuses"
     />
 
     <div class="bookings-page__content">
       <Transition name="bookings-fade" mode="out-in" appear>
-        <div v-if="historyPending" class="bookings-page__loading" aria-live="polite">
+        <div v-if="isHistoryInitialLoading" class="bookings-page__loading" aria-live="polite">
           <CommonSpinner variant="ring" size="lg" label="Загрузка бронирований" />
         </div>
 
@@ -663,7 +697,9 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 .bookings-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   padding: 20px 40px 48px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
@@ -671,6 +707,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 .bookings-page__header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -683,7 +720,12 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 }
 
 .bookings-page :deep(.page-title--divider) {
+  flex-shrink: 0;
   width: 100%;
+}
+
+.bookings-page :deep(.booking-history-tabs) {
+  flex-shrink: 0;
 }
 
 .bookings-page__notifications {
@@ -726,7 +768,9 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 .bookings-page__content {
   display: flex;
+  flex: 1;
   flex-direction: column;
+  min-height: 0;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
   background: var(--wh-white);
@@ -758,7 +802,15 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 @media (--wh-tablet) {
   .bookings-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 12px 8px 32px;
+  }
+
+  .bookings-page__content {
+    flex: none;
+    min-height: 0;
   }
 
   .bookings-page__header {
