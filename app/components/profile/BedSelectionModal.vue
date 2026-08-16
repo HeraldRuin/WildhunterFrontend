@@ -21,6 +21,7 @@ const notifications = useNotifications()
 const notifyOptions = { group: BED_SELECTION_NOTIFICATION_GROUP }
 
 const isOpen = computed(() => Boolean(props.booking))
+const canSelectBeds = computed(() => props.booking?.status.code === 'bed_collection')
 const isLoading = ref(false)
 const loadError = ref('')
 const selectingKey = ref<string | null>(null)
@@ -102,6 +103,18 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => props.booking?.status.code,
+  (status, previousStatus) => {
+    const code = props.booking?.code
+    if (!code || !previousStatus || status === previousStatus) {
+      return
+    }
+
+    void loadPlaces(code, { silent: true })
+  },
+)
+
 async function loadPlaces(code: string, options: { silent?: boolean } = {}) {
   const requestId = ++loadRequestId
   if (!options.silent) {
@@ -149,7 +162,7 @@ async function loadPlaces(code: string, options: { silent?: boolean } = {}) {
 
 async function selectPlace(place: PlaceRow) {
   const code = props.booking?.code
-  if (!code || place.occupied || selectingKey.value) {
+  if (!code || !canSelectBeds.value || place.occupied || selectingKey.value) {
     return
   }
 
@@ -181,7 +194,7 @@ async function selectPlace(place: PlaceRow) {
 
 async function cancelPlace(place: PlaceRow) {
   const code = props.booking?.code
-  if (!code || !place.placeId || selectingKey.value) {
+  if (!code || !canSelectBeds.value || !place.placeId || selectingKey.value) {
     return
   }
 
@@ -299,7 +312,7 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
         <div class="bed-selection-modal__card">
           <header class="bed-selection-modal__header">
             <h2 id="bed-selection-modal-title" class="bed-selection-modal__title">
-              Выбор койко-места
+              {{ canSelectBeds ? 'Выбор койко-места' : 'Места распределены' }}
             </h2>
             <CommonModalCloseButton @click="close" />
           </header>
@@ -331,6 +344,9 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
                     v-for="place in room.places"
                     :key="place.key"
                     class="bed-selection-modal__place"
+                    :class="{
+                      'bed-selection-modal__place--readonly': !canSelectBeds,
+                    }"
                   >
                     <span>место {{ place.placeNumber }}</span>
                     <span
@@ -339,7 +355,7 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
                       }"
                     >{{ place.status }}</span>
                     <button
-                      v-if="place.occupied"
+                      v-if="canSelectBeds && place.occupied"
                       type="button"
                       class="bed-selection-modal__cancel"
                       :disabled="Boolean(selectingKey)"
@@ -356,7 +372,7 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
                       <span v-else>Отменить</span>
                     </button>
                     <button
-                      v-else
+                      v-else-if="canSelectBeds"
                       type="button"
                       class="bed-selection-modal__select"
                       :disabled="Boolean(selectingKey)"
@@ -420,7 +436,6 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
 .bed-selection-modal__header {
   position: relative;
   padding: 18px 48px 18px 16px;
-  border-bottom: 1px solid var(--wh-gray-200);
 }
 
 .bed-selection-modal__title {
@@ -485,6 +500,10 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
   font-size: 0.9rem;
 }
 
+.bed-selection-modal__place--readonly {
+  grid-template-columns: 1fr 1fr;
+}
+
 .bed-selection-modal__status--occupied {
   color: #198754;
   font-weight: 600;
@@ -544,8 +563,12 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
     grid-template-columns: 1fr auto;
   }
 
-  .bed-selection-modal__place span:nth-child(2) {
+  .bed-selection-modal__place:not(.bed-selection-modal__place--readonly) span:nth-child(2) {
     display: none;
+  }
+
+  .bed-selection-modal__place--readonly {
+    grid-template-columns: 1fr 1fr;
   }
 }
 </style>
