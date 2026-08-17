@@ -194,4 +194,8 @@ async function handleSearch(payload: Record<string, string>) {
 .bases-map-page {
   background: var(--wh-white);
 }
+
+.bases-map-page :deep(.search-top__tagline) {
+  width: auto;
+}
 </style>
