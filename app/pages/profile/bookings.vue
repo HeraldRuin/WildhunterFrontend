@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { UserSearchItem } from '~/api/user'
-import type { BookingStatusUpdatedPayload } from '~/composables/useBookingStatusChannel'
+import type {
+  BookingInvitationUpdatedPayload,
+  BookingStatusUpdatedPayload,
+} from '~/composables/useBookingStatusChannel'
 import type { BookingAction, BookingHistoryItem } from '~/types/booking'
 import { ROLE_BASE_ADMIN, ROLE_HUNTER } from '~/utils/roles'
 import { FINISHED_COLLECTION_MODAL_STATUSES, mapBookingHistoryItem } from '~/utils/bookingHistory'
@@ -20,7 +23,7 @@ const { user } = useAuth()
 const notifications = useNotifications()
 
 const notificationCount = 2
-const { open: openCollectionModal } = useCollectionModal()
+const { open: openCollectionModal, applyInvitationUpdate } = useCollectionModal()
 const { open: openCancelBookingModal } = useCancelBookingModal()
 const { open: openAddServicesModal } = useAddServicesModal()
 const { open: openCalculationModal } = useCalculationModal()
@@ -286,7 +289,88 @@ function applyBookingStatusUpdate(payload: BookingStatusUpdatedPayload) {
   void refreshHistoryFromChannel()
 }
 
-const { syncSubscriptions } = useBookingStatusChannel(applyBookingStatusUpdate)
+function invitationMatchesDto(
+  invitation: { invitation_id: number, hunter_id: number },
+  payload: BookingInvitationUpdatedPayload,
+) {
+  return invitation.invitation_id === payload.invitation_id
+    || invitation.hunter_id === payload.hunter_id
+}
+
+function nextAcceptedCount(
+  current: number,
+  invitations: Array<{ is_accepted: boolean }>,
+  found: boolean,
+  payload: BookingInvitationUpdatedPayload,
+) {
+  if (invitations.length > 0) {
+    const accepted = invitations.filter(invitation => invitation.is_accepted).length
+    return !found && payload.is_accepted ? accepted + 1 : accepted
+  }
+
+  if (payload.is_accepted) {
+    return current + 1
+  }
+
+  return current
+}
+
+function applyBookingInvitationUpdate(payload: BookingInvitationUpdatedPayload) {
+  const response = historyResponse.value
+
+  if (response?.data.bookings.items.some(booking => booking.id === payload.booking_id)) {
+    historyResponse.value = {
+      ...response,
+      data: {
+        ...response.data,
+        bookings: {
+          ...response.data.bookings,
+          items: response.data.bookings.items.map((booking) => {
+            if (booking.id !== payload.booking_id) {
+              return booking
+            }
+
+            const invitations = booking.collection.invitations ?? []
+            let found = false
+            const nextInvitations = invitations.map((invitation) => {
+              if (!invitationMatchesDto(invitation, payload)) {
+                return invitation
+              }
+
+              found = true
+              return {
+                ...invitation,
+                status: payload.status,
+                is_accepted: payload.is_accepted,
+              }
+            })
+
+            return {
+              ...booking,
+              collection: {
+                ...booking.collection,
+                invitations: nextInvitations,
+                accepted_count: nextAcceptedCount(
+                  booking.collection.accepted_count,
+                  nextInvitations,
+                  found,
+                  payload,
+                ),
+              },
+            }
+          }),
+        },
+      },
+    }
+  }
+
+  applyInvitationUpdate(payload)
+}
+
+const { syncSubscriptions } = useBookingStatusChannel(
+  applyBookingStatusUpdate,
+  applyBookingInvitationUpdate,
+)
 
 async function refreshHistoryFromChannel() {
   const openedFinishedCollectionCode = finishedCollectionModalBooking.value?.code

@@ -8,8 +8,22 @@ export interface BookingStatusUpdatedPayload {
   status_label: string
 }
 
+export type BookingInvitationAction = 'accepted' | 'declined'
+
+export interface BookingInvitationUpdatedPayload {
+  booking_id: number
+  code: string
+  invitation_id: number
+  hunter_id: number
+  action: BookingInvitationAction
+  status: BookingInvitationAction
+  status_label: string
+  is_accepted: boolean
+}
+
 export function useBookingStatusChannel(
   onStatusUpdated: (payload: BookingStatusUpdatedPayload) => void,
+  onInvitationUpdated?: (payload: BookingInvitationUpdatedPayload) => void,
 ) {
   const config = useRuntimeConfig()
   const { authorizationHeader } = useAuthToken()
@@ -75,9 +89,13 @@ export function useBookingStatusChannel(
         continue
       }
 
-      connection
+      const channel = connection
         .private(`bookings.${bookingId}`)
         .listen('.booking.status.updated', onStatusUpdated)
+
+      if (onInvitationUpdated) {
+        channel.listen('.booking.invitation.updated', onInvitationUpdated)
+      }
 
       subscribedBookingIds.add(bookingId)
     }

@@ -1,7 +1,10 @@
+import type { BookingInvitationUpdatedPayload } from '~/composables/useBookingStatusChannel'
 import type {
   BookingHistoryItem,
+  BookingInvitationParticipant,
   CollectionModalState,
   CollectionParticipant,
+  CollectionParticipantStatus,
 } from '~/types/booking'
 
 const isOpen = ref(false)
@@ -28,6 +31,50 @@ const MOCK_PARTICIPANTS: CollectionParticipant[] = [
     status: 'confirmed',
   },
 ]
+
+function participantStatusFromInvitation(
+  invitation: BookingInvitationParticipant,
+): CollectionParticipantStatus {
+  if (invitation.isAccepted || invitation.status === 'accepted') {
+    return 'confirmed'
+  }
+
+  if (invitation.status === 'declined') {
+    return 'declined'
+  }
+
+  return 'pending'
+}
+
+function participantStatusFromPayload(
+  payload: BookingInvitationUpdatedPayload,
+): CollectionParticipantStatus {
+  switch (payload.status) {
+    case 'accepted':
+      return 'confirmed'
+    case 'declined':
+      return 'declined'
+    default: {
+      const _exhaustive: never = payload.status
+      return _exhaustive
+    }
+  }
+}
+
+function invitationMatchesPayload(
+  participant: CollectionParticipant,
+  payload: BookingInvitationUpdatedPayload,
+) {
+  if (payload.invitation_id && participant.invitationId === payload.invitation_id) {
+    return true
+  }
+
+  if (payload.hunter_id && participant.id === payload.hunter_id) {
+    return true
+  }
+
+  return false
+}
 
 function parseCollected(collected?: string): { current: number, total: number } | null {
   if (!collected) return null
@@ -58,9 +105,10 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
   const invitedParticipants: CollectionParticipant[] = (booking.collectionInvitations ?? [])
     .map(invitation => ({
       id: invitation.hunterId,
+      invitationId: invitation.invitationId,
       name: invitation.name,
       email: invitation.email,
-      status: invitation.isAccepted ? 'confirmed' : 'pending',
+      status: participantStatusFromInvitation(invitation),
     }))
 
   return {
@@ -114,6 +162,38 @@ export function useCollectionModal() {
     state.value.participants.push(participant)
   }
 
+  function applyInvitationUpdate(payload: BookingInvitationUpdatedPayload) {
+    if (!state.value || state.value.bookingId !== payload.booking_id) {
+      return
+    }
+
+    const participantIndex = state.value.participants.findIndex(participant =>
+      invitationMatchesPayload(participant, payload),
+    )
+
+    if (participantIndex < 0) {
+      return
+    }
+
+    const current = state.value.participants[participantIndex]
+    if (!current) {
+      return
+    }
+
+    state.value = {
+      ...state.value,
+      participants: state.value.participants.map((participant, index) =>
+        index === participantIndex
+          ? {
+              ...participant,
+              invitationId: current.invitationId ?? payload.invitation_id,
+              status: participantStatusFromPayload(payload),
+            }
+          : participant,
+      ),
+    }
+  }
+
   return {
     isOpen: readonly(isOpen),
     isContentHidden: readonly(isContentHidden),
@@ -123,5 +203,6 @@ export function useCollectionModal() {
     hide,
     reopen,
     addParticipant,
+    applyInvitationUpdate,
   }
 }

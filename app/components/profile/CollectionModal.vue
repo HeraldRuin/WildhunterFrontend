@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { UserSearchItem } from '~/api/user'
+import type { CollectionParticipantStatus } from '~/types/booking'
 
 const emit = defineEmits<{
   extended: []
@@ -385,6 +386,36 @@ function requestCollectionExtension() {
     transparentBackdrop: true,
   })
 }
+
+function participantBadgeLabel(status: CollectionParticipantStatus) {
+  switch (status) {
+    case 'confirmed':
+      return 'Подтвержден'
+    case 'pending':
+      return 'Ожидает подтверждения'
+    case 'declined':
+      return 'Отклонено'
+    default: {
+      const _exhaustive: never = status
+      return _exhaustive
+    }
+  }
+}
+
+function participantBadgeClass(status: CollectionParticipantStatus) {
+  switch (status) {
+    case 'confirmed':
+      return ''
+    case 'pending':
+      return 'collection-modal__badge--pending'
+    case 'declined':
+      return 'collection-modal__badge--declined'
+    default: {
+      const _exhaustive: never = status
+      return _exhaustive
+    }
+  }
+}
 </script>
 
 <template>
@@ -436,9 +467,9 @@ function requestCollectionExtension() {
 
               <span
                 class="collection-modal__badge"
-                :class="{ 'collection-modal__badge--pending': participant.status === 'pending' }"
+                :class="participantBadgeClass(participant.status)"
               >
-                {{ participant.status === 'confirmed' ? 'Подтвержден' : 'Ожидает подтверждения' }}
+                {{ participantBadgeLabel(participant.status) }}
               </span>
             </div>
 
@@ -656,6 +687,11 @@ function requestCollectionExtension() {
 
 .collection-modal__badge--pending {
   background: var(--wh-gray-600);
+  color: var(--wh-white);
+}
+
+.collection-modal__badge--declined {
+  background: var(--wh-field-error);
   color: var(--wh-white);
 }
 

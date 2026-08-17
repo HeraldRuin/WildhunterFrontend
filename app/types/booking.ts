@@ -23,10 +23,11 @@ export interface BookingAction {
   variant: BookingActionVariant
 }
 
-export type CollectionParticipantStatus = 'confirmed' | 'pending'
+export type CollectionParticipantStatus = 'confirmed' | 'pending' | 'declined'
 
 export interface CollectionParticipant {
   id?: number
+  invitationId?: number
   name: string
   email?: string
   status: CollectionParticipantStatus
