@@ -34,11 +34,17 @@ const canExtendCollection = computed(() => {
   return Number.isFinite(end) && end <= timerNow.value
 })
 
+const occupiedParticipants = computed(() => {
+  if (!state.value) return []
+
+  return state.value.participants.filter(participant => participant.status !== 'declined')
+})
+
 const canFinishCollection = computed(() => {
   if (!state.value) return false
 
   const required = state.value.slotsTotal
-  const accepted = state.value.participants.filter(
+  const accepted = occupiedParticipants.value.filter(
     participant => participant.status === 'confirmed',
   ).length
 
@@ -47,7 +53,7 @@ const canFinishCollection = computed(() => {
 
 const emptySlotCount = computed(() => {
   if (!state.value) return 0
-  return Math.max(0, state.value.slotsTotal - state.value.participants.length)
+  return Math.max(0, state.value.slotsTotal - occupiedParticipants.value.length)
 })
 
 watch(isOpen, (open) => {
@@ -449,7 +455,7 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 
           <div class="collection-modal__body">
             <div
-              v-for="participant in state.participants"
+              v-for="participant in occupiedParticipants"
               :key="participant.id ?? participant.name"
               class="collection-modal__participant"
             >
