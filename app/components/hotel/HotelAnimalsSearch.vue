@@ -19,7 +19,7 @@ const emit = defineEmits<{
   check: [payload: { huntDate: string, hunters: number, animalId: string }]
 }>()
 
-const maxAdults = 100
+const maxAdults = 20
 const emptyHuntDateLabel = 'Пожалуйста выберите дату'
 
 const huntDate = ref<Date | null>(null)

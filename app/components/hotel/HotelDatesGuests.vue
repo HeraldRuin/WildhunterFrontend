@@ -22,7 +22,7 @@ const blocksStyle = computed(() => ({
   '--hotel-booking-blocks-width': props.blocksWidth,
 }))
 
-const maxAdults = 100
+const maxAdults = 20
 const emptyDatesLabel = 'Пожалуйста выберите дату'
 
 function queryString(key: string): string {

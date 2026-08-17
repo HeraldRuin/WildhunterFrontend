@@ -17,7 +17,7 @@ const emit = defineEmits<{
 const route = useRoute()
 const { location: locationApi, animals: animalsApi } = useApi()
 
-const maxAdults = 100
+const maxAdults = 20
 
 function getDefaultCheckIn() {
   return startOfDay(new Date())
