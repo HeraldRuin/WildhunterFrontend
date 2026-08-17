@@ -52,9 +52,13 @@ function handleSearch(payload: Record<string, string>) {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  height: 100%;
   margin-inline: auto;
   padding-inline: 12px;
+  pointer-events: none;
+}
+
+.hero-block__inner > * {
+  pointer-events: auto;
 }
 
 .hero-block__title {
@@ -71,7 +75,7 @@ function handleSearch(payload: Record<string, string>) {
   position: absolute;
   top: 518px;
   left: 50%;
-  z-index: 1;
+  z-index: 21;
   width: 1500px;
   max-width: calc(100% - 24px);
   transform: translateX(-50%);
@@ -107,7 +111,7 @@ function handleSearch(payload: Record<string, string>) {
     position: absolute;
     top: 626px;
     left: 50%;
-    z-index: 1;
+    z-index: 21;
     width: 100%;
     max-width: none;
     margin-top: 0;
