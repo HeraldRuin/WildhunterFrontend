@@ -48,4 +48,10 @@
     display: block;
   }
 }
+
+@media (--wh-mobile) {
+  .hero-title__heading {
+    font-size: 28px;
+  }
+}
 </style>
