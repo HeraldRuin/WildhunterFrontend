@@ -3,6 +3,7 @@ const { user, isAuthenticated, logout } = useAuth()
 
 const menuRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
+const hoveredKey = ref<string | null>(null)
 
 const displayName = computed(() => {
   if (!user.value) {
@@ -26,12 +27,18 @@ function toggleMenu() {
 
 function closeMenu() {
   isOpen.value = false
+  hoveredKey.value = null
 }
 
 function handleDocumentClick(event: MouseEvent) {
   if (!menuRef.value?.contains(event.target as Node)) {
     closeMenu()
   }
+}
+
+async function openItem(to: string) {
+  closeMenu()
+  await navigateTo(to)
 }
 
 async function handleLogout() {
@@ -86,16 +93,6 @@ onUnmounted(() => {
           class="auth-user-menu__content"
           @click="closeMenu"
         >
-          <!--
-          <span class="auth-user-menu__avatar" aria-hidden="true">
-            <img
-              v-if="user?.avatar"
-              :src="user.avatar"
-              :alt="displayName"
-            >
-          </span>
-          -->
-
           <span class="auth-user-menu__name">
             {{ displayName }}
           </span>
@@ -122,32 +119,37 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <Transition name="auth-user-menu">
-      <div v-if="isOpen" class="auth-user-menu__dropdown" role="menu">
-        <ul class="auth-user-menu__list">
-          <li v-for="item in navItems" :key="item.to">
-            <NuxtLink
-              :to="item.to"
-              class="auth-user-menu__item"
-              role="menuitem"
-              @click="closeMenu"
-            >
-              {{ item.label }}
-            </NuxtLink>
-          </li>
-          <li>
-            <button
-              type="button"
-              class="auth-user-menu__item"
-              role="menuitem"
-              @click="handleLogout"
-            >
-              Выйти
-            </button>
-          </li>
-        </ul>
-      </div>
-    </Transition>
+    <ul
+      v-if="isOpen"
+      class="auth-user-menu__list"
+      role="menu"
+      @mouseleave="hoveredKey = null"
+    >
+      <li v-for="item in navItems" :key="item.to">
+        <button
+          type="button"
+          class="wh-menu-item auth-user-menu__item"
+          :class="{ 'wh-menu-item--hovered': hoveredKey === item.to }"
+          role="menuitem"
+          @mouseenter="hoveredKey = item.to"
+          @click="openItem(item.to)"
+        >
+          {{ item.label }}
+        </button>
+      </li>
+      <li>
+        <button
+          type="button"
+          class="wh-menu-item auth-user-menu__item"
+          :class="{ 'wh-menu-item--hovered': hoveredKey === 'logout' }"
+          role="menuitem"
+          @mouseenter="hoveredKey = 'logout'"
+          @click="handleLogout"
+        >
+          Выйти
+        </button>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -201,21 +203,6 @@ onUnmounted(() => {
   line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.auth-user-menu__avatar {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--wh-white);
-}
-
-.auth-user-menu__avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .auth-user-menu__arrow {
@@ -280,63 +267,48 @@ onUnmounted(() => {
   }
 }
 
-.auth-user-menu__dropdown {
+.auth-user-menu__list {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
   width: 260px;
-  z-index: 1100;
+  margin: 0;
   padding: 6px 8px;
+  list-style: none;
   border: 1px solid var(--wh-gray);
   border-radius: 14px;
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
   color: var(--wh-black-text);
-  overflow: hidden;
+  pointer-events: auto;
 }
 
-.auth-user-menu__list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin: 0;
-  padding: 0;
+.auth-user-menu__list li {
   list-style: none;
 }
 
 .auth-user-menu__item {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
   padding: 12px 14px;
   border: none;
   border-radius: 10px;
-  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
   color: var(--wh-black-text);
   font: inherit;
   font-size: 0.98rem;
   font-weight: 500;
   line-height: 1.2;
+  letter-spacing: -0.05em;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.auth-user-menu__item:hover,
-.auth-user-menu__item:focus-visible {
-  background-color: #e8883a;
-  color: var(--wh-white);
-}
-
-.auth-user-menu-enter-active,
-.auth-user-menu-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.auth-user-menu-enter-from,
-.auth-user-menu-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
 }
 
 @media (--wh-mobile) {
@@ -384,17 +356,15 @@ onUnmounted(() => {
     display: none;
   }
 
-  .auth-user-menu__dropdown {
-    right: 0;
-    left: auto;
+  .auth-user-menu__list {
     width: max-content;
     min-width: 0;
     max-width: calc(100vw - 24px);
-    padding: 4px 6px;
+    padding: 6px 8px;
   }
 
   .auth-user-menu__item {
-    padding: 10px 12px;
+    padding: 12px 14px;
     white-space: nowrap;
   }
 }

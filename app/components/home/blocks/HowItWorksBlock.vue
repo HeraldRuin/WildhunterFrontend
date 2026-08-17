@@ -224,6 +224,10 @@ const steps = [
 }
 
 @media (--wh-tablet) {
+  .how-it-works__flow {
+    width: 100%;
+  }
+
   .how-it-works__step-col {
     padding-bottom: 72px;
   }
@@ -270,8 +274,12 @@ const steps = [
     top: 50px;
     left: 50%;
     width: 100%;
+    max-width: 100%;
     margin: 0;
+    padding-inline: 4px;
+    font-size: 16px;
     transform: translateX(-50%);
+    overflow-wrap: break-word;
   }
 
   .how-it-works__text--lower {

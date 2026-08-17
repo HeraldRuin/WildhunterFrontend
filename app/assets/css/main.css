@@ -154,3 +154,10 @@ select {
   max-width: 640px;
   line-height: 1.6;
 }
+
+.wh-menu-item:hover,
+.wh-menu-item--hovered,
+.wh-menu-item:focus-visible {
+  background-color: #e8883a !important;
+  color: #ffffff !important;
+}

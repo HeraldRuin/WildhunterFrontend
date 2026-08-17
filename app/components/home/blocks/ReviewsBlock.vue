@@ -128,6 +128,7 @@ function scrollBy(direction: 'prev' | 'next') {
 @media (--wh-tablet) {
   .reviews-block__slider-wrap {
     grid-template-columns: minmax(0, 1fr);
+    width: 100%;
   }
 
   .reviews-block__arrow {

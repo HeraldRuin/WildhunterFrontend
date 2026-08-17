@@ -369,6 +369,8 @@ async function submitCustomerNotes() {
 }
 
 .booking-confirmation__header {
+  position: relative;
+  z-index: 40;
   display: flex;
   justify-content: center;
   padding: 0 12px;

@@ -161,6 +161,7 @@ function scrollBy(direction: 'prev' | 'next') {
 @media (--wh-tablet) {
   .best-locations__slider-wrap {
     grid-template-columns: minmax(0, 1fr);
+    width: 100%;
   }
 
   .best-locations__arrow {

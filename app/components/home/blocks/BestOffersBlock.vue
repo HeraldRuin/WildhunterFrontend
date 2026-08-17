@@ -165,6 +165,7 @@ function prefetchBasesPage() {
 @media (--wh-tablet) {
   .best-offers__slider-wrap {
     grid-template-columns: minmax(0, 1fr);
+    width: 100%;
   }
 
   .best-offers__arrow {

@@ -103,7 +103,7 @@ const backgroundStyle = computed(() => {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 2;
+  z-index: 100;
 }
 
 .search-top__tagline {

@@ -2,12 +2,56 @@
 const { open: openLoginModal } = useLoginModal()
 const { open: openRegisterModal } = useRegisterModal()
 const { isAuthenticated } = useAuth()
+
+const menuRef = ref<HTMLElement | null>(null)
+const isMenuOpen = ref(false)
+const hoveredKey = ref<string | null>(null)
+
+const menuItems = [
+  { label: 'Для охотников' },
+  { label: 'Для охотохозяйств' },
+]
+
+function toggleMenu() {
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+function closeMenu() {
+  isMenuOpen.value = false
+  hoveredKey.value = null
+}
+
+function handleDocumentClick(event: MouseEvent) {
+  if (!menuRef.value?.contains(event.target as Node)) {
+    closeMenu()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
+})
 </script>
 
 <template>
-  <header class="hero-header">
+  <header
+    ref="menuRef"
+    class="hero-header"
+    :class="{ 'hero-header--menu-open': isMenuOpen }"
+  >
     <div class="hero-header__left">
-      <button type="button" class="hero-header__burger" aria-label="Меню">
+      <button
+        type="button"
+        class="hero-header__burger"
+        :class="{ 'hero-header__burger--open': isMenuOpen }"
+        :aria-expanded="isMenuOpen"
+        aria-haspopup="menu"
+        aria-label="Меню"
+        @click.stop="toggleMenu"
+      >
         <img
           src="/icons/material-symbols_menu-rounded.png"
           alt=""
@@ -55,11 +99,33 @@ const { isAuthenticated } = useAuth()
         Вход
       </button>
     </div>
+
+    <ul
+      v-if="isMenuOpen"
+      class="hero-header__dropdown-list"
+      role="menu"
+      @mouseleave="hoveredKey = null"
+    >
+      <li v-for="item in menuItems" :key="item.label">
+        <button
+          type="button"
+          class="wh-menu-item hero-header__dropdown-item"
+          :class="{ 'wh-menu-item--hovered': hoveredKey === item.label }"
+          role="menuitem"
+          @mouseenter="hoveredKey = item.label"
+          @click="closeMenu"
+        >
+          {{ item.label }}
+        </button>
+      </li>
+    </ul>
   </header>
 </template>
 
 <style scoped>
 .hero-header {
+  position: relative;
+  z-index: 50;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
@@ -72,6 +138,10 @@ const { isAuthenticated } = useAuth()
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
   overflow: visible;
+}
+
+.hero-header--menu-open {
+  z-index: 60;
 }
 
 .hero-header__left,
@@ -174,6 +244,50 @@ const { isAuthenticated } = useAuth()
 .hero-header__login:hover {
   background: var(--wh-orange-600);
   transform: var(--wh-button-hover-lift);
+}
+
+.hero-header__dropdown-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 12px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  max-width: calc(100vw - 24px);
+  margin: 0;
+  padding: 6px 8px;
+  list-style: none;
+  border: 1px solid var(--wh-gray);
+  border-radius: 14px;
+  background: var(--wh-white);
+  box-shadow: var(--wh-shadow);
+  color: var(--wh-black-text);
+  pointer-events: auto;
+}
+
+.hero-header__dropdown-list li {
+  list-style: none;
+}
+
+.hero-header__dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
+  color: var(--wh-black-text);
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  text-align: left;
+  cursor: pointer;
 }
 
 @media (--wh-tablet) {
