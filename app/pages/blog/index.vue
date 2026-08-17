@@ -55,23 +55,7 @@ useHead({
               class="blog-card__button"
               :to="`/blog/${post.slug}`"
             >
-              <span>Прочитать статью</span>
-              <svg
-                class="blog-card__arrow"
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                aria-hidden="true"
-              >
-                <path
-                  d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              Прочитать статью
             </NuxtLink>
           </article>
         </div>
@@ -201,27 +185,26 @@ useHead({
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   width: 100%;
   min-height: 48px;
   margin-top: auto;
-  padding: 12px 22px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: var(--wh-radius-lg);
   background: var(--wh-orange-500);
   color: var(--wh-white);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.47;
   text-decoration: none;
-  transition: background 0.15s ease;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .blog-card__button:hover {
   background: var(--wh-orange-600);
-}
-
-.blog-card__arrow {
-  flex-shrink: 0;
+  transform: var(--wh-button-hover-lift);
 }
 
 @media (--wh-tablet) {
