@@ -1274,7 +1274,7 @@ onUnmounted(() => {
   .hero-search,
   .hero-search.hero-search--split {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     column-gap: 2px;
     row-gap: 2px;
     width: 100%;
