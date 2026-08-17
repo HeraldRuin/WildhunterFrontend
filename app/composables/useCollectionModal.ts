@@ -32,15 +32,35 @@ const MOCK_PARTICIPANTS: CollectionParticipant[] = [
   },
 ]
 
+function invitationStatusRaw(status: string | number | undefined): string {
+  return String(status ?? '').trim().toLowerCase()
+}
+
+function isDeclinedInvitationStatus(status: string | number | undefined): boolean {
+  const raw = invitationStatusRaw(status)
+
+  return raw === '1'
+    || raw === 'declined'
+    || raw === 'rejected'
+    || raw.includes('declined')
+    || raw.includes('отклон')
+}
+
+function isAcceptedInvitationStatus(status: string | number | undefined): boolean {
+  const raw = invitationStatusRaw(status)
+
+  return raw === 'accepted' || raw === 'confirmed'
+}
+
 function participantStatusFromInvitation(
   invitation: BookingInvitationParticipant,
 ): CollectionParticipantStatus {
-  if (invitation.isAccepted || invitation.status === 'accepted') {
-    return 'confirmed'
+  if (isDeclinedInvitationStatus(invitation.status)) {
+    return 'declined'
   }
 
-  if (invitation.status === 'declined') {
-    return 'declined'
+  if (invitation.isAccepted || isAcceptedInvitationStatus(invitation.status)) {
+    return 'confirmed'
   }
 
   return 'pending'
@@ -49,13 +69,17 @@ function participantStatusFromInvitation(
 function participantStatusFromPayload(
   payload: BookingInvitationUpdatedPayload,
 ): CollectionParticipantStatus {
-  switch (payload.status) {
+  if (payload.action === 'declined' || isDeclinedInvitationStatus(payload.status)) {
+    return 'declined'
+  }
+
+  switch (payload.action) {
     case 'accepted':
       return 'confirmed'
     case 'declined':
       return 'declined'
     default: {
-      const _exhaustive: never = payload.status
+      const _exhaustive: never = payload.action
       return _exhaustive
     }
   }
@@ -110,6 +134,7 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
       email: invitation.email,
       status: participantStatusFromInvitation(invitation),
     }))
+    .filter(participant => participant.status !== 'declined')
 
   return {
     bookingId: booking.id,
@@ -180,6 +205,16 @@ export function useCollectionModal() {
       return
     }
 
+    const nextStatus = participantStatusFromPayload(payload)
+
+    if (nextStatus === 'declined') {
+      state.value = {
+        ...state.value,
+        participants: state.value.participants.filter((_, index) => index !== participantIndex),
+      }
+      return
+    }
+
     state.value = {
       ...state.value,
       participants: state.value.participants.map((participant, index) =>
@@ -187,7 +222,7 @@ export function useCollectionModal() {
           ? {
               ...participant,
               invitationId: current.invitationId ?? payload.invitation_id,
-              status: participantStatusFromPayload(payload),
+              status: nextStatus,
             }
           : participant,
       ),

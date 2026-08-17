@@ -39,7 +39,7 @@ export interface BookingInvitationParticipant {
   userName?: string
   name: string
   email?: string
-  status: string
+  status: string | number
   isAccepted: boolean
   prepaymentPaid: boolean
   prepaymentPaidStatus?: string

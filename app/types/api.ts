@@ -582,7 +582,7 @@ export interface BookingCollectionInvitationDto {
   user_name?: string | null
   name: string
   email: string | null
-  status: string
+  status: string | number
   is_accepted: boolean
   prepayment_paid?: boolean
   prepayment_paid_status?: string | null
