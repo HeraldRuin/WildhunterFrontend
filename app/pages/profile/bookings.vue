@@ -715,9 +715,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 .bookings-page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  max-height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
   padding: 20px 40px 48px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
@@ -786,9 +784,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 .bookings-page__content {
   display: flex;
-  flex: 1;
   flex-direction: column;
-  min-height: 0;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
   background: var(--wh-white);
@@ -820,15 +816,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 @media (--wh-tablet) {
   .bookings-page {
-    height: auto;
-    max-height: none;
-    overflow: visible;
     padding: 12px 8px 32px;
-  }
-
-  .bookings-page__content {
-    flex: none;
-    min-height: 0;
   }
 
   .bookings-page__header {
