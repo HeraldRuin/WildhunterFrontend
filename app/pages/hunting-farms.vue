@@ -210,21 +210,6 @@ useHead({
               @click="openRegisterModal"
             >
               Зарегистрироваться
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  d="M7 17 17 7M8 7h9v9"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
             </button>
           </div>
         </div>
@@ -410,31 +395,26 @@ useHead({
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-width: 220px;
+  min-width: 360px;
   margin-top: 8px;
   margin-inline: auto;
-  padding: 12px 22px;
+  padding: 14px 24px;
   border: none;
-  border-radius: 1px;
+  border-radius: var(--wh-radius-lg);
   background: var(--wh-orange-500);
   color: var(--wh-white);
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 600;
   line-height: 1.47;
   letter-spacing: 0;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .hunters-cta__button:hover {
   background: var(--wh-orange-600);
-}
-
-.hunters-cta__button svg {
-  display: block;
-  flex-shrink: 0;
+  transform: var(--wh-button-hover-lift);
 }
 
 @media (--wh-tablet) {
@@ -478,7 +458,7 @@ useHead({
 
   .hunters-cta__button {
     width: 100%;
-    font-size: 12px;
+    min-width: 0;
   }
 }
 </style>
