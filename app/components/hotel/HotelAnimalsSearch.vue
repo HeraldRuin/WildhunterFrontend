@@ -997,7 +997,7 @@ defineExpose({
 
   .hotel-animals-search__form {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: 2px;
     height: auto;
   }
