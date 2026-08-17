@@ -2,23 +2,26 @@
 const columns = [
   {
     title: 'Охотникам',
+    to: '/hunters',
     links: [
-      { label: 'Вопрос - ответ', to: '/faq' },
-      { label: 'Служба поддержки', to: '/support' },
+      // { label: 'Вопрос - ответ', to: '/faq' },
+      // { label: 'Служба поддержки', to: '/support' },
     ],
   },
   {
     title: 'Охотохозяйствам',
+    to: '/hunting-farms',
     links: [
-      { label: 'Вопрос - ответ', to: '/faq' },
-      { label: 'Служба поддержки', to: '/support' },
+      // { label: 'Вопрос - ответ', to: '/faq' },
+      // { label: 'Служба поддержки', to: '/support' },
     ],
   },
   {
-    title: 'О компании',
+    title: 'Блог',
+    to: '/blog',
     links: [
-      { label: 'Вопрос - ответ', to: '/faq' },
-      { label: 'Служба поддержки', to: '/support' },
+      // { label: 'Вопрос - ответ', to: '/faq' },
+      // { label: 'Служба поддержки', to: '/support' },
     ],
   },
 ]
@@ -46,7 +49,18 @@ const socials = [
           :key="column.title"
           class="footer__column"
         >
-          <h4 class="footer__title">{{ column.title }}</h4>
+          <h4 class="footer__title">
+            <NuxtLink
+              v-if="column.to"
+              :to="column.to"
+              class="footer__title-link"
+            >
+              {{ column.title }}
+            </NuxtLink>
+            <template v-else>
+              {{ column.title }}
+            </template>
+          </h4>
           <NuxtLink
             v-for="link in column.links"
             :key="link.to"
@@ -59,8 +73,10 @@ const socials = [
 
         <div class="footer__column">
           <h4 class="footer__title">Контакты</h4>
-          <a href="tel:+79991234567" class="footer__link">+7 (999) 123-45-67</a>
-          <a href="mailto:info@oxota.com" class="footer__link">info@oxota.com</a>
+          <a href="tel:+74994509596" class="footer__link">8 (499) 450-95-96</a>
+          <a href="mailto:online@wild-hunter.ru" class="footer__link">online@wild-hunter.ru</a>
+          <a href="mailto:wh.online@yandex.ru" class="footer__link">wh.online@yandex.ru</a>
+          <span class="footer__link">г. Москва, Дмитровское ш., 60</span>
         </div>
 
         <div class="footer__column footer__column--social">
@@ -148,6 +164,11 @@ const socials = [
   font-weight: 600;
   line-height: 1.35;
   color: var(--wh-black-text);
+}
+
+.footer__title-link {
+  color: inherit;
+  text-decoration: none;
 }
 
 .footer__link {

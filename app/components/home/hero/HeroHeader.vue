@@ -8,8 +8,8 @@ const isMenuOpen = ref(false)
 const hoveredKey = ref<string | null>(null)
 
 const menuItems = [
-  { label: 'Для охотников' },
-  { label: 'Для охотохозяйств' },
+  { label: 'Для охотников', to: '/hunters' },
+  { label: 'Для охотохозяйств', to: '/hunting-farms' },
 ]
 
 function toggleMenu() {
@@ -60,18 +60,14 @@ onUnmounted(() => {
           aria-hidden="true"
         >
       </button>
-      <button type="button" class="hero-header__menu hero-header__menu--desktop">
-        Для охотников
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" />
-        </svg>
-      </button>
-      <button type="button" class="hero-header__menu hero-header__menu--desktop">
-        Для охотохозяйств
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-          <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" />
-        </svg>
-      </button>
+      <NuxtLink
+        v-for="item in menuItems"
+        :key="item.to"
+        :to="item.to"
+        class="hero-header__menu hero-header__menu--desktop"
+      >
+        {{ item.label }}
+      </NuxtLink>
     </div>
 
     <NuxtLink to="/" class="hero-header__logo" aria-label="WH">
@@ -106,9 +102,9 @@ onUnmounted(() => {
       role="menu"
       @mouseleave="hoveredKey = null"
     >
-      <li v-for="item in menuItems" :key="item.label">
-        <button
-          type="button"
+      <li v-for="item in menuItems" :key="item.to">
+        <NuxtLink
+          :to="item.to"
           class="wh-menu-item hero-header__dropdown-item"
           :class="{ 'wh-menu-item--hovered': hoveredKey === item.label }"
           role="menuitem"
@@ -116,7 +112,7 @@ onUnmounted(() => {
           @click="closeMenu"
         >
           {{ item.label }}
-        </button>
+        </NuxtLink>
       </li>
     </ul>
   </header>
@@ -177,7 +173,6 @@ onUnmounted(() => {
 .hero-header__menu {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   padding: 0;
   border: none;
   background: transparent;
@@ -186,6 +181,7 @@ onUnmounted(() => {
   font-weight: 500;
   line-height: 18px;
   letter-spacing: -0.9px;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -287,6 +283,7 @@ onUnmounted(() => {
   line-height: 1.2;
   letter-spacing: -0.05em;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 
