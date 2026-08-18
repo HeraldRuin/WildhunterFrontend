@@ -31,7 +31,7 @@ const { open: openConfirmModal } = useConfirmModal()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Бронирования' },
+  { label: 'История бронирования' },
 ]
 const routeStatus = computed(() => {
   const status = route.query.status

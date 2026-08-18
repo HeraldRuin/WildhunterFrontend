@@ -145,7 +145,8 @@ const perPage = 6
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
   { label: 'Главная', to: '/' },
-  { label: locationName.value || 'Локация' },
+  { label: 'Локация' },
+  { label: locationName.value || 'Область' },
 ])
 
 const filteredOffers = computed(() => {

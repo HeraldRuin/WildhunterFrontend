@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
 import { createMockHotelDetail, getHotelPath } from '~/utils/hotel'
@@ -38,11 +39,21 @@ onMounted(() => {
 
 const pageTitle = computed(() => `${displayHotel.value.title} — WH`)
 
-const breadcrumbs = computed(() => [
-  { label: 'Главная', to: '/' },
-  { label: 'Базы' },
-  { label: displayHotel.value.title },
-])
+const breadcrumbs = computed(() => {
+  const items: BreadcrumbItem[] = [
+    { label: 'Главная', to: '/' },
+    { label: 'Базы' },
+  ]
+
+  const location = displayHotel.value.location
+  if (location?.name) {
+    items.push({ label: location.name })
+  }
+
+  items.push({ label: displayHotel.value.title })
+
+  return items
+})
 
 useHead({
   title: pageTitle,
