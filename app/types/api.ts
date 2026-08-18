@@ -220,6 +220,33 @@ export interface HotelRoomAvailabilityGalleryImage {
   thumb: string
 }
 
+export interface HotelRoomAttributeTermTranslation {
+  id: number
+  origin_id: number
+  locale: string
+  name: string
+  content: string | null
+}
+
+export interface HotelRoomAttributeTerm {
+  id: number
+  name: string
+  slug: string
+  content: string | null
+  icon: string
+  image_url: string
+  translation?: HotelRoomAttributeTermTranslation | null
+}
+
+export interface HotelRoomAttribute {
+  id: number
+  name: string
+  slug: string
+  service: string
+  position: number
+  terms: HotelRoomAttributeTerm[]
+}
+
 export interface HotelRoomAvailability {
   id: number
   title: string
@@ -233,6 +260,7 @@ export interface HotelRoomAvailability {
   number: number
   image_url: string
   gallery: HotelRoomAvailabilityGalleryImage[]
+  attributes?: HotelRoomAttribute[]
 }
 
 export interface HotelRoomAvailabilityData {

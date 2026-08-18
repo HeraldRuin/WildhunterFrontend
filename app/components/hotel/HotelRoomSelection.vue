@@ -14,6 +14,26 @@ const emit = defineEmits<{
   'selection-change': [hasSelectedRooms: boolean]
 }>()
 
+const needsFontAwesome = computed(() =>
+  props.rooms.some(room =>
+    room.attributes.some(group =>
+      group.terms.some(term => term.icon && !term.imageUrl),
+    ),
+  ),
+)
+
+useHead(() => needsFontAwesome.value
+  ? {
+      link: [
+        {
+          rel: 'stylesheet',
+          href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css',
+        },
+      ],
+    }
+  : {},
+)
+
 const quantities = ref<Record<string, number>>({})
 const lightboxOpen = ref(false)
 const lightboxImages = ref<HotelGalleryImage[]>([])
@@ -200,6 +220,42 @@ defineExpose({
               x{{ room.capacity }}
             </span>
           </div>
+
+          <div
+            v-if="room.attributes.length"
+            class="hotel-room-selection__attributes"
+          >
+            <section
+              v-for="group in room.attributes"
+              :key="group.id"
+              class="hotel-room-selection__attr-group"
+            >
+              <h4 class="hotel-room-selection__attr-title">{{ group.name }}</h4>
+              <ul class="hotel-room-selection__attr-list">
+                <li
+                  v-for="term in group.terms"
+                  :key="term.id"
+                  class="hotel-room-selection__attr-item"
+                >
+                  <img
+                    v-if="term.imageUrl"
+                    class="hotel-room-selection__attr-image"
+                    :src="term.imageUrl"
+                    alt=""
+                    width="14"
+                    height="14"
+                  >
+                  <i
+                    v-else-if="term.icon"
+                    class="hotel-room-selection__attr-icon"
+                    :class="term.icon"
+                    aria-hidden="true"
+                  />
+                  <span>{{ term.name }}</span>
+                </li>
+              </ul>
+            </section>
+          </div>
         </div>
 
         <div class="hotel-room-selection__booking">
@@ -301,7 +357,7 @@ defineExpose({
   display: flex;
   align-items: flex-start;
   gap: 20px;
-  height: 212px;
+  min-height: 212px;
   padding: 16px;
   border: 1px solid var(--wh-field-border);
   border-radius: var(--wh-radius-lg);
@@ -373,7 +429,7 @@ defineExpose({
   justify-content: space-between;
   gap: 20px;
   min-width: 0;
-  height: 172px;
+  min-height: 172px;
 }
 
 .hotel-room-selection__booking {
@@ -397,6 +453,7 @@ defineExpose({
 
 .hotel-room-selection__info {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
@@ -441,6 +498,74 @@ defineExpose({
   width: 16px;
   height: 16px;
   color: #1c211c;
+}
+
+.hotel-room-selection__attributes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.hotel-room-selection__attr-group {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 10px;
+  background: var(--wh-gray-100);
+}
+
+.hotel-room-selection__attr-title {
+  margin: 0 0 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--wh-gray-600);
+}
+
+.hotel-room-selection__attr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hotel-room-selection__attr-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--wh-black-text);
+}
+
+.hotel-room-selection__attr-image {
+  display: block;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  object-fit: contain;
+}
+
+.hotel-room-selection__attr-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  margin-top: 1px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--wh-green);
 }
 
 .hotel-room-selection__quantity {
@@ -496,7 +621,7 @@ defineExpose({
   }
 
   .hotel-room-selection__card {
-     gap: 16px;
+    gap: 16px;
     height: auto;
     min-height: 212px;
   }

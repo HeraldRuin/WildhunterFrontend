@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HotelRoomAvailability } from '~/types/api'
-import type { HotelRoomOption } from '~/types/hotelBooking'
+import type { HotelRoomAttributeGroupOption, HotelRoomOption } from '~/types/hotelBooking'
 import { formatApiDate, parseDisplayDate, parseDisplayDateToApiDate, startOfDay } from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 
@@ -179,6 +179,29 @@ function tryAutoCheckFromSearch() {
   void handleCheck(payload)
 }
 
+function mapAvailabilityAttributes(room: HotelRoomAvailability): HotelRoomAttributeGroupOption[] {
+  if (!Array.isArray(room.attributes)) {
+    return []
+  }
+
+  return room.attributes.map((group) => {
+    const terms = Array.isArray(group.terms)
+      ? group.terms.map(term => ({
+          id: term.id,
+          name: (term.translation?.name || term.name || '').trim(),
+          icon: (term.icon || '').trim(),
+          imageUrl: (term.image_url || '').trim(),
+        })).filter(term => term.name)
+      : []
+
+    return {
+      id: group.id,
+      name: (group.name || '').trim(),
+      terms,
+    }
+  }).filter(group => group.name && group.terms.length)
+}
+
 function mapAvailabilityRoom(room: HotelRoomAvailability): HotelRoomOption {
   const gallery = Array.isArray(room.gallery)
     ? room.gallery.map(item => ({
@@ -207,6 +230,7 @@ function mapAvailabilityRoom(room: HotelRoomAvailability): HotelRoomOption {
     photosCount: gallery.length,
     gallery,
     maxQuantity: Math.max(1, Number(room.number) || 1),
+    attributes: mapAvailabilityAttributes(room),
   }
 }
 

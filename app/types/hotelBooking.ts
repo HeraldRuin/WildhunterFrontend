@@ -1,3 +1,16 @@
+export interface HotelRoomAttributeTermOption {
+  id: number
+  name: string
+  icon: string
+  imageUrl: string
+}
+
+export interface HotelRoomAttributeGroupOption {
+  id: number
+  name: string
+  terms: HotelRoomAttributeTermOption[]
+}
+
 export interface HotelRoomOption {
   id: string
   title: string
@@ -13,6 +26,7 @@ export interface HotelRoomOption {
     thumb: string
   }>
   maxQuantity: number
+  attributes: HotelRoomAttributeGroupOption[]
 }
 
 export interface HotelBookingRoomSelection {
