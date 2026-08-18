@@ -1276,11 +1276,37 @@ async function searchMeasurePoint() {
     margin-left: 0;
   }
 
+  .bases-map-page__control--collapse {
+    display: none;
+  }
+
+  .bases-map-page__main,
+  .bases-map-page__main-header {
+    display: contents;
+  }
+
+  .bases-map-page__controls-wrap {
+    order: 1;
+  }
+
+  .bases-map-page__measure-search {
+    order: 2;
+    max-width: none;
+  }
+
   .bases-map-page__sidebar {
+    order: 3;
     max-height: 360px;
   }
 
+  .bases-map-page__title,
+  .bases-map-page__main-header--measure .bases-map-page__title {
+    grid-column: 1;
+    order: 4;
+  }
+
   .bases-map-page__map-wrap {
+    order: 5;
     height: 55vh;
     min-height: 360px;
   }
