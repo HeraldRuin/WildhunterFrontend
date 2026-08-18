@@ -1,10 +1,16 @@
 <script setup lang="ts">
+import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { blogPosts } from '~/utils/blog-posts'
 
 definePageMeta({
   layout: 'home',
   path: '/blog',
 })
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { label: 'Главная', to: '/' },
+  { label: 'Блог' },
+]
 
 useHead({
   title: 'Блог',
@@ -31,6 +37,11 @@ useHead({
     <main class="blog-listing">
       <!-- <div class="blog-listing__bg" aria-hidden="true" /> -->
       <div class="container blog-listing__inner">
+        <AppBreadcrumbs
+          :items="breadcrumbs"
+          class="blog-listing__breadcrumbs"
+        />
+
         <h1 class="blog-listing__title">
           Тематический блог об охоте и охотниках
         </h1>
@@ -120,7 +131,14 @@ useHead({
 */
 
 .blog-listing__inner.container {
+  display: flex;
+  flex-direction: column;
   width: min(100% - 32px, 1240px);
+}
+
+.blog-listing__breadcrumbs {
+  align-self: start;
+  margin-bottom: 28px;
 }
 
 .blog-listing__title {

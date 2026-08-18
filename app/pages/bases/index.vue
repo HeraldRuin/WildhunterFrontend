@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { HotelSearchBody, OfferItem, SearchFiltersState } from '~/types/api'
+import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { mapHotelOfferToItem } from '~/api/hotels'
 import { parseDisplayDateToApiDate } from '~/utils/date'
 import {
@@ -369,6 +370,11 @@ function handlePageChange(page: number) {
 function handleFiltersReset() {
   currentPage.value = 1
 }
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { label: 'Главная', to: '/' },
+  { label: 'Базы' },
+]
 </script>
 
 <template>
@@ -377,6 +383,11 @@ function handleFiltersReset() {
 
     <section class="bases-page__results">
       <div class="container bases-page__results-inner">
+        <AppBreadcrumbs
+          :items="breadcrumbs"
+          class="bases-page__breadcrumbs"
+        />
+
         <div class="bases-page__toolbar">
           <button
             v-show="!mobileFiltersOpen"
@@ -492,6 +503,10 @@ function handleFiltersReset() {
   display: flex;
   flex-direction: column;
   gap: 28px;
+}
+
+.bases-page__breadcrumbs {
+  align-self: start;
 }
 
 .bases-page__toolbar {
