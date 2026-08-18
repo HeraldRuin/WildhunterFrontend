@@ -171,9 +171,10 @@ onUnmounted(() => {
 }
 
 .hero-header__menu {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 0;
+  padding: 10px 0 12px;
   border: none;
   background: transparent;
   color: var(--wh-black-text);
@@ -183,6 +184,27 @@ onUnmounted(() => {
   letter-spacing: -0.9px;
   text-decoration: none;
   cursor: pointer;
+}
+
+.hero-header__menu::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--wh-orange-500);
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.28s ease, opacity 0.28s ease;
+  pointer-events: none;
+}
+
+.hero-header__menu:hover::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .hero-header__logo {
@@ -301,6 +323,10 @@ onUnmounted(() => {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .hero-header__menu {
+    padding: 0 0 4px;
   }
 
   .hero-header__right {
