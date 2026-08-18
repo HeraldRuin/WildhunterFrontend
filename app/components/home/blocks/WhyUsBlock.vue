@@ -148,6 +148,10 @@ const items = [
 }
 
 @media (--wh-mobile) {
+  .why-us__title {
+    font-size: 24px;
+  }
+
   .why-us__grid {
     grid-template-columns: 1fr;
   }
