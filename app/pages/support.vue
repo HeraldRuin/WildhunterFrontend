@@ -65,32 +65,7 @@ function applyValidationErrors(data: unknown) {
   return false
 }
 
-function validateLocally() {
-  const errors: Record<string, string[]> = {}
-
-  if (!name.value.trim()) {
-    errors.name = ['Укажите имя']
-  }
-
-  if (!email.value.trim()) {
-    errors.email = ['Укажите email']
-  }
-
-  if (!message.value.trim()) {
-    errors.message = ['Напишите сообщение']
-  }
-
-  fieldErrors.value = errors
-  return Object.keys(errors).length === 0
-}
-
 async function handleSubmit() {
-  submitError.value = ''
-
-  if (!validateLocally()) {
-    return
-  }
-
   isSubmitting.value = true
 
   try {
@@ -106,6 +81,7 @@ async function handleSubmit() {
       email.value = ''
       message.value = ''
       fieldErrors.value = {}
+      submitError.value = ''
       return
     }
 

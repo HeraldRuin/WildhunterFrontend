@@ -15,7 +15,7 @@ export function useContactApi() {
   const { apiFetch } = useApiClient()
 
   function sendMessage(payload: ContactMessagePayload) {
-    return apiFetch<ContactMessageResponse>('/contact', {
+    return apiFetch<ContactMessageResponse>('/support', {
       method: 'POST',
       body: payload,
       skipAuth: true,
