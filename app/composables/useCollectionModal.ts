@@ -10,7 +10,7 @@ import type {
 const isOpen = ref(false)
 const isContentHidden = ref(false)
 const state = ref<CollectionModalState | null>(null)
-const declinedHunterKeys = new Set<string>()
+const declinedHunterKeys = ref(new Set<string>())
 
 const MOCK_PARTICIPANTS: CollectionParticipant[] = [
   {
@@ -128,12 +128,18 @@ function declinedHunterKey(bookingId: number, hunterId: number) {
 
 function rememberDeclinedHunter(bookingId: number, hunterId: number) {
   if (!bookingId || !hunterId) return
-  declinedHunterKeys.add(declinedHunterKey(bookingId, hunterId))
+
+  const next = new Set(declinedHunterKeys.value)
+  next.add(declinedHunterKey(bookingId, hunterId))
+  declinedHunterKeys.value = next
 }
 
 function forgetDeclinedHunter(bookingId: number, hunterId: number) {
   if (!bookingId || !hunterId) return
-  declinedHunterKeys.delete(declinedHunterKey(bookingId, hunterId))
+
+  const next = new Set(declinedHunterKeys.value)
+  next.delete(declinedHunterKey(bookingId, hunterId))
+  declinedHunterKeys.value = next
 }
 
 function isRememberedDeclinedHunter(
@@ -143,8 +149,8 @@ function isRememberedDeclinedHunter(
 ) {
   if (!hunterId) return false
 
-  return declinedHunterKeys.has(declinedHunterKey(bookingId, hunterId))
-    || declinedHunterKeys.has(declinedHunterKey(Number(bookingNumber), hunterId))
+  return declinedHunterKeys.value.has(declinedHunterKey(bookingId, hunterId))
+    || declinedHunterKeys.value.has(declinedHunterKey(Number(bookingNumber), hunterId))
 }
 
 function parseCollected(collected?: string): { current: number, total: number } | null {
@@ -289,11 +295,22 @@ export function useCollectionModal() {
     }
   }
 
+  function isDeclinedParticipant(participant: CollectionParticipant) {
+    if (!state.value || !participant.id) return participant.status === 'declined'
+
+    return participant.status === 'declined'
+      || isRememberedDeclinedHunter(
+        state.value.bookingId,
+        state.value.bookingNumber,
+        participant.id,
+      )
+  }
+
   function isDeclinedHunter(hunterId: number) {
     if (!hunterId || !state.value) return false
 
     const declinedInParticipants = state.value.participants.some(
-      participant => participant.id === hunterId && participant.status === 'declined',
+      participant => participant.id === hunterId && isDeclinedParticipant(participant),
     )
 
     if (declinedInParticipants) return true
@@ -316,5 +333,6 @@ export function useCollectionModal() {
     addParticipant,
     applyInvitationUpdate,
     isDeclinedHunter,
+    isDeclinedParticipant,
   }
 }

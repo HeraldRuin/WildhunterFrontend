@@ -8,7 +8,7 @@ const emit = defineEmits<{
   finished: []
 }>()
 
-const { isOpen, isContentHidden, state, close, hide, reopen, addParticipant, isDeclinedHunter } = useCollectionModal()
+const { isOpen, isContentHidden, state, close, hide, reopen, addParticipant, isDeclinedHunter, isDeclinedParticipant } = useCollectionModal()
 const { bookings: bookingsApi, user: userApi } = useApi()
 const notifications = useNotifications()
 const { open: openConfirmModal } = useConfirmModal()
@@ -37,7 +37,13 @@ const canExtendCollection = computed(() => {
 const occupiedParticipants = computed(() => {
   if (!state.value) return []
 
-  return state.value.participants.filter(participant => participant.status !== 'declined')
+  return state.value.participants.filter(participant => !isDeclinedParticipant(participant))
+})
+
+const declinedParticipants = computed(() => {
+  if (!state.value) return []
+
+  return state.value.participants.filter(participant => isDeclinedParticipant(participant))
 })
 
 const canFinishCollection = computed(() => {
@@ -480,6 +486,34 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
             </div>
 
             <div
+              v-for="participant in declinedParticipants"
+              :key="`declined-${participant.id ?? participant.name}`"
+              class="collection-modal__invite-field"
+            >
+              <div class="collection-modal__invite-control">
+                <div class="collection-modal__invite-input-wrap">
+                  <input
+                    type="text"
+                    class="collection-modal__invite-input collection-modal__invite-input--declined"
+                    :value="participant.name"
+                    readonly
+                    disabled
+                  >
+
+                  <div
+                    v-if="participant.email"
+                    class="collection-modal__selected-email"
+                  >
+                    <span>{{ participant.email }}</span>
+                    <span class="collection-modal__declined-label">
+                      Отказался
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
               v-for="(_, index) in inviteQueries"
               :key="`invite-${index}`"
               class="collection-modal__invite-field"
@@ -741,6 +775,10 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
   background: var(--wh-gray-100);
   color: var(--wh-gray-500);
   cursor: not-allowed;
+}
+
+.collection-modal__invite-input--declined {
+  color: var(--wh-gray-900);
 }
 
 .collection-modal__invite-field {
