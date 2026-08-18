@@ -469,6 +469,10 @@ defineExpose({
   border-radius: var(--wh-radius-lg);
 }
 
+.hotel-room-selection__quantity :deep(.select-field__option) {
+  padding-left: 4px;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -561,7 +565,7 @@ defineExpose({
 
   .hotel-room-selection__quantity {
     width: 100%;
-    max-width: 172px;
+    max-width: 156px;
     margin-inline: auto;
   }
 }
