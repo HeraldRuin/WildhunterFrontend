@@ -80,7 +80,6 @@ const invitationCode = computed(() => {
 
 const {
   data: historyResponse,
-  pending: historyPending,
   error: historyError,
   refresh: refreshHistory,
 } = useAsyncData(
@@ -139,6 +138,8 @@ const bookings = computed<BookingHistoryItem[]>(() => {
     return booking
   })
 })
+
+const selectedMobileBookingId = ref<number | null>(null)
 
 const expiredPrepaymentCodes = computed(() =>
   bookings.value
@@ -417,7 +418,7 @@ watch(
 )
 
 const isHistoryInitialLoading = computed(
-  () => historyPending.value && !historyResponse.value,
+  () => !historyError.value && historyResponse.value == null,
 )
 
 const emptyText = computed(() => {
@@ -432,6 +433,7 @@ const emptyText = computed(() => {
 
 watch(statusFilter, () => {
   page.value = 1
+  historyResponse.value = null
 })
 
 watch(routeStatus, (status) => {
@@ -743,15 +745,25 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
       :dropdown-statuses="dropdownStatuses"
     />
 
-    <div class="bookings-page__content">
-      <Transition name="bookings-fade" mode="out-in" appear>
-        <div v-if="isHistoryInitialLoading" class="bookings-page__loading" aria-live="polite">
-          <CommonSpinner variant="ring" size="lg" label="Загрузка бронирований" />
-        </div>
+    <ProfileBookingMobileSelect
+      v-model="selectedMobileBookingId"
+      :items="bookings"
+    />
 
+    <Transition name="bookings-fade" mode="out-in">
+      <div
+        v-if="isHistoryInitialLoading"
+        key="bookings-loading"
+        class="bookings-page__loading"
+        aria-live="polite"
+      >
+        <CommonSpinner variant="ring" size="lg" label="Загрузка бронирований" />
+      </div>
+
+      <div v-else key="bookings-content" class="bookings-page__content">
         <ProfileBookingHistoryTable
-          v-else
           :items="bookings"
+          :selected-id="selectedMobileBookingId"
           :empty-text="emptyText"
           :show-details-buttons="isHunter"
           :show-customer="isBaseAdmin"
@@ -761,8 +773,8 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
           @action="handleBookingAction"
           @customer="openCustomerModal"
         />
-      </Transition>
-    </div>
+      </div>
+    </Transition>
 
     <ProfileCollectionModal
       @extended="refreshHistory"
@@ -878,6 +890,8 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 .bookings-page__content {
   display: flex;
   flex-direction: column;
+  margin-top: 8px;
+  padding: 1px;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
   background: var(--wh-white);
@@ -886,7 +900,8 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 .bookings-page__content :deep(.booking-table-wrap) {
   border: none;
-  border-radius: 0;
+  border-radius: calc(var(--wh-radius) - 2px);
+  overflow: hidden;
 }
 
 .bookings-page__loading {
@@ -899,7 +914,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 .bookings-fade-enter-active,
 .bookings-fade-leave-active {
-  transition: opacity 0.25s ease;
+  transition: opacity 0.4s ease;
 }
 
 .bookings-fade-enter-from,
@@ -914,6 +929,15 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
   .bookings-page__header {
     width: 100%;
+  }
+}
+
+@media (--wh-mobile) {
+  .bookings-page__loading {
+    flex: none;
+    align-items: flex-start;
+    min-height: 0;
+    padding-top: 160px;
   }
 }
 </style>

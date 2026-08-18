@@ -4,6 +4,7 @@ import { formatHotelPriceLabel } from '~/utils/hotel'
 
 const props = defineProps<{
   items: BookingHistoryItem[]
+  selectedId?: number | null
   emptyText?: string
   showDetailsButtons?: boolean
   showCustomer?: boolean
@@ -46,7 +47,7 @@ function updatePopoverPosition() {
 
   const rect = button.getBoundingClientRect()
   const gap = 8
-  const estimatedWidth = 520
+  const estimatedWidth = Math.min(520, window.innerWidth - 16)
   const spaceRight = window.innerWidth - rect.right - gap
   const placeLeft = spaceRight < estimatedWidth && rect.left > spaceRight
 
@@ -183,191 +184,217 @@ onBeforeUnmount(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in items" :key="item.id">
-            <td class="booking-table__number">{{ item.number }}</td>
-            <td class="booking-table__date">{{ item.date }}</td>
-            <td class="booking-table__base">
-              <button
-                v-if="showCustomer"
-                type="button"
-                class="booking-table__customer-btn"
-                @click="emit('customer', item)"
-              >
-                {{ item.customerName ?? '—' }}
-              </button>
-              <template v-else>
-                <a
-                  v-if="item.baseUrl"
-                  :href="item.baseUrl"
-                  class="booking-table__base-link"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {{ item.baseName }}
-                </a>
-                <span v-else>{{ item.baseName }}</span>
-              </template>
+          <tr
+            v-for="item in items"
+            :key="item.id"
+            :class="{
+              'booking-table__row--mobile-hidden':
+                selectedId != null && item.id !== selectedId,
+            }"
+          >
+            <td class="booking-table__number" data-label="№ брони">
+              <div class="booking-table__value">{{ item.number }}</div>
             </td>
-            <td class="booking-table__type">{{ item.typeLabel }}</td>
-            <td class="booking-table__details">
-              <template v-if="item.accommodation">
-                <strong>Проживание:</strong>
-                <div>
-                  Заезд: {{ item.accommodation.checkIn }}<br>
-                  Выезд: {{ item.accommodation.checkOut }}<br>
-                  {{ nightsLabel(item.accommodation.nights) }}<br>
-                  {{ item.accommodation.guests }} чел.
-                </div>
-
-                <div
-                  v-if="showDetailsButtons && item.accommodation.rooms?.length"
-                  class="booking-table__details-more"
-                >
-                  <button
-                    :ref="(el) => setDetailsButtonRef(item.id, el as Element | null)"
-                    type="button"
-                    class="booking-table__details-btn"
-                    :aria-expanded="openDetailsId === item.id"
-                    @click.stop="toggleDetails(item.id)"
-                  >
-                    Подробности
-                  </button>
-                </div>
-              </template>
-
-              <template v-if="item.hunt">
-                <strong>Охота:</strong>
-                <div>
-                  Дата: {{ item.hunt.date }}<br>
-                  Животное: {{ item.hunt.animal }}<br>
-                  {{ item.hunt.hunters }} чел.
-                </div>
-              </template>
+            <td class="booking-table__date" data-label="Дата брони">
+              <div class="booking-table__value">{{ item.date }}</div>
             </td>
-            <td class="booking-table__status">
-              <div
-                class="booking-table__status-label"
-                :class="{
-                  'booking-table__status-label--danger': item.status.code === 'processing',
-                }"
-              >
-                {{ item.status.label }}<template v-if="item.status.timerHours"> ({{ item.status.timerHours }} ч)</template>
-              </div>
-              <div
-                v-if="item.status.timer && item.status.code !== 'finish_bed_collection'"
-                class="booking-table__status-meta"
-                :class="{
-                  'booking-table__status-meta--expired':
-                    item.status.timer === '00 мин 00 сек'
-                    || item.status.timer === 'Время оплаты истекло',
-                }"
-              >
-                {{ item.status.timer }}
-              </div>
-              <template v-if="item.status.code === 'prepayment_collection'">
-                <div v-if="item.status.paid" class="booking-table__status-meta">
-                  {{ item.status.paid }}
-                </div>
-                <div
-                  v-if="item.status.subStatus"
-                  class="booking-table__status-meta booking-table__status-meta--substatus"
-                >
-                  {{ item.status.subStatus }}
-                </div>
-                <div v-if="item.status.collected" class="booking-table__status-meta">
-                  {{ item.status.collected }}
-                </div>
-              </template>
-              <template v-else-if="item.status.code === 'bed_collection'">
-                <div
-                  v-if="item.status.subStatus"
-                  class="booking-table__status-meta booking-table__status-meta--substatus"
-                >
-                  {{ item.status.subStatus }}
-                </div>
-                <div v-if="item.status.paid" class="booking-table__status-meta">
-                  {{ item.status.paid }}
-                </div>
-                <div
-                  v-if="item.status.collectionStatus"
-                  class="booking-table__status-meta booking-table__status-meta--substatus"
-                >
-                  {{ item.status.collectionStatus }}
-                </div>
-                <div v-if="item.status.collected" class="booking-table__status-meta">
-                  {{ item.status.collected }}
-                </div>
-              </template>
-              <template v-else>
-                <div v-if="item.status.collected" class="booking-table__status-meta">
-                  {{ item.status.collected }}
-                </div>
-                <div
-                  v-if="item.status.subStatus"
-                  class="booking-table__status-meta booking-table__status-meta--substatus"
-                >
-                  {{ item.status.subStatus }}
-                </div>
-                <div v-if="item.status.paid" class="booking-table__status-meta">
-                  {{ item.status.paid }}
-                </div>
-              </template>
-            </td>
-            <td class="booking-table__payment">
-              <button
-                v-if="
-                  showHunterCalculation
-                  && isPaymentVisibleStatus(item.status.code)
-                "
-                type="button"
-                class="booking-table__payment-btn"
-                @click="openCalculation(item)"
-              >
-                {{ item.paymentAction || 'Калькуляция' }}
-              </button>
-              <div
-                v-else-if="showCustomer && isHuntingFinishedCollection(item)"
-                class="booking-table__payment-summary"
-              >
-                <div>Остаток базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</div>
-              </div>
-            </td>
-            <td class="booking-table__actions">
-              <div class="booking-table__actions-list">
+            <td
+              class="booking-table__base"
+              :data-label="showCustomer ? 'Заказчик' : 'Охотн. База'"
+            >
+              <div class="booking-table__value">
                 <button
-                  v-for="(action, index) in item.actions"
-                  :key="`${item.id}-${index}`"
+                  v-if="showCustomer"
                   type="button"
-                  class="booking-table__action"
-                  :class="`booking-table__action--${action.variant}`"
-                  :disabled="isCollectionActionLoading(item, action)"
-                  :aria-busy="isCollectionActionLoading(item, action)"
-                  @click="handleAction(item, action)"
+                  class="booking-table__customer-btn"
+                  @click="emit('customer', item)"
                 >
-                  <CommonSpinner
-                    v-if="isCollectionActionLoading(item, action)"
-                    variant="ring"
-                    :size="14"
-                    color="var(--wh-white)"
-                    :label="action.label"
-                  />
-                  {{ action.label }}
+                  {{ item.customerName ?? '—' }}
                 </button>
+                <template v-else>
+                  <a
+                    v-if="item.baseUrl"
+                    :href="item.baseUrl"
+                    class="booking-table__base-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ item.baseName }}
+                  </a>
+                  <span v-else>{{ item.baseName }}</span>
+                </template>
+              </div>
+            </td>
+            <td class="booking-table__type" data-label="Тип">
+              <div class="booking-table__value">{{ item.typeLabel }}</div>
+            </td>
+            <td class="booking-table__details" data-label="Детали">
+              <div class="booking-table__value">
+                <template v-if="item.accommodation">
+                  <strong>Проживание:</strong>
+                  <div>
+                    Заезд: {{ item.accommodation.checkIn }}<br>
+                    Выезд: {{ item.accommodation.checkOut }}<br>
+                    {{ nightsLabel(item.accommodation.nights) }}<br>
+                    {{ item.accommodation.guests }} чел.
+                  </div>
+
+                  <div
+                    v-if="showDetailsButtons && item.accommodation.rooms?.length"
+                    class="booking-table__details-more"
+                  >
+                    <button
+                      :ref="(el) => setDetailsButtonRef(item.id, el as Element | null)"
+                      type="button"
+                      class="booking-table__details-btn"
+                      :aria-expanded="openDetailsId === item.id"
+                      @click.stop="toggleDetails(item.id)"
+                    >
+                      Подробности
+                    </button>
+                  </div>
+                </template>
+
+                <template v-if="item.hunt">
+                  <strong>Охота:</strong>
+                  <div>
+                    Дата: {{ item.hunt.date }}<br>
+                    Животное: {{ item.hunt.animal }}<br>
+                    {{ item.hunt.hunters }} чел.
+                  </div>
+                </template>
+              </div>
+            </td>
+            <td class="booking-table__status" data-label="Статус">
+              <div class="booking-table__value">
+                <div
+                  class="booking-table__status-label"
+                  :class="{
+                    'booking-table__status-label--danger': item.status.code === 'processing',
+                  }"
+                >
+                  {{ item.status.label }}<template v-if="item.status.timerHours"> ({{ item.status.timerHours }} ч)</template>
+                </div>
+                <div
+                  v-if="item.status.timer && item.status.code !== 'finish_bed_collection'"
+                  class="booking-table__status-meta"
+                  :class="{
+                    'booking-table__status-meta--expired':
+                      item.status.timer === '00 мин 00 сек'
+                      || item.status.timer === 'Время оплаты истекло',
+                  }"
+                >
+                  {{ item.status.timer }}
+                </div>
+                <template v-if="item.status.code === 'prepayment_collection'">
+                  <div v-if="item.status.paid" class="booking-table__status-meta">
+                    {{ item.status.paid }}
+                  </div>
+                  <div
+                    v-if="item.status.subStatus"
+                    class="booking-table__status-meta booking-table__status-meta--substatus"
+                  >
+                    {{ item.status.subStatus }}
+                  </div>
+                  <div v-if="item.status.collected" class="booking-table__status-meta">
+                    {{ item.status.collected }}
+                  </div>
+                </template>
+                <template v-else-if="item.status.code === 'bed_collection'">
+                  <div
+                    v-if="item.status.subStatus"
+                    class="booking-table__status-meta booking-table__status-meta--substatus"
+                  >
+                    {{ item.status.subStatus }}
+                  </div>
+                  <div v-if="item.status.paid" class="booking-table__status-meta">
+                    {{ item.status.paid }}
+                  </div>
+                  <div
+                    v-if="item.status.collectionStatus"
+                    class="booking-table__status-meta booking-table__status-meta--substatus"
+                  >
+                    {{ item.status.collectionStatus }}
+                  </div>
+                  <div v-if="item.status.collected" class="booking-table__status-meta">
+                    {{ item.status.collected }}
+                  </div>
+                </template>
+                <template v-else>
+                  <div v-if="item.status.collected" class="booking-table__status-meta">
+                    {{ item.status.collected }}
+                  </div>
+                  <div
+                    v-if="item.status.subStatus"
+                    class="booking-table__status-meta booking-table__status-meta--substatus"
+                  >
+                    {{ item.status.subStatus }}
+                  </div>
+                  <div v-if="item.status.paid" class="booking-table__status-meta">
+                    {{ item.status.paid }}
+                  </div>
+                </template>
+              </div>
+            </td>
+            <td class="booking-table__payment" data-label="Оплата">
+              <div class="booking-table__value">
                 <button
                   v-if="
-                    showCalculation
-                    && (
-                      (item.status.code === 'prepayment_collection' && item.paymentAction)
-                      || isPaymentVisibleStatus(item.status.code)
-                      || isHuntingFinishedCollection(item)
-                    )
+                    showHunterCalculation
+                    && isPaymentVisibleStatus(item.status.code)
                   "
                   type="button"
-                  class="booking-table__action booking-table__action--primary"
+                  class="booking-table__payment-btn"
                   @click="openCalculation(item)"
                 >
                   {{ item.paymentAction || 'Калькуляция' }}
                 </button>
+                <div
+                  v-else-if="showCustomer && isHuntingFinishedCollection(item)"
+                  class="booking-table__payment-summary"
+                >
+                  <div>Остаток базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</div>
+                </div>
+              </div>
+            </td>
+            <td class="booking-table__actions" data-label="Действия">
+              <div class="booking-table__value">
+                <div class="booking-table__actions-list">
+                  <button
+                    v-for="(action, index) in item.actions"
+                    :key="`${item.id}-${index}`"
+                    type="button"
+                    class="booking-table__action"
+                    :class="`booking-table__action--${action.variant}`"
+                    :disabled="isCollectionActionLoading(item, action)"
+                    :aria-busy="isCollectionActionLoading(item, action)"
+                    @click="handleAction(item, action)"
+                  >
+                    <CommonSpinner
+                      v-if="isCollectionActionLoading(item, action)"
+                      variant="ring"
+                      :size="14"
+                      color="var(--wh-white)"
+                      :label="action.label"
+                    />
+                    {{ action.label }}
+                  </button>
+                  <button
+                    v-if="
+                      showCalculation
+                      && (
+                        (item.status.code === 'prepayment_collection' && item.paymentAction)
+                        || isPaymentVisibleStatus(item.status.code)
+                        || isHuntingFinishedCollection(item)
+                      )
+                    "
+                    type="button"
+                    class="booking-table__action booking-table__action--primary"
+                    @click="openCalculation(item)"
+                  >
+                    {{ item.paymentAction || 'Калькуляция' }}
+                  </button>
+                </div>
               </div>
             </td>
           </tr>
@@ -566,7 +593,7 @@ onBeforeUnmount(() => {
   margin-top: 0;
 }
 
-.booking-table__details > div:not(.booking-table__details-more) {
+.booking-table__details .booking-table__value > div:not(.booking-table__details-more) {
   color: var(--wh-gray-600);
 }
 
@@ -696,6 +723,107 @@ onBeforeUnmount(() => {
   background: var(--wh-green);
   border-color: var(--wh-green);
 }
+
+@media (--wh-mobile) {
+  .booking-table {
+    min-width: 0;
+  }
+
+  .booking-table thead {
+    display: none;
+  }
+
+  .booking-table tbody,
+  .booking-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .booking-table tbody tr.booking-table__row--mobile-hidden {
+    display: none;
+  }
+
+  .booking-table th,
+  .booking-table td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    padding: 14px 16px;
+    border-right: none;
+    text-align: left;
+    white-space: normal;
+    vertical-align: top;
+  }
+
+  .booking-table th:nth-child(-n+4),
+  .booking-table td:nth-child(-n+4) {
+    text-align: left;
+  }
+
+  .booking-table-wrap {
+    flex: none;
+  }
+
+  .booking-table-scroll {
+    flex: none;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .booking-table tbody tr:last-child td {
+    border-bottom: 1px solid var(--wh-gray-400);
+  }
+
+  .booking-table tbody tr td:last-child {
+    border-bottom: none;
+  }
+
+  .booking-table td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    width: 7.4em;
+    color: var(--wh-gray-900);
+    font-weight: 700;
+  }
+
+  .booking-table__value {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .booking-table__type {
+    white-space: normal;
+  }
+
+  .booking-table td.booking-table__actions {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    gap: 12px;
+  }
+
+  .booking-table__actions .booking-table__value {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .booking-table__actions-list {
+    align-items: stretch;
+    width: max-content;
+    max-width: 100%;
+  }
+
+  .booking-table__action,
+  .booking-table__action[aria-busy="true"] {
+    width: 100%;
+    min-width: 168px;
+    box-sizing: border-box;
+  }
+}
 </style>
 
 <style>
@@ -730,5 +858,12 @@ onBeforeUnmount(() => {
 
 .booking-table__details-popover > div + div {
   margin-top: 4px;
+}
+
+@media (--wh-mobile) {
+  .booking-table__details-popover {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
 }
 </style>
