@@ -33,11 +33,6 @@ const legalLinks = [
   { label: 'Оферта', to: '/offer' },
 ]
 
-const socials = [
-  // { label: 'Max', href: '#', src: '/icons/max.png' },
-  { label: 'Telegram', href: 'https://t.me/wild_hunter_ru', src: '/icons/telegram.png' },
-  { label: 'VK', href: 'https://vk.ru/wild_hunter_ru', src: '/icons/vk.png' },
-]
 </script>
 
 <template>
@@ -85,21 +80,7 @@ const socials = [
             к нашему сообществу
           </h4>
           <div class="footer__socials">
-            <a
-              v-for="social in socials"
-              :key="social.label"
-              :href="social.href"
-              class="footer__social"
-              :aria-label="social.label"
-            >
-              <img
-                :src="social.src"
-                :alt="social.label"
-                width="37"
-                height="36"
-                loading="lazy"
-              >
-            </a>
+            <LayoutAppSocialLinks />
           </div>
         </div>
       </div>
@@ -189,31 +170,7 @@ const socials = [
 }
 
 .footer__socials {
-  display: flex;
-  gap: 10px;
   margin-top: 4px;
-}
-
-.footer__social {
-  display: block;
-  flex-shrink: 0;
-  width: 37px;
-  height: 36px;
-  border-radius: 10px;
-  overflow: hidden;
-  transition: transform 0.15s ease, opacity 0.15s ease;
-}
-
-.footer__social img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.footer__social:hover {
-  transform: var(--wh-button-hover-lift);
-  opacity: 0.9;
 }
 
 .footer__bottom {
