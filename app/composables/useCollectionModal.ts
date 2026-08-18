@@ -11,6 +11,7 @@ const isOpen = ref(false)
 const isContentHidden = ref(false)
 const state = ref<CollectionModalState | null>(null)
 const declinedHunterKeys = ref(new Set<string>())
+const lastDeclinedParticipant = ref<CollectionParticipant | null>(null)
 
 const MOCK_PARTICIPANTS: CollectionParticipant[] = [
   {
@@ -195,6 +196,7 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
         status: declined ? 'declined' : participantStatusFromInvitation(invitation),
       }
     })
+    .filter(participant => participant.status !== 'declined')
 
   return {
     bookingId: booking.id,
@@ -221,6 +223,7 @@ export function useCollectionModal() {
     isOpen.value = false
     isContentHidden.value = false
     state.value = null
+    lastDeclinedParticipant.value = null
   }
 
   function hide() {
@@ -281,6 +284,20 @@ export function useCollectionModal() {
       return
     }
 
+    if (nextStatus === 'declined') {
+      lastDeclinedParticipant.value = {
+        ...current,
+        invitationId: current.invitationId ?? payload.invitation_id,
+        status: 'declined',
+      }
+
+      state.value = {
+        ...collection,
+        participants: collection.participants.filter((_, index) => index !== participantIndex),
+      }
+      return
+    }
+
     state.value = {
       ...collection,
       participants: collection.participants.map((participant, index) =>
@@ -293,6 +310,10 @@ export function useCollectionModal() {
           : participant,
       ),
     }
+  }
+
+  function clearLastDeclinedParticipant() {
+    lastDeclinedParticipant.value = null
   }
 
   function isDeclinedParticipant(participant: CollectionParticipant) {
@@ -334,5 +355,7 @@ export function useCollectionModal() {
     applyInvitationUpdate,
     isDeclinedHunter,
     isDeclinedParticipant,
+    lastDeclinedParticipant: readonly(lastDeclinedParticipant),
+    clearLastDeclinedParticipant,
   }
 }
