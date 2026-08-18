@@ -132,6 +132,12 @@ function hunterInputLabel(hunter: UserSearchItem) {
   return hunter.nik || hunter.user_name || hunterName(hunter)
 }
 
+function isDeclinedHunter(hunterId: number) {
+  return Boolean(state.value?.participants.some(
+    participant => participant.id === hunterId && participant.status === 'declined',
+  ))
+}
+
 function handleInviteInput(index: number) {
   const selectedHunter = selectedHunters.value[index]
   const query = inviteQueries.value[index]?.trim() ?? ''
@@ -517,12 +523,20 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
                       class="collection-modal__search-result"
                       @click="selectHunter(hunter, index)"
                     >
-                      <div>
-                        ID: {{ hunter.id }} (ник {{ hunterNickname(hunter) }}) {{ hunterName(hunter) }}
+                      <div class="collection-modal__search-result-info">
+                        <div>
+                          ID: {{ hunter.id }} (ник {{ hunterNickname(hunter) }}) {{ hunterName(hunter) }}
+                        </div>
+                        <div v-if="hunter.email" class="collection-modal__search-result-email">
+                          {{ hunter.email }}
+                        </div>
                       </div>
-                      <div v-if="hunter.email" class="collection-modal__search-result-email">
-                        {{ hunter.email }}
-                      </div>
+                      <span
+                        v-if="isDeclinedHunter(hunter.id)"
+                        class="collection-modal__search-result-declined"
+                      >
+                        отклонил приглашение
+                      </span>
                     </div>
                   </div>
 
@@ -784,6 +798,10 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 }
 
 .collection-modal__search-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--wh-gray-200);
   color: var(--wh-gray-900);
@@ -791,6 +809,18 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
   line-height: 1.35;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.collection-modal__search-result-info {
+  min-width: 0;
+}
+
+.collection-modal__search-result-declined {
+  flex-shrink: 0;
+  color: var(--wh-field-error);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .collection-modal__search-result:hover {

@@ -1,4 +1,8 @@
-import type { BookingHistoryActionDto, BookingHistoryItemDto } from '~/types/api'
+import type {
+  BookingCollectionInvitationDto,
+  BookingHistoryActionDto,
+  BookingHistoryItemDto,
+} from '~/types/api'
 import type {
   BookingAction,
   BookingActionId,
@@ -86,6 +90,46 @@ function formatRemainingTimer(endAt: string | null | undefined, now: number) {
   }
 
   return `${minutes} мин ${String(seconds).padStart(2, '0')} сек`
+}
+
+function invitationFieldLooksDeclined(key: string, value: unknown): boolean {
+  const normalizedKey = key.toLowerCase()
+
+  if (
+    normalizedKey.includes('prepayment')
+    || normalizedKey.includes('paid')
+    || normalizedKey.endsWith('_id')
+    || normalizedKey === 'email'
+    || normalizedKey === 'name'
+    || normalizedKey === 'user_name'
+    || normalizedKey === 'is_accepted'
+  ) {
+    return false
+  }
+
+  if (normalizedKey.includes('declin') && Boolean(value)) {
+    return true
+  }
+
+  if (value && typeof value === 'object') {
+    return invitationFieldLooksDeclined(key, JSON.stringify(value))
+  }
+
+  const raw = String(value ?? '').trim().toLowerCase()
+  if (raw === 'declined' || raw === 'rejected' || raw.includes('declined') || raw.includes('отклон')) {
+    return true
+  }
+
+  return (normalizedKey === 'status' || normalizedKey.endsWith('_status') || normalizedKey === 'action')
+    && raw === '1'
+}
+
+function invitationLooksDeclined(invitation: BookingCollectionInvitationDto): boolean {
+  if (invitation.is_declined || invitation.declined_at) {
+    return true
+  }
+
+  return Object.entries(invitation).some(([key, value]) => invitationFieldLooksDeclined(key, value))
 }
 
 function mapType(type: string): BookingType {
@@ -317,6 +361,9 @@ export function mapBookingHistoryItem(
       isAccepted: invitation.is_accepted,
       prepaymentPaid: Boolean(invitation.prepayment_paid),
       prepaymentPaidStatus: invitation.prepayment_paid_status || undefined,
+      isDeclined: invitationLooksDeclined(invitation),
+      action: invitation.action || undefined,
+      declinedAt: invitation.declined_at || undefined,
     })),
     collectionUrl: item.invitation_url || undefined,
   }

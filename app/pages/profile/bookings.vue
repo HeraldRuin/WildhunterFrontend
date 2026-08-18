@@ -293,8 +293,17 @@ function invitationMatchesDto(
   invitation: { invitation_id: number, hunter_id: number },
   payload: BookingInvitationUpdatedPayload,
 ) {
-  return invitation.invitation_id === payload.invitation_id
-    || invitation.hunter_id === payload.hunter_id
+  return Number(invitation.invitation_id) === Number(payload.invitation_id)
+    || Number(invitation.hunter_id) === Number(payload.hunter_id)
+}
+
+function bookingMatchesInvitationPayload(
+  booking: { id: number, code: string, booking_number: string | number },
+  payload: BookingInvitationUpdatedPayload,
+) {
+  return booking.id === payload.booking_id
+    || Number(booking.booking_number) === Number(payload.booking_id)
+    || Boolean(payload.code && booking.code === payload.code)
 }
 
 function nextAcceptedCount(
@@ -318,7 +327,7 @@ function nextAcceptedCount(
 function applyBookingInvitationUpdate(payload: BookingInvitationUpdatedPayload) {
   const response = historyResponse.value
 
-  if (response?.data.bookings.items.some(booking => booking.id === payload.booking_id)) {
+  if (response?.data.bookings.items.some(booking => bookingMatchesInvitationPayload(booking, payload))) {
     historyResponse.value = {
       ...response,
       data: {
@@ -326,7 +335,7 @@ function applyBookingInvitationUpdate(payload: BookingInvitationUpdatedPayload) 
         bookings: {
           ...response.data.bookings,
           items: response.data.bookings.items.map((booking) => {
-            if (booking.id !== payload.booking_id) {
+            if (!bookingMatchesInvitationPayload(booking, payload)) {
               return booking
             }
 

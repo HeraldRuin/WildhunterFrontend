@@ -43,6 +43,9 @@ export interface BookingInvitationParticipant {
   isAccepted: boolean
   prepaymentPaid: boolean
   prepaymentPaidStatus?: string
+  isDeclined?: boolean
+  action?: string
+  declinedAt?: string
 }
 
 export interface CollectionModalState {
