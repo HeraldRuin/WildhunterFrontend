@@ -8,7 +8,7 @@ const emit = defineEmits<{
   finished: []
 }>()
 
-const { isOpen, isContentHidden, state, close, hide, reopen, addParticipant } = useCollectionModal()
+const { isOpen, isContentHidden, state, close, hide, reopen, addParticipant, isDeclinedHunter } = useCollectionModal()
 const { bookings: bookingsApi, user: userApi } = useApi()
 const notifications = useNotifications()
 const { open: openConfirmModal } = useConfirmModal()
@@ -130,12 +130,6 @@ function hunterNickname(hunter: UserSearchItem) {
 
 function hunterInputLabel(hunter: UserSearchItem) {
   return hunter.nik || hunter.user_name || hunterName(hunter)
-}
-
-function isDeclinedHunter(hunterId: number) {
-  return Boolean(state.value?.participants.some(
-    participant => participant.id === hunterId && participant.status === 'declined',
-  ))
 }
 
 function handleInviteInput(index: number) {
@@ -533,9 +527,9 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
                       </div>
                       <span
                         v-if="isDeclinedHunter(hunter.id)"
-                        class="collection-modal__search-result-declined"
+                        class="collection-modal__declined-label"
                       >
-                        отклонил приглашение
+                        Отказался
                       </span>
                     </div>
                   </div>
@@ -544,7 +538,13 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
                     v-if="selectedHunters[index]?.email"
                     class="collection-modal__selected-email"
                   >
-                    {{ selectedHunters[index]?.email }}
+                    <span>{{ selectedHunters[index]?.email }}</span>
+                    <span
+                      v-if="isDeclinedHunter(selectedHunters[index]!.id)"
+                      class="collection-modal__declined-label"
+                    >
+                      Отказался
+                    </span>
                   </div>
                 </div>
 
@@ -760,9 +760,19 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 }
 
 .collection-modal__selected-email {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 4px;
   color: var(--wh-gray-600);
   font-size: 0.75rem;
+}
+
+.collection-modal__declined-label {
+  flex-shrink: 0;
+  color: var(--wh-field-error);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .collection-modal__invite-button {
@@ -813,14 +823,6 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 
 .collection-modal__search-result-info {
   min-width: 0;
-}
-
-.collection-modal__search-result-declined {
-  flex-shrink: 0;
-  color: var(--wh-field-error);
-  font-size: 0.75rem;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .collection-modal__search-result:hover {

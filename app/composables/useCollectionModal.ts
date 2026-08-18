@@ -289,6 +289,22 @@ export function useCollectionModal() {
     }
   }
 
+  function isDeclinedHunter(hunterId: number) {
+    if (!hunterId || !state.value) return false
+
+    const declinedInParticipants = state.value.participants.some(
+      participant => participant.id === hunterId && participant.status === 'declined',
+    )
+
+    if (declinedInParticipants) return true
+
+    return isRememberedDeclinedHunter(
+      state.value.bookingId,
+      state.value.bookingNumber,
+      hunterId,
+    )
+  }
+
   return {
     isOpen: readonly(isOpen),
     isContentHidden: readonly(isContentHidden),
@@ -299,5 +315,6 @@ export function useCollectionModal() {
     reopen,
     addParticipant,
     applyInvitationUpdate,
+    isDeclinedHunter,
   }
 }
