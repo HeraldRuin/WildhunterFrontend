@@ -299,18 +299,13 @@ onUnmounted(() => {
 
 .select-field__option:hover,
 .select-field__option--hovered,
-.select-field__option:focus-visible {
+.select-field__option:focus-visible,
+.select-field__option--active {
   background-color: #e8883a;
   color: #ffffff;
 }
 
 .select-field__option--active .select-field__option-dot {
-  background-color: #d16510;
-}
-
-.select-field__option--active:hover .select-field__option-dot,
-.select-field__option--active.select-field__option--hovered .select-field__option-dot,
-.select-field__option--active:focus-visible .select-field__option-dot {
   background-color: #ffffff;
 }
 

@@ -233,59 +233,6 @@ defineExpose({
               x{{ room.capacity }}
             </span>
           </div>
-
-          <div
-            v-if="room.attributes.length"
-            class="hotel-room-selection__attributes"
-          >
-            <ul class="hotel-room-selection__attr-list">
-              <li
-                v-for="term in previewTerms(room)"
-                :key="term.id"
-                class="hotel-room-selection__attr-item"
-              >
-                <img
-                  v-if="term.imageUrl"
-                  class="hotel-room-selection__attr-image"
-                  :src="term.imageUrl"
-                  alt=""
-                  width="16"
-                  height="16"
-                >
-                <i
-                  v-else-if="term.icon"
-                  class="hotel-room-selection__attr-icon"
-                  :class="term.icon"
-                  aria-hidden="true"
-                />
-                <span>{{ term.name }}</span>
-              </li>
-            </ul>
-
-            <button
-              type="button"
-              class="hotel-room-selection__all-services"
-              @click="openAttributesModal(room)"
-            >
-              Все услуги номера
-              <svg
-                class="hotel-room-selection__all-services-icon"
-                viewBox="0 0 16 16"
-                width="14"
-                height="14"
-                aria-hidden="true"
-              >
-                <path
-                  d="M6 3.5 11 8l-5 4.5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
         </div>
 
         <div class="hotel-room-selection__booking">
@@ -303,6 +250,59 @@ defineExpose({
               @update:model-value="setQuantity(room.id, $event)"
             />
           </div>
+        </div>
+
+        <div
+          v-if="room.attributes.length"
+          class="hotel-room-selection__attributes"
+        >
+          <ul class="hotel-room-selection__attr-list">
+            <li
+              v-for="term in previewTerms(room)"
+              :key="term.id"
+              class="hotel-room-selection__attr-item"
+            >
+              <img
+                v-if="term.imageUrl"
+                class="hotel-room-selection__attr-image"
+                :src="term.imageUrl"
+                alt=""
+                width="16"
+                height="16"
+              >
+              <i
+                v-else-if="term.icon"
+                class="hotel-room-selection__attr-icon"
+                :class="term.icon"
+                aria-hidden="true"
+              />
+              <span>{{ term.name }}</span>
+            </li>
+          </ul>
+
+          <button
+            type="button"
+            class="hotel-room-selection__all-services"
+            @click="openAttributesModal(room)"
+          >
+            Все услуги номера
+            <svg
+              class="hotel-room-selection__all-services-icon"
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              aria-hidden="true"
+            >
+              <path
+                d="M6 3.5 11 8l-5 4.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
         </div>
       </div>
     </article>
@@ -458,21 +458,44 @@ defineExpose({
 }
 
 .hotel-room-selection__body {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "info booking"
+    "attributes attributes";
   flex: 1;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
+  align-items: start;
+  column-gap: 20px;
+  row-gap: 12px;
   min-width: 0;
   min-height: 172px;
 }
 
+.hotel-room-selection__info {
+  grid-area: info;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
 .hotel-room-selection__booking {
+  grid-area: booking;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.hotel-room-selection__attributes {
+  grid-area: attributes;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
 }
 
 .hotel-room-selection__price {
@@ -484,13 +507,6 @@ defineExpose({
   letter-spacing: -0.05em;
   color: var(--wh-black-text);
   white-space: nowrap;
-}
-
-.hotel-room-selection__info {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
 }
 
 .hotel-room-selection__title {
@@ -534,13 +550,6 @@ defineExpose({
   color: #1c211c;
 }
 
-.hotel-room-selection__attributes {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
-
 .hotel-room-selection__attr-list {
   display: flex;
   flex-wrap: wrap;
@@ -548,6 +557,7 @@ defineExpose({
   margin: 0;
   padding: 0;
   list-style: none;
+  width: 100%;
 }
 
 .hotel-room-selection__all-services {
@@ -676,10 +686,12 @@ defineExpose({
   }
 
   .hotel-room-selection__body {
-    flex: 1;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "info booking"
+      "attributes attributes";
+    column-gap: 16px;
+    row-gap: 12px;
     height: auto;
     min-height: 0;
   }
@@ -700,6 +712,13 @@ defineExpose({
     top: auto;
     bottom: calc(100% + 4px);
   }
+
+  .hotel-room-selection__attr-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+    width: 100%;
+  }
 }
 
 @media (--wh-mobile) {
@@ -717,10 +736,13 @@ defineExpose({
   }
 
   .hotel-room-selection__body {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "info"
+      "attributes"
+      "booking";
     width: 100%;
+    row-gap: 16px;
   }
 
   .hotel-room-selection__booking {
@@ -734,6 +756,19 @@ defineExpose({
     width: 100%;
     max-width: 156px;
     margin-inline: auto;
+  }
+}
+
+@media (max-width: 377px) {
+  .hotel-room-selection__booking {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .hotel-room-selection__quantity {
+    max-width: none;
+    margin-inline: 0;
   }
 }
 </style>

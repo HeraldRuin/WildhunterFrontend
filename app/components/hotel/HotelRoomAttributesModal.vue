@@ -406,24 +406,25 @@ onUnmounted(() => {
 }
 
 .room-attrs-modal__dot {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   padding: 0;
-  border: 1.5px solid var(--wh-gray-400);
+  border: 1px solid rgb(28 33 28 / 25%);
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
-.room-attrs-modal__dot:hover {
-  border-color: var(--wh-black-text);
-  transform: scale(1.15);
+.room-attrs-modal__dot:hover:not(.room-attrs-modal__dot--active) {
+  border-color: rgb(28 33 28 / 45%);
 }
 
 .room-attrs-modal__dot--active {
-  background: var(--wh-black-text);
-  border-color: var(--wh-black-text);
+  border-color: #e8883a;
+  background: #e8883a;
 }
 
 .room-attrs-modal__sidebar {
