@@ -34,10 +34,14 @@ useHead(() => needsFontAwesome.value
   : {},
 )
 
+const PREVIEW_TERMS_LIMIT = 4
+
 const quantities = ref<Record<string, number>>({})
 const lightboxOpen = ref(false)
 const lightboxImages = ref<HotelGalleryImage[]>([])
 const lightboxTitle = ref('')
+const attributesModalOpen = ref(false)
+const attributesModalRoom = ref<HotelRoomOption | null>(null)
 
 const hasSelectedRooms = computed(() =>
   Object.values(quantities.value).some(quantity => quantity > 0),
@@ -125,6 +129,15 @@ function setQuantity(roomId: string, value: string) {
 function roomTotalPrice(room: HotelRoomOption) {
   const quantity = quantities.value[room.id] ?? 0
   return quantity > 0 ? room.price * quantity : room.price
+}
+
+function previewTerms(room: HotelRoomOption) {
+  return room.attributes.flatMap(group => group.terms).slice(0, PREVIEW_TERMS_LIMIT)
+}
+
+function openAttributesModal(room: HotelRoomOption) {
+  attributesModalRoom.value = room
+  attributesModalOpen.value = true
 }
 
 defineExpose({
@@ -225,36 +238,53 @@ defineExpose({
             v-if="room.attributes.length"
             class="hotel-room-selection__attributes"
           >
-            <section
-              v-for="group in room.attributes"
-              :key="group.id"
-              class="hotel-room-selection__attr-group"
-            >
-              <h4 class="hotel-room-selection__attr-title">{{ group.name }}</h4>
-              <ul class="hotel-room-selection__attr-list">
-                <li
-                  v-for="term in group.terms"
-                  :key="term.id"
-                  class="hotel-room-selection__attr-item"
+            <ul class="hotel-room-selection__attr-list">
+              <li
+                v-for="term in previewTerms(room)"
+                :key="term.id"
+                class="hotel-room-selection__attr-item"
+              >
+                <img
+                  v-if="term.imageUrl"
+                  class="hotel-room-selection__attr-image"
+                  :src="term.imageUrl"
+                  alt=""
+                  width="16"
+                  height="16"
                 >
-                  <img
-                    v-if="term.imageUrl"
-                    class="hotel-room-selection__attr-image"
-                    :src="term.imageUrl"
-                    alt=""
-                    width="14"
-                    height="14"
-                  >
-                  <i
-                    v-else-if="term.icon"
-                    class="hotel-room-selection__attr-icon"
-                    :class="term.icon"
-                    aria-hidden="true"
-                  />
-                  <span>{{ term.name }}</span>
-                </li>
-              </ul>
-            </section>
+                <i
+                  v-else-if="term.icon"
+                  class="hotel-room-selection__attr-icon"
+                  :class="term.icon"
+                  aria-hidden="true"
+                />
+                <span>{{ term.name }}</span>
+              </li>
+            </ul>
+
+            <button
+              type="button"
+              class="hotel-room-selection__all-services"
+              @click="openAttributesModal(room)"
+            >
+              Все услуги номера
+              <svg
+                class="hotel-room-selection__all-services-icon"
+                viewBox="0 0 16 16"
+                width="14"
+                height="14"
+                aria-hidden="true"
+              >
+                <path
+                  d="M6 3.5 11 8l-5 4.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -295,6 +325,11 @@ defineExpose({
       v-model:open="lightboxOpen"
       :images="lightboxImages"
       :title="lightboxTitle"
+    />
+
+    <HotelRoomAttributesModal
+      v-model:open="attributesModalOpen"
+      :room="attributesModalRoom"
     />
   </div>
 </template>
@@ -453,7 +488,6 @@ defineExpose({
 
 .hotel-room-selection__info {
   display: flex;
-  flex: 1;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
@@ -501,58 +535,67 @@ defineExpose({
 }
 
 .hotel-room-selection__attributes {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-  width: 100%;
-}
-
-.hotel-room-selection__attr-group {
-  min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--wh-field-border);
-  border-radius: 10px;
-  background: var(--wh-gray-100);
-}
-
-.hotel-room-selection__attr-title {
-  margin: 0 0 6px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  color: var(--wh-gray-600);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .hotel-room-selection__attr-list {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 6px 16px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+.hotel-room-selection__all-services {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+  color: var(--wh-orange-500);
+  cursor: pointer;
+}
+
+.hotel-room-selection__all-services:hover {
+  color: var(--wh-orange-600);
+}
+
+.hotel-room-selection__all-services-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
 .hotel-room-selection__attr-item {
-  display: flex;
-  align-items: flex-start;
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
   min-width: 0;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: var(--wh-black-text);
 }
 
 .hotel-room-selection__attr-image {
   display: block;
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
-  margin-top: 1px;
+  width: 16px;
+  height: 16px;
   object-fit: contain;
 }
 
@@ -561,11 +604,10 @@ defineExpose({
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  margin-top: 1px;
-  font-size: 12px;
+  width: 16px;
+  font-size: 14px;
   line-height: 1;
-  color: var(--wh-green);
+  color: #1c211c;
 }
 
 .hotel-room-selection__quantity {
