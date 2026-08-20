@@ -750,31 +750,33 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
       :items="bookings"
     />
 
-    <Transition name="bookings-fade" mode="out-in">
-      <div
-        v-if="isHistoryInitialLoading"
-        key="bookings-loading"
-        class="bookings-page__loading"
-        aria-live="polite"
-      >
-        <CommonSpinner variant="ring" size="lg" label="Загрузка бронирований" />
-      </div>
+    <div class="bookings-page__table-area">
+      <Transition name="bookings-fade" mode="out-in">
+        <div
+          v-if="isHistoryInitialLoading"
+          key="bookings-loading"
+          class="bookings-page__loading"
+          aria-live="polite"
+        >
+          <CommonSpinner variant="ring" size="lg" label="Загрузка бронирований" />
+        </div>
 
-      <div v-else key="bookings-content" class="bookings-page__content">
-        <ProfileBookingHistoryTable
-          :items="bookings"
-          :selected-id="selectedMobileBookingId"
-          :empty-text="emptyText"
-          :show-details-buttons="isHunter"
-          :show-customer="isBaseAdmin"
-          :show-calculation="isBaseAdmin"
-          :show-hunter-calculation="isHunter"
-          :loading-collection-booking-id="collectionLoadingBookingId"
-          @action="handleBookingAction"
-          @customer="openCustomerModal"
-        />
-      </div>
-    </Transition>
+        <div v-else key="bookings-content" class="bookings-page__content">
+          <ProfileBookingHistoryTable
+            :items="bookings"
+            :selected-id="selectedMobileBookingId"
+            :empty-text="emptyText"
+            :show-details-buttons="isHunter"
+            :show-customer="isBaseAdmin"
+            :show-calculation="isBaseAdmin"
+            :show-hunter-calculation="isHunter"
+            :loading-collection-booking-id="collectionLoadingBookingId"
+            @action="handleBookingAction"
+            @customer="openCustomerModal"
+          />
+        </div>
+      </Transition>
+    </div>
 
     <ProfileCollectionModal
       @extended="refreshHistory"
@@ -820,10 +822,16 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 .bookings-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
   padding: 20px 40px 48px;
+  /* Чуть меньше слева — место под точки у сайдбара */
+  padding-left: 20px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  overflow: hidden;
 }
 
 .bookings-page__header {
@@ -887,21 +895,31 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
   line-height: 1;
 }
 
+.bookings-page__table-area {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .bookings-page__content {
   display: flex;
+  flex: 1;
   flex-direction: column;
+  min-height: 0;
   margin-top: 8px;
-  padding: 1px;
-  border: 1px solid var(--wh-gray-400);
-  border-radius: var(--wh-radius);
-  background: var(--wh-white);
+  background: transparent;
   overflow: hidden;
 }
 
+.bookings-page__content :deep(.booking-table-shell) {
+  flex: 1;
+  min-height: 0;
+}
+
 .bookings-page__content :deep(.booking-table-wrap) {
-  border: none;
-  border-radius: calc(var(--wh-radius) - 2px);
-  overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
 
 .bookings-page__loading {
@@ -924,7 +942,16 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 @media (--wh-tablet) {
   .bookings-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 12px 8px 32px;
+  }
+
+  .bookings-page__table-area,
+  .bookings-page__content {
+    flex: none;
+    min-height: 0;
   }
 
   .bookings-page__header {

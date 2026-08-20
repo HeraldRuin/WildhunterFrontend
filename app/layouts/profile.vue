@@ -25,8 +25,10 @@ onMounted(() => {
 }
 
 .profile-layout__content {
+  display: flex;
+  flex-direction: column;
   margin-left: calc(var(--profile-sidebar-width) + var(--profile-sidebar-gap) * 2);
-  min-height: 100vh;
+  height: 100vh;
   max-height: 100vh;
   overflow-y: auto;
   background: var(--wh-gray-100);
@@ -45,6 +47,7 @@ onMounted(() => {
 
   .profile-layout__content {
     margin-left: 0;
+    height: auto;
     min-height: 0;
     max-height: none;
     overflow: visible;

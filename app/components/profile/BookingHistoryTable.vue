@@ -21,6 +21,10 @@ const emit = defineEmits<{
 const openDetailsId = ref<number | null>(null)
 const popoverStyle = ref<Record<string, string>>({})
 const detailsButtonRefs = new Map<number, HTMLElement>()
+const scrollEl = ref<HTMLElement | null>(null)
+const listPageCount = ref(1)
+const listPageIndex = ref(0)
+let listResizeObserver: ResizeObserver | null = null
 
 const openDetailsItem = computed(() =>
   props.items.find(item => item.id === openDetailsId.value) ?? null,
@@ -148,11 +152,123 @@ watch(openDetailsId, (id) => {
   })
 })
 
+function getListMaxScroll(el: HTMLElement) {
+  return Math.max(0, el.scrollHeight - el.clientHeight)
+}
+
+function getListPageCount(el: HTMLElement) {
+  const pageSize = el.clientHeight || 1
+  const maxScroll = getListMaxScroll(el)
+
+  if (maxScroll <= 8) {
+    return 1
+  }
+
+  return Math.max(1, Math.ceil((maxScroll + pageSize) / pageSize))
+}
+
+function getListPageIndex(el: HTMLElement, pageCount: number) {
+  if (pageCount <= 1) {
+    return 0
+  }
+
+  const maxScroll = getListMaxScroll(el)
+
+  if (el.scrollTop >= maxScroll - 2) {
+    return pageCount - 1
+  }
+
+  return Math.min(
+    pageCount - 1,
+    Math.round((el.scrollTop / maxScroll) * (pageCount - 1)),
+  )
+}
+
+function updateListPages() {
+  const el = scrollEl.value
+  if (!el) {
+    listPageCount.value = 1
+    listPageIndex.value = 0
+    return
+  }
+
+  const pages = getListPageCount(el)
+  listPageCount.value = pages
+  listPageIndex.value = getListPageIndex(el, pages)
+}
+
+function scheduleListPagesUpdate() {
+  void nextTick(() => {
+    updateListPages()
+    requestAnimationFrame(() => {
+      updateListPages()
+      requestAnimationFrame(updateListPages)
+    })
+  })
+}
+
+function onListScroll() {
+  const el = scrollEl.value
+  if (!el) return
+
+  listPageIndex.value = getListPageIndex(el, listPageCount.value)
+}
+
+function scrollListToPage(index: number) {
+  const el = scrollEl.value
+  if (!el) return
+
+  const pageCount = listPageCount.value
+  if (pageCount <= 1) return
+
+  const maxScroll = getListMaxScroll(el)
+  const top = pageCount === 1
+    ? 0
+    : Math.round((index / (pageCount - 1)) * maxScroll)
+
+  el.scrollTo({ top, behavior: 'smooth' })
+  listPageIndex.value = index
+}
+
+watch(() => props.items.length, () => {
+  scheduleListPagesUpdate()
+  void nextTick(() => {
+    if (scrollEl.value && listResizeObserver) {
+      listResizeObserver.disconnect()
+      listResizeObserver.observe(scrollEl.value)
+    }
+  })
+})
+
+watch(scrollEl, (el) => {
+  if (!el || !listResizeObserver) return
+  listResizeObserver.disconnect()
+  listResizeObserver.observe(el)
+  updateListPages()
+})
+
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
   document.addEventListener('keydown', handleKeydown)
   window.addEventListener('resize', updatePopoverPosition)
   window.addEventListener('scroll', updatePopoverPosition, true)
+  window.addEventListener('resize', scheduleListPagesUpdate)
+
+  if (import.meta.client && typeof ResizeObserver !== 'undefined') {
+    listResizeObserver = new ResizeObserver(() => {
+      updateListPages()
+    })
+
+    void nextTick(() => {
+      if (scrollEl.value) {
+        listResizeObserver?.observe(scrollEl.value)
+      }
+      updateListPages()
+    })
+  }
+  else {
+    scheduleListPagesUpdate()
+  }
 })
 
 onBeforeUnmount(() => {
@@ -160,30 +276,57 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('resize', updatePopoverPosition)
   window.removeEventListener('scroll', updatePopoverPosition, true)
+  window.removeEventListener('resize', scheduleListPagesUpdate)
+  listResizeObserver?.disconnect()
+  listResizeObserver = null
 })
 </script>
 
 <template>
-  <div class="booking-table-wrap">
-    <div v-if="!items.length" class="booking-table-empty">
-      {{ emptyText ?? 'Нет бронирований' }}
+  <div class="booking-table-shell">
+    <div
+      v-if="items.length && listPageCount > 1"
+      class="booking-table-dots"
+      role="tablist"
+      aria-label="Страницы списка бронирований"
+    >
+      <button
+        v-for="page in listPageCount"
+        :key="page"
+        type="button"
+        class="booking-table-dot"
+        :class="{ 'booking-table-dot--active': page - 1 === listPageIndex }"
+        :aria-label="`Страница ${page}`"
+        :aria-current="page - 1 === listPageIndex ? 'true' : undefined"
+        @click="scrollListToPage(page - 1)"
+      />
     </div>
 
-    <div v-else class="booking-table-scroll">
-      <table class="booking-table">
-        <thead>
-          <tr>
-            <th>№ брони</th>
-            <th>Дата брони</th>
-            <th>{{ showCustomer ? 'Заказчик' : 'Охотн. База' }}</th>
-            <th>Тип</th>
-            <th>Детали</th>
-            <th>Статус</th>
-            <th>Оплата</th>
-            <th>Действия</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div class="booking-table-wrap">
+      <div v-if="!items.length" class="booking-table-empty">
+        {{ emptyText ?? 'Нет бронирований' }}
+      </div>
+
+      <div
+        v-else
+        ref="scrollEl"
+        class="booking-table-scroll"
+        @scroll.passive="onListScroll"
+      >
+        <table class="booking-table">
+          <thead>
+            <tr>
+              <th>№ брони</th>
+              <th>Дата брони</th>
+              <th>{{ showCustomer ? 'Заказчик' : 'Охотн. База' }}</th>
+              <th>Тип</th>
+              <th>Детали</th>
+              <th>Статус</th>
+              <th>Оплата</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
           <tr
             v-for="item in items"
             :key="item.id"
@@ -400,6 +543,7 @@ onBeforeUnmount(() => {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <Teleport to="body">
@@ -425,11 +569,22 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.booking-table-shell {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
 .booking-table-wrap {
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
   min-height: 0;
+  min-width: 0;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
@@ -444,9 +599,46 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
+.booking-table-dots {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 8px;
+  width: 10px;
+  padding: 4px 0;
+  z-index: 2;
+}
+
+.booking-table-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 1px solid rgb(28 33 28 / 25%);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.booking-table-dot--active {
+  border-color: #e8883a;
+  background: #e8883a;
+}
+
+.booking-table-dot:hover:not(.booking-table-dot--active) {
+  border-color: rgb(28 33 28 / 45%);
+}
+
 .booking-table-scroll {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   overflow: auto;
 }
 
@@ -492,6 +684,7 @@ onBeforeUnmount(() => {
   color: var(--wh-gray-900);
   font-weight: 700;
   white-space: nowrap;
+  box-shadow: 0 1px 0 var(--wh-gray-400);
 }
 
 .booking-table tbody tr:last-child td {
@@ -764,8 +957,16 @@ onBeforeUnmount(() => {
     text-align: left;
   }
 
+  .booking-table-shell {
+    width: 100%;
+  }
+
   .booking-table-wrap {
     flex: none;
+  }
+
+  .booking-table-dots {
+    display: none;
   }
 
   .booking-table-scroll {
