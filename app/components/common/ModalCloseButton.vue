@@ -48,7 +48,16 @@ const emit = defineEmits<{
   background: transparent;
   color: var(--wh-gray-400);
   cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
   transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.modal-close-button:focus,
+.modal-close-button:active {
+  outline: none;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .modal-close-button:hover:not(:disabled) {
@@ -59,5 +68,25 @@ const emit = defineEmits<{
 .modal-close-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+@media (--wh-tablet) {
+  .modal-close-button,
+  .modal-close-button:focus,
+  .modal-close-button:active {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    background: transparent;
+  }
+}
+
+@media (--wh-mobile) {
+  .modal-close-button,
+  .modal-close-button:focus,
+  .modal-close-button:active {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    background: transparent;
+  }
 }
 </style>
