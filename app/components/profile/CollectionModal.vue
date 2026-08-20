@@ -63,7 +63,13 @@ const canFinishCollection = computed(() => {
 
 const emptySlotCount = computed(() => {
   if (!state.value) return 0
-  return Math.max(0, state.value.slotsTotal - occupiedParticipants.value.length)
+
+  return Math.max(
+    0,
+    state.value.slotsTotal
+      - occupiedParticipants.value.length
+      - liveDeclinedParticipants.value.length,
+  )
 })
 
 watch(isOpen, (open) => {
