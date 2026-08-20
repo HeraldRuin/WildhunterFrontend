@@ -98,18 +98,7 @@ onUnmounted(() => {
 
 watch(emptySlotCount, (count) => {
   if (!isOpen.value) return
-
-  const next = inviteQueries.value.slice(0, count)
-  while (next.length < count) {
-    next.push('')
-  }
-  inviteQueries.value = next
-
-  const nextSelected = selectedHunters.value.slice(0, count)
-  while (nextSelected.length < count) {
-    nextSelected.push(null)
-  }
-  selectedHunters.value = nextSelected
+  syncInviteSlots(count)
 })
 
 watch(canExtendCollection, (expired) => {
@@ -128,6 +117,44 @@ function resetHunterSearch() {
   activeSearchIndex.value = null
   isSearching.value = false
   searchError.value = ''
+}
+
+function syncInviteSlots(count = emptySlotCount.value) {
+  const occupiedIds = new Set(
+    occupiedParticipants.value
+      .map(participant => participant.id)
+      .filter((id): id is number => id != null),
+  )
+
+  const keptQueries: string[] = []
+  const keptSelected: Array<UserSearchItem | null> = []
+
+  for (let index = 0; index < inviteQueries.value.length; index += 1) {
+    if (keptQueries.length >= count) break
+
+    const selected = selectedHunters.value[index] ?? null
+    if (selected && occupiedIds.has(selected.id)) {
+      continue
+    }
+
+    keptQueries.push(inviteQueries.value[index] ?? '')
+    keptSelected.push(selected)
+  }
+
+  while (keptQueries.length < count) {
+    keptQueries.push('')
+    keptSelected.push(null)
+  }
+
+  inviteQueries.value = keptQueries
+  selectedHunters.value = keptSelected
+  resetHunterSearch()
+}
+
+function resetInviteSlots() {
+  inviteQueries.value = Array.from({ length: emptySlotCount.value }, () => '')
+  selectedHunters.value = Array.from({ length: emptySlotCount.value }, () => null)
+  resetHunterSearch()
 }
 
 function hunterName(hunter: UserSearchItem) {
@@ -281,6 +308,7 @@ async function inviteHunter(hunter: UserSearchItem) {
         email: hunter.email || undefined,
         status: 'pending',
       })
+      resetInviteSlots()
       notifications.success(response.message || 'Приглашение отправлено')
       reopen()
       return

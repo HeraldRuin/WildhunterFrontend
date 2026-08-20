@@ -257,13 +257,19 @@ export function useCollectionModal() {
     }
 
     const participantIndex = state.value.participants.findIndex(item => item.id === participant.id)
+    const nextParticipants = [...state.value.participants]
 
     if (participantIndex >= 0) {
-      state.value.participants[participantIndex] = participant
-      return
+      nextParticipants[participantIndex] = participant
+    }
+    else {
+      nextParticipants.push(participant)
     }
 
-    state.value.participants.push(participant)
+    state.value = {
+      ...state.value,
+      participants: nextParticipants,
+    }
   }
 
   function applyInvitationUpdate(payload: BookingInvitationUpdatedPayload) {
