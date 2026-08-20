@@ -11,7 +11,7 @@ const isOpen = ref(false)
 const isContentHidden = ref(false)
 const state = ref<CollectionModalState | null>(null)
 const declinedHunterKeys = ref(new Set<string>())
-const lastDeclinedParticipant = ref<CollectionParticipant | null>(null)
+const liveDeclinedParticipants = ref<CollectionParticipant[]>([])
 
 const MOCK_PARTICIPANTS: CollectionParticipant[] = [
   {
@@ -182,18 +182,25 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
   )
   const invitedParticipants: CollectionParticipant[] = (booking.collectionInvitations ?? [])
     .map((invitation) => {
-      const declined = isRememberedDeclinedHunter(
-        booking.id,
-        booking.number,
-        invitation.hunterId,
-      )
+      const status = participantStatusFromInvitation(invitation)
+      const declined = status === 'declined'
+        || isRememberedDeclinedHunter(
+          booking.id,
+          booking.number,
+          invitation.hunterId,
+        )
+
+      if (declined && invitation.hunterId) {
+        rememberDeclinedHunter(booking.id, invitation.hunterId)
+        rememberDeclinedHunter(Number(booking.number), invitation.hunterId)
+      }
 
       return {
         id: invitation.hunterId,
         invitationId: invitation.invitationId,
         name: invitation.name,
         email: invitation.email,
-        status: declined ? 'declined' : participantStatusFromInvitation(invitation),
+        status: declined ? 'declined' as const : status,
       }
     })
     .filter(participant => participant.status !== 'declined')
@@ -214,6 +221,7 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
 
 export function useCollectionModal() {
   function open(booking: BookingHistoryItem) {
+    liveDeclinedParticipants.value = []
     state.value = buildMockState(booking)
     isContentHidden.value = false
     isOpen.value = true
@@ -223,7 +231,7 @@ export function useCollectionModal() {
     isOpen.value = false
     isContentHidden.value = false
     state.value = null
-    lastDeclinedParticipant.value = null
+    liveDeclinedParticipants.value = []
   }
 
   function hide() {
@@ -243,6 +251,9 @@ export function useCollectionModal() {
     if (participant.id) {
       forgetDeclinedHunter(state.value.bookingId, participant.id)
       forgetDeclinedHunter(Number(state.value.bookingNumber), participant.id)
+      liveDeclinedParticipants.value = liveDeclinedParticipants.value.filter(
+        item => item.id !== participant.id,
+      )
     }
 
     const participantIndex = state.value.participants.findIndex(item => item.id === participant.id)
@@ -285,11 +296,16 @@ export function useCollectionModal() {
     }
 
     if (nextStatus === 'declined') {
-      lastDeclinedParticipant.value = {
+      const declinedParticipant: CollectionParticipant = {
         ...current,
         invitationId: current.invitationId ?? payload.invitation_id,
         status: 'declined',
       }
+
+      const withoutCurrent = liveDeclinedParticipants.value.filter(
+        participant => participant.id !== declinedParticipant.id,
+      )
+      liveDeclinedParticipants.value = [...withoutCurrent, declinedParticipant]
 
       state.value = {
         ...collection,
@@ -312,35 +328,21 @@ export function useCollectionModal() {
     }
   }
 
-  function clearLastDeclinedParticipant() {
-    lastDeclinedParticipant.value = null
-  }
-
-  function isDeclinedParticipant(participant: CollectionParticipant) {
-    if (!state.value || !participant.id) return participant.status === 'declined'
-
-    return participant.status === 'declined'
-      || isRememberedDeclinedHunter(
-        state.value.bookingId,
-        state.value.bookingNumber,
-        participant.id,
-      )
-  }
-
   function isDeclinedHunter(hunterId: number) {
-    if (!hunterId || !state.value) return false
+    if (!hunterId) return false
 
-    const declinedInParticipants = state.value.participants.some(
-      participant => participant.id === hunterId && isDeclinedParticipant(participant),
-    )
+    const rememberedKeys = declinedHunterKeys.value
+    const liveDeclined = liveDeclinedParticipants.value
+    const collection = state.value
 
-    if (declinedInParticipants) return true
+    if (liveDeclined.some(participant => participant.id === hunterId)) {
+      return true
+    }
 
-    return isRememberedDeclinedHunter(
-      state.value.bookingId,
-      state.value.bookingNumber,
-      hunterId,
-    )
+    if (!collection) return false
+
+    return rememberedKeys.has(declinedHunterKey(collection.bookingId, hunterId))
+      || rememberedKeys.has(declinedHunterKey(Number(collection.bookingNumber), hunterId))
   }
 
   return {
@@ -354,8 +356,6 @@ export function useCollectionModal() {
     addParticipant,
     applyInvitationUpdate,
     isDeclinedHunter,
-    isDeclinedParticipant,
-    lastDeclinedParticipant: readonly(lastDeclinedParticipant),
-    clearLastDeclinedParticipant,
+    liveDeclinedParticipants: readonly(liveDeclinedParticipants),
   }
 }

@@ -17,9 +17,7 @@ const {
   reopen,
   addParticipant,
   isDeclinedHunter,
-  isDeclinedParticipant,
-  lastDeclinedParticipant,
-  clearLastDeclinedParticipant,
+  liveDeclinedParticipants,
 } = useCollectionModal()
 const { bookings: bookingsApi, user: userApi } = useApi()
 const notifications = useNotifications()
@@ -49,7 +47,7 @@ const canExtendCollection = computed(() => {
 const occupiedParticipants = computed(() => {
   if (!state.value) return []
 
-  return state.value.participants.filter(participant => !isDeclinedParticipant(participant))
+  return state.value.participants.filter(participant => participant.status !== 'declined')
 })
 
 const canFinishCollection = computed(() => {
@@ -112,27 +110,6 @@ watch(emptySlotCount, (count) => {
     nextSelected.push(null)
   }
   selectedHunters.value = nextSelected
-})
-
-watch(lastDeclinedParticipant, async (participant) => {
-  if (!isOpen.value || !participant) return
-  if (!participant.id) {
-    clearLastDeclinedParticipant()
-    return
-  }
-
-  await nextTick()
-
-  const targetIndex = selectedHunters.value.findIndex(hunter => hunter === null)
-  if (targetIndex < 0) return
-
-  selectedHunters.value[targetIndex] = {
-    id: participant.id,
-    user_name: participant.name,
-    email: participant.email ?? null,
-  }
-  inviteQueries.value[targetIndex] = participant.name
-  clearLastDeclinedParticipant()
 })
 
 watch(canExtendCollection, (expired) => {
@@ -513,6 +490,34 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
             </div>
 
             <div
+              v-for="participant in liveDeclinedParticipants"
+              :key="`declined-${participant.id ?? participant.name}`"
+              class="collection-modal__invite-field"
+            >
+              <div class="collection-modal__invite-control">
+                <div class="collection-modal__invite-input-wrap">
+                  <input
+                    type="text"
+                    class="collection-modal__invite-input collection-modal__invite-input--declined"
+                    :value="participant.name"
+                    readonly
+                    tabindex="-1"
+                  >
+
+                  <div
+                    v-if="participant.email"
+                    class="collection-modal__selected-email"
+                  >
+                    <span>{{ participant.email }}</span>
+                    <span class="collection-modal__declined-label">
+                      Отказался
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
               v-for="(_, index) in inviteQueries"
               :key="`invite-${index}`"
               class="collection-modal__invite-field"
@@ -776,6 +781,12 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
   cursor: not-allowed;
 }
 
+.collection-modal__invite-input--declined {
+  background: var(--wh-white);
+  color: var(--wh-gray-900);
+  cursor: default;
+}
+
 .collection-modal__invite-field {
   position: relative;
 }
@@ -806,6 +817,10 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
   color: var(--wh-field-error);
   font-weight: 600;
   white-space: nowrap;
+}
+
+.collection-modal__search-result:hover .collection-modal__declined-label {
+  color: var(--wh-white);
 }
 
 .collection-modal__invite-button {
