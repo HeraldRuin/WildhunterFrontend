@@ -3,14 +3,26 @@ const { open: openLoginModal } = useLoginModal()
 const { open: openRegisterModal } = useRegisterModal()
 const { isAuthenticated } = useAuth()
 
+const route = useRoute()
 const menuRef = ref<HTMLElement | null>(null)
 const isMenuOpen = ref(false)
 const hoveredKey = ref<string | null>(null)
+const isLogoNavigating = ref(false)
 
 const menuItems = [
   { label: 'Для охотников', to: '/hunters' },
   { label: 'Для охотохозяйств', to: '/hunting-farms' },
 ]
+
+function isCompactViewport() {
+  return window.matchMedia('(max-width: 1024px)').matches
+}
+
+function onLogoClick() {
+  if (!import.meta.client || !isCompactViewport()) return
+  if (route.path === '/') return
+  isLogoNavigating.value = true
+}
 
 function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value
@@ -70,7 +82,12 @@ onUnmounted(() => {
       </NuxtLink>
     </div>
 
-    <NuxtLink to="/" class="hero-header__logo" aria-label="WH">
+    <NuxtLink
+      to="/"
+      class="hero-header__logo"
+      aria-label="WH"
+      @click="onLogoClick"
+    >
       <CommonAppLogo :width="104" />
     </NuxtLink>
 
@@ -116,6 +133,21 @@ onUnmounted(() => {
       </li>
     </ul>
   </header>
+
+  <Teleport to="body">
+    <div
+      v-if="isLogoNavigating"
+      class="hero-header__logo-spinner"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <CommonSpinner
+        variant="ring"
+        size="lg"
+        label="Загрузка"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -407,6 +439,22 @@ onUnmounted(() => {
 
   .hero-header__login {
     width: 96px;
+  }
+}
+
+.hero-header__logo-spinner {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+@media (--wh-desktop) {
+  .hero-header__logo-spinner {
+    display: none;
   }
 }
 </style>
