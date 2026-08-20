@@ -214,6 +214,16 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   line-height: 0;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  background: transparent;
+}
+
+.hero-header__logo:focus,
+.hero-header__logo:active {
+  outline: none;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .hero-header__logo :deep(.app-logo) {
@@ -333,6 +343,12 @@ onUnmounted(() => {
     gap: 16px;
   }
 
+  .hero-header__logo {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    background: transparent;
+  }
+
   .hero-header__logo :deep(.app-logo) {
     width: 86px !important;
     max-width: 86px !important;
@@ -379,6 +395,9 @@ onUnmounted(() => {
 
   .hero-header__logo {
     justify-self: center;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    background: transparent;
   }
 
   .hero-header__logo :deep(.app-logo) {
