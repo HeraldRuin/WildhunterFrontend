@@ -359,9 +359,9 @@ onUnmounted(() => {
 .room-attrs-modal__photo {
   position: relative;
   box-sizing: border-box;
-  flex: 0 0 calc(50% - 6px);
-  width: calc(50% - 6px);
-  min-width: 160px;
+  flex: 0 0 calc(30% - 6px);
+  width: calc(30% - 6px);
+  min-width: 100px;
   aspect-ratio: 4 / 3;
   margin: 0;
   padding: 0;
@@ -552,9 +552,9 @@ onUnmounted(() => {
   }
 
   .room-attrs-modal__photo {
-    flex-basis: min(220px, 72%);
-    width: min(220px, 72%);
-    min-width: min(220px, 72%);
+    flex-basis: min(132px, 48%);
+    width: min(132px, 48%);
+    min-width: min(132px, 48%);
   }
 
   .room-attrs-modal__sidebar {
