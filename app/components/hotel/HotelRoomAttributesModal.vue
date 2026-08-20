@@ -13,6 +13,9 @@ const emit = defineEmits<{
 
 const lightboxOpen = ref(false)
 const lightboxIndex = ref(0)
+const galleryTrackRef = ref<HTMLElement | null>(null)
+const galleryActiveIndex = ref(0)
+let galleryScrollRaf = 0
 
 const isOpen = computed(() => props.open && Boolean(props.room))
 
@@ -36,6 +39,8 @@ const galleryImages = computed<HotelGalleryImage[]>(() => {
 
   return []
 })
+
+const showGalleryDots = computed(() => galleryImages.value.length > 1)
 
 useBodyScrollLock(isOpen)
 
@@ -64,10 +69,65 @@ function openLightbox(index: number) {
   lightboxOpen.value = true
 }
 
-watch(isOpen, (open) => {
+function handleGalleryScroll() {
+  cancelAnimationFrame(galleryScrollRaf)
+  galleryScrollRaf = requestAnimationFrame(() => {
+    const track = galleryTrackRef.value
+    if (!track) {
+      return
+    }
+
+    const scrollLeft = track.scrollLeft
+    let closestIndex = 0
+    let closestDistance = Infinity
+
+    Array.from(track.children).forEach((child, index) => {
+      const slide = child as HTMLElement
+      const distance = Math.abs(slide.offsetLeft - scrollLeft)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestIndex = index
+      }
+    })
+
+    galleryActiveIndex.value = closestIndex
+  })
+}
+
+function scrollGalleryToIndex(index: number) {
+  const track = galleryTrackRef.value
+  const slide = track?.children[index] as HTMLElement | undefined
+  if (!track || !slide) {
+    return
+  }
+
+  track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' })
+  galleryActiveIndex.value = index
+}
+
+watch(isOpen, async (open) => {
   if (!open) {
     lightboxOpen.value = false
+    galleryActiveIndex.value = 0
+    return
   }
+
+  galleryActiveIndex.value = 0
+  await nextTick()
+  galleryTrackRef.value?.scrollTo({ left: 0 })
+})
+
+watch(
+  () => props.room?.id,
+  async () => {
+    galleryActiveIndex.value = 0
+    await nextTick()
+    galleryTrackRef.value?.scrollTo({ left: 0 })
+  },
+)
+
+onUnmounted(() => {
+  cancelAnimationFrame(galleryScrollRaf)
 })
 </script>
 
@@ -93,31 +153,6 @@ watch(isOpen, (open) => {
           </header>
 
           <div class="room-attrs-modal__content">
-            <div class="room-attrs-modal__gallery">
-              <button
-                v-for="(image, index) in galleryImages"
-                :key="`${image.large}-${index}`"
-                type="button"
-                class="room-attrs-modal__photo"
-                :aria-label="`Открыть фото ${index + 1}`"
-                @click="openLightbox(index)"
-              >
-                <img
-                  :src="imageSrc(image)"
-                  :alt="`${room.title} — фото ${index + 1}`"
-                  loading="lazy"
-                  decoding="async"
-                >
-              </button>
-
-              <div
-                v-if="!galleryImages.length"
-                class="room-attrs-modal__photo-empty"
-              >
-                Нет фото
-              </div>
-            </div>
-
             <div class="room-attrs-modal__sidebar">
               <h3 class="room-attrs-modal__sidebar-title">
                 Услуги и удобства
@@ -165,6 +200,55 @@ watch(isOpen, (open) => {
               >
                 Список услуг пока не указан
               </p>
+            </div>
+
+            <div class="room-attrs-modal__gallery-block">
+              <div
+                ref="galleryTrackRef"
+                class="room-attrs-modal__gallery"
+                @scroll.passive="handleGalleryScroll"
+              >
+                <button
+                  v-for="(image, index) in galleryImages"
+                  :key="`${image.large}-${index}`"
+                  type="button"
+                  class="room-attrs-modal__photo"
+                  :aria-label="`Открыть фото ${index + 1}`"
+                  @click="openLightbox(index)"
+                >
+                  <img
+                    :src="imageSrc(image)"
+                    :alt="`${room.title} — фото ${index + 1}`"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                </button>
+
+                <div
+                  v-if="!galleryImages.length"
+                  class="room-attrs-modal__photo-empty"
+                >
+                  Нет фото
+                </div>
+              </div>
+
+              <div
+                v-if="showGalleryDots"
+                class="room-attrs-modal__dots"
+                role="tablist"
+                aria-label="Фотографии номера"
+              >
+                <button
+                  v-for="(image, index) in galleryImages"
+                  :key="`gallery-dot-${index}`"
+                  type="button"
+                  class="room-attrs-modal__dot"
+                  :class="{ 'room-attrs-modal__dot--active': index === galleryActiveIndex }"
+                  :aria-label="`Фото ${index + 1} из ${galleryImages.length}`"
+                  :aria-current="index === galleryActiveIndex ? 'true' : undefined"
+                  @click="scrollGalleryToIndex(index)"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -236,31 +320,48 @@ watch(isOpen, (open) => {
 
 .room-attrs-modal__content {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.95fr);
+  grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.55fr);
+  grid-template-areas: "sidebar gallery";
   gap: 24px;
   min-height: 0;
   flex: 1 1 auto;
   overflow: hidden;
 }
 
+.room-attrs-modal__gallery-block {
+  grid-area: gallery;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+
 .room-attrs-modal__gallery {
   display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 16px;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  padding: 0 4px 8px 0;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 12px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0;
   box-sizing: border-box;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.room-attrs-modal__gallery::-webkit-scrollbar {
+  display: none;
 }
 
 .room-attrs-modal__photo {
   position: relative;
   box-sizing: border-box;
-  flex: 0 0 calc(50% - 8px);
-  width: calc(50% - 8px);
-  max-width: calc(50% - 8px);
+  flex: 0 0 calc(50% - 6px);
+  width: calc(50% - 6px);
+  min-width: 160px;
   aspect-ratio: 4 / 3;
   margin: 0;
   padding: 0;
@@ -269,6 +370,7 @@ watch(isOpen, (open) => {
   background: var(--wh-gray-100);
   overflow: hidden;
   cursor: pointer;
+  scroll-snap-align: start;
 }
 
 .room-attrs-modal__photo img {
@@ -276,6 +378,7 @@ watch(isOpen, (open) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  pointer-events: none;
 }
 
 .room-attrs-modal__photo-empty {
@@ -284,7 +387,7 @@ watch(isOpen, (open) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 220px;
+  min-height: 160px;
   border-radius: 12px;
   background: var(--wh-gray-100);
   color: var(--wh-gray-600);
@@ -293,7 +396,38 @@ watch(isOpen, (open) => {
   font-weight: 500;
 }
 
+.room-attrs-modal__dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.room-attrs-modal__dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 1.5px solid var(--wh-gray-400);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.room-attrs-modal__dot:hover {
+  border-color: var(--wh-black-text);
+  transform: scale(1.15);
+}
+
+.room-attrs-modal__dot--active {
+  background: var(--wh-black-text);
+  border-color: var(--wh-black-text);
+}
+
 .room-attrs-modal__sidebar {
+  grid-area: sidebar;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -411,11 +545,16 @@ watch(isOpen, (open) => {
 
   .room-attrs-modal__content {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "sidebar"
+      "gallery";
     gap: 18px;
   }
 
-  .room-attrs-modal__gallery {
-    max-height: 40vh;
+  .room-attrs-modal__photo {
+    flex-basis: min(220px, 72%);
+    width: min(220px, 72%);
+    min-width: min(220px, 72%);
   }
 
   .room-attrs-modal__sidebar {
