@@ -73,6 +73,7 @@ function scrollBy(direction: 'prev' | 'next') {
 .reviews-block {
   padding-block: 48px 64px;
   background: var(--wh-white);
+  overflow-x: clip;
 }
 
 .reviews-block__inner {
@@ -99,7 +100,13 @@ function scrollBy(direction: 'prev' | 'next') {
   grid-template-columns: 30px minmax(0, 1fr) 30px;
   align-items: center;
   gap: 16px;
-  width: 139%;
+  width: 100%;
+}
+
+@media (min-width: 1724px) {
+  .reviews-block__slider-wrap {
+    width: 139%;
+  }
 }
 
 .reviews-block__track {
@@ -128,7 +135,11 @@ function scrollBy(direction: 'prev' | 'next') {
 @media (--wh-tablet) {
   .reviews-block__slider-wrap {
     grid-template-columns: minmax(0, 1fr);
-    width: 100%;
+    width: 100vw;
+    max-width: 100vw;
+    margin-inline: calc(50% - 50vw);
+    padding-inline: 16px;
+    box-sizing: border-box;
   }
 
   .reviews-block__arrow {
@@ -137,6 +148,7 @@ function scrollBy(direction: 'prev' | 'next') {
 
   .reviews-block__track {
     grid-auto-columns: calc((100% - 20px) / 2);
+    scroll-padding-inline: 16px;
   }
 
   .reviews-block__slide {
