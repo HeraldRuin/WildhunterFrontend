@@ -59,8 +59,6 @@ function applyValidationErrors(data: unknown) {
 
 async function handleSubmit() {
   isSubmitting.value = true
-  fieldErrors.value = {}
-  submitError.value = ''
 
   try {
     const response = await newsletter.subscribe({
