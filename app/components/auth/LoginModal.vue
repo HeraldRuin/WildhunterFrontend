@@ -6,6 +6,7 @@ const { login } = useAuth()
 
 const email = ref('')
 const password = ref('')
+const showPassword = ref(false)
 const rememberMe = ref(false)
 const isSubmitting = ref(false)
 const submitError = ref('')
@@ -29,6 +30,7 @@ function clearFieldError(field: string) {
 function resetForm() {
   email.value = ''
   password.value = ''
+  showPassword.value = false
   rememberMe.value = false
   submitError.value = ''
   fieldErrors.value = {}
@@ -75,6 +77,10 @@ async function handleSubmit() {
   } finally {
     isSubmitting.value = false
   }
+}
+
+function togglePasswordVisibility() {
+  showPassword.value = !showPassword.value
 }
 
 function switchToRegister() {
@@ -148,15 +154,41 @@ watch(isOpen, (open) => {
             <CommonFormField
               id="login-password"
               placeholder="Пароль"
-              type="password"
               autocomplete="current-password"
               required
               no-margin
+              trailing-wide
+              :type="showPassword ? 'text' : 'password'"
+              :masked="!showPassword && Boolean(password)"
               :model-value="password"
               :error="getFieldError('password')"
               :disabled="isSubmitting"
               @update:model-value="password = $event; clearFieldError('password')"
-            />
+            >
+              <template #trailing>
+                <button
+                  type="button"
+                  class="login-modal__toggle-password"
+                  :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'"
+                  @click="togglePasswordVisibility"
+                >
+                  <img
+                    v-if="showPassword"
+                    src="/icons/Group.png"
+                    alt=""
+                    aria-hidden="true"
+                    class="login-modal__password-icon"
+                  >
+                  <img
+                    v-else
+                    src="/icons/weui_eyes-off-filled.png"
+                    alt=""
+                    aria-hidden="true"
+                    class="login-modal__password-icon login-modal__password-icon--hidden"
+                  >
+                </button>
+              </template>
+            </CommonFormField>
 
             <p v-if="submitError" class="login-modal__error">
               {{ submitError }}
@@ -245,6 +277,40 @@ watch(isOpen, (open) => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.login-modal__toggle-password {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--wh-gray-900);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.login-modal__toggle-password:hover {
+  color: var(--wh-gray-700);
+  background: var(--wh-gray-100);
+}
+
+.login-modal__password-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 22px;
+  height: 14px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.login-modal__password-icon--hidden {
+  width: 26px;
+  height: 26px;
 }
 
 .login-modal__options {
