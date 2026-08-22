@@ -85,6 +85,7 @@ function prefetchBasesPage() {
 .best-offers {
   padding-block: 48px 56px;
   background: var(--wh-white);
+  overflow-x: clip;
 }
 
 .best-offers__inner {
@@ -119,7 +120,13 @@ function prefetchBasesPage() {
   grid-template-columns: 30px minmax(0, 1fr) 30px;
   align-items: center;
   gap: 16px;
-  width: 131%;
+  width: 100%;
+}
+
+@media (min-width: 1694px) {
+  .best-offers__slider-wrap {
+    width: 131%;
+  }
 }
 
 .best-offers__track {
@@ -165,7 +172,11 @@ function prefetchBasesPage() {
 @media (--wh-tablet) {
   .best-offers__slider-wrap {
     grid-template-columns: minmax(0, 1fr);
-    width: 100%;
+    width: 100vw;
+    max-width: 100vw;
+    margin-inline: calc(50% - 50vw);
+    padding-inline: 16px;
+    box-sizing: border-box;
   }
 
   .best-offers__arrow {
@@ -176,6 +187,7 @@ function prefetchBasesPage() {
     --best-offers-card-width: 360px;
     --best-offers-card-height: 300px;
     gap: 8px;
+    scroll-padding-inline: 16px;
   }
 }
 
