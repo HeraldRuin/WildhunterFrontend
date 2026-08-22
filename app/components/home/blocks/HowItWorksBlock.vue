@@ -99,7 +99,6 @@ const steps = [
 .how-it-works {
   padding-block: 48px 64px;
   background: var(--wh-white);
-  overflow-x: clip;
 }
 
 .how-it-works__inner {
@@ -123,13 +122,8 @@ const steps = [
 
 .how-it-works__flow {
   display: flex;
-  width: 100%;
-}
-
-@media (min-width: 1736px) {
-  .how-it-works__flow {
-    width: 140%;
-  }
+  width: 140%;
+  max-width: calc(100vw - 32px);
 }
 
 .how-it-works__step-col {

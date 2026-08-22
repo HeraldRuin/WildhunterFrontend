@@ -79,7 +79,6 @@ function scrollBy(direction: 'prev' | 'next') {
 .best-locations {
   padding-block: 48px 56px;
   background: var(--wh-white);
-  overflow-x: clip;
 }
 
 .best-locations__inner {
@@ -114,13 +113,8 @@ function scrollBy(direction: 'prev' | 'next') {
   grid-template-columns: 30px minmax(0, 1fr) 30px;
   align-items: center;
   gap: 16px;
-  width: 100%;
-}
-
-@media (min-width: 1694px) {
-  .best-locations__slider-wrap {
-    width: 131%;
-  }
+  width: 131%;
+  max-width: calc(100vw - 32px);
 }
 
 .best-locations__track {
@@ -168,11 +162,7 @@ function scrollBy(direction: 'prev' | 'next') {
 @media (--wh-tablet) {
   .best-locations__slider-wrap {
     grid-template-columns: minmax(0, 1fr);
-    width: 100vw;
-    max-width: 100vw;
-    margin-inline: calc(50% - 50vw);
-    padding-inline: 16px;
-    box-sizing: border-box;
+    width: 100%;
   }
 
   .best-locations__arrow {
@@ -184,7 +174,6 @@ function scrollBy(direction: 'prev' | 'next') {
     --best-locations-card-height: 237px;
     gap: 8px;
     grid-auto-columns: var(--best-locations-card-width);
-    scroll-padding-inline: 16px;
   }
 
   .best-locations__slide {
