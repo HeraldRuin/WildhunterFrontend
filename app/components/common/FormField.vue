@@ -89,6 +89,15 @@ const displayValue = computed(() => {
   return value.trim() === '' ? '' : value
 })
 
+/** allowAutofill: без :value только пока модель пуста — иначе type toggle сбрасывает поле */
+const bindValueFromModel = computed(() => {
+  if (!props.allowAutofill) {
+    return true
+  }
+
+  return displayValue.value !== ''
+})
+
 function toDigits(value: string) {
   return value.replace(/\D/g, '')
 }
@@ -131,6 +140,24 @@ watch(
   () => props.modelValue,
   value => applyModelValueToInput(value ?? ''),
   { flush: 'post' },
+)
+
+watch(
+  () => props.type,
+  () => {
+    if (!props.allowAutofill) {
+      return
+    }
+
+    nextTick(() => {
+      if (bindValueFromModel.value) {
+        applyModelValueToInput()
+        return
+      }
+
+      syncDomValue()
+    })
+  },
 )
 
 function normalizeDomValue(value: string) {
@@ -226,6 +253,7 @@ onUnmounted(() => {
 
 defineExpose({
   syncFromDom: () => syncDomValue(),
+  applyToDom: () => applyModelValueToInput(),
 })
 
 function onKeydown(event: KeyboardEvent) {
@@ -343,7 +371,7 @@ function onPaste(event: ClipboardEvent) {
             'form-field__input--reveal': reveal,
           }"
           :type="type"
-          :value="allowAutofill ? undefined : displayValue"
+          :value="bindValueFromModel ? displayValue : undefined"
           :placeholder="placeholder"
           :disabled="disabled"
           :readonly="readonly"

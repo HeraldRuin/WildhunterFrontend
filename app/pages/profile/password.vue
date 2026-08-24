@@ -26,7 +26,7 @@ const confirmPassword = ref('')
 
 const showCurrentPassword = ref(false)
 const showNewPassword = ref(false)
-const currentPasswordFieldRef = ref<{ syncFromDom: () => void } | null>(null)
+const currentPasswordFieldRef = ref<{ syncFromDom: () => void, applyToDom: () => void } | null>(null)
 const isSubmitting = ref(false)
 const showSubmittingOverlay = ref(false)
 const submitError = ref('')
@@ -246,6 +246,13 @@ function syncCurrentPasswordFromDom() {
   currentPasswordFieldRef.value?.syncFromDom()
 }
 
+async function toggleCurrentPasswordVisibility() {
+  syncCurrentPasswordFromDom()
+  showCurrentPassword.value = !showCurrentPassword.value
+  await nextTick()
+  currentPasswordFieldRef.value?.applyToDom()
+}
+
 function resolveCurrentPassword() {
   syncCurrentPasswordFromDom()
   return currentPassword.value
@@ -362,7 +369,7 @@ onMounted(() => {
                 type="button"
                 class="password-form__toggle"
                 :aria-label="showCurrentPassword ? 'Скрыть пароль' : 'Показать пароль'"
-                @click="syncCurrentPasswordFromDom(); showCurrentPassword = !showCurrentPassword"
+                @click="toggleCurrentPasswordVisibility"
               >
                 <img
                   v-if="showCurrentPassword"
