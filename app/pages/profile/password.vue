@@ -10,7 +10,7 @@ useHead({
 
 const { user: userApi } = useApi()
 const notifications = useNotifications()
-const { loadCurrentPassword, refreshCurrentPassword, setCurrentPassword } = useCurrentPassword()
+const { loadCurrentPassword, refreshCurrentPassword, setCurrentPassword, readCachedPasswordSync } = useCurrentPassword()
 
 const notificationCount = 0
 
@@ -20,12 +20,13 @@ const breadcrumbs = [
   { label: 'Изменить пароль' },
 ]
 
-const currentPassword = ref('')
+const currentPassword = ref(readCachedPasswordSync())
 const newPassword = ref('')
 const confirmPassword = ref('')
 
 const showCurrentPassword = ref(false)
 const showNewPassword = ref(false)
+const currentPasswordFieldRef = ref<{ syncFromDom: () => void } | null>(null)
 const isSubmitting = ref(false)
 const showSubmittingOverlay = ref(false)
 const submitError = ref('')
@@ -241,6 +242,15 @@ function settleSubmitResult(result: PendingSubmitResult, useOverlay: boolean) {
   applySubmitResult(result)
 }
 
+function syncCurrentPasswordFromDom() {
+  currentPasswordFieldRef.value?.syncFromDom()
+}
+
+function resolveCurrentPassword() {
+  syncCurrentPasswordFromDom()
+  return currentPassword.value
+}
+
 async function handleSubmit() {
   if (isSubmitting.value) {
     return
@@ -257,7 +267,7 @@ async function handleSubmit() {
 
   try {
     const response = await userApi.changePassword({
-      current_password: currentPassword.value,
+      current_password: resolveCurrentPassword(),
       new_password: newPassword.value,
       new_password_confirmation: confirmPassword.value,
     })
@@ -293,22 +303,15 @@ function handleCancel() {
 }
 
 async function applyCachedCurrentPassword(force = false) {
-  currentPassword.value = (await loadCurrentPassword(force)) || ''
-}
+  const password = await loadCurrentPassword(force)
 
-function handleVisibilityChange() {
-  if (document.visibilityState === 'visible') {
-    void applyCachedCurrentPassword()
+  if (password) {
+    currentPassword.value = password
   }
 }
 
 onMounted(() => {
   void applyCachedCurrentPassword()
-  document.addEventListener('visibilitychange', handleVisibilityChange)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 
@@ -342,9 +345,11 @@ onUnmounted(() => {
         <div class="password-form__fields">
           <CommonFormField
             id="current-password"
+            ref="currentPasswordFieldRef"
             label="Текущий пароль"
             placeholder="Текущий пароль"
             autocomplete="current-password"
+            allow-autofill
             no-margin
             :type="showCurrentPassword ? 'text' : 'password'"
             :model-value="currentPassword"
@@ -357,7 +362,7 @@ onUnmounted(() => {
                 type="button"
                 class="password-form__toggle"
                 :aria-label="showCurrentPassword ? 'Скрыть пароль' : 'Показать пароль'"
-                @click="showCurrentPassword = !showCurrentPassword"
+                @click="syncCurrentPasswordFromDom(); showCurrentPassword = !showCurrentPassword"
               >
                 <img
                   v-if="showCurrentPassword"

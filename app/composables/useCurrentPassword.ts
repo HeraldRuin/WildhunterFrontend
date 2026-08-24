@@ -82,11 +82,16 @@ export function useCurrentPassword() {
     persist(null)
   }
 
+  function readCachedPasswordSync() {
+    return cachedPassword.value || readSessionCache() || ''
+  }
+
   return {
     cachedPassword,
     loadCurrentPassword,
     refreshCurrentPassword,
     setCurrentPassword,
     clearCurrentPassword,
+    readCachedPasswordSync,
   }
 }

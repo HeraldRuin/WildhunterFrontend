@@ -35,6 +35,8 @@ const props = withDefaults(defineProps<{
   skeleton?: boolean
   /** Широкий trailing (сгенерировать + глаз) */
   trailingWide?: boolean
+  /** Не привязывать :value — браузер сам управляет autofill (пароли) */
+  allowAutofill?: boolean
 }>(), {
   label: '',
   placeholder: '',
@@ -55,6 +57,7 @@ const props = withDefaults(defineProps<{
   digitsOnly: false,
   skeleton: false,
   trailingWide: false,
+  allowAutofill: false,
 })
 
 const emit = defineEmits<{
@@ -91,6 +94,10 @@ function toDigits(value: string) {
 }
 
 function onInput(event: Event) {
+  if (syncingFromModel) {
+    return
+  }
+
   const target = event.target as HTMLInputElement | HTMLTextAreaElement
   const nextValue = props.digitsOnly ? toDigits(target.value) : target.value
 
@@ -102,6 +109,29 @@ function onInput(event: Event) {
 }
 
 const inputRef = ref<HTMLInputElement | null>(null)
+let syncingFromModel = false
+
+function applyModelValueToInput(value = props.modelValue ?? '') {
+  if (!props.allowAutofill || !inputRef.value) {
+    return
+  }
+
+  const nextValue = value.trim() === '' ? '' : value
+
+  if (inputRef.value.value === nextValue) {
+    return
+  }
+
+  syncingFromModel = true
+  inputRef.value.value = nextValue
+  syncingFromModel = false
+}
+
+watch(
+  () => props.modelValue,
+  value => applyModelValueToInput(value ?? ''),
+  { flush: 'post' },
+)
 
 function normalizeDomValue(value: string) {
   return props.digitsOnly ? toDigits(value) : value
@@ -176,12 +206,26 @@ onMounted(() => {
     return
   }
 
+  applyModelValueToInput()
+
+  if (props.allowAutofill) {
+    return
+  }
+
   scheduleAutofillSync()
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
 onUnmounted(() => {
+  if (props.allowAutofill || props.multiline) {
+    return
+  }
+
   document.removeEventListener('visibilitychange', onVisibilityChange)
+})
+
+defineExpose({
+  syncFromDom: () => syncDomValue(),
 })
 
 function onKeydown(event: KeyboardEvent) {
@@ -299,7 +343,7 @@ function onPaste(event: ClipboardEvent) {
             'form-field__input--reveal': reveal,
           }"
           :type="type"
-          :value="displayValue"
+          :value="allowAutofill ? undefined : displayValue"
           :placeholder="placeholder"
           :disabled="disabled"
           :readonly="readonly"
