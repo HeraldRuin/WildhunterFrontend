@@ -25,13 +25,17 @@ const emit = defineEmits<{
 
 const { services: servicesApi } = useApi()
 
+const attributesRequested = ref(false)
+
 const {
   data: attributeGroups,
   pending: attributesPending,
+  execute: fetchAttributes,
 } = useAsyncData<HotelRoomAttribute[]>(
   'search-service-attributes',
   () => servicesApi.getAttributeGroups('hotel'),
   {
+    immediate: false,
     lazy: true,
     default: () => [],
   },
@@ -52,6 +56,15 @@ function updateField<K extends keyof SearchFiltersState>(
     ...localFilters.value,
     [field]: value,
   }
+}
+
+async function onAmenitiesOpen() {
+  if (attributesRequested.value) {
+    return
+  }
+
+  attributesRequested.value = true
+  await fetchAttributes()
 }
 
 function termId(term: HotelRoomAttributeTerm) {
@@ -157,59 +170,70 @@ function closeMobile() {
         />
       </SearchFiltersFilterSection>
 
-      <p
-        v-if="attributesPending"
-        class="search-filters__group search-filters__state"
-      >
-        Загрузка атрибутов...
-      </p>
-
       <SearchFiltersFilterSection
-        v-for="group in attributeGroups"
-        :key="group.id"
         class="search-filters__group"
-        :title="group.name"
+        title="Услуги на базе"
+        @open="onAmenitiesOpen"
       >
-        <ul class="search-filters__list">
-          <li
-            v-for="term in visibleTerms(group)"
-            :key="term.id"
-          >
-            <label class="search-filters__checkbox">
-              <input
-                type="checkbox"
-                :checked="localFilters.amenities.includes(termId(term))"
-                @change="toggleAmenity(termId(term))"
-              >
-              <span class="search-filters__checkmark" />
-              <span>{{ termLabel(term) }}</span>
-            </label>
-          </li>
-        </ul>
-
-        <button
-          v-if="hasMoreTerms(group)"
-          type="button"
-          class="search-filters__more"
-          @click="toggleGroupExpand(group.id)"
+        <p
+          v-if="attributesPending || !attributesRequested"
+          class="search-filters__state"
         >
-          {{ expandedGroups[group.id] ? 'Скрыть' : 'Еще' }}
-          <svg
-            class="search-filters__more-icon"
-            :class="{ 'search-filters__more-icon--open': expandedGroups[group.id] }"
-            viewBox="0 0 12 8"
-            aria-hidden="true"
+          Загрузка атрибутов...
+        </p>
+
+        <div
+          v-else
+          class="search-filters__attributes"
+        >
+          <SearchFiltersFilterSection
+            v-for="group in attributeGroups"
+            :key="group.id"
+            class="search-filters__attr-group"
+            :title="group.name"
           >
-            <path
-              d="M1 2 6 6.5 11 2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
+            <ul class="search-filters__list">
+              <li
+                v-for="term in visibleTerms(group)"
+                :key="term.id"
+              >
+                <label class="search-filters__checkbox">
+                  <input
+                    type="checkbox"
+                    :checked="localFilters.amenities.includes(termId(term))"
+                    @change="toggleAmenity(termId(term))"
+                  >
+                  <span class="search-filters__checkmark" />
+                  <span>{{ termLabel(term) }}</span>
+                </label>
+              </li>
+            </ul>
+
+            <button
+              v-if="hasMoreTerms(group)"
+              type="button"
+              class="search-filters__more"
+              @click="toggleGroupExpand(group.id)"
+            >
+              {{ expandedGroups[group.id] ? 'Скрыть' : 'Еще' }}
+              <svg
+                class="search-filters__more-icon"
+                :class="{ 'search-filters__more-icon--open': expandedGroups[group.id] }"
+                viewBox="0 0 12 8"
+                aria-hidden="true"
+              >
+                <path
+                  d="M1 2 6 6.5 11 2"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </SearchFiltersFilterSection>
+        </div>
       </SearchFiltersFilterSection>
 
       <SearchFiltersFilterSection
@@ -305,6 +329,22 @@ function closeMobile() {
   color: var(--wh-gray-500);
 }
 
+.search-filters__attributes {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.search-filters__attr-group + .search-filters__attr-group {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #bfbfbf;
+}
+
+.search-filters__attr-group :deep(.search-filters-section__title) {
+  font-size: 16px;
+}
+
 .search-filters__label {
   margin: 0;
   font-size: 0.9375rem;
@@ -370,7 +410,7 @@ function closeMobile() {
   padding: 0;
   border: none;
   background: transparent;
-  color: #2563eb;
+  color: var(--wh-orange-500);
   font: inherit;
   font-size: 0.9375rem;
   font-weight: 500;
