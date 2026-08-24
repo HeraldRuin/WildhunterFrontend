@@ -285,7 +285,7 @@ defineExpose({
             class="hotel-room-selection__all-services"
             @click="openAttributesModal(room)"
           >
-            Все услуги номера
+            Все услуги в номере
             <svg
               class="hotel-room-selection__all-services-icon"
               viewBox="0 0 16 16"
