@@ -272,8 +272,7 @@ useHead({
 
 .hunters-banner__image {
   display: block;
-  width: 70%;
-  max-width: 720px;
+  width: 100%;
   height: auto;
   margin-inline: auto;
 }
@@ -326,10 +325,6 @@ useHead({
   .hunters-banner {
     padding-block: 0 40px;
   }
-
-  .hunters-banner__image {
-    width: 85%;
-  }
 }
 
 @media (--wh-mobile) {
@@ -348,10 +343,6 @@ useHead({
 
   .hunters-banner {
     padding-block: 0 32px;
-  }
-
-  .hunters-banner__image {
-    width: 100%;
   }
 
   .hunters-heading {
