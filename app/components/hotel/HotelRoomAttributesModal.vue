@@ -153,11 +153,57 @@ onUnmounted(() => {
           </header>
 
           <div class="room-attrs-modal__content">
-            <div class="room-attrs-modal__sidebar">
-              <h3 class="room-attrs-modal__sidebar-title">
-                Услуги и удобства
-              </h3>
+            <div class="room-attrs-modal__gallery-block">
+              <div
+                ref="galleryTrackRef"
+                class="room-attrs-modal__gallery"
+                @scroll.passive="handleGalleryScroll"
+              >
+                <button
+                  v-for="(image, index) in galleryImages"
+                  :key="`${image.large}-${index}`"
+                  type="button"
+                  class="room-attrs-modal__photo"
+                  :class="{ 'room-attrs-modal__photo--main': index === 0 }"
+                  :aria-label="`Открыть фото ${index + 1}`"
+                  @click="openLightbox(index)"
+                >
+                  <img
+                    :src="imageSrc(image)"
+                    :alt="`${room.title} — фото ${index + 1}`"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                </button>
 
+                <div
+                  v-if="!galleryImages.length"
+                  class="room-attrs-modal__photo-empty"
+                >
+                  Нет фото
+                </div>
+              </div>
+
+              <div
+                v-if="showGalleryDots"
+                class="room-attrs-modal__dots"
+                role="tablist"
+                aria-label="Фотографии номера"
+              >
+                <button
+                  v-for="(image, index) in galleryImages"
+                  :key="`gallery-dot-${index}`"
+                  type="button"
+                  class="room-attrs-modal__dot"
+                  :class="{ 'room-attrs-modal__dot--active': index === galleryActiveIndex }"
+                  :aria-label="`Фото ${index + 1} из ${galleryImages.length}`"
+                  :aria-current="index === galleryActiveIndex ? 'true' : undefined"
+                  @click="scrollGalleryToIndex(index)"
+                />
+              </div>
+            </div>
+
+            <div class="room-attrs-modal__sidebar">
               <div
                 v-if="room.attributes.length"
                 class="room-attrs-modal__attrs"
@@ -200,55 +246,6 @@ onUnmounted(() => {
               >
                 Список услуг пока не указан
               </p>
-            </div>
-
-            <div class="room-attrs-modal__gallery-block">
-              <div
-                ref="galleryTrackRef"
-                class="room-attrs-modal__gallery"
-                @scroll.passive="handleGalleryScroll"
-              >
-                <button
-                  v-for="(image, index) in galleryImages"
-                  :key="`${image.large}-${index}`"
-                  type="button"
-                  class="room-attrs-modal__photo"
-                  :aria-label="`Открыть фото ${index + 1}`"
-                  @click="openLightbox(index)"
-                >
-                  <img
-                    :src="imageSrc(image)"
-                    :alt="`${room.title} — фото ${index + 1}`"
-                    loading="lazy"
-                    decoding="async"
-                  >
-                </button>
-
-                <div
-                  v-if="!galleryImages.length"
-                  class="room-attrs-modal__photo-empty"
-                >
-                  Нет фото
-                </div>
-              </div>
-
-              <div
-                v-if="showGalleryDots"
-                class="room-attrs-modal__dots"
-                role="tablist"
-                aria-label="Фотографии номера"
-              >
-                <button
-                  v-for="(image, index) in galleryImages"
-                  :key="`gallery-dot-${index}`"
-                  type="button"
-                  class="room-attrs-modal__dot"
-                  :class="{ 'room-attrs-modal__dot--active': index === galleryActiveIndex }"
-                  :aria-label="`Фото ${index + 1} из ${galleryImages.length}`"
-                  :aria-current="index === galleryActiveIndex ? 'true' : undefined"
-                  @click="scrollGalleryToIndex(index)"
-                />
-              </div>
             </div>
           </div>
         </div>
@@ -320,8 +317,8 @@ onUnmounted(() => {
 
 .room-attrs-modal__content {
   display: grid;
-  grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.55fr);
-  grid-template-areas: "sidebar gallery";
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.95fr);
+  grid-template-areas: "gallery sidebar";
   gap: 24px;
   min-height: 0;
   flex: 1 1 auto;
@@ -335,33 +332,30 @@ onUnmounted(() => {
   gap: 12px;
   min-width: 0;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .room-attrs-modal__gallery {
   display: flex;
-  flex-wrap: nowrap;
-  align-items: stretch;
-  gap: 12px;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 16px;
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 4px 8px 0;
   box-sizing: border-box;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.room-attrs-modal__gallery::-webkit-scrollbar {
-  display: none;
 }
 
 .room-attrs-modal__photo {
   position: relative;
   box-sizing: border-box;
-  flex: 0 0 calc(30% - 6px);
-  width: calc(30% - 6px);
-  min-width: 100px;
+  flex: 0 0 calc(50% - 8px);
+  width: calc(50% - 8px);
+  max-width: calc(50% - 8px);
   aspect-ratio: 4 / 3;
   margin: 0;
   padding: 0;
@@ -370,7 +364,12 @@ onUnmounted(() => {
   background: var(--wh-gray-100);
   overflow: hidden;
   cursor: pointer;
-  scroll-snap-align: start;
+}
+
+.room-attrs-modal__photo--main {
+  flex: 0 0 100%;
+  width: 100%;
+  max-width: 100%;
 }
 
 .room-attrs-modal__photo img {
@@ -387,7 +386,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 160px;
+  min-height: 220px;
   border-radius: 12px;
   background: var(--wh-gray-100);
   color: var(--wh-gray-600);
@@ -397,7 +396,7 @@ onUnmounted(() => {
 }
 
 .room-attrs-modal__dots {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
@@ -439,16 +438,6 @@ onUnmounted(() => {
   padding-right: 4px;
 }
 
-.room-attrs-modal__sidebar-title {
-  margin: 0 0 16px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.3;
-  letter-spacing: -0.03em;
-  color: var(--wh-black-text);
-}
-
 .room-attrs-modal__attrs {
   display: flex;
   flex-direction: column;
@@ -466,13 +455,13 @@ onUnmounted(() => {
   font-weight: 700;
   line-height: 1.3;
   letter-spacing: -0.02em;
-  color: var(--wh-gray-600);
+  color: var(--wh-orange-500);
 }
 
 .room-attrs-modal__list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 14px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -483,6 +472,10 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 8px;
+  background: var(--wh-white);
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 0.88rem;
   font-weight: 500;
@@ -545,17 +538,74 @@ onUnmounted(() => {
   }
 
   .room-attrs-modal__content {
+    gap: 18px;
+  }
+
+  .room-attrs-modal__gallery {
+    gap: 12px;
+  }
+
+  .room-attrs-modal__photo {
+    flex-basis: calc(50% - 6px);
+    width: calc(50% - 6px);
+    max-width: calc(50% - 6px);
+  }
+
+  .room-attrs-modal__photo--main {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (--wh-narrow) {
+  .room-attrs-modal__content {
     grid-template-columns: 1fr;
     grid-template-areas:
       "sidebar"
       "gallery";
     gap: 18px;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
-  .room-attrs-modal__photo {
-    flex-basis: min(132px, 48%);
+  .room-attrs-modal__gallery-block {
+    height: auto;
+    overflow: visible;
+  }
+
+  .room-attrs-modal__gallery {
+    flex-wrap: nowrap;
+    align-content: stretch;
+    gap: 12px;
+    flex: 0 0 auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .room-attrs-modal__gallery::-webkit-scrollbar {
+    display: none;
+  }
+
+  .room-attrs-modal__photo,
+  .room-attrs-modal__photo--main {
+    flex: 0 0 min(132px, 48%);
     width: min(132px, 48%);
+    max-width: min(132px, 48%);
     min-width: min(132px, 48%);
+    scroll-snap-align: start;
+  }
+
+  .room-attrs-modal__photo-empty {
+    min-height: 160px;
+  }
+
+  .room-attrs-modal__dots {
+    display: flex;
   }
 
   .room-attrs-modal__sidebar {
