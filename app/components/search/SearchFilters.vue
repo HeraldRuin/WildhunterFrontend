@@ -236,7 +236,7 @@ function closeMobile() {
         </div>
       </SearchFiltersFilterSection>
 
-      <SearchFiltersFilterSection
+      <!-- <SearchFiltersFilterSection
         class="search-filters__group"
         title="Питание на базе"
       >
@@ -264,7 +264,7 @@ function closeMobile() {
             <span>Нет</span>
           </label>
         </div>
-      </SearchFiltersFilterSection>
+      </SearchFiltersFilterSection> -->
 
       <button type="button" class="search-filters__reset" @click="handleReset">
         Сбросить
