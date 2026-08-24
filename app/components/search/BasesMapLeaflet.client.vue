@@ -496,12 +496,7 @@ function syncMarkers() {
         return
       }
 
-      if (props.activeId === item.id) {
-        emit('open', item.id)
-        return
-      }
-
-      emit('select', item.id)
+      emit('open', item.id)
     })
 
     clusterLayers.push(marker)
