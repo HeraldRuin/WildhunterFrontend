@@ -112,27 +112,20 @@ function toggleGuestsDropdown() {
   closeOtherDropdowns(isGuestsOpen.value ? 'guests' : undefined)
 }
 
-function openDatesFor(part: 'start' | 'end') {
+function openDatesDropdown() {
   const seedingCheckIn = !checkIn.value
 
-  if (!seedingCheckIn && isDatesOpen.value && activeDatePart.value === part) {
+  if (!seedingCheckIn && isDatesOpen.value) {
     closeDatesDropdown()
     return
   }
 
   if (seedingCheckIn) {
-    const today = startOfDay(new Date())
-    const tomorrow = startOfDay(new Date(today))
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
-    checkIn.value = today
-    checkOut.value = tomorrow
-    activeDatePart.value = 'end'
-  }
-  else {
-    activeDatePart.value = part
+    checkIn.value = startOfDay(new Date())
+    checkOut.value = null
   }
 
+  activeDatePart.value = 'start'
   isDatesOpen.value = true
   closeOtherDropdowns('dates')
 
@@ -141,7 +134,7 @@ function openDatesFor(part: 'start' | 'end') {
     // that removed the target cannot leave the calendar closed.
     void nextTick(() => {
       isDatesOpen.value = true
-      activeDatePart.value = 'end'
+      activeDatePart.value = 'start'
     })
   }
 }
@@ -152,13 +145,13 @@ function toggleDatesDropdown() {
     return
   }
 
-  openDatesFor('start')
+  openDatesDropdown()
 }
 
 function onDatesFieldClick(event: MouseEvent) {
   const target = event.target as HTMLElement
 
-  if (target.closest('.hotel-dates-guests__date-part, .hotel-dates-guests__clear, .hotel-dates-guests__dates-chevron, .hotel-dates-guests__dropdown')) {
+  if (target.closest('.hotel-dates-guests__clear, .hotel-dates-guests__dates-chevron, .hotel-dates-guests__dropdown')) {
     return
   }
 
@@ -167,12 +160,7 @@ function onDatesFieldClick(event: MouseEvent) {
     return
   }
 
-  if (!checkIn.value || !checkOut.value) {
-    openDatesFor(checkIn.value ? 'end' : 'start')
-    return
-  }
-
-  openDatesFor('start')
+  openDatesDropdown()
 }
 
 function incrementAdults() {
@@ -285,25 +273,9 @@ defineExpose({
             v-if="hasSelectedDates"
             class="hotel-dates-guests__dates-control"
           >
-            <button
-              type="button"
-              class="hotel-dates-guests__date-part"
-              :class="{ 'hotel-dates-guests__date-part--active': isDatesOpen && activeDatePart === 'start' }"
-              aria-label="Выбрать дату заезда"
-              @click="openDatesFor('start')"
-            >
-              {{ checkInLabel }}
-            </button>
+            <span class="hotel-dates-guests__date-part">{{ checkInLabel }}</span>
             <span class="hotel-dates-guests__dates-sep" aria-hidden="true">-</span>
-            <button
-              type="button"
-              class="hotel-dates-guests__date-part"
-              :class="{ 'hotel-dates-guests__date-part--active': isDatesOpen && activeDatePart === 'end' }"
-              aria-label="Выбрать дату выезда"
-              @click="openDatesFor('end')"
-            >
-              {{ checkOutLabel }}
-            </button>
+            <span class="hotel-dates-guests__date-part">{{ checkOutLabel }}</span>
           </div>
           <span
             v-else
@@ -579,10 +551,6 @@ defineExpose({
   flex: 0 1 auto;
   min-width: 0;
   max-width: 50%;
-  padding: 2px 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 16px;
   font-weight: 500;
@@ -592,14 +560,7 @@ defineExpose({
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: pointer;
-  outline: none;
-  transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hotel-dates-guests__date-part--active {
-  color: var(--wh-orange-500);
-  animation: hotel-dates-guests-date-part-pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .hotel-dates-guests__dates-sep {
@@ -613,6 +574,7 @@ defineExpose({
   color: #1c211c;
   opacity: 0.45;
   user-select: none;
+  pointer-events: none;
 }
 
 .hotel-dates-guests__chevron {
@@ -681,19 +643,6 @@ defineExpose({
 
 .hotel-dates-guests__field--open .hotel-dates-guests__chevron {
   transform: translateY(-50%) rotate(180deg);
-}
-
-@keyframes hotel-dates-guests-date-part-pulse {
-  0%,
-  100% {
-    background: rgb(209 101 16 / 0%);
-    box-shadow: 0 0 0 0 rgb(209 101 16 / 0%);
-  }
-
-  50% {
-    background: rgb(209 101 16 / 10%);
-    box-shadow: 0 0 0 3px rgb(209 101 16 / 8%);
-  }
 }
 
 .hotel-dates-guests__dropdown {

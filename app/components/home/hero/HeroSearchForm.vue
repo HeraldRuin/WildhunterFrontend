@@ -253,14 +253,14 @@ function toggleGuestsDropdown() {
   closeOtherDropdowns(isGuestsOpen.value ? 'guests' : undefined)
 }
 
-function openDatesFor(part: 'start' | 'end') {
-  if (isDatesOpen.value && activeDatePart.value === part) {
+function openDatesDropdown() {
+  if (isDatesOpen.value) {
     closeDatesDropdown()
     return
   }
 
   isDatesOpen.value = true
-  activeDatePart.value = part
+  activeDatePart.value = 'start'
   closeOtherDropdowns('dates')
 }
 
@@ -270,13 +270,13 @@ function toggleDatesDropdown() {
     return
   }
 
-  openDatesFor('start')
+  openDatesDropdown()
 }
 
 function onDatesFieldClick(event: MouseEvent) {
   const target = event.target as HTMLElement
 
-  if (target.closest('.hero-search__date-part, .hero-search__clear, .hero-search__dates-chevron, .hero-search__dropdown-panel')) {
+  if (target.closest('.hero-search__clear, .hero-search__dates-chevron, .hero-search__dropdown-panel')) {
     return
   }
 
@@ -285,7 +285,7 @@ function onDatesFieldClick(event: MouseEvent) {
     return
   }
 
-  openDatesFor('start')
+  openDatesDropdown()
 }
 
 function incrementAdults() {
@@ -567,25 +567,9 @@ onUnmounted(() => {
     >
       <span class="hero-search__label">Заезд - Выезд</span>
       <div class="hero-search__control hero-search__dates-control">
-        <button
-          type="button"
-          class="hero-search__date-part"
-          :class="{ 'hero-search__date-part--active': isDatesOpen && activeDatePart === 'start' }"
-          aria-label="Выбрать дату заезда"
-          @click="openDatesFor('start')"
-        >
-          {{ checkInLabel }}
-        </button>
+        <span class="hero-search__date-part">{{ checkInLabel }}</span>
         <span class="hero-search__dates-sep" aria-hidden="true">-</span>
-        <button
-          type="button"
-          class="hero-search__date-part"
-          :class="{ 'hero-search__date-part--active': isDatesOpen && activeDatePart === 'end' }"
-          aria-label="Выбрать дату выезда"
-          @click="openDatesFor('end')"
-        >
-          {{ checkOutLabel }}
-        </button>
+        <span class="hero-search__date-part">{{ checkOutLabel }}</span>
       </div>
       <button
         v-if="hasCustomDates"
@@ -885,10 +869,6 @@ onUnmounted(() => {
   flex: 0 1 auto;
   min-width: 0;
   max-width: 50%;
-  padding: 2px 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 18px;
   font-weight: 500;
@@ -898,14 +878,7 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: pointer;
-  outline: none;
-  transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hero-search__date-part--active {
-  color: var(--wh-orange-500);
-  animation: hero-search-date-part-pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .hero-search__dates-sep {
@@ -919,6 +892,7 @@ onUnmounted(() => {
   color: #1c211c;
   opacity: 0.45;
   user-select: none;
+  pointer-events: none;
 }
 
 .hero-search__dates-chevron {
@@ -945,19 +919,6 @@ onUnmounted(() => {
 
 .hero-search__field--open .hero-search__dates-chevron .hero-search__chevron {
   transform: rotate(180deg);
-}
-
-@keyframes hero-search-date-part-pulse {
-  0%,
-  100% {
-    background: rgb(209 101 16 / 0%);
-    box-shadow: 0 0 0 0 rgb(209 101 16 / 0%);
-  }
-
-  50% {
-    background: rgb(209 101 16 / 10%);
-    box-shadow: 0 0 0 3px rgb(209 101 16 / 8%);
-  }
 }
 
 .hero-search__control input::placeholder {

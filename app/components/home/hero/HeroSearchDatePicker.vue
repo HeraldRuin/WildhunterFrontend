@@ -117,28 +117,19 @@ function selectDate(date: Date) {
     return
   }
 
-  const part = activePart.value ?? 'start'
+  // Standard range: 1st click = start, 2nd = end; after a complete range, next click starts over.
+  const rangeComplete = Boolean(start.value && end.value)
 
-  if (part === 'start') {
+  if (!start.value || rangeComplete) {
     start.value = normalized
-
-    if (end.value && startOfDay(end.value).getTime() < normalized.getTime()) {
-      end.value = null
-    }
-
-    activePart.value = 'end'
-    return
-  }
-
-  if (!start.value) {
-    start.value = normalized
+    end.value = null
     activePart.value = 'end'
     return
   }
 
   const currentStart = startOfDay(start.value)
 
-  if (normalized.getTime() < currentStart.getTime()) {
+  if (normalized.getTime() <= currentStart.getTime()) {
     start.value = normalized
     end.value = null
     activePart.value = 'end'
@@ -146,6 +137,7 @@ function selectDate(date: Date) {
   }
 
   end.value = normalized
+  activePart.value = null
 }
 
 function goToPreviousMonth() {
@@ -238,12 +230,6 @@ function goToNextYear() {
                   getDayState(day.date) === 'selected'
                   || getDayState(day.date) === 'start'
                   || getDayState(day.date) === 'end',
-                'hero-search-calendar__day--active-target':
-                  !isSingle
-                  && (
-                    (activePart === 'start' && getDayState(day.date) === 'start')
-                    || (activePart === 'end' && getDayState(day.date) === 'end')
-                  ),
                 'hero-search-calendar__day--available':
                   hasDateLimits
                   && !isSingle
@@ -415,18 +401,6 @@ function goToNextYear() {
   color: var(--wh-white);
 }
 
-.hero-search-calendar__day--active-target {
-  z-index: 2;
-  background: var(--wh-orange-600);
-  outline: 2px solid rgb(120 120 120 / 70%);
-  outline-offset: 2px;
-  box-shadow:
-    0 0 0 3px rgb(120 120 120 / 35%),
-    0 0 10px 2px rgb(120 120 120 / 20%);
-  transform: scale(1.1);
-  animation: hero-search-day-pulse 0.9s ease-in-out infinite;
-}
-
 .hero-search-calendar__day--available {
   width: 30px;
   height: 30px;
@@ -460,26 +434,5 @@ function goToNextYear() {
 .hero-search-calendar__day:disabled:hover {
   background: transparent;
   cursor: not-allowed;
-}
-
-@keyframes hero-search-day-pulse {
-  0%,
-  100% {
-    outline-color: rgb(120 120 120 / 70%);
-    outline-offset: 2px;
-    box-shadow:
-      0 0 0 3px rgb(120 120 120 / 35%),
-      0 0 10px 2px rgb(120 120 120 / 20%);
-    transform: scale(1.1);
-  }
-
-  50% {
-    outline-color: rgb(120 120 120 / 25%);
-    outline-offset: 6px;
-    box-shadow:
-      0 0 0 6px rgb(120 120 120 / 12%),
-      0 0 0 0 transparent;
-    transform: scale(1.16);
-  }
 }
 </style>
