@@ -52,6 +52,7 @@ const confirmationPath = computed(() => {
 })
 
 const availableRooms = ref<HotelRoomOption[]>([])
+const hasCheckedAvailability = ref(false)
 const isCheckingAvailability = ref(false)
 const isCheckingAnimals = ref(false)
 const isBooking = ref(false)
@@ -255,6 +256,7 @@ async function handleCheck(payload: { checkIn: string, checkOut: string, adults:
   }
 
   isCheckingAvailability.value = true
+  hasSelectedRooms.value = false
 
   try {
     const response = await hotels.checkAvailability({
@@ -272,6 +274,7 @@ async function handleCheck(payload: { checkIn: string, checkOut: string, adults:
     availableRooms.value = []
   }
   finally {
+    hasCheckedAvailability.value = true
     isCheckingAvailability.value = false
   }
 }
@@ -514,11 +517,20 @@ onMounted(() => {
             ref="datesGuestsRef"
             :loading="isCheckingAvailability"
             @check="handleCheck"
-            @clear="availableRooms = []"
+            @clear="availableRooms = []; hasCheckedAvailability = false; hasSelectedRooms = false"
             @dates-change="handleStayDatesChange"
           />
 
+          <p
+            v-if="hasCheckedAvailability && !isCheckingAvailability && !availableRooms.length"
+            class="hotel-booking-section__rooms-empty"
+            role="status"
+          >
+            По запросу свободных номеров не найдено
+          </p>
+
           <HotelRoomSelection
+            v-else
             ref="roomSelectionRef"
             :rooms="availableRooms"
             @selection-change="hasSelectedRooms = $event"
@@ -800,6 +812,26 @@ onMounted(() => {
   flex-direction: column;
   gap: 24px;
   width: 100%;
+}
+
+.hotel-booking-section__rooms-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, var(--hotel-booking-blocks-width, 100%));
+  margin-inline: auto;
+  min-height: 72px;
+  padding: 20px 28px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: var(--wh-radius-lg);
+  background: var(--wh-white);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+  color: var(--wh-black-text);
+  text-align: center;
 }
 
 .hotel-booking-section__animals-block {
