@@ -145,7 +145,7 @@ const perPage = 6
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
   { label: 'Главная', to: '/' },
-  { label: 'Локация' },
+  { label: 'Локации', to: '/locations' },
   { label: locationName.value || 'Область' },
 ])
 
