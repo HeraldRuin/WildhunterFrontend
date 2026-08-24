@@ -56,7 +56,7 @@ async function loadCalculation(code: string) {
 
     if (!response.success || !response.data) {
       loadError.value = response.message || 'Не удалось загрузить калькуляцию'
-      notifications.error(loadError.value, 'Ошибка', notifyOptions)
+      notifications.error(loadError.value, notifyOptions)
       return
     }
 
@@ -70,7 +70,7 @@ async function loadCalculation(code: string) {
 
     const data = (error as { data?: { message?: string } }).data
     loadError.value = data?.message || 'Не удалось загрузить калькуляцию'
-    notifications.error(loadError.value, 'Ошибка', notifyOptions)
+    notifications.error(loadError.value, notifyOptions)
   }
   finally {
     if (requestId === loadRequestId) {

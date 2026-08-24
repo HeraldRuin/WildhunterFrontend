@@ -61,20 +61,59 @@ function show(notification: Omit<Notification, 'id'>) {
 
 type NotificationOptions = Pick<Notification, 'group' | 'duration'>
 
-function success(message: string, title = 'Успех', options?: NotificationOptions) {
-  return show({ type: 'success', title, message, ...options })
+function resolveTitleAndOptions(
+  titleOrOptions?: string | NotificationOptions,
+  options?: NotificationOptions,
+) {
+  if (titleOrOptions && typeof titleOrOptions === 'object') {
+    return { title: undefined, options: titleOrOptions }
+  }
+
+  return { title: titleOrOptions, options }
 }
 
-function error(message: string, title = 'Ошибка', options?: NotificationOptions) {
-  return show({ type: 'error', title, message, ...options })
+function success(message: string, options?: NotificationOptions): string
+function success(message: string, title: string, options?: NotificationOptions): string
+function success(
+  message: string,
+  titleOrOptions?: string | NotificationOptions,
+  options?: NotificationOptions,
+) {
+  const { title, options: resolvedOptions } = resolveTitleAndOptions(titleOrOptions, options)
+  return show({ type: 'success', title: title ?? 'Выполнено', message, ...resolvedOptions })
 }
 
-function warning(message: string, title = 'Внимание', options?: NotificationOptions) {
-  return show({ type: 'warning', title, message, ...options })
+function error(message: string, options?: NotificationOptions): string
+function error(message: string, title: string, options?: NotificationOptions): string
+function error(
+  message: string,
+  titleOrOptions?: string | NotificationOptions,
+  options?: NotificationOptions,
+) {
+  const { title, options: resolvedOptions } = resolveTitleAndOptions(titleOrOptions, options)
+  return show({ type: 'error', title: title ?? 'Ошибка', message, ...resolvedOptions })
 }
 
-function info(message: string, title = 'Информация', options?: NotificationOptions) {
-  return show({ type: 'info', title, message, ...options })
+function warning(message: string, options?: NotificationOptions): string
+function warning(message: string, title: string, options?: NotificationOptions): string
+function warning(
+  message: string,
+  titleOrOptions?: string | NotificationOptions,
+  options?: NotificationOptions,
+) {
+  const { title, options: resolvedOptions } = resolveTitleAndOptions(titleOrOptions, options)
+  return show({ type: 'warning', title: title ?? 'Внимание', message, ...resolvedOptions })
+}
+
+function info(message: string, options?: NotificationOptions): string
+function info(message: string, title: string, options?: NotificationOptions): string
+function info(
+  message: string,
+  titleOrOptions?: string | NotificationOptions,
+  options?: NotificationOptions,
+) {
+  const { title, options: resolvedOptions } = resolveTitleAndOptions(titleOrOptions, options)
+  return show({ type: 'info', title: title ?? 'Информация', message, ...resolvedOptions })
 }
 
 function clear() {

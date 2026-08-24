@@ -300,17 +300,17 @@ async function saveTrophyDraft(row: TrophyDraft) {
     })
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить трофей', 'Ошибка', notifyOptions)
+      notifications.error(response.message || 'Не удалось добавить трофей', notifyOptions)
       return
     }
 
     upsertTrophyItem(response.data)
     removeTrophyDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить трофей', 'Ошибка', notifyOptions)
+    notifications.error(data?.message || 'Не удалось добавить трофей', notifyOptions)
   }
   finally {
     savingTrophyKey.value = null
@@ -408,17 +408,17 @@ async function savePenaltyDraft(row: PenaltyDraft) {
     })
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить штраф', 'Ошибка', notifyOptions)
+      notifications.error(response.message || 'Не удалось добавить штраф', notifyOptions)
       return
     }
 
     upsertPenaltyItem(response.data)
     removePenaltyDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить штраф', 'Ошибка', notifyOptions)
+    notifications.error(data?.message || 'Не удалось добавить штраф', notifyOptions)
   }
   finally {
     savingPenaltyKey.value = null
@@ -498,17 +498,17 @@ async function saveSpendingDraft(row: SpendingDraft) {
     })
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить трату', 'Ошибка', notifyOptions)
+      notifications.error(response.message || 'Не удалось добавить трату', notifyOptions)
       return
     }
 
     upsertSpendingItem(response.data)
     removeSpendingDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить трату', 'Ошибка', notifyOptions)
+    notifications.error(data?.message || 'Не удалось добавить трату', notifyOptions)
   }
   finally {
     savingSpendingKey.value = null
@@ -585,7 +585,7 @@ async function saveAdditionalDraft(row: AdditionalDraft) {
 
   const name = additionalNameById(additionalId)
   if (!name) {
-    notifications.error('Выберите услугу', 'Ошибка', notifyOptions)
+    notifications.error('Выберите услугу', notifyOptions)
     return
   }
 
@@ -600,17 +600,17 @@ async function saveAdditionalDraft(row: AdditionalDraft) {
     })
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить услугу', 'Ошибка', notifyOptions)
+      notifications.error(response.message || 'Не удалось добавить услугу', notifyOptions)
       return
     }
 
     upsertAdditionalItem(response.data)
     removeAdditionalDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить услугу', 'Ошибка', notifyOptions)
+    notifications.error(data?.message || 'Не удалось добавить услугу', notifyOptions)
   }
   finally {
     savingAdditionalKey.value = null
@@ -671,7 +671,7 @@ async function saveFoodDraft(row: FoodDraft) {
   }
 
   if (!Number.isInteger(count) || count < 1) {
-    notifications.error('Укажите количество', 'Ошибка', notifyOptions)
+    notifications.error('Укажите количество', notifyOptions)
     return
   }
 
@@ -681,17 +681,17 @@ async function saveFoodDraft(row: FoodDraft) {
     const response = await bookings.storeFood(code, { count })
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить питание', 'Ошибка', notifyOptions)
+      notifications.error(response.message || 'Не удалось добавить питание', notifyOptions)
       return
     }
 
     upsertFoodItem(response.data)
     removeFoodDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить питание', 'Ошибка', notifyOptions)
+    notifications.error(data?.message || 'Не удалось добавить питание', notifyOptions)
   }
   finally {
     savingFoodKey.value = null
@@ -788,17 +788,17 @@ async function deleteBookingService(serviceId: number, list: DeletableServiceLis
     const response = await bookings.deleteService(code, serviceId)
 
     if (!response.success) {
-      notifications.error(response.message || 'Не удалось удалить услугу', 'Ошибка', notifyOptions)
+      notifications.error(response.message || 'Не удалось удалить услугу', notifyOptions)
       throw new Error('delete_service_failed')
     }
 
     removeServiceItem(serviceId, list)
-    notifications.success(response.message || 'Услуга удалена', 'Успех', notifyOptions)
+    notifications.success(response.message || 'Услуга удалена', notifyOptions)
   }
   catch (error) {
     if ((error as Error).message !== 'delete_service_failed') {
       const data = (error as { data?: { message?: string } }).data
-      notifications.error(data?.message || 'Не удалось удалить услугу', 'Ошибка', notifyOptions)
+      notifications.error(data?.message || 'Не удалось удалить услугу', notifyOptions)
     }
 
     throw error
@@ -818,18 +818,18 @@ async function savePreparationDraft(row: PreparationDraft) {
   }
 
   if (!Number.isInteger(animalId) || animalId < 1) {
-    notifications.error('Выберите животное', 'Ошибка', notifyOptions)
+    notifications.error('Выберите животное', notifyOptions)
     return
   }
 
   if (!Number.isInteger(count) || count < 1) {
-    notifications.error('Укажите количество', 'Ошибка', notifyOptions)
+    notifications.error('Укажите количество', notifyOptions)
     return
   }
 
   const preparationId = preparationIdForAnimal(animalId)
   if (!preparationId) {
-    notifications.error('Для выбранного животного нет разделки', 'Ошибка', notifyOptions)
+    notifications.error('Для выбранного животного нет разделки', notifyOptions)
     return
   }
 
@@ -843,17 +843,17 @@ async function savePreparationDraft(row: PreparationDraft) {
     })
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить разделку', 'Ошибка', notifyOptions)
+      notifications.error(response.message || 'Не удалось добавить разделку', notifyOptions)
       return
     }
 
     upsertPreparationItem(response.data)
     removePreparationDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', 'Успех', notifyOptions)
+    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить разделку', 'Ошибка', notifyOptions)
+    notifications.error(data?.message || 'Не удалось добавить разделку', notifyOptions)
   }
   finally {
     savingPreparationKey.value = null
@@ -889,7 +889,7 @@ async function loadServices(code: string) {
 
     if (!response.success || !response.data) {
       loadError.value = response.message || 'Не удалось загрузить услуги'
-      notifications.error(loadError.value, 'Ошибка', notifyOptions)
+      notifications.error(loadError.value, notifyOptions)
       return
     }
 
@@ -903,7 +903,7 @@ async function loadServices(code: string) {
 
     const data = (error as { data?: { message?: string } }).data
     loadError.value = data?.message || 'Не удалось загрузить услуги'
-    notifications.error(loadError.value, 'Ошибка', notifyOptions)
+    notifications.error(loadError.value, notifyOptions)
   }
   finally {
     if (requestId === loadRequestId) {

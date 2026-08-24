@@ -125,13 +125,13 @@ function shouldOpenRegistrationModal(error: unknown, message: string) {
 
 function notifyFavoriteSuccess(message: string) {
   if (featureFlags.favoriteNotifications && message) {
-    notifications.success(message, 'Успех', { group: FAVORITE_NOTIFICATION_GROUP })
+    notifications.success(message, { group: FAVORITE_NOTIFICATION_GROUP })
   }
 }
 
 function notifyFavoriteError(message: string) {
   if (featureFlags.favoriteNotifications && message) {
-    notifications.error(message, 'Ошибка', { group: FAVORITE_NOTIFICATION_GROUP })
+    notifications.error(message, { group: FAVORITE_NOTIFICATION_GROUP })
   }
 }
 

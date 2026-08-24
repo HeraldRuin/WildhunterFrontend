@@ -133,7 +133,7 @@ async function loadPlaces(code: string, options: { silent?: boolean } = {}) {
 
     if (!response.success || !response.data?.rooms) {
       loadError.value = response.message || 'Не удалось загрузить койко-места'
-      notifications.error(loadError.value, 'Ошибка', notifyOptions)
+      notifications.error(loadError.value, notifyOptions)
       return
     }
 
@@ -151,7 +151,7 @@ async function loadPlaces(code: string, options: { silent?: boolean } = {}) {
     loadError.value = error instanceof Error
       ? error.message
       : 'Не удалось загрузить койко-места'
-    notifications.error(loadError.value, 'Ошибка', notifyOptions)
+    notifications.error(loadError.value, notifyOptions)
   }
   finally {
     if (requestId === loadRequestId) {
@@ -176,16 +176,16 @@ async function selectPlace(place: PlaceRow) {
     })
 
     if (!response.success) {
-      notifications.error(response.message || 'Не удалось выбрать место', 'Ошибка', notifyOptions)
+      notifications.error(response.message || 'Не удалось выбрать место', notifyOptions)
       return
     }
 
-    notifications.success(response.message || 'Место выбрано', 'Успех', notifyOptions)
+    notifications.success(response.message || 'Место выбрано', notifyOptions)
     await loadPlaces(code, { silent: true })
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось выбрать место', 'Ошибка', notifyOptions)
+    notifications.error(data?.message || 'Не удалось выбрать место', notifyOptions)
   }
   finally {
     selectingKey.value = null
@@ -204,16 +204,16 @@ async function cancelPlace(place: PlaceRow) {
     const response = await bookings.cancelSelectPlace(code, place.placeId)
 
     if (!response.success) {
-      notifications.error(response.message || 'Не удалось отменить выбор места', 'Ошибка', notifyOptions)
+      notifications.error(response.message || 'Не удалось отменить выбор места', notifyOptions)
       return
     }
 
-    notifications.success(response.message || 'Выбор места отменён', 'Успех', notifyOptions)
+    notifications.success(response.message || 'Выбор места отменён', notifyOptions)
     await loadPlaces(code, { silent: true })
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось отменить выбор места', 'Ошибка', notifyOptions)
+    notifications.error(data?.message || 'Не удалось отменить выбор места', notifyOptions)
   }
   finally {
     selectingKey.value = null
