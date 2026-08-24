@@ -2,7 +2,12 @@
 import type { HotelSearchBody, OfferItem, SearchFiltersState } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { mapHotelOfferToItem } from '~/api/hotels'
-import { parseDisplayDateToApiDate } from '~/utils/date'
+import {
+  formatDisplayDate,
+  getDefaultStayCheckIn,
+  getDefaultStayCheckOut,
+  parseDisplayDateToApiDate,
+} from '~/utils/date'
 import {
   buildHotelSearchBody,
   countOffersByReviewRating,
@@ -25,6 +30,29 @@ const { search: searchApi, hotels: hotelsApi } = useApi()
 
 const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
 const CATALOG_PER_PAGE = 12
+
+function queryString(key: string): string {
+  const value = route.query[key]
+  return Array.isArray(value) ? String(value[0] || '') : String(value || '')
+}
+
+/**
+ * /hotels/search требует даты; без них страница в каталоге и term_ids не уходят.
+ * Сразу пишем дефолтные даты/гостей в URL (как в hero), чтобы фильтр атрибутов
+ * работал без отдельного нажатия «Искать».
+ */
+if (!queryString('checkIn') || !queryString('checkOut')) {
+  await navigateTo({
+    path: '/bases',
+    query: {
+      ...route.query,
+      checkIn: queryString('checkIn') || formatDisplayDate(getDefaultStayCheckIn()),
+      checkOut: queryString('checkOut') || formatDisplayDate(getDefaultStayCheckOut()),
+      guests: queryString('guests') || '1',
+    },
+    replace: true,
+  })
+}
 
 function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {
   return nuxtApp.payload.data[key] as T | undefined
@@ -89,11 +117,6 @@ function toCatalogResult(items: OfferItem[]): NormalizedSearchResult {
     total: items.length,
     totalPages: Math.max(1, Math.ceil(items.length / CATALOG_PER_PAGE)),
   }
-}
-
-function queryString(key: string): string {
-  const value = route.query[key]
-  return Array.isArray(value) ? String(value[0] || '') : String(value || '')
 }
 
 /** Without dates → full catalog via /hotels/offers; with dates → availability search. */
