@@ -300,6 +300,31 @@ function decrementAdults() {
   }
 }
 
+function clampAdults(value: number) {
+  return Math.min(maxAdults, Math.max(1, Math.floor(value)))
+}
+
+function onAdultsInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  const digits = target.value.replace(/\D/g, '').slice(0, 2)
+  target.value = digits
+  if (digits === '') {
+    return
+  }
+  const next = Number(digits)
+  if (Number.isFinite(next) && next >= 1) {
+    adultsCount.value = clampAdults(next)
+    target.value = String(adultsCount.value)
+  }
+}
+
+function onAdultsBlur(event: Event) {
+  const target = event.target as HTMLInputElement
+  const next = Number(target.value)
+  adultsCount.value = Number.isFinite(next) && next >= 1 ? clampAdults(next) : 1
+  target.value = String(adultsCount.value)
+}
+
 function selectLocation(item: SearchLocation) {
   location.value = String(item.id)
   isLocationOpen.value = false
@@ -644,7 +669,18 @@ onUnmounted(() => {
             >
               −
             </button>
-            <span class="hero-search__guest-count">{{ adultsCount }}</span>
+            <input
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              class="hero-search__guest-count"
+              :value="adultsCount"
+              aria-label="Количество взрослых"
+              @input="onAdultsInput"
+              @blur="onAdultsBlur"
+              @keydown.enter.prevent="onAdultsBlur"
+              @click.stop
+            >
             <button
               type="button"
               class="hero-search__guest-btn"
@@ -1015,7 +1051,14 @@ onUnmounted(() => {
 }
 
 .hero-search__guest-count {
-  min-width: 12px;
+  box-sizing: border-box;
+  width: 2rem;
+  min-width: 2rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  appearance: none;
+  background: transparent;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 1rem;
   font-weight: 500;
@@ -1023,6 +1066,12 @@ onUnmounted(() => {
   letter-spacing: -0.05em;
   color: var(--wh-black-text);
   text-align: center;
+}
+
+.hero-search__guest-count:focus {
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .hero-search__dropdown-option {
