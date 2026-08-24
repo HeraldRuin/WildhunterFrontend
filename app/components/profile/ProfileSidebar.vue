@@ -62,7 +62,7 @@ const settingsSubNavItems: NavItem[] = [
   {
     label: 'Таймеры',
     to: '/profile/timers',
-    iconSrc: '/icons/iconoir_clock-solid.png',
+    iconSrc: '/icons/timers.svg',
     children: timerNavChildren,
   },
 ]
@@ -71,6 +71,7 @@ const settingsSectionPaths = [
   ...settingsSubNavItems.map(item => item.to),
   ...servicesNavChildren.map(item => item.to),
   ...timerNavChildren.map(item => item.to),
+  '/rooms',
 ]
 
 const isSettingsRoute = computed(() =>
@@ -455,7 +456,7 @@ async function goHome(event: MouseEvent) {
           :prefetch="false"
           @click="goHome"
         >
-          Назад на Главную
+          На главную
         </NuxtLink>
         <button
           type="button"
@@ -510,7 +511,7 @@ async function goHome(event: MouseEvent) {
   width: 120px;
   height: 120px;
   margin-bottom: 12px;
-  border-radius: 50%;
+  border-radius: 8px;
   background: #656c77;
   overflow: hidden;
   flex-shrink: 0;
