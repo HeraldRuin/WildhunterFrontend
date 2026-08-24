@@ -19,6 +19,7 @@ const navItems = [
   { label: 'Бронирования', to: '/profile/bookings' },
   { label: 'Мой профиль', to: '/profile' },
   { label: 'Изменить пароль', to: '/profile/password' },
+  { label: 'Избранное', to: '/profile/favorites' },
 ]
 
 function toggleMenu() {
