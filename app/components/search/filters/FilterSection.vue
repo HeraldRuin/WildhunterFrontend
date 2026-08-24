@@ -98,7 +98,8 @@ function toggle() {
   transform: rotate(0deg);
 }
 
-.search-filters-section--open .search-filters-section__chevron {
+/* Прямой потомок — иначе open родителя крутит вложенные секции. */
+.search-filters-section--open > .search-filters-section__toggle > .search-filters-section__chevron {
   transform: rotate(180deg);
 }
 
