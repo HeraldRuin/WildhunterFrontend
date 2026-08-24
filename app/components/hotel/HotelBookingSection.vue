@@ -496,7 +496,13 @@ watch(
   () => {
     tryAutoCheckFromSearch()
   },
+  // Template ref обновляется после render — без post автопоиск часто пропускается.
+  { flush: 'post' },
 )
+
+onMounted(() => {
+  tryAutoCheckFromSearch()
+})
 </script>
 
 <template>

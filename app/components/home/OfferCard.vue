@@ -2,6 +2,11 @@
 import type { OfferItem } from '~/types/api'
 import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
+import {
+  formatDisplayDate,
+  getDefaultStayCheckIn,
+  getDefaultStayCheckOut,
+} from '~/utils/date'
 import { getHotelPath } from '~/utils/hotel'
 import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
 import { formatReviewsCount } from '~/utils/pluralize'
@@ -12,15 +17,39 @@ const props = defineProps<{
 
 const route = useRoute()
 
+function queryParam(key: string): string {
+  const raw = route.query[key]
+  return Array.isArray(raw) ? String(raw[0] || '') : String(raw || '')
+}
+
+/**
+ * Даты/гости для страницы отеля.
+ * На /bases в hero всегда видны даты (из URL или сегодня/завтра) —
+ * их нужно передать, иначе на отеле поле пустое и автопоиск не стартует.
+ * С главной (без /bases) даты не подставляем — пустой блок по задумке.
+ */
 function searchQueryForHotel() {
   const query: Record<string, string> = {}
 
   for (const key of ['checkIn', 'checkOut', 'guests'] as const) {
-    const raw = route.query[key]
-    const value = Array.isArray(raw) ? String(raw[0] || '') : String(raw || '')
+    const value = queryParam(key)
 
     if (value) {
       query[key] = value
+    }
+  }
+
+  if (route.path.startsWith('/bases')) {
+    if (!query.checkIn) {
+      query.checkIn = formatDisplayDate(getDefaultStayCheckIn())
+    }
+
+    if (!query.checkOut) {
+      query.checkOut = formatDisplayDate(getDefaultStayCheckOut())
+    }
+
+    if (!query.guests) {
+      query.guests = '1'
     }
   }
 

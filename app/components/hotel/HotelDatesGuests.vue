@@ -43,7 +43,8 @@ function adultsFromQuery() {
 const checkIn = ref<Date | null>(parseDisplayDate(queryString('checkIn')))
 const checkOut = ref<Date | null>(parseDisplayDate(queryString('checkOut')))
 const adultsCount = ref(adultsFromQuery())
-const hasDatesFromSearch = Boolean(checkIn.value && checkOut.value)
+/** Даты пришли из поиска (query) — нужен автозапуск «Проверить наличие». */
+const hasDatesFromSearch = ref(Boolean(checkIn.value && checkOut.value))
 
 const isDatesOpen = ref(false)
 const isGuestsOpen = ref(false)
@@ -239,7 +240,7 @@ function handleSubmit() {
 
 defineExpose({
   getCheckPayload: () => {
-    if (!hasDatesFromSearch || !checkIn.value || !checkOut.value) {
+    if (!hasDatesFromSearch.value || !checkIn.value || !checkOut.value) {
       return null
     }
 

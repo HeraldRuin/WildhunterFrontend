@@ -121,6 +121,18 @@ export function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 
+/** Дефолт заезда в поиске: сегодня. */
+export function getDefaultStayCheckIn() {
+  return startOfDay(new Date())
+}
+
+/** Дефолт выезда в поиске: завтра. */
+export function getDefaultStayCheckOut() {
+  const tomorrow = startOfDay(new Date())
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  return tomorrow
+}
+
 export function addMonths(date: Date, amount: number) {
   return new Date(date.getFullYear(), date.getMonth() + amount, 1)
 }
