@@ -63,7 +63,7 @@ const items = [
   font-style: normal;
   font-size: 44px;
   line-height: 110%;
-  letter-spacing: 0.04em;
+  letter-spacing: -2.2px;
   text-transform: uppercase;
   color: var(--wh-black-text);
 }

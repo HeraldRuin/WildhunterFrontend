@@ -1220,7 +1220,7 @@ async function handleSubmit() {
   height: 78px;
   flex-shrink: 0;
   margin-top: 8px;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #e8eaee;
   overflow: hidden;
 }
