@@ -116,6 +116,18 @@ useHead({
           </div>
         </div>
       </section>
+
+      <section class="hunters-banner">
+        <div class="container">
+          <img
+            class="hunters-banner__image"
+            src="/images/hunting-farms-hunter.webp"
+            alt="Охотник с биноклем в охотничьих угодьях"
+            width="960"
+            height="480"
+          >
+        </div>
+      </section>
     </main>
 
     <LayoutAppFooter />
@@ -253,6 +265,19 @@ useHead({
   line-height: 1.5;
 }
 
+.hunters-banner {
+  padding-block: 0 50px;
+  line-height: 0;
+}
+
+.hunters-banner__image {
+  display: block;
+  width: 70%;
+  max-width: 720px;
+  height: auto;
+  margin-inline: auto;
+}
+
 .hunters-cta__button {
   display: flex;
   align-items: center;
@@ -297,6 +322,14 @@ useHead({
   .hunters-section {
     padding-block: 40px;
   }
+
+  .hunters-banner {
+    padding-block: 0 40px;
+  }
+
+  .hunters-banner__image {
+    width: 85%;
+  }
 }
 
 @media (--wh-mobile) {
@@ -311,6 +344,14 @@ useHead({
 
   .hunters-section {
     padding-block: 32px;
+  }
+
+  .hunters-banner {
+    padding-block: 0 32px;
+  }
+
+  .hunters-banner__image {
+    width: 100%;
   }
 
   .hunters-heading {
