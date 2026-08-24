@@ -296,8 +296,19 @@ async function applyCachedCurrentPassword(force = false) {
   currentPassword.value = (await loadCurrentPassword(force)) || ''
 }
 
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    void applyCachedCurrentPassword()
+  }
+}
+
 onMounted(() => {
   void applyCachedCurrentPassword()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 

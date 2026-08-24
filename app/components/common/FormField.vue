@@ -101,6 +101,89 @@ function onInput(event: Event) {
   emit('update:modelValue', nextValue)
 }
 
+const inputRef = ref<HTMLInputElement | null>(null)
+
+function normalizeDomValue(value: string) {
+  return props.digitsOnly ? toDigits(value) : value
+}
+
+function syncDomValue(source?: Event | HTMLInputElement) {
+  if (props.disabled || props.readonly || props.multiline) {
+    return
+  }
+
+  const target = source instanceof HTMLInputElement
+    ? source
+    : (source?.target as HTMLInputElement | undefined) ?? inputRef.value
+
+  if (!target) {
+    return
+  }
+
+  const domValue = target.value
+  const modelValue = props.modelValue ?? ''
+
+  if (domValue === modelValue) {
+    return
+  }
+
+  // Браузерное autofill: в DOM есть значение, в Vue — нет.
+  if (!modelValue && domValue) {
+    emit('update:modelValue', normalizeDomValue(domValue))
+    return
+  }
+
+  // Controlled input перезаписал DOM — восстанавливаем из модели.
+  if (modelValue && !domValue) {
+    target.value = modelValue
+    return
+  }
+
+  if (domValue) {
+    emit('update:modelValue', normalizeDomValue(domValue))
+  }
+}
+
+function scheduleAutofillSync(source?: Event | HTMLInputElement) {
+  syncDomValue(source)
+  requestAnimationFrame(() => syncDomValue(source))
+  window.setTimeout(() => syncDomValue(source), 100)
+}
+
+function onFocus(event: FocusEvent) {
+  emit('focus', event)
+  scheduleAutofillSync(event)
+}
+
+function onChange(event: Event) {
+  syncDomValue(event)
+}
+
+function onAnimationStart(event: AnimationEvent) {
+  if (event.animationName === 'onAutoFillStart') {
+    syncDomValue(event)
+  }
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    scheduleAutofillSync()
+  }
+}
+
+onMounted(() => {
+  if (props.multiline) {
+    return
+  }
+
+  scheduleAutofillSync()
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+})
+
 function onKeydown(event: KeyboardEvent) {
   emit('keydown', event)
 
@@ -222,12 +305,15 @@ function onPaste(event: ClipboardEvent) {
           :readonly="readonly"
           :aria-label="label || placeholder || undefined"
           v-bind="inputAttrs"
+          ref="inputRef"
           @input="onInput"
-          @focus="emit('focus', $event)"
+          @change="onChange"
+          @focus="onFocus"
           @blur="emit('blur', $event)"
           @click="emit('click', $event)"
           @keydown="onKeydown"
           @paste="onPaste"
+          @animationstart="onAnimationStart"
         >
 
         <div v-if="hasTrailing" class="form-field__trailing">
@@ -419,12 +505,20 @@ function onPaste(event: ClipboardEvent) {
   box-shadow: 0 0 0 3px var(--wh-field-focus-ring-error-focus);
 }
 
+@keyframes onAutoFillStart {
+  from {}
+
+  to {}
+}
+
 .form-field__input:-webkit-autofill,
 .form-field__input:-webkit-autofill:hover,
 .form-field__input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--wh-gray-900);
   box-shadow: 0 0 0 1000px var(--wh-white) inset;
   transition: background-color 9999s ease-out 0s;
+  animation-name: onAutoFillStart;
+  animation-duration: 0.001s;
 }
 
 .form-field__append {
