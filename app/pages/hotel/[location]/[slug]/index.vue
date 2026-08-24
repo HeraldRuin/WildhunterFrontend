@@ -42,12 +42,15 @@ const pageTitle = computed(() => `${displayHotel.value.title} — WH`)
 const breadcrumbs = computed(() => {
   const items: BreadcrumbItem[] = [
     { label: 'Главная', to: '/' },
-    { label: 'Базы' },
+    { label: 'Базы', to: '/bases' },
   ]
 
   const location = displayHotel.value.location
   if (location?.name) {
-    items.push({ label: location.name })
+    items.push({
+      label: location.name,
+      ...(location.id ? { to: `/locations/${location.id}` } : {}),
+    })
   }
 
   items.push({ label: displayHotel.value.title })
