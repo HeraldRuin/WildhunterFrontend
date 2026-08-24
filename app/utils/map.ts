@@ -21,7 +21,9 @@ export const DEFAULT_MAP_CENTER = {
 export interface MapHotelItem {
   id: number
   title: string
+  slug?: string
   location: string
+  locationSlug?: string
   price: number
   image: string
   lat: number
@@ -41,7 +43,9 @@ export function offerToMapHotel(item: OfferItem): MapHotelItem | null {
   return {
     id: item.id,
     title: item.title,
+    slug: item.slug,
     location: item.location,
+    locationSlug: item.locationSlug,
     price: item.price,
     image: toMediaImageSize(item.image, 'medium'),
     lat,

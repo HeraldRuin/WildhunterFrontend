@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { BreadcrumbItem } from '~/types/breadcrumb'
+import { formatDisplayDate, getDefaultStayCheckIn, getDefaultStayCheckOut } from '~/utils/date'
+import { getHotelPath } from '~/utils/hotel'
 import { DEFAULT_MAP_CENTER, parseMapCoordinates, type MapHotelItem } from '~/utils/map'
 
 const props = withDefaults(defineProps<{
@@ -9,6 +11,8 @@ const props = withDefaults(defineProps<{
 }>(), {
   loading: false,
 })
+
+const route = useRoute()
 
 const selectedId = ref<number | null>(null)
 const fitVersion = ref(0)
@@ -172,6 +176,52 @@ const mapZoom = computed(() => (selectedHotel.value ? 13 : DEFAULT_MAP_CENTER.zo
 
 function selectHotel(id: number) {
   selectedId.value = id
+}
+
+function queryParam(key: string): string {
+  const raw = route.query[key]
+  return Array.isArray(raw) ? String(raw[0] || '') : String(raw || '')
+}
+
+function searchQueryForHotel() {
+  const query: Record<string, string> = {}
+
+  for (const key of ['checkIn', 'checkOut', 'guests'] as const) {
+    const value = queryParam(key)
+
+    if (value) {
+      query[key] = value
+    }
+  }
+
+  if (route.path.startsWith('/bases')) {
+    if (!query.checkIn) {
+      query.checkIn = formatDisplayDate(getDefaultStayCheckIn())
+    }
+
+    if (!query.checkOut) {
+      query.checkOut = formatDisplayDate(getDefaultStayCheckOut())
+    }
+
+    if (!query.guests) {
+      query.guests = '1'
+    }
+  }
+
+  return query
+}
+
+function openHotel(id: number) {
+  const hotel = props.hotels.find((item) => item.id === id)
+
+  if (!hotel?.slug || !hotel.locationSlug) {
+    return
+  }
+
+  void navigateTo({
+    path: getHotelPath(hotel.locationSlug, hotel.slug),
+    query: searchQueryForHotel(),
+  })
 }
 
 function resetMapView() {
@@ -741,6 +791,7 @@ async function searchMeasurePoint() {
                   :measure-mode="isMeasureMode"
                   :measure-origin-point="measureOriginPoint"
                   @select="selectHotel"
+                  @open="openHotel"
                 />
               </div>
             </div>

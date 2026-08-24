@@ -50,6 +50,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   select: [id: number]
+  open: [id: number]
 }>()
 
 const mapEl = ref<HTMLElement | null>(null)
@@ -628,9 +629,7 @@ function syncMarkers() {
       }
 
       if (props.activeId === item.id) {
-        withQuietMove(() => {
-          map?.setCenter([item.lat, item.lng], props.zoom, { duration: 250 })
-        })
+        emit('open', item.id)
         return
       }
 

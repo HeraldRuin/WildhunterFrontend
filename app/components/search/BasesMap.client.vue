@@ -29,6 +29,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   select: [id: number]
+  open: [id: number]
 }>()
 
 const config = useRuntimeConfig()
@@ -49,6 +50,7 @@ const provider = computed(() => (
     :measure-mode="props.measureMode"
     :measure-origin-point="props.measureOriginPoint"
     @select="emit('select', $event)"
+    @open="emit('open', $event)"
   />
   <SearchBasesMapLeaflet
     v-else
@@ -61,5 +63,6 @@ const provider = computed(() => (
     :measure-mode="props.measureMode"
     :measure-origin-point="props.measureOriginPoint"
     @select="emit('select', $event)"
+    @open="emit('open', $event)"
   />
 </template>

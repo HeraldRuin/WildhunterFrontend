@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   select: [id: number]
+  open: [id: number]
 }>()
 
 const CLUSTER_PIXEL_DISTANCE = 32
@@ -496,9 +497,7 @@ function syncMarkers() {
       }
 
       if (props.activeId === item.id) {
-        map?.flyTo([item.lat, item.lng], props.zoom, {
-          duration: 0.6,
-        })
+        emit('open', item.id)
         return
       }
 
