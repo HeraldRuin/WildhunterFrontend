@@ -103,7 +103,7 @@ const socials = [
 .app-social-links {
   display: flex;
   flex-shrink: 0;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 12px;
 }
 

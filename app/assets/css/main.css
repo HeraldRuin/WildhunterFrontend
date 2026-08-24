@@ -83,12 +83,14 @@
 }
 
 html {
+  overflow-x: clip;
   overflow-anchor: none;
   scrollbar-gutter: stable;
 }
 
 body {
   margin: 0;
+  overflow-x: clip;
   font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   color: var(--wh-gray-900);
   background: var(--wh-white);
