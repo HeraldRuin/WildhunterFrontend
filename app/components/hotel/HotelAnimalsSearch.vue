@@ -209,6 +209,31 @@ function decrementAdults() {
   }
 }
 
+function clampAdults(value: number) {
+  return Math.min(maxAdults, Math.max(1, Math.floor(value)))
+}
+
+function onAdultsInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  const digits = target.value.replace(/\D/g, '').slice(0, 2)
+  target.value = digits
+  if (digits === '') {
+    return
+  }
+  const next = Number(digits)
+  if (Number.isFinite(next) && next >= 1) {
+    adultsCount.value = clampAdults(next)
+    target.value = String(adultsCount.value)
+  }
+}
+
+function onAdultsBlur(event: Event) {
+  const target = event.target as HTMLInputElement
+  const next = Number(target.value)
+  adultsCount.value = Number.isFinite(next) && next >= 1 ? clampAdults(next) : 1
+  target.value = String(adultsCount.value)
+}
+
 function selectAnimal(item: HotelAnimalItem) {
   animal.value = String(item.id)
   isAnimalOpen.value = false
@@ -405,7 +430,18 @@ defineExpose({
                 >
                   −
                 </button>
-                <span class="hotel-animals-search__stepper-count">{{ adultsCount }}</span>
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  class="hotel-animals-search__stepper-count"
+                  :value="adultsCount"
+                  aria-label="Количество охотников"
+                  @input="onAdultsInput"
+                  @blur="onAdultsBlur"
+                  @keydown.enter.prevent="onAdultsBlur"
+                  @click.stop
+                >
                 <button
                   type="button"
                   class="hotel-animals-search__stepper-btn"
@@ -865,7 +901,14 @@ defineExpose({
 }
 
 .hotel-animals-search__stepper-count {
-  min-width: 12px;
+  box-sizing: border-box;
+  width: 2rem;
+  min-width: 2rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  appearance: none;
+  background: transparent;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 1rem;
   font-weight: 500;
@@ -873,6 +916,12 @@ defineExpose({
   letter-spacing: -0.05em;
   color: var(--wh-black-text);
   text-align: center;
+}
+
+.hotel-animals-search__stepper-count:focus {
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .hotel-animals-search__dropdown-option {
