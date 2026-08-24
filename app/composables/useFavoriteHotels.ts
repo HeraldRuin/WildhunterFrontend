@@ -6,6 +6,8 @@ export function useFavoriteHotels() {
   const isLoading = useState('favorite-hotels-loading', () => false)
   const isLoaded = useState('favorite-hotels-loaded', () => false)
 
+  let favoritesRequest: Promise<void> | null = null
+
   async function loadFavorites() {
     if (!import.meta.client || !isAuthenticated.value) {
       favoriteHotelIds.value = []
@@ -13,25 +15,30 @@ export function useFavoriteHotels() {
       return
     }
 
-    if (isLoading.value) {
-      return
+    if (favoritesRequest) {
+      return favoritesRequest
     }
 
     isLoading.value = true
 
-    try {
-      const response = await services.getFavorites('hotel')
+    favoritesRequest = (async () => {
+      try {
+        const response = await services.getFavorites('hotel')
 
-      favoriteHotelIds.value = response.success && Array.isArray(response.data)
-        ? response.data.map(item => item.service_id)
-        : []
-      isLoaded.value = true
-    } catch {
-      favoriteHotelIds.value = []
-      isLoaded.value = false
-    } finally {
-      isLoading.value = false
-    }
+        favoriteHotelIds.value = response.success && Array.isArray(response.data)
+          ? response.data.map(item => item.service_id)
+          : []
+        isLoaded.value = true
+      } catch {
+        favoriteHotelIds.value = []
+        isLoaded.value = false
+      } finally {
+        isLoading.value = false
+        favoritesRequest = null
+      }
+    })()
+
+    return favoritesRequest
   }
 
   function isFavorite(hotelId: number) {
@@ -50,16 +57,18 @@ export function useFavoriteHotels() {
   }
 
   if (import.meta.client) {
-    watch(isAuthenticated, (authenticated) => {
-      isLoaded.value = false
+    callOnce('favorite-hotels-auth-watch', () => {
+      watch(isAuthenticated, (authenticated) => {
+        isLoaded.value = false
 
-      if (authenticated) {
-        loadFavorites()
-        return
-      }
+        if (authenticated) {
+          void loadFavorites()
+          return
+        }
 
-      favoriteHotelIds.value = []
-    }, { immediate: true })
+        favoriteHotelIds.value = []
+      }, { immediate: true })
+    })
   }
 
   return {

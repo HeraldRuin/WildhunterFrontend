@@ -25,6 +25,7 @@ const baseNavItems: NavItem[] = [
     iconSrc: '/icons/material-symbols_license-rounded.png',
   },
   { label: 'Изменить пароль', to: '/profile/password', iconSrc: '/icons/boxicons_pencil-filled.png' },
+  { label: 'Избранное', to: '/profile/favorites', iconSrc: '/icons/favorites.svg' },
 ]
 
 const servicesNavChildren = [
