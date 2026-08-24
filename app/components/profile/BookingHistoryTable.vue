@@ -319,7 +319,6 @@ onBeforeUnmount(() => {
               <th>№ брони</th>
               <th>Дата брони</th>
               <th>{{ showCustomer ? 'Заказчик' : 'Охотн. База' }}</th>
-              <th>Тип</th>
               <th>Детали</th>
               <th>Статус</th>
               <th>Оплата</th>
@@ -367,9 +366,6 @@ onBeforeUnmount(() => {
                   <span v-else>{{ item.baseName }}</span>
                 </template>
               </div>
-            </td>
-            <td class="booking-table__type" data-label="Тип">
-              <div class="booking-table__value">{{ item.typeLabel }}</div>
             </td>
             <td class="booking-table__details" data-label="Детали">
               <div class="booking-table__value">
@@ -666,8 +662,8 @@ onBeforeUnmount(() => {
   text-align: left;
 }
 
-.booking-table th:nth-child(-n+4),
-.booking-table td:nth-child(-n+4) {
+.booking-table th:nth-child(-n+3),
+.booking-table td:nth-child(-n+3) {
   text-align: center;
 }
 
@@ -694,37 +690,35 @@ onBeforeUnmount(() => {
 .booking-table th:first-child,
 .booking-table th:nth-child(2),
 .booking-table th:nth-child(3),
-.booking-table th:nth-child(4),
 .booking-table__number,
 .booking-table__date,
-.booking-table__base,
-.booking-table__type {
+.booking-table__base {
   width: 1%;
   white-space: nowrap;
 }
 
-.booking-table th:nth-child(5),
+.booking-table th:nth-child(4),
 .booking-table__details {
   width: 180px;
   min-width: 160px;
   max-width: 200px;
 }
 
-.booking-table th:nth-child(6),
+.booking-table th:nth-child(5),
 .booking-table__status {
   width: 220px;
   min-width: 200px;
   max-width: 240px;
 }
 
-.booking-table th:nth-child(8),
+.booking-table th:nth-child(7),
 .booking-table td.booking-table__actions {
   width: 200px;
   min-width: 200px;
   max-width: 200px;
 }
 
-.booking-table th:nth-child(7),
+.booking-table th:nth-child(6),
 .booking-table__payment {
   width: 180px;
   min-width: 160px;
@@ -769,10 +763,6 @@ onBeforeUnmount(() => {
 .booking-table__customer-btn:hover {
   color: #2f8fc9;
   text-decoration: underline;
-}
-
-.booking-table__type {
-  white-space: nowrap;
 }
 
 .booking-table__details strong {
@@ -952,8 +942,8 @@ onBeforeUnmount(() => {
     vertical-align: top;
   }
 
-  .booking-table th:nth-child(-n+4),
-  .booking-table td:nth-child(-n+4) {
+  .booking-table th:nth-child(-n+3),
+  .booking-table td:nth-child(-n+3) {
     text-align: left;
   }
 
@@ -994,10 +984,6 @@ onBeforeUnmount(() => {
   .booking-table__value {
     flex: 1;
     min-width: 0;
-  }
-
-  .booking-table__type {
-    white-space: normal;
   }
 
   .booking-table td.booking-table__actions {
