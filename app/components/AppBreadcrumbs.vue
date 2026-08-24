@@ -58,15 +58,39 @@ async function onLinkClick(to: RouteLocationRaw, event: MouseEvent) {
 }
 
 .app-breadcrumbs a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding-bottom: 2px;
   color: inherit;
   text-decoration: none;
   cursor: pointer;
   transition: color 0.15s ease;
 }
 
+.app-breadcrumbs a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--wh-orange-500);
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.28s ease, opacity 0.28s ease;
+  pointer-events: none;
+}
+
 .app-breadcrumbs a:hover {
   color: var(--wh-gray-900);
-  text-decoration: underline;
+}
+
+.app-breadcrumbs a:hover::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .app-breadcrumbs__current {
