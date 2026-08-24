@@ -6,10 +6,18 @@ const props = withDefaults(defineProps<{
   defaultOpen: false,
 })
 
+const emit = defineEmits<{
+  open: []
+}>()
+
 const isOpen = ref(props.defaultOpen)
 
 function toggle() {
   isOpen.value = !isOpen.value
+
+  if (isOpen.value) {
+    emit('open')
+  }
 }
 </script>
 

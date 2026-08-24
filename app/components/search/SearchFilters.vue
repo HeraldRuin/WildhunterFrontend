@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { SearchFiltersState } from '~/types/api'
-import {
-  DEFAULT_SEARCH_FILTERS,
-  SEARCH_AMENITIES,
-} from '~/utils/search'
+import type { HotelRoomAttribute, HotelRoomAttributeTerm, SearchFiltersState } from '~/types/api'
+import { DEFAULT_SEARCH_FILTERS } from '~/utils/search'
+
+const PREVIEW_TERMS_LIMIT = 3
 
 const props = withDefaults(defineProps<{
   modelValue: SearchFiltersState
@@ -24,6 +23,22 @@ const emit = defineEmits<{
   reset: []
 }>()
 
+const { services: servicesApi } = useApi()
+
+const {
+  data: attributeGroups,
+  pending: attributesPending,
+} = useAsyncData<HotelRoomAttribute[]>(
+  'search-service-attributes',
+  () => servicesApi.getAttributeGroups('hotel'),
+  {
+    lazy: true,
+    default: () => [],
+  },
+)
+
+const expandedGroups = ref<Record<number, boolean>>({})
+
 const localFilters = computed({
   get: () => props.modelValue,
   set: value => emit('update:modelValue', value),
@@ -36,6 +51,33 @@ function updateField<K extends keyof SearchFiltersState>(
   localFilters.value = {
     ...localFilters.value,
     [field]: value,
+  }
+}
+
+function termId(term: HotelRoomAttributeTerm) {
+  return String(term.id)
+}
+
+function termLabel(term: HotelRoomAttributeTerm) {
+  return term.translation?.name || term.name
+}
+
+function visibleTerms(group: HotelRoomAttribute) {
+  if (expandedGroups.value[group.id]) {
+    return group.terms
+  }
+
+  return group.terms.slice(0, PREVIEW_TERMS_LIMIT)
+}
+
+function hasMoreTerms(group: HotelRoomAttribute) {
+  return group.terms.length > PREVIEW_TERMS_LIMIT
+}
+
+function toggleGroupExpand(groupId: number) {
+  expandedGroups.value = {
+    ...expandedGroups.value,
+    [groupId]: !expandedGroups.value[groupId],
   }
 }
 
@@ -115,23 +157,59 @@ function closeMobile() {
         />
       </SearchFiltersFilterSection>
 
+      <p
+        v-if="attributesPending"
+        class="search-filters__group search-filters__state"
+      >
+        Загрузка атрибутов...
+      </p>
+
       <SearchFiltersFilterSection
+        v-for="group in attributeGroups"
+        :key="group.id"
         class="search-filters__group"
-        title="Услуги на базе"
+        :title="group.name"
       >
         <ul class="search-filters__list">
-          <li v-for="amenity in SEARCH_AMENITIES" :key="amenity.id">
+          <li
+            v-for="term in visibleTerms(group)"
+            :key="term.id"
+          >
             <label class="search-filters__checkbox">
               <input
                 type="checkbox"
-                :checked="localFilters.amenities.includes(amenity.id)"
-                @change="toggleAmenity(amenity.id)"
+                :checked="localFilters.amenities.includes(termId(term))"
+                @change="toggleAmenity(termId(term))"
               >
               <span class="search-filters__checkmark" />
-              <span>{{ amenity.label }}</span>
+              <span>{{ termLabel(term) }}</span>
             </label>
           </li>
         </ul>
+
+        <button
+          v-if="hasMoreTerms(group)"
+          type="button"
+          class="search-filters__more"
+          @click="toggleGroupExpand(group.id)"
+        >
+          {{ expandedGroups[group.id] ? 'Скрыть' : 'Еще' }}
+          <svg
+            class="search-filters__more-icon"
+            :class="{ 'search-filters__more-icon--open': expandedGroups[group.id] }"
+            viewBox="0 0 12 8"
+            aria-hidden="true"
+          >
+            <path
+              d="M1 2 6 6.5 11 2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </SearchFiltersFilterSection>
 
       <SearchFiltersFilterSection
@@ -221,6 +299,12 @@ function closeMobile() {
   border-top: 1px solid #bfbfbf;
 }
 
+.search-filters__state {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--wh-gray-500);
+}
+
 .search-filters__label {
   margin: 0;
   font-size: 0.9375rem;
@@ -276,6 +360,31 @@ function closeMobile() {
   border-radius: 2px;
   background: var(--wh-orange-500);
   transform: translate(-50%, -50%);
+}
+
+.search-filters__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.search-filters__more-icon {
+  width: 10px;
+  height: 7px;
+  transition: transform 0.2s ease;
+}
+
+.search-filters__more-icon--open {
+  transform: rotate(180deg);
 }
 
 .search-filters__radios {

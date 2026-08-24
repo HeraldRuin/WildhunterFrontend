@@ -4,6 +4,7 @@ import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { mapHotelOfferToItem } from '~/api/hotels'
 import { parseDisplayDateToApiDate } from '~/utils/date'
 import {
+  buildHotelSearchBody,
   countOffersByReviewRating,
   DEFAULT_SEARCH_FILTERS,
   matchesFoodFilter,
@@ -98,46 +99,21 @@ function queryString(key: string): string {
 /** Without dates → full catalog via /hotels/offers; with dates → availability search. */
 const isCatalogMode = computed(() => !queryString('checkIn') && !queryString('checkOut'))
 
-const hasActivePriceFilter = computed(() => (
-  filters.value.priceMin > priceBounds.value.min
-  || filters.value.priceMax < priceBounds.value.max
-))
-
 const searchRequest = computed(() => {
   const catalog = isCatalogMode.value
-  const body: HotelSearchBody = {}
 
-  if (!catalog) {
-    if (route.query.location) {
-      body.location_id = Number(route.query.location)
-    }
-
-    if (route.query.animal) {
-      body.animal_id = Number(route.query.animal)
-    }
-
-    const checkIn = parseDisplayDateToApiDate(queryString('checkIn'))
-    if (checkIn) {
-      body.check_in = checkIn
-    }
-
-    const checkOut = parseDisplayDateToApiDate(queryString('checkOut'))
-    if (checkOut) {
-      body.check_out = checkOut
-    }
-
-    if (route.query.guests) {
-      body.adults = Number(route.query.guests)
-    }
-
-    if (hasActivePriceFilter.value) {
-      body.price_range = `${filters.value.priceMin};${filters.value.priceMax}`
-    }
-
-    if (filters.value.ratings.length) {
-      body.star_rate = filters.value.ratings
-    }
-  }
+  // Search mode: dates + guests (+ location/animal) are the base request; sidebar filters append.
+  const body: HotelSearchBody = catalog
+    ? {}
+    : buildHotelSearchBody({
+        filters: filters.value,
+        priceBounds: priceBounds.value,
+        locationId: route.query.location ? Number(route.query.location) : undefined,
+        animalId: route.query.animal ? Number(route.query.animal) : undefined,
+        checkIn: parseDisplayDateToApiDate(queryString('checkIn')) || undefined,
+        checkOut: parseDisplayDateToApiDate(queryString('checkOut')) || undefined,
+        adults: route.query.guests ? Number(route.query.guests) : undefined,
+      })
 
   return {
     // Catalog is loaded once; pagination is client-side.
@@ -311,8 +287,6 @@ const totalCount = computed(() => {
 
   return searchResult.value.total
 })
-
-const hasResults = computed(() => totalCount.value > 0)
 
 watch(totalPages, (pages) => {
   if (currentPage.value > pages) {

@@ -197,13 +197,20 @@ export interface HotelPriceRangeBounds {
   max: number
 }
 
+export interface HotelSearchPrice {
+  min?: number
+  max?: number
+}
+
 export interface HotelSearchBody {
   location_id?: number
   animal_id?: number
   check_in?: string
   check_out?: string
   adults?: number
-  price_range?: string
+  /** Selected attribute term ids (OR semantics on backend). */
+  term_ids?: number[]
+  price?: HotelSearchPrice
   star_rate?: string[]
 }
 
@@ -233,7 +240,7 @@ export interface HotelRoomAttributeTerm {
   name: string
   slug: string
   content: string | null
-  icon: string
+  icon: string | null
   image_url: string
   translation?: HotelRoomAttributeTermTranslation | null
 }

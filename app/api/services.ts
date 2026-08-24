@@ -1,4 +1,4 @@
-import type { ApiSuccessResponse } from '~/types/api'
+import type { ApiSuccessResponse, HotelRoomAttribute } from '~/types/api'
 import { useApiClient } from './client'
 
 export interface FavoriteResponse {
@@ -35,9 +35,34 @@ export function useServicesApi() {
     })
   }
 
+  function getAttributes(type = 'hotel') {
+    return apiFetch<ApiSuccessResponse<HotelRoomAttribute[]>>('/services/attributes', {
+      method: 'POST',
+      body: { type },
+      skipAuth: true,
+    })
+  }
+
+  async function getAttributeGroups(type = 'hotel') {
+    try {
+      const response = await getAttributes(type)
+
+      if (!response.success) {
+        return []
+      }
+
+      return response.data
+    }
+    catch {
+      return []
+    }
+  }
+
   return {
     addFavorite,
     removeFavorite,
     getFavorites,
+    getAttributes,
+    getAttributeGroups,
   }
 }

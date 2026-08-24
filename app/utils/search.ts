@@ -1,4 +1,10 @@
-import type { BookableItem, OfferItem, SearchFiltersState } from '~/types/api'
+import type {
+  BookableItem,
+  HotelSearchBody,
+  HotelSearchPrice,
+  OfferItem,
+  SearchFiltersState,
+} from '~/types/api'
 
 export const DEFAULT_SEARCH_FILTERS: SearchFiltersState = {
   sort: 'recommended',
@@ -9,14 +15,80 @@ export const DEFAULT_SEARCH_FILTERS: SearchFiltersState = {
   hasMeals: '',
 }
 
-export const SEARCH_AMENITIES = [
-  { id: 'wifi', label: 'Wi-Fi' },
-  { id: 'minibar', label: 'Мини-бар' },
-  { id: 'kitchen', label: 'Кухня' },
-  { id: 'parking', label: 'Парковка' },
-  { id: 'sauna', label: 'Баня / сауна' },
-  { id: 'pool', label: 'Бассейн' },
-]
+/** Parse selected amenity checkbox ids into numeric term_ids for /hotels/search. */
+export function toSearchTermIds(amenities: string[]): number[] {
+  return amenities
+    .map(Number)
+    .filter(id => Number.isFinite(id) && id > 0)
+}
+
+export function toSearchPriceFilter(
+  filters: Pick<SearchFiltersState, 'priceMin' | 'priceMax'>,
+  bounds: { min: number, max: number },
+): HotelSearchPrice | undefined {
+  const hasActivePrice = (
+    filters.priceMin > bounds.min
+    || filters.priceMax < bounds.max
+  )
+
+  if (!hasActivePrice) {
+    return undefined
+  }
+
+  return {
+    min: filters.priceMin,
+    max: filters.priceMax,
+  }
+}
+
+/** Sidebar / hero filters → POST /hotels/search body (no client-side list filtering). */
+export function buildHotelSearchBody(options: {
+  filters: SearchFiltersState
+  priceBounds: { min: number, max: number }
+  locationId?: number
+  animalId?: number
+  checkIn?: string
+  checkOut?: string
+  adults?: number
+}): HotelSearchBody {
+  const body: HotelSearchBody = {}
+
+  if (options.locationId != null && Number.isFinite(options.locationId) && options.locationId > 0) {
+    body.location_id = options.locationId
+  }
+
+  if (options.animalId != null && Number.isFinite(options.animalId) && options.animalId > 0) {
+    body.animal_id = options.animalId
+  }
+
+  if (options.checkIn) {
+    body.check_in = options.checkIn
+  }
+
+  if (options.checkOut) {
+    body.check_out = options.checkOut
+  }
+
+  if (options.adults != null && Number.isFinite(options.adults) && options.adults > 0) {
+    body.adults = options.adults
+  }
+
+  const price = toSearchPriceFilter(options.filters, options.priceBounds)
+  if (price) {
+    body.price = price
+  }
+
+  if (options.filters.ratings.length) {
+    body.star_rate = options.filters.ratings
+  }
+
+  const termIds = toSearchTermIds(options.filters.amenities)
+  if (termIds.length) {
+    body.term_ids = termIds
+  }
+
+  return body
+}
 
 export const MOCK_SEARCH_ITEMS: BookableItem[] = [
   {
