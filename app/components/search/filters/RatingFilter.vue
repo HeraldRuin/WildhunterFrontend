@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ReviewRatingOption } from '~/types/api'
+import { formatBasesCount } from '~/utils/pluralize'
 
 const model = defineModel<string[]>({ required: true })
 
@@ -49,7 +50,7 @@ function toggle(value: string) {
           <span class="search-filters-rating__checkmark" />
           <span>{{ option.label }}</span>
           <span class="search-filters-rating__count">
-            {{ counts[option.value] ?? 0 }}
+            {{ formatBasesCount(counts[option.value] ?? 0) }}
           </span>
         </label>
       </li>
@@ -94,6 +95,7 @@ function toggle(value: string) {
 
 .search-filters-rating__count {
   white-space: nowrap;
+  color: var(--wh-orange-500);
 }
 
 .search-filters-rating__option input {
