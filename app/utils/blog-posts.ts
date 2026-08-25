@@ -1,16 +1,22 @@
+import { kogdaZakanchivaetsyaSezonOkhoty2026Content } from '~/content/blog/kogda-zakanchivaetsya-sezon-okhoty-2026'
+
 export type BlogPost = {
   slug: string
   title: string
+  pageTitle?: string
   date: string
   image: string
+  content?: string
 }
 
 export const blogPosts: BlogPost[] = [
   {
     slug: 'kogda-zakanchivaetsya-sezon-okhoty-v-2026-godu-v-rossii-aktualnye-daty-po-regionam-i-vidam',
     title: 'Когда заканчивается сезон охоты в 2026 году в России',
+    pageTitle: 'Когда заканчивается сезон охоты в 2026 году в России: актуальные даты по регионам и видам',
     date: '16.06.2026 г.',
     image: '/images/blog/kogda-zakanchivaetsya.jpg',
+    content: kogdaZakanchivaetsyaSezonOkhoty2026Content,
   },
   {
     slug: 'chto-vzyat-na-okhotu-spisok',
