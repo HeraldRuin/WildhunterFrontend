@@ -33,6 +33,7 @@ export type {
   UpdateUserPayload,
   UpdateUserResponse,
 } from './user'
+export { useNotificationsApi } from './notifications'
 export { useWeaponsApi } from './weapons'
 export type {
   WeaponsResponse,

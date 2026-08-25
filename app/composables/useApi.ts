@@ -15,6 +15,7 @@ import {
   useContactApi,
   useUserApi,
   useWeaponsApi,
+  useNotificationsApi,
 } from '~/api'
 
 export function useApi() {
@@ -34,6 +35,7 @@ export function useApi() {
   const contact = useContactApi()
   const user = useUserApi()
   const weapons = useWeaponsApi()
+  const notifications = useNotificationsApi()
 
   return {
     ...client,
@@ -52,5 +54,6 @@ export function useApi() {
     contact,
     user,
     weapons,
+    notifications,
   }
 }

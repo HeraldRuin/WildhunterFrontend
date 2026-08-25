@@ -22,7 +22,6 @@ const { bookings: bookingsApi } = useApi()
 const { user } = useAuth()
 const notifications = useNotifications()
 
-const notificationCount = 2
 const { open: openCollectionModal, applyInvitationUpdate } = useCollectionModal()
 const { open: openCancelBookingModal } = useCancelBookingModal()
 const { open: openAddServicesModal } = useAddServicesModal()
@@ -723,17 +722,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
     <header class="bookings-page__header">
       <AppBreadcrumbs :items="breadcrumbs" />
 
-      <button type="button" class="bookings-page__notifications" aria-label="Уведомления">
-        <img
-          src="/icons/bell.png"
-          alt=""
-          aria-hidden="true"
-          class="bookings-page__notifications-icon"
-          width="18"
-          height="22"
-        >
-        <span v-if="notificationCount" class="bookings-page__notifications-badge">{{ notificationCount }}</span>
-      </button>
+      <ProfileNotificationsBell />
     </header>
 
     <CommonPageTitle divider>Бронирования</CommonPageTitle>
@@ -855,44 +844,6 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 .bookings-page :deep(.booking-history-tabs) {
   flex-shrink: 0;
-}
-
-.bookings-page__notifications {
-  position: relative;
-  flex-shrink: 0;
-  width: 18px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  overflow: visible;
-}
-
-.bookings-page__notifications-icon {
-  display: block;
-  width: 18px;
-  height: 22px;
-  object-fit: contain;
-}
-
-.bookings-page__notifications-badge {
-  position: absolute;
-  top: -6px;
-  right: -8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0;
-  border-radius: 50%;
-  background: #e74c3c;
-  color: var(--wh-white);
-  font-size: 0.65rem;
-  font-weight: 700;
-  line-height: 1;
 }
 
 .bookings-page__table-area {

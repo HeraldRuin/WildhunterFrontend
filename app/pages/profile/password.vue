@@ -12,11 +12,9 @@ const { user: userApi } = useApi()
 const notifications = useNotifications()
 const { loadCurrentPassword, refreshCurrentPassword, setCurrentPassword, readCachedPasswordSync } = useCurrentPassword()
 
-const notificationCount = 0
-
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Параметр' },
+  { label: 'Параметры' },
   { label: 'Изменить пароль' },
 ]
 
@@ -327,17 +325,7 @@ onMounted(() => {
     <header class="profile-page__header">
       <AppBreadcrumbs :items="breadcrumbs" />
 
-      <button type="button" class="profile-page__notifications" aria-label="Уведомления">
-        <img
-          src="/icons/bell.png"
-          alt=""
-          aria-hidden="true"
-          class="profile-page__notifications-icon"
-          width="18"
-          height="22"
-        >
-        <span class="profile-page__notifications-badge">{{ notificationCount }}</span>
-      </button>
+      <ProfileNotificationsBell />
     </header>
 
     <CommonPageTitle divider>Изменить пароль</CommonPageTitle>
@@ -527,44 +515,6 @@ onMounted(() => {
   background: var(--wh-white);
   border-radius: var(--wh-radius);
   overflow: visible;
-}
-
-.profile-page__notifications {
-  position: relative;
-  flex-shrink: 0;
-  width: 18px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  overflow: visible;
-}
-
-.profile-page__notifications-icon {
-  display: block;
-  width: 18px;
-  height: 22px;
-  object-fit: contain;
-}
-
-.profile-page__notifications-badge {
-  position: absolute;
-  top: -6px;
-  right: -8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0;
-  border-radius: 50%;
-  background: #e74c3c;
-  color: var(--wh-white);
-  font-size: 0.65rem;
-  font-weight: 700;
-  line-height: 1;
 }
 
 .password-form {

@@ -22,7 +22,6 @@ const { profile, pending, error, loadProfile, saveProfile } = useProfile()
 const { getAvatarHistory } = useUserApi()
 const notifications = useNotifications()
 
-const notificationCount = 2
 const revealValues = ref(false)
 const isSubmitting = ref(false)
 const submitError = ref('')
@@ -499,17 +498,7 @@ async function handleSubmit() {
     <header class="profile-page__header">
       <AppBreadcrumbs :items="breadcrumbs" />
 
-      <button type="button" class="profile-page__notifications" aria-label="Уведомления">
-        <img
-          src="/icons/bell.png"
-          alt=""
-          aria-hidden="true"
-          class="profile-page__notifications-icon"
-          width="18"
-          height="22"
-        >
-        <span v-if="notificationCount" class="profile-page__notifications-badge">{{ notificationCount }}</span>
-      </button>
+      <ProfileNotificationsBell />
     </header>
 
     <CommonPageTitle divider>Настройки</CommonPageTitle>
@@ -814,44 +803,6 @@ async function handleSubmit() {
   background: var(--wh-white);
   border-radius: var(--wh-radius);
   overflow: visible;
-}
-
-.profile-page__notifications {
-  position: relative;
-  flex-shrink: 0;
-  width: 18px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  overflow: visible;
-}
-
-.profile-page__notifications-icon {
-  display: block;
-  width: 18px;
-  height: 22px;
-  object-fit: contain;
-}
-
-.profile-page__notifications-badge {
-  position: absolute;
-  top: -6px;
-  right: -8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0;
-  border-radius: 50%;
-  background: #e74c3c;
-  color: var(--wh-white);
-  font-size: 0.65rem;
-  font-weight: 700;
-  line-height: 1;
 }
 
 .profile-page__status {

@@ -807,3 +807,60 @@ export interface HotelDetail {
 }
 
 export type HotelDetailApiResponse = ApiSuccessResponse<HotelDetail>
+
+export type InboxNotificationTypeFilter = 'all' | 'unread' | 'read'
+
+export interface InboxNotification {
+  id: string
+  title: string
+  message: string
+  link: string | null
+  category: string | null
+  entity_type: string | null
+  entity_id: number | null
+  event: string | null
+  unread: boolean
+  read_at: string | null
+  created_at: string
+  time_ago: string
+}
+
+export interface InboxNotificationsPagination {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}
+
+export interface InboxNotificationsListData {
+  unread_count: number
+  notifications: InboxNotification[]
+  pagination: InboxNotificationsPagination
+}
+
+export type InboxNotificationsListResponse =
+  | ApiSuccessResponse<InboxNotificationsListData>
+  | ApiErrorResponse
+
+export interface InboxUnreadCountData {
+  unread_count: number
+}
+
+export type InboxUnreadCountResponse =
+  | ApiSuccessResponse<InboxUnreadCountData>
+  | ApiErrorResponse
+
+export type InboxNotificationActionResponse =
+  | ApiSuccessResponse<unknown>
+  | ApiErrorResponse
+
+export interface InboxNotificationCreatedPayload {
+  id: string
+  title: string
+  message: string
+  link: string | null
+  category: string | null
+  unread: true
+  created_at: string
+  time_ago: string
+}

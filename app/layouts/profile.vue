@@ -9,10 +9,30 @@
 
 <script setup lang="ts">
 const { loadProfile } = useProfile()
+const { user } = useAuth()
+const { fetchUnreadCount, prependRealtime, reset } = useInboxNotifications()
+const { subscribe, disconnect } = useNotificationsChannel((payload) => {
+  prependRealtime(payload)
+})
 
 onMounted(() => {
   loadProfile()
 })
+
+watch(
+  () => user.value?.id,
+  (userId) => {
+    if (userId) {
+      void fetchUnreadCount()
+      subscribe(userId)
+      return
+    }
+
+    reset()
+    disconnect()
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>

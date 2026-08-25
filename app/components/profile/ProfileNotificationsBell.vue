@@ -1,56 +1,77 @@
 <script setup lang="ts">
-interface ProfileNotificationItem {
-  id: string
-  title: string
-  message: string
-  time: string
-  unread?: boolean
-}
-
-const DEFAULT_NOTIFICATIONS: ProfileNotificationItem[] = [
-  {
-    id: 'booking-new',
-    title: 'Новое бронирование',
-    message: 'Поступила заявка на базу «Хромой кабан-2»',
-    time: '10 мин назад',
-    unread: true,
-  },
-  {
-    id: 'profile-reminder',
-    title: 'Профиль',
-    message: 'Проверьте и обновите данные профиля',
-    time: '2 ч назад',
-    unread: true,
-  },
-  {
-    id: 'payment-success',
-    title: 'Оплата',
-    message: 'Предоплата по бронированию №1247 подтверждена',
-    time: 'Вчера',
-    unread: false,
-  },
-]
+const {
+  items,
+  unreadCount,
+  listPending,
+  listError,
+  actionPending,
+  fetchList,
+  markRead,
+  markAllRead,
+} = useInboxNotifications()
 
 const isOpen = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
-const items = ref<ProfileNotificationItem[]>([...DEFAULT_NOTIFICATIONS])
 
-const unreadCount = computed(() => items.value.filter(item => item.unread).length)
+const badgeLabel = computed(() => {
+  const count = unreadCount.value
+  if (count <= 0) {
+    return ''
+  }
 
-function toggle() {
-  isOpen.value = !isOpen.value
+  return count > 99 ? '99+' : String(count)
+})
+
+async function openList() {
+  isOpen.value = true
+  await fetchList()
 }
 
-function selectItem(id: string) {
-  items.value = items.value.map(item =>
-    item.id === id ? { ...item, unread: false } : item,
-  )
+function closeList() {
   isOpen.value = false
+}
+
+async function toggle() {
+  if (isOpen.value) {
+    closeList()
+    return
+  }
+
+  await openList()
+}
+
+async function selectItem(id: string) {
+  const item = items.value.find(entry => entry.id === id)
+
+  if (!item) {
+    return
+  }
+
+  if (item.unread) {
+    await markRead(id)
+  }
+
+  closeList()
+
+  if (item.link) {
+    const link = item.link.trim()
+
+    if (/^https?:\/\//i.test(link)) {
+      await navigateTo(link, { external: true })
+      return
+    }
+
+    await navigateTo(link)
+  }
+}
+
+async function onMarkAllRead() {
+  await markAllRead()
 }
 
 function handleDocumentClick(event: MouseEvent) {
   if (!rootRef.value?.contains(event.target as Node)) {
-    isOpen.value = false
+    closeList()
   }
 }
 
@@ -86,41 +107,81 @@ onUnmounted(() => {
         height="22"
       >
       <span
-        v-if="unreadCount"
+        v-if="badgeLabel"
         class="profile-notifications__badge"
-      >{{ unreadCount }}</span>
+      >{{ badgeLabel }}</span>
     </button>
 
-    <ul
+    <div
       v-if="isOpen"
-      class="profile-notifications__list"
-      role="listbox"
-      aria-label="Уведомления"
+      class="profile-notifications__panel"
     >
-      <li
-        v-for="item in items"
-        :key="item.id"
+      <div
+        v-if="unreadCount"
+        class="profile-notifications__toolbar"
       >
         <button
           type="button"
-          class="profile-notifications__option"
-          role="option"
-          :aria-selected="item.unread"
-          @click.stop="selectItem(item.id)"
+          class="profile-notifications__mark-all"
+          :disabled="actionPending"
+          @click.stop="onMarkAllRead"
         >
-          <span
-            class="profile-notifications__option-dot"
-            :class="{ 'profile-notifications__option-dot--active': item.unread }"
-            aria-hidden="true"
-          />
-          <span class="profile-notifications__option-content">
-            <span class="profile-notifications__option-title">{{ item.title }}</span>
-            <span class="profile-notifications__option-message">{{ item.message }}</span>
-          </span>
-          <span class="profile-notifications__option-time">{{ item.time }}</span>
+          Прочитать все
         </button>
-      </li>
-    </ul>
+      </div>
+
+      <p
+        v-if="listPending && !items.length"
+        class="profile-notifications__status"
+      >
+        Загрузка…
+      </p>
+
+      <p
+        v-else-if="listError && !items.length"
+        class="profile-notifications__status profile-notifications__status--error"
+      >
+        {{ listError }}
+      </p>
+
+      <p
+        v-else-if="!items.length"
+        class="profile-notifications__status"
+      >
+        Нет уведомлений
+      </p>
+
+      <ul
+        v-else
+        class="profile-notifications__list"
+        role="listbox"
+        aria-label="Уведомления"
+      >
+        <li
+          v-for="item in items"
+          :key="item.id"
+        >
+          <button
+            type="button"
+            class="profile-notifications__option"
+            role="option"
+            :aria-selected="item.unread"
+            @click.stop="selectItem(item.id)"
+          >
+            <span
+              class="profile-notifications__option-dot"
+              :class="{ 'profile-notifications__option-dot--active': item.unread }"
+              aria-hidden="true"
+            />
+            <span class="profile-notifications__option-content">
+              <span class="profile-notifications__option-title">{{ item.title }}</span>
+              <span class="profile-notifications__option-message">{{ item.message }}</span>
+            </span>
+            <span class="profile-notifications__option-time">{{ item.time_ago }}</span>
+          </button>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -162,32 +223,76 @@ onUnmounted(() => {
   width: 16px;
   min-width: 16px;
   height: 16px;
-  padding: 0;
+  padding: 0 3px;
   border-radius: 50%;
   background: #e74c3c;
   color: var(--wh-white);
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
+  box-sizing: border-box;
 }
 
-.profile-notifications__list {
+.profile-notifications__panel {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   z-index: 50;
   width: min(360px, calc(100vw - 32px));
-  margin: 0;
-  padding: 6px 8px;
-  list-style: none;
   border: 1px solid var(--wh-gray);
   border-radius: 14px;
   background: var(--wh-white);
   color: var(--wh-black-text);
+  box-shadow: var(--wh-shadow);
+  overflow: hidden;
+}
+
+.profile-notifications__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 12px 0;
+}
+
+.profile-notifications__mark-all {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--wh-gray-600);
+  font-family: "Inter", sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  cursor: pointer;
+}
+
+.profile-notifications__mark-all:hover:not(:disabled) {
+  color: var(--wh-black-text);
+}
+
+.profile-notifications__mark-all:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.profile-notifications__status {
+  margin: 0;
+  padding: 16px 14px;
+  font-family: "Inter", sans-serif;
+  font-size: 0.875rem;
+  color: var(--wh-gray-600);
+}
+
+.profile-notifications__status--error {
+  color: var(--wh-field-error);
+}
+
+.profile-notifications__list {
+  margin: 0;
+  padding: 6px 8px;
+  list-style: none;
   max-height: 320px;
   overflow-x: hidden;
   overflow-y: auto;
-  box-shadow: var(--wh-shadow);
 }
 
 .profile-notifications__option {
