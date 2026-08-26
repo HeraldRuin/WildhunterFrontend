@@ -16,6 +16,7 @@ interface AnimalRow extends ManagedAnimal {
 
 const { animals: animalsApi } = useApi()
 const notifications = useNotifications()
+const { open: openConfirmModal } = useConfirmModal()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -207,6 +208,18 @@ async function saveAnimal(animal: AnimalRow) {
   }
 }
 
+function requestRemoveAnimal(animal: AnimalRow) {
+  if (isLoading.value || isAdding.value || busyAnimalId.value != null) {
+    return
+  }
+
+  openConfirmModal({
+    title: `Вы уверены, что хотите удалить «${animal.title}»?`,
+    confirmLabel: 'Удалить',
+    onConfirm: () => removeAnimal(animal),
+  })
+}
+
 async function removeAnimal(animal: AnimalRow) {
   if (isLoading.value || isAdding.value || busyAnimalId.value != null) {
     return
@@ -228,10 +241,15 @@ async function removeAnimal(animal: AnimalRow) {
     }
 
     notifications.error(extractErrorMessage(response, 'Не удалось удалить животное'))
+    throw new Error('delete_animal_failed')
   }
   catch (error) {
-    const data = (error as { data?: unknown }).data
-    notifications.error(extractErrorMessage(data, 'Не удалось удалить животное'))
+    if ((error as Error).message !== 'delete_animal_failed') {
+      const data = (error as { data?: unknown }).data
+      notifications.error(extractErrorMessage(data, 'Не удалось удалить животное'))
+    }
+
+    throw error
   }
   finally {
     busyAnimalId.value = null
@@ -313,7 +331,7 @@ onMounted(() => {
               type="button"
               class="animals-manage__btn animals-manage__btn--delete"
               :disabled="busyAnimalId != null || isAdding"
-              @click="removeAnimal(animal)"
+              @click="requestRemoveAnimal(animal)"
             >
               Удалить
             </button>
@@ -323,6 +341,8 @@ onMounted(() => {
 
       <p v-else class="animals-manage__empty">Нет животных</p>
     </section>
+
+    <CommonConfirmModal />
   </div>
 </template>
 
