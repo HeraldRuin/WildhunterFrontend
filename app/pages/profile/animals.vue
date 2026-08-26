@@ -349,7 +349,7 @@ onMounted(() => {
 <style scoped>
 .profile-page {
   padding: 20px 40px 48px;
-  max-width: 960px;
+  max-width: 1100px;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
 }
 
@@ -358,7 +358,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: 896px;
+  width: 1100px;
   max-width: 100%;
   height: 31px;
   margin-bottom: 20px;
@@ -374,7 +374,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: 896px;
+  width: 1100px;
   max-width: 100%;
   margin-bottom: 24px;
   padding-bottom: 16px;
@@ -392,6 +392,16 @@ onMounted(() => {
   flex-shrink: 0;
   width: 320px;
   max-width: 100%;
+}
+
+.animals-manage__select :deep(.select-field__list) {
+  max-height: 420px;
+}
+
+@media (--wh-desktop) {
+  .animals-manage__select :deep(.select-field__list) {
+    max-height: 720px;
+  }
 }
 
 .animals-manage__status {
@@ -415,14 +425,15 @@ onMounted(() => {
 .animals-manage__head,
 .animals-manage__row {
   display: grid;
-  grid-template-columns: minmax(140px, 1.2fr) minmax(220px, 1.4fr) auto;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   padding: 14px 20px;
 }
 
 .animals-manage__head {
   border-bottom: 1px solid var(--wh-gray-200, #ddd);
+  background: var(--wh-gray-450, #C8C8C8);
   font-size: 14px;
   font-weight: 600;
   color: var(--wh-black-text, #1c211c);
@@ -485,16 +496,16 @@ onMounted(() => {
 }
 
 .animals-manage__btn {
-  padding: 7px 14px;
-  border: none;
-  border-radius: 4px;
-  color: var(--wh-white);
+  padding: 7px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.3;
+  white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .animals-manage__btn:active:not(:disabled) {
@@ -502,19 +513,24 @@ onMounted(() => {
 }
 
 .animals-manage__btn--save {
-  background: #1a2b50;
+  border-color: var(--wh-green);
+  background: var(--wh-green);
+  color: var(--wh-white);
 }
 
 .animals-manage__btn--save:hover:not(:disabled) {
-  background: #243a66;
+  border-color: var(--wh-green);
+  background: var(--wh-green);
 }
 
 .animals-manage__btn--delete {
-  background: #e5672a;
+  border-color: var(--wh-orange-500);
+  background: var(--wh-white);
+  color: var(--wh-orange-600);
 }
 
 .animals-manage__btn--delete:hover:not(:disabled) {
-  background: #d45a22;
+  background: rgba(238, 154, 60, 0.08);
 }
 
 .animals-manage__empty {
@@ -556,11 +572,34 @@ onMounted(() => {
     width: 100%;
   }
 
-  .animals-manage__head,
-  .animals-manage__row {
+  .animals-manage__head {
     grid-template-columns: 1fr;
     gap: 10px;
     padding: 14px 16px;
+  }
+
+  .animals-manage__head .animals-manage__col--actions {
+    display: none;
+  }
+
+  .animals-manage__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 6px;
+    row-gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .animals-manage__col--name {
+    flex: 1 1 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+
+  .animals-manage__col--hunters {
+    gap: 6px;
   }
 
   .animals-manage__col--actions {
