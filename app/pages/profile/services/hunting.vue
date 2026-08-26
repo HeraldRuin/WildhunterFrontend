@@ -59,6 +59,25 @@ const selectedAnimal = computed(() =>
   animals.value.find(item => item.id === selectedAnimalId.value) ?? null,
 )
 
+const animalSelectOptions = computed(() =>
+  animals.value.map(item => ({
+    value: String(item.id),
+    label: item.title,
+  })),
+)
+
+const animalSelectValue = computed({
+  get: () => (selectedAnimalId.value == null ? '' : String(selectedAnimalId.value)),
+  set: (value: string) => {
+    const id = Number(value)
+    if (!Number.isFinite(id)) {
+      return
+    }
+
+    selectAnimal(id)
+  },
+})
+
 const isBusy = computed(() =>
   isLoading.value || busyPeriodId.value != null,
 )
@@ -479,6 +498,20 @@ onBeforeUnmount(() => {
         </p>
       </nav>
 
+      <div class="hunting-org__animals-select">
+        <CommonSelectField
+          v-model="animalSelectValue"
+          placeholder="Выберите животное"
+          no-margin
+          :options="animalSelectOptions"
+          :disabled="isBusy || !animalSelectOptions.length"
+        />
+
+        <p v-if="!animals.length" class="hunting-org__animals-empty">
+          Нет животных
+        </p>
+      </div>
+
       <div class="hunting-org__content">
         <div class="hunting-org__table">
           <div class="hunting-org__head">
@@ -686,6 +719,10 @@ onBeforeUnmount(() => {
   border-right: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px 0 0 4px;
   background: var(--wh-white);
+}
+
+.hunting-org__animals-select {
+  display: none;
 }
 
 .hunting-org__animals-empty {
@@ -933,17 +970,13 @@ onBeforeUnmount(() => {
   }
 
   .hunting-org__animals {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 12px;
-    border-right: none;
-    border-bottom: 1px solid var(--wh-gray-200, #ddd);
+    display: none;
   }
 
-  .hunting-org__animal {
-    width: auto;
-    padding: 8px 12px;
+  .hunting-org__animals-select {
+    display: block;
+    padding: 12px;
+    border-bottom: 1px solid var(--wh-gray-200, #ddd);
   }
 
   .hunting-org__head,

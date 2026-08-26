@@ -172,7 +172,7 @@ onUnmounted(() => {
 
 .select-field__trigger {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   width: 100%;
@@ -221,15 +221,16 @@ onUnmounted(() => {
 
 .select-field__value {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .select-field__chevron {
   flex-shrink: 0;
   width: 12px;
   height: 8px;
+  margin-top: 6px;
   color: #1c211c;
   transition: transform 0.2s ease;
 }
@@ -288,6 +289,9 @@ onUnmounted(() => {
 
 .select-field__option-label {
   min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .select-field__option-suffix {
