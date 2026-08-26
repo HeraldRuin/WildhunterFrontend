@@ -532,6 +532,7 @@ onBeforeUnmount(() => {
                 class="hunting-org__col hunting-org__col--from hunting-org__date-field"
                 :class="{ 'hunting-org__date-field--open': isDateOpen(period.id, 'from') }"
               >
+                <span class="hunting-org__field-label">От</span>
                 <CommonFormField
                   no-margin
                   cursor-pointer
@@ -576,6 +577,7 @@ onBeforeUnmount(() => {
                 class="hunting-org__col hunting-org__col--to hunting-org__date-field"
                 :class="{ 'hunting-org__date-field--open': isDateOpen(period.id, 'to') }"
               >
+                <span class="hunting-org__field-label">До</span>
                 <CommonFormField
                   no-margin
                   cursor-pointer
@@ -615,14 +617,16 @@ onBeforeUnmount(() => {
                 </CommonFormField>
               </div>
 
-              <CommonFormField
-                class="hunting-org__col hunting-org__col--cost"
-                no-margin
-                amount-only
-                :model-value="period.cost"
-                :disabled="busyPeriodId === period.id"
-                @update:model-value="period.cost = $event"
-              />
+              <div class="hunting-org__col hunting-org__col--cost">
+                <span class="hunting-org__field-label">Стоимость, руб</span>
+                <CommonFormField
+                  no-margin
+                  amount-only
+                  :model-value="period.cost"
+                  :disabled="busyPeriodId === period.id"
+                  @update:model-value="period.cost = $event"
+                />
+              </div>
 
               <div class="hunting-org__col hunting-org__col--actions">
                 <button
@@ -701,8 +705,8 @@ onBeforeUnmount(() => {
 }
 
 .hunting-org {
-  display: grid;
-  grid-template-columns: 600px minmax(0, 1fr);
+  display: flex;
+  align-items: stretch;
   gap: 0;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-200, #ddd);
@@ -712,9 +716,13 @@ onBeforeUnmount(() => {
 
 .hunting-org__animals {
   display: flex;
+  flex: 0 1 600px;
   flex-direction: column;
   align-items: stretch;
   gap: 4px;
+  box-sizing: border-box;
+  max-width: 600px;
+  min-width: 120px;
   padding: 8px;
   border-right: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px 0 0 4px;
@@ -763,6 +771,7 @@ onBeforeUnmount(() => {
 
 .hunting-org__animal-label {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .hunting-org__animal:hover:not(:disabled),
@@ -787,27 +796,32 @@ onBeforeUnmount(() => {
 
 .hunting-org__content {
   display: flex;
+  flex: 1 0 auto;
   flex-direction: column;
   gap: 16px;
-  min-width: 0;
+  min-width: 820px;
   padding: 0 0 20px;
 }
 
 .hunting-org__table {
+  display: grid;
+  grid-template-columns:
+    minmax(148px, 200px)
+    minmax(148px, 200px)
+    minmax(110px, 140px)
+    max-content;
+  column-gap: 12px;
   overflow: visible;
 }
 
 .hunting-org__head,
 .hunting-org__row {
   display: grid;
-  grid-template-columns:
-    200px
-    200px
-    140px
-    auto;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   align-items: center;
-  gap: 12px;
   padding: 12px 16px;
+  box-sizing: border-box;
 }
 
 .hunting-org__head {
@@ -819,6 +833,7 @@ onBeforeUnmount(() => {
 }
 
 .hunting-org__list {
+  display: contents;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -926,16 +941,78 @@ onBeforeUnmount(() => {
 }
 
 .hunting-org__empty {
+  grid-column: 1 / -1;
   margin: 0;
   padding: 24px 16px;
   font-size: 14px;
   color: rgba(0, 0, 0, 0.45);
 }
 
+.hunting-org__field-label {
+  display: none;
+}
+
 .hunting-org__content :deep(.hunting-org__add) {
   align-self: flex-start;
   margin-left: 16px;
   min-width: 0;
+}
+
+/* Список сверху и сужение инпутов от ~1540px до планшета */
+@media (max-width: 1540px) and (min-width: 1025px) {
+  .hunting-org {
+    flex-direction: column;
+  }
+
+  .hunting-org__animals {
+    flex: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    padding: 8px;
+    border-right: none;
+    border-bottom: 1px solid var(--wh-gray-200, #ddd);
+    border-radius: 4px 4px 0 0;
+  }
+
+  .hunting-org__animal {
+    width: auto;
+    max-width: 100%;
+  }
+
+  .hunting-org__content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .hunting-org__table {
+    grid-template-columns:
+      minmax(120px, min(200px, 1fr))
+      minmax(120px, min(200px, 1fr))
+      minmax(90px, min(140px, 0.7fr))
+      max-content;
+  }
+}
+
+/* Кнопки в два ряда: от ~1243px до планшета */
+@media (max-width: 1243px) and (min-width: 1025px) {
+  .hunting-org__col--actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
+/* Кнопки в два ряда на планшете: от ~837px до мобильного */
+@media (max-width: 837px) and (min-width: 641px) {
+  .hunting-org__col--actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
 }
 
 @media (--wh-tablet) {
@@ -948,7 +1025,29 @@ onBeforeUnmount(() => {
   }
 
   .hunting-org {
-    grid-template-columns: 520px minmax(0, 1fr);
+    flex-direction: column;
+  }
+
+  .hunting-org__animals {
+    display: none;
+  }
+
+  .hunting-org__animals-select {
+    display: block;
+    padding: 12px;
+    border-bottom: 1px solid var(--wh-gray-200, #ddd);
+  }
+
+  .hunting-org__content {
+    min-width: 0;
+  }
+
+  .hunting-org__table {
+    grid-template-columns:
+      minmax(120px, min(200px, 1fr))
+      minmax(120px, min(200px, 1fr))
+      minmax(90px, min(140px, 0.7fr))
+      max-content;
   }
 }
 
@@ -965,29 +1064,53 @@ onBeforeUnmount(() => {
     border-radius: 0;
   }
 
-  .hunting-org {
+  .hunting-org__table {
     grid-template-columns: 1fr;
+    column-gap: 0;
   }
 
-  .hunting-org__animals {
-    display: none;
-  }
-
-  .hunting-org__animals-select {
+  .hunting-org__list {
     display: block;
-    padding: 12px;
-    border-bottom: 1px solid var(--wh-gray-200, #ddd);
   }
 
   .hunting-org__head,
   .hunting-org__row {
+    display: grid;
     grid-template-columns: 1fr;
+    grid-column: auto;
     gap: 10px;
     padding: 14px 16px;
   }
 
   .hunting-org__head {
     display: none;
+  }
+
+  .hunting-org__col--from,
+  .hunting-org__col--to,
+  .hunting-org__col--cost {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .hunting-org__field-label {
+    display: block;
+    flex-shrink: 0;
+    width: auto;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--wh-black-text, #1c211c);
+  }
+
+  .hunting-org__col--from :deep(.form-field),
+  .hunting-org__col--to :deep(.form-field),
+  .hunting-org__col--cost :deep(.form-field) {
+    flex: none;
+    width: 100%;
+    min-width: 0;
   }
 
   .hunting-org__col--actions {
