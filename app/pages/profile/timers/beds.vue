@@ -7,30 +7,20 @@ definePageMeta({
 useHead({
   title: 'Таймер койко-мест — WH',
 })
+
+const breadcrumbs = [
+  { label: 'Главная', to: '/' },
+  { label: 'Параметры' },
+  { label: 'Таймер койко-мест' },
+]
 </script>
 
 <template>
-  <div class="profile-admin-page">
-    <h1 class="profile-admin-page__title">Таймер койко-мест</h1>
-    <p class="profile-admin-page__hint">Раздел в разработке</p>
-  </div>
+  <ProfileTimerSettingsForm
+    type="beds"
+    title="Таймер койко-мест"
+    section-title="Настройки таймера койко-мест"
+    hint="Установите размер таймера койко-мест в часах (например: 24)"
+    :breadcrumbs="breadcrumbs"
+  />
 </template>
-
-<style scoped>
-.profile-admin-page {
-  padding: 32px;
-}
-
-.profile-admin-page__title {
-  margin: 0 0 8px;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--wh-black, #1a1a1a);
-}
-
-.profile-admin-page__hint {
-  margin: 0;
-  font-size: 16px;
-  color: rgba(0, 0, 0, 0.55);
-}
-</style>
