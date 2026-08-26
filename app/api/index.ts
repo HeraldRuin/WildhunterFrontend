@@ -25,6 +25,15 @@ export type {
   AnimalsManageDeleteResponse,
   AddManagedAnimalPayload,
   UpdateManagedAnimalHuntersPayload,
+  OrganisationPeriod,
+  OrganisationAnimal,
+  AnimalsOrganisationResponse,
+  CreateOrganisationPeriodData,
+  CreateOrganisationPeriodResponse,
+  UpdateOrganisationPeriodPayload,
+  UpdateOrganisationPeriodData,
+  UpdateOrganisationPeriodResponse,
+  DeleteOrganisationPeriodResponse,
 } from './animals'
 export { useBookingsApi } from './bookings'
 export { useRolesApi } from './roles'

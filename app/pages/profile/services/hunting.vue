@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import { formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
+import type { OrganisationAnimal, OrganisationPeriod } from '~/api/animals'
+import { formatApiDate, formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
 
 definePageMeta({
   layout: 'profile',
@@ -31,49 +32,175 @@ interface OpenDateField {
   field: DateField
 }
 
+const { animals: animalsApi } = useApi()
+const notifications = useNotifications()
+const { open: openConfirmModal } = useConfirmModal()
+
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
   { label: 'Параметры' },
   { label: 'Организация охоты' },
 ]
 
-let nextPeriodId = 3
+const animals = ref<HuntingAnimal[]>([])
+const selectedAnimalId = ref<number | null>(null)
+const isLoading = ref(true)
+const loadError = ref('')
+const busyPeriodId = ref<number | null>(null)
 
-const animals = ref<HuntingAnimal[]>([
-  {
-    id: 1,
-    title: 'Косуля европейская',
-    periods: [
-      { id: 1, from: '23.12.2025', to: '30.04.2026', cost: '2500,00' },
-      { id: 2, from: '', to: '', cost: '' },
-    ],
-  },
-  {
-    id: 2,
-    title: 'Лось',
-    periods: [],
-  },
-  {
-    id: 3,
-    title: 'Кабан',
-    periods: [],
-  },
-  {
-    id: 4,
-    title: 'Олень благородный',
-    periods: [],
-  },
-])
-
-const selectedAnimalId = ref(1)
 const openDate = ref<OpenDateField | null>(null)
 const pickerDate = ref<Date | null>(null)
 const pickerActivePart = ref<'start' | 'end' | null>('start')
 const dateFieldRefs = new Map<string, HTMLElement>()
 
+let nextDraftPeriodId = -1
+
 const selectedAnimal = computed(() =>
   animals.value.find(item => item.id === selectedAnimalId.value) ?? null,
 )
+
+const isBusy = computed(() =>
+  isLoading.value || busyPeriodId.value != null,
+)
+
+function isDraftPeriod(period: HuntingPeriod) {
+  return period.id < 0
+}
+
+function hasAnyPeriodInput(period: HuntingPeriod) {
+  return Boolean(period.from.trim() || period.to.trim() || period.cost.trim())
+}
+
+function formatCost(price: number | null): string {
+  if (price == null) {
+    return ''
+  }
+
+  return new Intl.NumberFormat('ru-RU')
+    .format(Math.round(price))
+    .replace(/\s/g, '.')
+}
+
+function parseAmount(cost: string): number | null {
+  let raw = cost
+    .trim()
+    .replace(/\s*руб\.?\s*/gi, '')
+    .replace(/\s/g, '')
+
+  if (!raw) {
+    return null
+  }
+
+  if (raw.includes(',') && raw.includes('.')) {
+    raw = raw.replace(/\./g, '').replace(',', '.')
+  }
+  else if (raw.includes(',')) {
+    raw = raw.replace(',', '.')
+  }
+  else if (/^\d{1,3}(\.\d{3})+$/.test(raw)) {
+    raw = raw.replace(/\./g, '')
+  }
+
+  const value = Number(raw)
+
+  if (!Number.isFinite(value) || value < 0) {
+    return null
+  }
+
+  return value
+}
+
+function apiDateToDisplay(value: string | null): string {
+  if (!value) {
+    return ''
+  }
+
+  const parsed = parseBirthdayDate(value)
+  return parsed ? formatBirthdayDate(parsed) : value
+}
+
+function displayToApiDate(value: string): string | null {
+  const parsed = parseBirthdayDate(value)
+  return parsed ? formatApiDate(parsed) : null
+}
+
+function toPeriodRow(period: OrganisationPeriod): HuntingPeriod {
+  return {
+    id: period.id,
+    from: apiDateToDisplay(period.start_date),
+    to: apiDateToDisplay(period.end_date),
+    cost: formatCost(period.price),
+  }
+}
+
+function toAnimalRow(animal: OrganisationAnimal): HuntingAnimal {
+  return {
+    id: animal.id,
+    title: animal.title,
+    periods: (animal.periods ?? []).map(toPeriodRow),
+  }
+}
+
+function extractErrorMessage(source: unknown, fallback: string) {
+  if (!source || typeof source !== 'object') {
+    return fallback
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    errors?: Record<string, string[]>
+    data?: unknown
+  }
+
+  if (payload.errors && typeof payload.errors === 'object') {
+    const first = Object.values(payload.errors).flat().find(Boolean)
+    if (first) {
+      return first
+    }
+  }
+
+  if (payload.message) {
+    return payload.message
+  }
+
+  if (payload.data && payload.data !== source) {
+    return extractErrorMessage(payload.data, fallback)
+  }
+
+  return fallback
+}
+
+async function loadOrganisation() {
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    const response = await animalsApi.getOrganisation()
+
+    if ('success' in response && response.success) {
+      animals.value = (response.data ?? []).map(toAnimalRow)
+
+      if (
+        selectedAnimalId.value == null
+        || !animals.value.some(item => item.id === selectedAnimalId.value)
+      ) {
+        selectedAnimalId.value = animals.value[0]?.id ?? null
+      }
+
+      return
+    }
+
+    loadError.value = extractErrorMessage(response, 'Не удалось загрузить организацию охоты')
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    loadError.value = extractErrorMessage(data, 'Не удалось загрузить организацию охоты')
+  }
+  finally {
+    isLoading.value = false
+  }
+}
 
 function dateFieldKey(periodId: number, field: DateField) {
   return `${periodId}:${field}`
@@ -108,6 +235,10 @@ function closeDateCalendar() {
 }
 
 function toggleDateCalendar(period: HuntingPeriod, field: DateField) {
+  if (busyPeriodId.value === period.id) {
+    return
+  }
+
   if (isDateOpen(period.id, field)) {
     closeDateCalendar()
     return
@@ -143,23 +274,110 @@ function selectAnimal(id: number) {
 
 function addPeriod() {
   const animal = selectedAnimal.value
-  if (!animal) {
+
+  if (!animal || isBusy.value) {
     return
   }
 
   animal.periods.push({
-    id: nextPeriodId++,
+    id: nextDraftPeriodId--,
     from: '',
     to: '',
     cost: '',
   })
 }
 
-function savePeriod() {
-  // UI only — API later
+async function savePeriod(period: HuntingPeriod) {
+  if (isBusy.value) {
+    return
+  }
+
+  const animal = selectedAnimal.value
+  if (!animal) {
+    return
+  }
+
+  if (isDraftPeriod(period) && !hasAnyPeriodInput(period)) {
+    return
+  }
+
+  const startDate = displayToApiDate(period.from)
+  const endDate = displayToApiDate(period.to)
+  const amount = period.cost.trim() === '' ? null : parseAmount(period.cost)
+
+  const draftId = period.id
+  busyPeriodId.value = draftId
+  closeDateCalendar()
+
+  try {
+    let periodId = period.id
+
+    if (isDraftPeriod(period)) {
+      const createResponse = await animalsApi.createPeriod(animal.id)
+
+      if (!('success' in createResponse) || !createResponse.success) {
+        notifications.error(extractErrorMessage(createResponse, 'Не удалось сохранить период'))
+        return
+      }
+
+      periodId = createResponse.data.period.id
+      period.id = periodId
+
+      if (openDate.value?.periodId === draftId) {
+        openDate.value = {
+          periodId,
+          field: openDate.value.field,
+        }
+      }
+    }
+
+    busyPeriodId.value = periodId
+
+    const response = await animalsApi.updatePeriod(periodId, {
+      start_date: startDate,
+      end_date: endDate,
+      amount,
+    })
+
+    if ('success' in response && response.success) {
+      const next = toPeriodRow(response.data.period)
+      period.id = next.id
+      period.from = next.from
+      period.to = next.to
+      period.cost = next.cost
+      notifications.success(response.message || 'Период обновлен')
+      return
+    }
+
+    notifications.error(extractErrorMessage(response, 'Не удалось сохранить период'))
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    notifications.error(extractErrorMessage(data, 'Не удалось сохранить период'))
+  }
+  finally {
+    busyPeriodId.value = null
+  }
 }
 
-function removePeriod(periodId: number) {
+function requestRemovePeriod(period: HuntingPeriod) {
+  if (isBusy.value) {
+    return
+  }
+
+  if (isDraftPeriod(period)) {
+    removeDraftPeriod(period.id)
+    return
+  }
+
+  openConfirmModal({
+    title: 'Удалить период?',
+    confirmLabel: 'Удалить',
+    onConfirm: () => removePeriod(period.id),
+  })
+}
+
+function removeDraftPeriod(periodId: number) {
   const animal = selectedAnimal.value
   if (!animal) {
     return
@@ -172,8 +390,50 @@ function removePeriod(periodId: number) {
   animal.periods = animal.periods.filter(item => item.id !== periodId)
 }
 
+async function removePeriod(periodId: number) {
+  if (isBusy.value) {
+    return
+  }
+
+  const animal = selectedAnimal.value
+  if (!animal) {
+    return
+  }
+
+  busyPeriodId.value = periodId
+
+  if (openDate.value?.periodId === periodId) {
+    closeDateCalendar()
+  }
+
+  try {
+    const response = await animalsApi.deletePeriod(periodId)
+
+    if ('success' in response && response.success) {
+      animal.periods = animal.periods.filter(item => item.id !== periodId)
+      notifications.success(response.message || 'Период удален')
+      return
+    }
+
+    notifications.error(extractErrorMessage(response, 'Не удалось удалить период'))
+    throw new Error('delete_period_failed')
+  }
+  catch (error) {
+    if ((error as Error).message !== 'delete_period_failed') {
+      const data = (error as { data?: unknown }).data
+      notifications.error(extractErrorMessage(data, 'Не удалось удалить период'))
+    }
+
+    throw error
+  }
+  finally {
+    busyPeriodId.value = null
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleDateDocumentClick)
+  void loadOrganisation()
 })
 
 onBeforeUnmount(() => {
@@ -191,7 +451,15 @@ onBeforeUnmount(() => {
 
     <CommonPageTitle divider>Организация охоты</CommonPageTitle>
 
-    <section class="hunting-org">
+    <p v-if="loadError" class="hunting-org__status hunting-org__status--error">
+      {{ loadError }}
+    </p>
+
+    <p v-else-if="isLoading" class="hunting-org__status">
+      Загрузка...
+    </p>
+
+    <section v-else class="hunting-org">
       <nav class="hunting-org__animals" aria-label="Животные">
         <button
           v-for="animal in animals"
@@ -199,11 +467,16 @@ onBeforeUnmount(() => {
           type="button"
           class="hunting-org__animal"
           :class="{ 'hunting-org__animal--active': animal.id === selectedAnimalId }"
+          :disabled="isBusy && animal.id !== selectedAnimalId"
           @click="selectAnimal(animal.id)"
         >
           <span class="hunting-org__animal-dot" aria-hidden="true" />
           <span class="hunting-org__animal-label">{{ animal.title }}</span>
         </button>
+
+        <p v-if="!animals.length" class="hunting-org__animals-empty">
+          Нет животных
+        </p>
       </nav>
 
       <div class="hunting-org__content">
@@ -211,7 +484,7 @@ onBeforeUnmount(() => {
           <div class="hunting-org__head">
             <span class="hunting-org__col hunting-org__col--from">От</span>
             <span class="hunting-org__col hunting-org__col--to">До</span>
-            <span class="hunting-org__col hunting-org__col--cost">Стоимость</span>
+            <span class="hunting-org__col hunting-org__col--cost">Стоимость, руб</span>
             <span class="hunting-org__col hunting-org__col--actions" aria-hidden="true" />
           </div>
 
@@ -233,6 +506,7 @@ onBeforeUnmount(() => {
                   placeholder="дд.мм.гггг"
                   :model-value="displayDate(period.from)"
                   :open="isDateOpen(period.id, 'from')"
+                  :disabled="busyPeriodId === period.id"
                   @click.stop="toggleDateCalendar(period, 'from')"
                 >
                   <template #trailing>
@@ -241,6 +515,7 @@ onBeforeUnmount(() => {
                       class="hunting-org__date-icon"
                       aria-label="Открыть календарь"
                       tabindex="-1"
+                      :disabled="busyPeriodId === period.id"
                       @click.stop="toggleDateCalendar(period, 'from')"
                     >
                       <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -275,6 +550,7 @@ onBeforeUnmount(() => {
                   placeholder="дд.мм.гггг"
                   :model-value="displayDate(period.to)"
                   :open="isDateOpen(period.id, 'to')"
+                  :disabled="busyPeriodId === period.id"
                   @click.stop="toggleDateCalendar(period, 'to')"
                 >
                   <template #trailing>
@@ -283,6 +559,7 @@ onBeforeUnmount(() => {
                       class="hunting-org__date-icon"
                       aria-label="Открыть календарь"
                       tabindex="-1"
+                      :disabled="busyPeriodId === period.id"
                       @click.stop="toggleDateCalendar(period, 'to')"
                     >
                       <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -310,6 +587,7 @@ onBeforeUnmount(() => {
                 no-margin
                 amount-only
                 :model-value="period.cost"
+                :disabled="busyPeriodId === period.id"
                 @update:model-value="period.cost = $event"
               />
 
@@ -317,14 +595,16 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="hunting-org__btn hunting-org__btn--save"
-                  @click="savePeriod"
+                  :disabled="isBusy || !period.from.trim()"
+                  @click="savePeriod(period)"
                 >
                   Сохранить
                 </button>
                 <button
                   type="button"
                   class="hunting-org__btn hunting-org__btn--delete"
-                  @click="removePeriod(period.id)"
+                  :disabled="isBusy"
+                  @click="requestRemovePeriod(period)"
                 >
                   Удалить
                 </button>
@@ -340,12 +620,15 @@ onBeforeUnmount(() => {
           class="hunting-org__add"
           width="auto"
           mobile-width="100%"
+          :disabled="!selectedAnimal || isBusy"
           @click="addPeriod"
         >
           Добавить период
         </CommonSaveButton>
       </div>
     </section>
+
+    <CommonConfirmModal />
   </div>
 </template>
 
@@ -374,6 +657,16 @@ onBeforeUnmount(() => {
   overflow: visible;
 }
 
+.hunting-org__status {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.hunting-org__status--error {
+  color: var(--wh-field-error, #dc2626);
+}
+
 .hunting-org {
   display: grid;
   grid-template-columns: 600px minmax(0, 1fr);
@@ -393,6 +686,13 @@ onBeforeUnmount(() => {
   border-right: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px 0 0 4px;
   background: var(--wh-white);
+}
+
+.hunting-org__animals-empty {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
 }
 
 .hunting-org__animal {
@@ -428,8 +728,8 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
-.hunting-org__animal:hover,
-.hunting-org__animal:focus-visible,
+.hunting-org__animal:hover:not(:disabled),
+.hunting-org__animal:focus-visible:not(:disabled),
 .hunting-org__animal--active {
   background-color: #e8883a;
   color: #ffffff;
@@ -441,6 +741,11 @@ onBeforeUnmount(() => {
 
 .hunting-org__animal--active {
   cursor: default;
+}
+
+.hunting-org__animal:disabled:not(.hunting-org__animal--active) {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .hunting-org__content {
@@ -470,6 +775,7 @@ onBeforeUnmount(() => {
 
 .hunting-org__head {
   border-bottom: 1px solid var(--wh-gray-200, #ddd);
+  background: var(--wh-gray-450, #C8C8C8);
   font-size: 14px;
   font-weight: 600;
   color: var(--wh-black-text, #1c211c);
@@ -557,11 +863,16 @@ onBeforeUnmount(() => {
   opacity: 0.9;
 }
 
+.hunting-org__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .hunting-org__btn--save {
   background: #2ea44f;
 }
 
-.hunting-org__btn--save:hover {
+.hunting-org__btn--save:hover:not(:disabled) {
   background: #279443;
 }
 
@@ -569,7 +880,7 @@ onBeforeUnmount(() => {
   background: var(--wh-field-error, #dc2626);
 }
 
-.hunting-org__btn--delete:hover {
+.hunting-org__btn--delete:hover:not(:disabled) {
   background: color-mix(in srgb, var(--wh-field-error, #dc2626) 88%, #000);
 }
 
