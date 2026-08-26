@@ -674,6 +674,8 @@ onBeforeUnmount(() => {
   padding: 20px 40px 48px;
   padding-left: 20px;
   box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
 }
 
@@ -708,6 +710,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: stretch;
   gap: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  container-type: inline-size;
+  container-name: hunting-org;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px;
@@ -716,17 +724,35 @@ onBeforeUnmount(() => {
 
 .hunting-org__animals {
   display: flex;
-  flex: 0 1 600px;
+  flex: 0 0 600px;
   flex-direction: column;
   align-items: stretch;
   gap: 4px;
   box-sizing: border-box;
+  width: 600px;
   max-width: 600px;
-  min-width: 120px;
+  min-width: 0;
   padding: 8px;
   border-right: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px 0 0 4px;
   background: var(--wh-white);
+}
+
+/* Список и инпуты плавно сужаются: от ~1823px до переноса наверх (~1540px) */
+@media (max-width: 1823px) and (min-width: 1541px) {
+  .hunting-org__animals {
+    flex: 0 1 clamp(220px, 38cqi, 600px);
+    width: clamp(220px, 38cqi, 600px);
+    max-width: clamp(220px, 38cqi, 600px);
+  }
+
+  .hunting-org__table {
+    grid-template-columns:
+      minmax(120px, min(200px, 1fr))
+      minmax(120px, min(200px, 1fr))
+      minmax(90px, min(140px, 0.7fr))
+      minmax(180px, 1fr);
+  }
 }
 
 .hunting-org__animals-select {
@@ -796,16 +822,17 @@ onBeforeUnmount(() => {
 
 .hunting-org__content {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 0;
   flex-direction: column;
   gap: 16px;
-  min-width: 820px;
+  min-width: 0;
   padding: 0 0 20px;
 }
 
 .hunting-org__table {
   display: grid;
   width: 100%;
+  min-width: 0;
   grid-template-columns:
     minmax(148px, 200px)
     minmax(148px, 200px)
@@ -846,6 +873,31 @@ onBeforeUnmount(() => {
 
 .hunting-org__row:last-child {
   border-bottom: none;
+}
+
+.hunting-org__col--from,
+.hunting-org__col--to,
+.hunting-org__col--cost,
+.hunting-org__date-field {
+  min-width: 0;
+}
+
+.hunting-org__col--from :deep(.form-field),
+.hunting-org__col--to :deep(.form-field),
+.hunting-org__col--cost :deep(.form-field) {
+  width: 100%;
+  min-width: 0;
+}
+
+.hunting-org__col--from :deep(.form-field__control),
+.hunting-org__col--to :deep(.form-field__control),
+.hunting-org__col--cost :deep(.form-field__control),
+.hunting-org__col--from :deep(.form-field__input),
+.hunting-org__col--to :deep(.form-field__input),
+.hunting-org__col--cost :deep(.form-field__input) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .hunting-org__date-field {
@@ -959,7 +1011,7 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
-/* Список сверху и сужение инпутов от ~1540px до планшета */
+/* Список сверху и сужение инпутов: от ~1540px до планшета (~1025px) */
 @media (max-width: 1540px) and (min-width: 1025px) {
   .hunting-org {
     flex-direction: column;
@@ -998,7 +1050,7 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Кнопки в два ряда: от ~1243px до планшета */
+/* Кнопки в два ряда: от ~1243px до планшета (~1025px) */
 @media (max-width: 1243px) and (min-width: 1025px) {
   .hunting-org__col--actions {
     flex-direction: column;
