@@ -805,11 +805,12 @@ onBeforeUnmount(() => {
 
 .hunting-org__table {
   display: grid;
+  width: 100%;
   grid-template-columns:
     minmax(148px, 200px)
     minmax(148px, 200px)
     minmax(110px, 140px)
-    max-content;
+    minmax(180px, 1fr);
   column-gap: 12px;
   overflow: visible;
 }
@@ -993,7 +994,7 @@ onBeforeUnmount(() => {
       minmax(120px, min(200px, 1fr))
       minmax(120px, min(200px, 1fr))
       minmax(90px, min(140px, 0.7fr))
-      max-content;
+      minmax(180px, 1fr);
   }
 }
 
@@ -1047,7 +1048,7 @@ onBeforeUnmount(() => {
       minmax(120px, min(200px, 1fr))
       minmax(120px, min(200px, 1fr))
       minmax(90px, min(140px, 0.7fr))
-      max-content;
+      minmax(180px, 1fr);
   }
 }
 
