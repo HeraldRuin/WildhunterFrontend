@@ -228,7 +228,7 @@ onMounted(() => {
         <CommonSaveButton
           class="timer-settings__save"
           type="submit"
-          :disabled="isLoading"
+          :disabled="isLoading || !/\d/.test(timerHours)"
           :loading="isSubmitting"
         >
           Сохранить
