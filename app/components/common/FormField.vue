@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import type { InputHTMLAttributes } from 'vue'
+import type { HunterDocumentKind } from '~/utils/hunterDocuments'
+import {
+  hunterDocumentMaxLength,
+  isDocumentNumberKeyAllowed,
+  normalizeHunterDocumentNumber,
+} from '~/utils/hunterDocuments'
 
 defineOptions({ inheritAttrs: false })
 
@@ -31,6 +37,12 @@ const props = withDefaults(defineProps<{
   noMargin?: boolean
   /** разрешить только цифры */
   digitsOnly?: boolean
+  /** сумма: цифры и один разделитель (, или .) — без букв */
+  amountOnly?: boolean
+  /** серия и номер охотдокумента */
+  documentNumberKind?: HunterDocumentKind
+  /** лимит символов (обычный input) */
+  maxLength?: number
   /** скелетон вместо лейбла и инпута */
   skeleton?: boolean
   /** Широкий trailing (сгенерировать + глаз) */
@@ -55,6 +67,9 @@ const props = withDefaults(defineProps<{
   reveal: false,
   noMargin: false,
   digitsOnly: false,
+  amountOnly: false,
+  documentNumberKind: undefined,
+  maxLength: undefined,
   skeleton: false,
   trailingWide: false,
   allowAutofill: false,
@@ -76,11 +91,28 @@ const fieldId = computed(() => props.id || generatedId)
 const hasIcon = computed(() => Boolean(props.icon) || Boolean(slots.icon))
 const hasTrailing = computed(() => Boolean(slots.trailing))
 
+const effectiveMaxLength = computed(() => {
+  if (props.documentNumberKind) {
+    return hunterDocumentMaxLength(props.documentNumberKind)
+  }
+
+  if (props.maxLength != null) {
+    return props.maxLength
+  }
+
+  return undefined
+})
+
 const inputAttrs = computed(() => ({
   ...attrs,
+  ...(effectiveMaxLength.value != null ? { maxlength: effectiveMaxLength.value } : {}),
   inputmode: props.digitsOnly
     ? 'numeric'
-    : attrs.inputmode as InputHTMLAttributes['inputmode'],
+    : props.amountOnly
+      ? 'decimal'
+      : props.documentNumberKind
+        ? 'text'
+        : attrs.inputmode as InputHTMLAttributes['inputmode'],
 }) as InputHTMLAttributes)
 
 /** Пустое / пробельное значение → '', чтобы браузер показал placeholder */
@@ -102,15 +134,50 @@ function toDigits(value: string) {
   return value.replace(/\D/g, '')
 }
 
+function toAmount(value: string) {
+  const cleaned = value.replace(/[^\d.,]/g, '')
+  const separatorIndex = cleaned.search(/[.,]/)
+
+  if (separatorIndex === -1) {
+    return cleaned
+  }
+
+  const integerPart = cleaned.slice(0, separatorIndex).replace(/[.,]/g, '')
+  const separator = cleaned[separatorIndex] ?? ','
+  const fractionPart = cleaned.slice(separatorIndex + 1).replace(/[.,]/g, '')
+
+  return `${integerPart}${separator}${fractionPart}`
+}
+
+function normalizeInputValue(value: string) {
+  if (props.documentNumberKind) {
+    return normalizeHunterDocumentNumber(value, props.documentNumberKind)
+  }
+
+  if (props.digitsOnly) {
+    return toDigits(value)
+  }
+
+  if (props.amountOnly) {
+    return toAmount(value)
+  }
+
+  if (effectiveMaxLength.value != null) {
+    return value.slice(0, effectiveMaxLength.value)
+  }
+
+  return value
+}
+
 function onInput(event: Event) {
   if (syncingFromModel) {
     return
   }
 
   const target = event.target as HTMLInputElement | HTMLTextAreaElement
-  const nextValue = props.digitsOnly ? toDigits(target.value) : target.value
+  const nextValue = normalizeInputValue(target.value)
 
-  if (props.digitsOnly && target.value !== nextValue) {
+  if (target.value !== nextValue) {
     target.value = nextValue
   }
 
@@ -160,10 +227,6 @@ watch(
   },
 )
 
-function normalizeDomValue(value: string) {
-  return props.digitsOnly ? toDigits(value) : value
-}
-
 function syncDomValue(source?: Event | HTMLInputElement) {
   if (props.disabled || props.readonly || props.multiline) {
     return
@@ -186,7 +249,7 @@ function syncDomValue(source?: Event | HTMLInputElement) {
 
   // Браузерное autofill: в DOM есть значение, в Vue — нет.
   if (!modelValue && domValue) {
-    emit('update:modelValue', normalizeDomValue(domValue))
+    emit('update:modelValue', normalizeInputValue(domValue))
     return
   }
 
@@ -197,7 +260,7 @@ function syncDomValue(source?: Event | HTMLInputElement) {
   }
 
   if (domValue) {
-    emit('update:modelValue', normalizeDomValue(domValue))
+    emit('update:modelValue', normalizeInputValue(domValue))
   }
 }
 
@@ -256,10 +319,28 @@ defineExpose({
   applyToDom: () => applyModelValueToInput(),
 })
 
+const navigationKeys = [
+  'Backspace',
+  'Delete',
+  'Tab',
+  'Escape',
+  'Enter',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'Home',
+  'End',
+]
+
 function onKeydown(event: KeyboardEvent) {
   emit('keydown', event)
 
-  if (!props.digitsOnly || event.defaultPrevented || props.multiline) {
+  if (
+    (!props.digitsOnly && !props.amountOnly && !props.documentNumberKind)
+    || event.defaultPrevented
+    || props.multiline
+  ) {
     return
   }
 
@@ -267,22 +348,28 @@ function onKeydown(event: KeyboardEvent) {
     return
   }
 
-  const allowedKeys = [
-    'Backspace',
-    'Delete',
-    'Tab',
-    'Escape',
-    'Enter',
-    'ArrowLeft',
-    'ArrowRight',
-    'ArrowUp',
-    'ArrowDown',
-    'Home',
-    'End',
-  ]
-
-  if (allowedKeys.includes(event.key) || /^\d$/.test(event.key)) {
+  if (navigationKeys.includes(event.key)) {
     return
+  }
+
+  if (props.documentNumberKind) {
+    if (isDocumentNumberKeyAllowed(event.key, props.modelValue ?? '', props.documentNumberKind)) {
+      return
+    }
+
+    event.preventDefault()
+    return
+  }
+
+  if (/^\d$/.test(event.key)) {
+    return
+  }
+
+  if (props.amountOnly && (event.key === ',' || event.key === '.')) {
+    const current = props.modelValue ?? ''
+    if (!/[.,]/.test(current)) {
+      return
+    }
   }
 
   event.preventDefault()
@@ -291,17 +378,21 @@ function onKeydown(event: KeyboardEvent) {
 function onPaste(event: ClipboardEvent) {
   emit('paste', event)
 
-  if (!props.digitsOnly || event.defaultPrevented || props.multiline) {
+  if (
+    (!props.digitsOnly && !props.amountOnly && !props.documentNumberKind)
+    || event.defaultPrevented
+    || props.multiline
+  ) {
     return
   }
 
   event.preventDefault()
 
   const target = event.target as HTMLInputElement
-  const pasted = toDigits(event.clipboardData?.getData('text') ?? '')
+  const pasted = event.clipboardData?.getData('text') ?? ''
   const start = target.selectionStart ?? target.value.length
   const end = target.selectionEnd ?? target.value.length
-  const nextValue = toDigits(
+  const nextValue = normalizeInputValue(
     `${target.value.slice(0, start)}${pasted}${target.value.slice(end)}`,
   )
 
