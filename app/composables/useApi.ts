@@ -16,6 +16,7 @@ import {
   useUserApi,
   useWeaponsApi,
   useNotificationsApi,
+  useSettingsApi,
 } from '~/api'
 
 export function useApi() {
@@ -36,6 +37,7 @@ export function useApi() {
   const user = useUserApi()
   const weapons = useWeaponsApi()
   const notifications = useNotificationsApi()
+  const settings = useSettingsApi()
 
   return {
     ...client,
@@ -55,5 +57,6 @@ export function useApi() {
     user,
     weapons,
     notifications,
+    settings,
   }
 }

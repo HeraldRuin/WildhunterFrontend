@@ -42,3 +42,10 @@ export type {
   SaveUserWeaponPayload,
   SaveUserWeaponResponse,
 } from './weapons'
+export { useSettingsApi } from './settings'
+export type {
+  TimerSettingsType,
+  TimerSettingsData,
+  TimerSettingsResponse,
+  SaveTimerSettingsPayload,
+} from './settings'
