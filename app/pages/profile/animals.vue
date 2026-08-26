@@ -439,6 +439,12 @@ onMounted(() => {
   color: var(--wh-black-text, #1c211c);
 }
 
+.animals-manage__head .animals-manage__col--name {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
 .animals-manage__list {
   margin: 0;
   padding: 0;
