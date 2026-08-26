@@ -106,22 +106,18 @@ const icons: Record<NotificationType, { path: string, viewBox?: string }> = {
 
 .notif--success .notif__aside {
   color: var(--wh-green);
-  background: rgba(82, 113, 79, 0.1);
 }
 
 .notif--error .notif__aside {
   color: var(--wh-field-error);
-  background: color-mix(in srgb, var(--wh-field-error) 8%, transparent);
 }
 
 .notif--warning .notif__aside {
   color: var(--wh-orange-500);
-  background: rgba(209, 101, 16, 0.1);
 }
 
 .notif--info .notif__aside {
   color: var(--wh-black-text);
-  background: var(--wh-gray-100);
 }
 
 .notif__aside {
