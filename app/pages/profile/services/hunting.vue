@@ -846,17 +846,16 @@ onBeforeUnmount(() => {
 }
 
 .hunting-org__btn {
-  padding: 7px 14px;
-  border: none;
-  border-radius: 4px;
-  color: var(--wh-white);
+  padding: 7px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .hunting-org__btn:active {
@@ -869,19 +868,24 @@ onBeforeUnmount(() => {
 }
 
 .hunting-org__btn--save {
-  background: #2ea44f;
+  border-color: var(--wh-green);
+  background: var(--wh-green);
+  color: var(--wh-white);
 }
 
 .hunting-org__btn--save:hover:not(:disabled) {
-  background: #279443;
+  border-color: var(--wh-green);
+  background: var(--wh-green);
 }
 
 .hunting-org__btn--delete {
-  background: var(--wh-field-error, #dc2626);
+  border-color: var(--wh-orange-500);
+  background: var(--wh-white);
+  color: var(--wh-orange-600);
 }
 
 .hunting-org__btn--delete:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--wh-field-error, #dc2626) 88%, #000);
+  background: rgba(238, 154, 60, 0.08);
 }
 
 .hunting-org__empty {
