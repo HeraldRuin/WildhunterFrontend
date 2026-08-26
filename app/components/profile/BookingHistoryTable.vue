@@ -676,7 +676,7 @@ onBeforeUnmount(() => {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: var(--wh-gray-100);
+  background: var(--wh-gray-450);
   color: var(--wh-gray-900);
   font-weight: 700;
   white-space: nowrap;
