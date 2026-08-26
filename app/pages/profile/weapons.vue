@@ -14,6 +14,9 @@ import {
   writeHunterBilletCache,
   writeUserWeaponsCache,
 } from '~/utils/userWeaponsCache'
+import {
+  isValidHunterDocumentNumber,
+} from '~/utils/hunterDocuments'
 
 type WeaponField =
   | 'hunter_billet_number'
@@ -40,7 +43,6 @@ useHead({
 
 
 
-const notificationCount = 0
 const pulseUnsavedSave = ref(false)
 const pulseNotificationId = ref<string | null>(null)
 const weaponTypes = ref<WeaponOption[]>([])
@@ -186,12 +188,12 @@ const isHunterBilletDirty = computed(() => {
   return current !== hunterBilletSnapshot.value
 })
 
-const hasHunterBilletDigits = computed(() =>
-  /\d/.test(profile.value?.hunter_billet_number ?? ''),
+const hasHunterBilletValue = computed(() =>
+  isValidHunterDocumentNumber(profile.value?.hunter_billet_number ?? '', 'billet'),
 )
 
 const showHunterBilletAction = computed(() =>
-  isHunterBilletDirty.value && hasHunterBilletDigits.value,
+  isHunterBilletDirty.value && hasHunterBilletValue.value,
 )
 
 const hunterBilletActionLabel = computed(() =>
@@ -200,7 +202,7 @@ const hunterBilletActionLabel = computed(() =>
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Параметр' },
+  { label: 'Параметры' },
   { label: 'Лицензия на оружие' },
 ]
 
@@ -914,17 +916,7 @@ const hasNewWeapon = computed(() =>
     <header class="profile-page__header">
       <AppBreadcrumbs :items="breadcrumbs" />
 
-      <button type="button" class="profile-page__notifications" aria-label="Уведомления">
-        <img
-          src="/icons/bell.png"
-          alt=""
-          aria-hidden="true"
-          class="profile-page__notifications-icon"
-          width="18"
-          height="22"
-        >
-        <span class="profile-page__notifications-badge">{{ notificationCount }}</span>
-      </button>
+      <ProfileNotificationsBell />
     </header>
 
     <CommonPageTitle divider>Лицензия на оружие</CommonPageTitle>
@@ -951,9 +943,9 @@ const hasNewWeapon = computed(() =>
             <CommonFormField
               id="hunter-billet"
               label="Номер охот. билета"
-              placeholder="Введите номер охотничьего билета"
+              placeholder="Например, А-12345678"
               no-margin
-              digits-only
+              document-number-kind="billet"
               v-model="profile.hunter_billet_number"
               :error="getFieldError('hunter_billet_number')"
               :disabled="savingHunterBillet"
@@ -1061,8 +1053,8 @@ const hasNewWeapon = computed(() =>
                 <div class="profile-weapon__row">
                   <CommonFormField
                     label="Номер"
-                    placeholder="Добавить лицензию"
-                    digits-only
+                    placeholder="Например, РК 12345678"
+                    document-number-kind="license"
                     no-margin
                     :model-value="card.weapon.hunter_license_number"
                     :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_number') : ''"
@@ -1262,44 +1254,6 @@ const hasNewWeapon = computed(() =>
   background: var(--wh-white);
   border-radius: var(--wh-radius);
   overflow: visible;
-}
-
-.profile-page__notifications {
-  position: relative;
-  flex-shrink: 0;
-  width: 18px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  overflow: visible;
-}
-
-.profile-page__notifications-icon {
-  display: block;
-  width: 18px;
-  height: 22px;
-  object-fit: contain;
-}
-
-.profile-page__notifications-badge {
-  position: absolute;
-  top: -6px;
-  right: -8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0;
-  border-radius: 50%;
-  background: #e74c3c;
-  color: var(--wh-white);
-  font-size: 0.65rem;
-  font-weight: 700;
-  line-height: 1;
 }
 
 .profile-page__status {
