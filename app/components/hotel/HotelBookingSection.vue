@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import type { HotelRoomAvailability } from '~/types/api'
 import type { HotelRoomAttributeGroupOption, HotelRoomOption } from '~/types/hotelBooking'
-import { formatApiDate, parseDisplayDate, parseDisplayDateToApiDate, startOfDay } from '~/utils/date'
+import {
+  countNightsBetween,
+  formatApiDate,
+  formatBookingDate,
+  formatBookingDateFromDisplay,
+  parseDisplayDate,
+  parseDisplayDateToApiDate,
+  startOfDay,
+} from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 
 const props = withDefaults(defineProps<{
@@ -19,7 +27,9 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
-const { hotels, animals, bookings } = useApi()
+const { hotels, animals } = useApi()
+const { user } = useAuth()
+const { setDraft } = useHotelBookingDraft()
 
 const hotelParams = computed(() => ({
   locationSlug: String(route.params.location || ''),
@@ -55,7 +65,6 @@ const availableRooms = ref<HotelRoomOption[]>([])
 const hasCheckedAvailability = ref(false)
 const isCheckingAvailability = ref(false)
 const isCheckingAnimals = ref(false)
-const isBooking = ref(false)
 const isNoHuntConfirmOpen = ref(false)
 const isNoRoomConfirmOpen = ref(false)
 const isAnimalWarningOpen = ref(false)
@@ -72,6 +81,8 @@ const animalAvailabilityStay = ref<{
   checkOut: number
 } | null>(null)
 const hasSelectedRooms = ref(false)
+const selectedRoomsCount = ref(0)
+const stayAdults = ref(1)
 const didAutoCheckFromSearch = ref(false)
 const stayCheckIn = ref<Date | null>(null)
 const stayCheckOut = ref<Date | null>(null)
@@ -84,6 +95,7 @@ const animalAvailabilityTotal = computed(() => {
   return animalAvailability.value.price * animalAvailability.value.hunters
 })
 const datesGuestsRef = ref<{
+  getAdults: () => number
   getCheckPayload: () => { checkIn: string, checkOut: string, adults: number } | null
   getBookingPayload: () => { checkIn: string, checkOut: string, adults: number } | null
 } | null>(null)
@@ -95,6 +107,10 @@ const animalsSearchRef = ref<{
 const roomSelectionRef = ref<{
   getSelectedRooms: () => { room_id: number, number: number }[]
 } | null>(null)
+const roomsExceedGuests = computed(() =>
+  hasSelectedRooms.value && selectedRoomsCount.value > stayAdults.value,
+)
+const ROOMS_EXCEED_GUESTS_MESSAGE = 'Количество номеров не может быть больше количества гостей'
 const isApiMessageOpen = computed(() => Boolean(apiMessage.value))
 const isAnyModalOpen = computed(() =>
   isNoHuntConfirmOpen.value
@@ -104,6 +120,34 @@ const isAnyModalOpen = computed(() =>
   || isStayDateWarningOpen.value
   || isApiMessageOpen.value,
 )
+
+function handleAdultsChange(adults: number) {
+  stayAdults.value = adults
+}
+
+function handleRoomSelectionChange(payload: { hasSelectedRooms: boolean, totalRooms: number }) {
+  hasSelectedRooms.value = payload.hasSelectedRooms
+  selectedRoomsCount.value = payload.totalRooms
+}
+
+function getBookingAdults(stayAdultsCount: number | undefined, hunters: number, hasRooms: boolean) {
+  if (hasRooms) {
+    return stayAdultsCount ?? datesGuestsRef.value?.getAdults() ?? 1
+  }
+
+  return hunters
+}
+
+function validateRoomsAgainstGuests(adults: number, rooms: { number: number }[]) {
+  const totalRooms = rooms.reduce((sum, room) => sum + room.number, 0)
+
+  if (totalRooms > adults) {
+    showApiMessage(ROOMS_EXCEED_GUESTS_MESSAGE)
+    return false
+  }
+
+  return true
+}
 
 function getResponseMessage(error: unknown) {
   if (!error || typeof error !== 'object') {
@@ -236,6 +280,8 @@ function mapAvailabilityRoom(room: HotelRoomAvailability): HotelRoomOption {
 }
 
 async function handleCheck(payload: { checkIn: string, checkOut: string, adults: number }) {
+  stayAdults.value = payload.adults
+
   if (!payload.checkIn || !payload.checkOut) {
     isStayDateWarningOpen.value = true
     return
@@ -257,6 +303,7 @@ async function handleCheck(payload: { checkIn: string, checkOut: string, adults:
 
   isCheckingAvailability.value = true
   hasSelectedRooms.value = false
+  selectedRoomsCount.value = 0
 
   try {
     const response = await hotels.checkAvailability({
@@ -344,11 +391,8 @@ async function handleAnimalsCheck(payload: {
 }
 
 async function proceedBook() {
-  if (isBooking.value) {
-    return
-  }
-
-  const hotelId = hotel.value?.id
+  const currentHotel = hotel.value
+  const hotelId = currentHotel?.id
   const stay = datesGuestsRef.value?.getBookingPayload()
   const rooms = roomSelectionRef.value?.getSelectedRooms() || []
   const stayCheckIn = stay ? parseDisplayDateToApiDate(stay.checkIn) : null
@@ -360,10 +404,15 @@ async function proceedBook() {
   const huntDateRaw = animalsSearchRef.value?.getHuntDate() || ''
   const huntDate = huntDateRaw ? parseDisplayDateToApiDate(huntDateRaw) : null
   const huntOnly = hasAnimal && !rooms.length
+  const bookingAdults = getBookingAdults(stay?.adults, hunters, rooms.length > 0)
+
+  if (rooms.length > 0 && !validateRoomsAgainstGuests(bookingAdults, rooms)) {
+    return
+  }
 
   let checkIn = stayCheckIn
   let checkOut = stayCheckOut
-  let adults = stay?.adults ?? hunters
+  let adults = bookingAdults
 
   if (huntOnly) {
     if (!huntDate) {
@@ -388,16 +437,86 @@ async function proceedBook() {
     return
   }
 
-  if (!hotelId || !checkIn || !checkOut || (!rooms.length && !hasAnimal)) {
+  if (!currentHotel || !hotelId || !checkIn || !checkOut || (!rooms.length && !hasAnimal)) {
     return
   }
 
   isNoHuntConfirmOpen.value = false
   isNoRoomConfirmOpen.value = false
-  isBooking.value = true
 
-  try {
-    const response = await bookings.create({
+  const selectedRooms = rooms.map((selection) => {
+    const room = availableRooms.value.find(item => Number(item.id) === selection.room_id)
+
+    return {
+      id: String(selection.room_id),
+      title: room?.title || 'Номер',
+      quantity: selection.number,
+      price: room?.price || 0,
+      nights: room?.nights || 0,
+      image: room?.image,
+    }
+  })
+
+  const checkInDate = parseDisplayDate(stay?.checkIn || '')
+    || (huntDateRaw ? parseDisplayDate(huntDateRaw) : null)
+  const checkOutDate = parseDisplayDate(stay?.checkOut || '')
+    || (checkInDate
+      ? new Date(checkInDate.getFullYear(), checkInDate.getMonth(), checkInDate.getDate() + 1)
+      : null)
+
+  const nights = checkInDate && checkOutDate
+    ? countNightsBetween(checkInDate, checkOutDate)
+    : (selectedRooms[0]?.nights || 1)
+
+  const accommodationTotal = selectedRooms.reduce(
+    (sum, room) => sum + room.price * room.quantity,
+    0,
+  )
+
+  const selectedAnimal = hasAnimal
+    ? hotelAnimals.value.find(item => item.id === animalId)
+    : undefined
+
+  const huntDateLabel = huntDateRaw
+    ? formatBookingDateFromDisplay(huntDateRaw)
+    : ''
+
+  const stayCheckInLabel = stay?.checkIn
+    ? formatBookingDateFromDisplay(stay.checkIn)
+    : (huntDateLabel || formatBookingDate(new Date()))
+  const stayCheckOutLabel = stay?.checkOut
+    ? formatBookingDateFromDisplay(stay.checkOut)
+    : (checkOutDate ? formatBookingDate(checkOutDate) : '')
+
+  setDraft({
+    hotelId,
+    hotelTitle: currentHotel.title,
+    hotelSlug: currentHotel.slug,
+    locationSlug: String(route.params.location || ''),
+    hotelImage: currentHotel.image || '',
+    checkIn: stayCheckInLabel,
+    checkOut: stayCheckOutLabel,
+    nights,
+    adults,
+    rooms: selectedRooms,
+    accommodationTotal,
+    huntCheckIn: huntDateLabel,
+    huntCheckOut: huntDateLabel,
+    hunters: hasAnimal ? hunters : 0,
+    animalTitle: selectedAnimal?.title || '',
+    animalImage: selectedAnimal?.image_url || '',
+    huntDate: huntDateLabel,
+    organizationFee: animalAvailabilityTotal.value,
+    trophyFee: 0,
+    bookingNumber: '—',
+    bookingDate: formatBookingDate(new Date()),
+    paymentMethod: '—',
+    statusLabel: 'Ожидает подтверждения',
+    email: user.value?.email || '',
+    specialRequirements: '',
+    hasAccommodation: selectedRooms.length > 0,
+    hasHunt: hasAnimal,
+    createPayload: {
       hotel_id: hotelId,
       ...(hasAnimal ? { animal_id: animalId } : {}),
       check_in: checkIn,
@@ -405,27 +524,27 @@ async function proceedBook() {
       adults,
       hunters,
       rooms,
-    })
+    },
+  })
 
-    emit('book')
-    await navigateTo({
-      path: confirmationPath.value,
-      query: {
-        code: response.data.booking_code,
-      },
-    })
-  }
-  catch (error) {
-    showApiMessage(getResponseMessage(error) || 'Не удалось создать бронирование')
-  }
-  finally {
-    isBooking.value = false
-  }
+  emit('book')
+
+  await navigateTo({
+    path: confirmationPath.value,
+  })
 }
 
 function handleBook() {
   const animalId = animalsSearchRef.value?.getSelectedAnimalId() || ''
-  const hasRooms = (roomSelectionRef.value?.getSelectedRooms() || []).length > 0
+  const rooms = roomSelectionRef.value?.getSelectedRooms() || []
+  const hasRooms = rooms.length > 0
+  const stay = datesGuestsRef.value?.getBookingPayload()
+  const hunters = animalsSearchRef.value?.getHunters() ?? 1
+  const bookingAdults = getBookingAdults(stay?.adults, hunters, hasRooms)
+
+  if (hasRooms && !validateRoomsAgainstGuests(bookingAdults, rooms)) {
+    return
+  }
 
   if (!hasRooms) {
     isNoRoomConfirmOpen.value = true
@@ -517,8 +636,9 @@ onMounted(() => {
             ref="datesGuestsRef"
             :loading="isCheckingAvailability"
             @check="handleCheck"
-            @clear="availableRooms = []; hasCheckedAvailability = false; hasSelectedRooms = false"
+            @clear="availableRooms = []; hasCheckedAvailability = false; hasSelectedRooms = false; selectedRoomsCount = 0"
             @dates-change="handleStayDatesChange"
+            @adults-change="handleAdultsChange"
           />
 
           <p
@@ -533,8 +653,17 @@ onMounted(() => {
             v-else
             ref="roomSelectionRef"
             :rooms="availableRooms"
-            @selection-change="hasSelectedRooms = $event"
+            :adults="stayAdults"
+            @selection-change="handleRoomSelectionChange"
           />
+
+          <p
+            v-if="roomsExceedGuests"
+            class="hotel-booking-section__rooms-error"
+            role="alert"
+          >
+            {{ ROOMS_EXCEED_GUESTS_MESSAGE }}
+          </p>
         </div>
 
         <div class="hotel-booking-section__animals-block">
@@ -574,19 +703,10 @@ onMounted(() => {
         <button
           type="button"
           class="hotel-booking-section__book"
-          :class="{ 'hotel-booking-section__book--loading': isBooking }"
-          :disabled="isBooking || !(hasSelectedRooms || animalAvailability)"
-          :aria-busy="isBooking"
+          :disabled="roomsExceedGuests || !(hasSelectedRooms || animalAvailability)"
           @click="handleBook"
         >
-          <CommonSpinner
-            v-if="isBooking"
-            variant="ring"
-            :size="22"
-            color="var(--wh-white)"
-            label="Создаём бронирование"
-          />
-          <span v-else>Забронировать сейчас</span>
+          Забронировать сейчас
         </button>
       </Transition>
     </div>
@@ -619,7 +739,6 @@ onMounted(() => {
               <button
                 type="button"
                 class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
-                :disabled="isBooking"
                 @click="proceedBook"
               >
                 Да
@@ -656,7 +775,6 @@ onMounted(() => {
               <button
                 type="button"
                 class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
-                :disabled="isBooking"
                 @click="proceedBook"
               >
                 Да
@@ -834,6 +952,21 @@ onMounted(() => {
   text-align: center;
 }
 
+.hotel-booking-section__rooms-error {
+  width: min(100%, var(--hotel-booking-blocks-width, 100%));
+  margin: 0 auto;
+  padding: 16px 20px;
+  border-radius: var(--wh-radius-lg);
+  background: color-mix(in srgb, var(--wh-orange-500) 12%, white);
+  color: var(--wh-orange-600);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
 .hotel-booking-section__animals-block {
   display: flex;
   flex-direction: column;
@@ -934,10 +1067,6 @@ onMounted(() => {
 .hotel-booking-section__book:disabled {
   opacity: 0.7;
   cursor: wait;
-}
-
-.hotel-booking-section__book--loading {
-  opacity: 1;
 }
 
 .hotel-booking-book-enter-active,

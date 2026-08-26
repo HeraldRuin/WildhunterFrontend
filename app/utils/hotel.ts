@@ -102,12 +102,14 @@ function parseAnimals(raw: unknown): HotelAnimalItem[] {
 
   return raw.map((item, index) => {
     const animal = item as Record<string, unknown>
+    const imageUrl = String(animal.image_url ?? animal.image ?? '').trim()
 
     return {
       id: Number(animal.id ?? index + 1),
       title: String(animal.title ?? animal.name ?? ''),
       season: animal.season ? String(animal.season) : undefined,
       price: animal.price != null ? Number(animal.price) : undefined,
+      image_url: imageUrl || undefined,
     }
   }).filter(animal => animal.title && Number.isFinite(animal.id))
 }

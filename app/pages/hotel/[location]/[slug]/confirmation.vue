@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BookingCheckoutData } from '~/types/api'
+import type { HotelBookingDraft } from '~/types/hotelBooking'
 import {
   countNightsBetween,
   formatBookingDate,
@@ -9,10 +10,6 @@ import { formatHotelPriceLabel } from '~/utils/hotel'
 
 definePageMeta({
   layout: 'home',
-})
-
-useHead({
-  title: 'Бронирование отправлено — WH',
 })
 
 const STATUS_LABELS: Record<string, string> = {
@@ -38,11 +35,29 @@ const route = useRoute()
 const { bookings } = useApi()
 const { user } = useAuth()
 const notifications = useNotifications()
+const { draft, pendingNotes, clearDraft, setPendingNotes, clearPendingNotes } = useHotelBookingDraft()
 
-const specialRequirements = ref('')
+const specialRequirements = ref(
+  draft.value?.specialRequirements || pendingNotes.value || '',
+)
 const isSendingNotes = ref(false)
+const isConfirmingBooking = ref(false)
+const isEditingNotes = ref(false)
 
 const bookingCode = computed(() => String(route.query.code || '').trim())
+const isPreview = computed(() => {
+  if (isConfirmingBooking.value && draft.value) {
+    return true
+  }
+
+  return !bookingCode.value && Boolean(draft.value)
+})
+
+useHead(() => ({
+  title: isPreview.value
+    ? 'Подтверждение бронирования — WH'
+    : 'Бронирование отправлено — WH',
+}))
 
 const { data: checkout, pending: checkoutPending } = useAsyncData(
   () => `booking-checkout-${bookingCode.value}`,
@@ -62,6 +77,46 @@ const { data: checkout, pending: checkoutPending } = useAsyncData(
   {
     watch: [bookingCode],
   },
+)
+
+function applyNotesFromCheckout(data: BookingCheckoutData | null | undefined) {
+  if (!bookingCode.value || !data || isEditingNotes.value) {
+    return
+  }
+
+  const notes = typeof data.customer_notes === 'string'
+    ? data.customer_notes.trim()
+    : ''
+
+  if (!notes) {
+    return
+  }
+
+  specialRequirements.value = notes
+  clearPendingNotes()
+}
+
+watch(
+  checkout,
+  (data) => {
+    applyNotesFromCheckout(data)
+  },
+  { immediate: true },
+)
+
+watch(
+  [bookingCode, pendingNotes],
+  () => {
+    if (!bookingCode.value || !pendingNotes.value) {
+      return
+    }
+
+    // Пока checkout грузится — показываем текст с экрана подтверждения.
+    if (!specialRequirements.value.trim()) {
+      specialRequirements.value = pendingNotes.value
+    }
+  },
+  { immediate: true },
 )
 
 function formatCheckoutDate(value: string | null | undefined) {
@@ -116,14 +171,78 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
   }
 }
 
-const booking = computed(() => mapCheckoutToView(checkout.value ?? null))
+function mapDraftToView(data: HotelBookingDraft) {
+  const roomLabel = data.rooms
+    .map(room => `${room.title} × ${room.quantity}`)
+    .join(', ')
 
-const canSendNotes = computed(() => {
-  return Boolean(specialRequirements.value.trim() && bookingCode.value)
+  return {
+    bookingNumber: data.bookingNumber,
+    bookingDate: data.bookingDate,
+    paymentMethod: data.paymentMethod,
+    statusLabel: data.statusLabel,
+    email: data.email || user.value?.email || '',
+    hotelTitle: data.hotelTitle,
+    hotelImage: data.hotelImage || data.rooms[0]?.image || '',
+    checkIn: data.checkIn,
+    checkOut: data.checkOut,
+    nights: data.nights,
+    adults: data.adults,
+    roomLabel,
+    accommodationTotal: data.accommodationTotal,
+    animalTitle: data.animalTitle,
+    animalImage: data.animalImage,
+    huntDate: data.huntDate,
+    hunters: data.hunters,
+    organizationFee: data.organizationFee,
+    trophyFee: data.trophyFee,
+    hasAccommodation: data.hasAccommodation,
+    hasHunt: data.hasHunt,
+  }
+}
+
+const booking = computed(() => {
+  // Пока сохраняем — держим черновик на экране под оверлеем.
+  if (isConfirmingBooking.value && draft.value) {
+    return mapDraftToView(draft.value)
+  }
+
+  if (bookingCode.value) {
+    return mapCheckoutToView(checkout.value ?? null)
+  }
+
+  return draft.value ? mapDraftToView(draft.value) : null
+})
+
+const isLoading = computed(() => Boolean(bookingCode.value) && checkoutPending.value && !isConfirmingBooking.value)
+
+const isNotesFieldReadonly = computed(() => !isPreview.value && !isEditingNotes.value)
+
+const canSaveNotes = computed(() => {
+  return Boolean(specialRequirements.value.trim() && bookingCode.value && isEditingNotes.value)
+})
+
+const notesActionLabel = computed(() => {
+  return isEditingNotes.value ? 'Сохранить' : 'Редактировать'
+})
+
+const pageTitle = computed(() => {
+  if (isPreview.value) {
+    return 'Подтвердите бронирование вашего мероприятия'
+  }
+
+  return 'ВАШЕ БРОНИРОВАНИЕ БЫЛО УСПЕШНО ОТПРАВЛЕНО!'
 })
 
 const emailLine = computed(() => {
   const email = booking.value?.email
+
+  if (isPreview.value) {
+    return email
+      ? `Информация о бронировании будет отправлена по адресу: ${email}`
+      : 'Информация о бронировании будет отправлена по адресу'
+  }
+
   return email
     ? `Информация о бронировании отправлена по адресу: ${email}`
     : 'Информация о бронировании отправлена'
@@ -131,10 +250,31 @@ const emailLine = computed(() => {
 
 const bookingsLink = '/profile/bookings'
 
+function getResponseMessage(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return ''
+  }
+
+  const fetchError = error as {
+    data?: { message?: string }
+    message?: string
+  }
+
+  return fetchError.data?.message || fetchError.message || ''
+}
+
+function startEditingNotes() {
+  if (!bookingCode.value || isSendingNotes.value) {
+    return
+  }
+
+  isEditingNotes.value = true
+}
+
 async function submitCustomerNotes() {
   const notes = specialRequirements.value.trim()
 
-  if (!notes || !bookingCode.value || isSendingNotes.value) {
+  if (!notes || !bookingCode.value || isSendingNotes.value || !isEditingNotes.value) {
     return
   }
 
@@ -142,6 +282,8 @@ async function submitCustomerNotes() {
 
   try {
     const response = await bookings.updateCustomerNotes(bookingCode.value, notes)
+    specialRequirements.value = notes
+    isEditingNotes.value = false
     notifications.success(response.message || 'Особые требования сохранены')
   }
   catch {
@@ -149,6 +291,61 @@ async function submitCustomerNotes() {
   }
   finally {
     isSendingNotes.value = false
+  }
+}
+
+function handleNotesAction() {
+  if (isEditingNotes.value) {
+    void submitCustomerNotes()
+    return
+  }
+
+  startEditingNotes()
+}
+
+async function confirmSaveBooking() {
+  const currentDraft = draft.value
+
+  if (!currentDraft || isConfirmingBooking.value || bookingCode.value) {
+    return
+  }
+
+  isConfirmingBooking.value = true
+  await nextTick()
+
+  try {
+    const response = await bookings.create(currentDraft.createPayload)
+    const code = response.data.booking_code
+    const notes = specialRequirements.value.trim() || currentDraft.specialRequirements.trim()
+
+    if (notes) {
+      setPendingNotes(notes)
+      specialRequirements.value = notes
+
+      try {
+        await bookings.updateCustomerNotes(code, notes)
+      }
+      catch {
+        // Notes are optional after create — booking itself already succeeded.
+      }
+    }
+
+    clearNuxtData(`booking-checkout-${code}`)
+
+    await navigateTo({
+      path: route.path,
+      query: {
+        code,
+      },
+    })
+
+    clearDraft()
+  }
+  catch (error) {
+    notifications.error(getResponseMessage(error) || 'Не удалось создать бронирование')
+  }
+  finally {
+    isConfirmingBooking.value = false
   }
 }
 </script>
@@ -159,15 +356,37 @@ async function submitCustomerNotes() {
       <HomeHeroHeader />
     </div>
 
-    <div class="booking-confirmation__body">
-      <div v-if="checkoutPending" class="booking-confirmation__loading" aria-busy="true">
+    <div
+      class="booking-confirmation__body"
+      :class="{ 'booking-confirmation__body--confirming': isConfirmingBooking }"
+      :aria-busy="isConfirmingBooking || undefined"
+    >
+      <div v-if="isLoading && !isConfirmingBooking" class="booking-confirmation__loading" aria-busy="true">
         <CommonSpinner variant="ring" :size="32" color="var(--wh-green)" label="Загружаем бронирование" />
       </div>
 
-      <section v-else-if="booking" class="booking-confirmation__hero">
+      <section
+        v-else-if="booking"
+        class="booking-confirmation__hero"
+      >
         <div class="booking-confirmation__success">
-          <span class="booking-confirmation__success-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="22" height="22">
+          <span
+            class="booking-confirmation__success-icon"
+            :class="{ 'booking-confirmation__success-icon--pending': isPreview }"
+            aria-hidden="true"
+          >
+            <svg v-if="isPreview" viewBox="0 0 24 24" width="22" height="22">
+              <circle cx="12" cy="12" r="11" fill="currentColor" />
+              <path
+                d="M12 7v5.2l3.2 1.8"
+                fill="none"
+                stroke="#fff"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" width="22" height="22">
               <circle cx="12" cy="12" r="11" fill="currentColor" />
               <path
                 d="M7 12.5 10.2 15.7 17 8.8"
@@ -180,13 +399,16 @@ async function submitCustomerNotes() {
             </svg>
           </span>
           <h1 class="booking-confirmation__title">
-            ВАШЕ БРОНИРОВАНИЕ БЫЛО УСПЕШНО ОТПРАВЛЕНО!
+            {{ pageTitle }}
           </h1>
         </div>
 
         <p class="booking-confirmation__subtitle">{{ emailLine }}</p>
 
-        <div class="booking-confirmation__summary-row">
+        <div
+          v-if="!isPreview"
+          class="booking-confirmation__summary-row"
+        >
           <div class="booking-confirmation__summary">
             <div class="booking-confirmation__summary-item">
               <span class="booking-confirmation__summary-label">Номер брони:</span>
@@ -315,35 +537,52 @@ async function submitCustomerNotes() {
 
         <section class="booking-confirmation__requirements">
           <h2 class="booking-confirmation__requirements-title">Особые требования</h2>
-          <div class="booking-confirmation__requirements-row">
+          <div
+            class="booking-confirmation__requirements-row"
+            :class="{ 'booking-confirmation__requirements-row--preview': isPreview }"
+          >
             <input
               v-model="specialRequirements"
               type="text"
               class="booking-confirmation__requirements-field"
+              :class="{ 'booking-confirmation__requirements-field--readonly': isNotesFieldReadonly }"
               aria-label="Особые требования"
+              :readonly="isNotesFieldReadonly"
+              :disabled="isSendingNotes"
             >
             <button
+              v-if="!isPreview"
               type="button"
               class="booking-confirmation__requirements-submit"
               :class="{ 'booking-confirmation__requirements-submit--loading': isSendingNotes }"
-              :disabled="!canSendNotes || isSendingNotes"
+              :disabled="isSendingNotes || (isEditingNotes && !canSaveNotes)"
               :aria-busy="isSendingNotes"
-              @click="submitCustomerNotes"
+              @click="handleNotesAction"
             >
               <CommonSpinner
                 v-if="isSendingNotes"
                 variant="ring"
                 :size="22"
                 color="var(--wh-white)"
-                label="Отправляем"
+                label="Сохраняем"
               />
-              <span v-else>Отправить</span>
+              <span v-else>{{ notesActionLabel }}</span>
             </button>
           </div>
+
+          <button
+            v-if="isPreview"
+            type="button"
+            class="booking-confirmation__confirm-save"
+            :disabled="isConfirmingBooking"
+            @click="confirmSaveBooking"
+          >
+            Подтвердить сохранение брони
+          </button>
         </section>
       </section>
 
-      <section v-else class="booking-confirmation__hero">
+      <section v-else-if="!isConfirmingBooking" class="booking-confirmation__hero">
         <h1 class="booking-confirmation__title">
           Не удалось загрузить бронирование
         </h1>
@@ -356,6 +595,24 @@ async function submitCustomerNotes() {
           </NuxtLink>
         </div>
       </section>
+
+      <Transition name="booking-confirmation-saving-fade">
+        <div
+          v-if="isConfirmingBooking"
+          class="booking-confirmation__saving-overlay"
+          aria-hidden="true"
+        >
+          <div class="booking-confirmation__saving-overlay-bg" />
+          <div class="booking-confirmation__saving-overlay-spinner">
+            <CommonSpinner
+              variant="ring"
+              :size="48"
+              color="var(--wh-green)"
+              label="Сохраняем бронь"
+            />
+          </div>
+        </div>
+      </Transition>
     </div>
 
     <HomeBlocksCommunityBlock variant="centered" />
@@ -387,7 +644,13 @@ async function submitCustomerNotes() {
 }
 
 .booking-confirmation__body {
+  position: relative;
   padding: 28px 0 72px;
+}
+
+.booking-confirmation__body--confirming {
+  pointer-events: none;
+  user-select: none;
 }
 
 .booking-confirmation__loading {
@@ -405,6 +668,39 @@ async function submitCustomerNotes() {
   margin-inline: auto;
 }
 
+.booking-confirmation__saving-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  pointer-events: none;
+}
+
+.booking-confirmation__saving-overlay-bg {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0.5;
+}
+
+.booking-confirmation__saving-overlay-spinner {
+  position: relative;
+  z-index: 1;
+}
+
+.booking-confirmation-saving-fade-enter-active,
+.booking-confirmation-saving-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.booking-confirmation-saving-fade-enter-from,
+.booking-confirmation-saving-fade-leave-to {
+  opacity: 0;
+}
+
 .booking-confirmation__success {
   display: flex;
   align-items: center;
@@ -415,6 +711,10 @@ async function submitCustomerNotes() {
 .booking-confirmation__success-icon {
   flex: none;
   color: var(--wh-green);
+}
+
+.booking-confirmation__success-icon--pending {
+  color: var(--wh-orange-500);
 }
 
 .booking-confirmation__title {
@@ -700,6 +1000,10 @@ async function submitCustomerNotes() {
   gap: 16px;
 }
 
+.booking-confirmation__requirements-row--preview {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .booking-confirmation__requirements-field {
   width: 100%;
   height: 70px;
@@ -726,6 +1030,17 @@ async function submitCustomerNotes() {
 
 .booking-confirmation__requirements-field:focus {
   border-color: var(--wh-orange-500);
+}
+
+.booking-confirmation__requirements-field--readonly,
+.booking-confirmation__requirements-field:disabled {
+  background: var(--wh-gray-100, #f3f4f3);
+  color: var(--wh-black-text);
+  cursor: default;
+}
+
+.booking-confirmation__requirements-field--readonly:focus {
+  border-color: var(--wh-gray-400);
 }
 
 .booking-confirmation__requirements-submit {
@@ -760,6 +1075,38 @@ async function submitCustomerNotes() {
 
 .booking-confirmation__requirements-submit--loading {
   cursor: wait;
+}
+
+.booking-confirmation__confirm-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 200px;
+  height: 70px;
+  margin-top: 16px;
+  padding: 0 24px;
+  border: none;
+  border-radius: var(--wh-radius-lg);
+  background: var(--wh-green);
+  color: var(--wh-white);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 100%;
+  letter-spacing: -0.05em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.booking-confirmation__confirm-save:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wh-green) 78%, white);
+}
+
+.booking-confirmation__confirm-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Узкий десктоп: уменьшаем фото и кнопку, зелёной плашке больше места */
@@ -939,7 +1286,8 @@ async function submitCustomerNotes() {
   }
 
   .booking-confirmation__cta,
-  .booking-confirmation__requirements-submit {
+  .booking-confirmation__requirements-submit,
+  .booking-confirmation__confirm-save {
     width: 100%;
     height: 56px;
     min-height: 56px;

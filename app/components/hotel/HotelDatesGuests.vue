@@ -14,6 +14,7 @@ const emit = defineEmits<{
   check: [payload: { checkIn: string, checkOut: string, adults: number }]
   clear: []
   'dates-change': [payload: { checkIn: Date | null, checkOut: Date | null }]
+  'adults-change': [adults: number]
 }>()
 
 const route = useRoute()
@@ -87,6 +88,14 @@ watch(
       checkIn: nextCheckIn,
       checkOut: nextCheckOut,
     })
+  },
+  { immediate: true },
+)
+
+watch(
+  adultsCount,
+  (count) => {
+    emit('adults-change', count)
   },
   { immediate: true },
 )
@@ -252,6 +261,7 @@ function handleSubmit() {
 }
 
 defineExpose({
+  getAdults: () => adultsCount.value,
   getCheckPayload: () => {
     if (!hasDatesFromSearch.value || !checkIn.value || !checkOut.value) {
       return null

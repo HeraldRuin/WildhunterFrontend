@@ -580,6 +580,7 @@ export interface BookingCheckoutData {
   total_guests: number
   total_hunting: number | null
   rooms: BookingCheckoutRoom[]
+  customer_notes: string | null
 }
 
 export type BookingCheckoutResponse = ApiSuccessResponse<BookingCheckoutData>
@@ -772,6 +773,7 @@ export interface HotelAnimalItem {
   title: string
   season?: string
   price?: number
+  image_url?: string
 }
 
 export interface HotelGalleryImage {

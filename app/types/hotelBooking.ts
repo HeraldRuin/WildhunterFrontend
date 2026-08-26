@@ -49,6 +49,16 @@ export interface HotelBookingFormSnapshot {
   rooms: HotelBookingRoomSelection[]
 }
 
+export interface HotelBookingCreatePayload {
+  hotel_id: number
+  animal_id?: number
+  check_in: string
+  check_out: string
+  adults: number
+  hunters: number
+  rooms: Array<{ room_id: number, number: number }>
+}
+
 export interface HotelBookingDraft {
   hotelId: number
   hotelTitle: string
@@ -65,6 +75,7 @@ export interface HotelBookingDraft {
   huntCheckOut: string
   hunters: number
   animalTitle: string
+  animalImage: string
   huntDate: string
   organizationFee: number
   trophyFee: number
@@ -74,4 +85,7 @@ export interface HotelBookingDraft {
   statusLabel: string
   email: string
   specialRequirements: string
+  hasAccommodation: boolean
+  hasHunt: boolean
+  createPayload: HotelBookingCreatePayload
 }

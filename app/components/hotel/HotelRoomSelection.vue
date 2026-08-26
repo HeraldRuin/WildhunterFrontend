@@ -6,12 +6,14 @@ import { pluralizeRu } from '~/utils/pluralize'
 
 const props = withDefaults(defineProps<{
   rooms?: HotelRoomOption[]
+  adults?: number
 }>(), {
   rooms: () => [],
+  adults: 1,
 })
 
 const emit = defineEmits<{
-  'selection-change': [hasSelectedRooms: boolean]
+  'selection-change': [payload: { hasSelectedRooms: boolean, totalRooms: number }]
 }>()
 
 const needsFontAwesome = computed(() =>
@@ -43,9 +45,11 @@ const lightboxTitle = ref('')
 const attributesModalOpen = ref(false)
 const attributesModalRoom = ref<HotelRoomOption | null>(null)
 
-const hasSelectedRooms = computed(() =>
-  Object.values(quantities.value).some(quantity => quantity > 0),
+const totalSelectedRooms = computed(() =>
+  Object.values(quantities.value).reduce((sum, quantity) => sum + quantity, 0),
 )
+
+const hasSelectedRooms = computed(() => totalSelectedRooms.value > 0)
 
 const selectedRoomsSummary = computed(() => {
   let roomsCount = 0
@@ -73,11 +77,59 @@ watch(
 )
 
 watch(
-  hasSelectedRooms,
-  (value) => {
-    emit('selection-change', value)
+  totalSelectedRooms,
+  () => {
+    emit('selection-change', {
+      hasSelectedRooms: hasSelectedRooms.value,
+      totalRooms: totalSelectedRooms.value,
+    })
   },
   { immediate: true },
+)
+
+function maxQuantityForRoom(roomId: string, roomMax: number) {
+  const currentQuantity = quantities.value[roomId] ?? 0
+  const otherRoomsTotal = totalSelectedRooms.value - currentQuantity
+  const remaining = Math.max(0, props.adults - otherRoomsTotal)
+
+  return Math.min(roomMax, remaining)
+}
+
+function isQuantitySelectorDisabled(roomId: string, roomMax: number) {
+  const currentQuantity = quantities.value[roomId] ?? 0
+
+  return currentQuantity === 0 && maxQuantityForRoom(roomId, roomMax) === 0
+}
+
+function clampQuantitiesToAdults() {
+  let overflow = totalSelectedRooms.value - props.adults
+
+  if (overflow <= 0) {
+    return
+  }
+
+  for (const room of [...props.rooms].reverse()) {
+    if (overflow <= 0) {
+      break
+    }
+
+    const currentQuantity = quantities.value[room.id] ?? 0
+
+    if (currentQuantity <= 0) {
+      continue
+    }
+
+    const nextQuantity = Math.max(0, currentQuantity - overflow)
+    overflow -= currentQuantity - nextQuantity
+    quantities.value[room.id] = nextQuantity
+  }
+}
+
+watch(
+  () => props.adults,
+  () => {
+    clampQuantitiesToAdults()
+  },
 )
 
 function openRoomGallery(room: HotelRoomOption) {
@@ -123,7 +175,11 @@ function quantityValue(roomId: string) {
 }
 
 function setQuantity(roomId: string, value: string) {
-  quantities.value[roomId] = Number(value) || 0
+  const room = props.rooms.find(item => item.id === roomId)
+  const maxQuantity = room ? maxQuantityForRoom(roomId, room.maxQuantity) : 0
+  const nextQuantity = Number(value) || 0
+
+  quantities.value[roomId] = Math.min(nextQuantity, maxQuantity)
 }
 
 function roomTotalPrice(room: HotelRoomOption) {
@@ -240,11 +296,15 @@ defineExpose({
             {{ formatHotelPriceLabel(roomTotalPrice(room)) }} / {{ nightsLabel(room.nights) }}
           </p>
 
-          <div class="hotel-room-selection__quantity">
+          <div
+            class="hotel-room-selection__quantity"
+            :class="{ 'hotel-room-selection__quantity--disabled': isQuantitySelectorDisabled(room.id, room.maxQuantity) }"
+          >
             <span class="visually-hidden">Количество: {{ room.title }}</span>
             <CommonSelectField
               :model-value="quantityValue(room.id)"
-              :options="quantityOptions(room.maxQuantity, room.price)"
+              :options="quantityOptions(maxQuantityForRoom(room.id, room.maxQuantity), room.price)"
+              :disabled="isQuantitySelectorDisabled(room.id, room.maxQuantity)"
               placeholder="0"
               no-margin
               @update:model-value="setQuantity(room.id, $event)"
@@ -625,6 +685,14 @@ defineExpose({
   z-index: 1;
   width: 172px;
   flex-shrink: 0;
+}
+
+.hotel-room-selection__quantity--disabled :deep(.select-field__trigger:disabled) {
+  opacity: 1;
+  cursor: default;
+  border: 1px solid var(--wh-field-border);
+  background: var(--wh-white);
+  color: var(--wh-gray-400);
 }
 
 .hotel-room-selection__quantity:focus-within,
