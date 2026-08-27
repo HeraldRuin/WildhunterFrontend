@@ -40,9 +40,7 @@ const { draft, pendingNotes, clearDraft, setPendingNotes, clearPendingNotes } = 
 const specialRequirements = ref(
   draft.value?.specialRequirements || pendingNotes.value || '',
 )
-const isSendingNotes = ref(false)
 const isConfirmingBooking = ref(false)
-const isEditingNotes = ref(false)
 
 const bookingCode = computed(() => String(route.query.code || '').trim())
 const isPreview = computed(() => {
@@ -80,7 +78,7 @@ const { data: checkout, pending: checkoutPending } = useAsyncData(
 )
 
 function applyNotesFromCheckout(data: BookingCheckoutData | null | undefined) {
-  if (!bookingCode.value || !data || isEditingNotes.value) {
+  if (!bookingCode.value || !data) {
     return
   }
 
@@ -216,15 +214,7 @@ const booking = computed(() => {
 
 const isLoading = computed(() => Boolean(bookingCode.value) && checkoutPending.value && !isConfirmingBooking.value)
 
-const isNotesFieldReadonly = computed(() => !isPreview.value && !isEditingNotes.value)
-
-const canSaveNotes = computed(() => {
-  return Boolean(specialRequirements.value.trim() && bookingCode.value && isEditingNotes.value)
-})
-
-const notesActionLabel = computed(() => {
-  return isEditingNotes.value ? 'Сохранить' : 'Редактировать'
-})
+const isNotesFieldReadonly = computed(() => !isPreview.value)
 
 const pageTitle = computed(() => {
   if (isPreview.value) {
@@ -261,46 +251,6 @@ function getResponseMessage(error: unknown) {
   }
 
   return fetchError.data?.message || fetchError.message || ''
-}
-
-function startEditingNotes() {
-  if (!bookingCode.value || isSendingNotes.value) {
-    return
-  }
-
-  isEditingNotes.value = true
-}
-
-async function submitCustomerNotes() {
-  const notes = specialRequirements.value.trim()
-
-  if (!notes || !bookingCode.value || isSendingNotes.value || !isEditingNotes.value) {
-    return
-  }
-
-  isSendingNotes.value = true
-
-  try {
-    const response = await bookings.updateCustomerNotes(bookingCode.value, notes)
-    specialRequirements.value = notes
-    isEditingNotes.value = false
-    notifications.success(response.message || 'Особые требования сохранены')
-  }
-  catch {
-    // Endpoint may reject invalid payloads — keep the form as is.
-  }
-  finally {
-    isSendingNotes.value = false
-  }
-}
-
-function handleNotesAction() {
-  if (isEditingNotes.value) {
-    void submitCustomerNotes()
-    return
-  }
-
-  startEditingNotes()
 }
 
 async function confirmSaveBooking() {
@@ -537,10 +487,7 @@ async function confirmSaveBooking() {
 
         <section class="booking-confirmation__requirements">
           <h2 class="booking-confirmation__requirements-title">Особые требования</h2>
-          <div
-            class="booking-confirmation__requirements-row"
-            :class="{ 'booking-confirmation__requirements-row--preview': isPreview }"
-          >
+          <div class="booking-confirmation__requirements-row">
             <input
               v-model="specialRequirements"
               type="text"
@@ -548,26 +495,7 @@ async function confirmSaveBooking() {
               :class="{ 'booking-confirmation__requirements-field--readonly': isNotesFieldReadonly }"
               aria-label="Особые требования"
               :readonly="isNotesFieldReadonly"
-              :disabled="isSendingNotes"
             >
-            <button
-              v-if="!isPreview"
-              type="button"
-              class="booking-confirmation__requirements-submit"
-              :class="{ 'booking-confirmation__requirements-submit--loading': isSendingNotes }"
-              :disabled="isSendingNotes || (isEditingNotes && !canSaveNotes)"
-              :aria-busy="isSendingNotes"
-              @click="handleNotesAction"
-            >
-              <CommonSpinner
-                v-if="isSendingNotes"
-                variant="ring"
-                :size="22"
-                color="var(--wh-white)"
-                label="Сохраняем"
-              />
-              <span v-else>{{ notesActionLabel }}</span>
-            </button>
           </div>
 
           <button
@@ -995,13 +923,8 @@ async function confirmSaveBooking() {
 
 .booking-confirmation__requirements-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: stretch;
-  gap: 16px;
-}
-
-.booking-confirmation__requirements-row--preview {
   grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
 }
 
 .booking-confirmation__requirements-field {
@@ -1041,40 +964,6 @@ async function confirmSaveBooking() {
 
 .booking-confirmation__requirements-field--readonly:focus {
   border-color: var(--wh-gray-400);
-}
-
-.booking-confirmation__requirements-submit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 200px;
-  height: 70px;
-  padding: 0 24px;
-  border: none;
-  border-radius: var(--wh-radius-lg);
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 500;
-  font-style: normal;
-  font-size: 18px;
-  line-height: 100%;
-  letter-spacing: -0.05em;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.booking-confirmation__requirements-submit:hover:not(:disabled) {
-  background: var(--wh-orange-600);
-}
-
-.booking-confirmation__requirements-submit:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.booking-confirmation__requirements-submit--loading {
-  cursor: wait;
 }
 
 .booking-confirmation__confirm-save {
@@ -1286,7 +1175,6 @@ async function confirmSaveBooking() {
   }
 
   .booking-confirmation__cta,
-  .booking-confirmation__requirements-submit,
   .booking-confirmation__confirm-save {
     width: 100%;
     height: 56px;
