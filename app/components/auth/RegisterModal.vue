@@ -2,11 +2,12 @@
 import type { Role } from '~/types/api'
 import { extractPhoneDigits, formatPhone } from '~/utils/phone'
 
-const { isOpen, close } = useRegisterModal()
+const { isOpen, open, close } = useRegisterModal()
 const { open: openLoginModal } = useLoginModal()
 const { roles: rolesApi, auth } = useApi()
 const { loginWithSession } = useAuth()
 const notifications = useNotifications()
+const route = useRoute()
 
 const firstName = ref('')
 const lastName = ref('')
@@ -16,6 +17,8 @@ const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const acceptTerms = ref(false)
+const suspendedForLegal = ref(false)
+const returnPath = ref<string | null>(null)
 
 const roles = ref<Role[]>([])
 const rolesLoading = ref(false)
@@ -230,17 +233,39 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 function switchToLogin() {
+  suspendedForLegal.value = false
+  returnPath.value = null
   close()
   openLoginModal()
 }
 
+function closeForLegalPage() {
+  returnPath.value = route.fullPath
+  suspendedForLegal.value = true
+  close()
+}
+
 watch(isOpen, (open) => {
   if (open) {
+    suspendedForLegal.value = false
+    returnPath.value = null
     loadRoles()
     return
   }
 
-  resetForm()
+  if (!suspendedForLegal.value) {
+    resetForm()
+  }
+})
+
+watch(() => route.fullPath, (path) => {
+  if (!suspendedForLegal.value || !returnPath.value || path !== returnPath.value) {
+    return
+  }
+
+  suspendedForLegal.value = false
+  returnPath.value = null
+  open()
 })
 </script>
 
@@ -387,11 +412,11 @@ watch(isOpen, (open) => {
               >
               <span>
                 Мною прочитаны и принимаются
-                <NuxtLink to="/terms" class="register-modal__terms-link" @click="close">
+                <NuxtLink to="/terms" class="register-modal__terms-link" @click="closeForLegalPage">
                   Условия использования
                 </NuxtLink>
                 и
-                <NuxtLink to="/politika_konfidencialnosti" class="register-modal__terms-link" @click="close">
+                <NuxtLink to="/politika_konfidencialnosti" class="register-modal__terms-link" @click="closeForLegalPage">
                   Политика конфиденциальности
                 </NuxtLink>
               </span>
