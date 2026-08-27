@@ -683,10 +683,6 @@ onBeforeUnmount(() => {
   box-shadow: 0 1px 0 var(--wh-gray-400);
 }
 
-.booking-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
 .booking-table th:first-child,
 .booking-table th:nth-child(2),
 .booking-table th:nth-child(3),
