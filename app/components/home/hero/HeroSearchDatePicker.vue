@@ -26,7 +26,7 @@ const start = defineModel<Date | null>('start', { default: null })
 const end = defineModel<Date | null>('end', { default: null })
 const activePart = defineModel<'start' | 'end' | null>('activePart', { default: 'start' })
 
-const viewMonth = ref(startOfDay(start.value ?? new Date()))
+const viewMonth = ref(startOfDay(start.value ?? props.minDate ?? new Date()))
 const weekdays = getWeekdayNames()
 const isSingle = computed(() => props.mode === 'single')
 const hasDateLimits = computed(() => Boolean(props.minDate || props.maxDate))
@@ -73,11 +73,15 @@ function focusMonthForPart(part: 'start' | 'end' | null) {
     ? (end.value ?? start.value)
     : (start.value ?? end.value)
 
-  if (!target) {
+  if (target) {
+    viewMonth.value = startOfDay(target)
     return
   }
 
-  viewMonth.value = startOfDay(target)
+  // No selected date: open on the earliest allowed month (e.g. stay month for hunt date)
+  if (props.minDate) {
+    viewMonth.value = startOfDay(props.minDate)
+  }
 }
 
 watch(
