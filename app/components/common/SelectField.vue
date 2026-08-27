@@ -172,7 +172,7 @@ onUnmounted(() => {
 
 .select-field__trigger {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   width: 100%;
@@ -230,7 +230,6 @@ onUnmounted(() => {
   flex-shrink: 0;
   width: 12px;
   height: 8px;
-  margin-top: 6px;
   color: #1c211c;
   transition: transform 0.2s ease;
 }
