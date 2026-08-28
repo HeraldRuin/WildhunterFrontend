@@ -1083,7 +1083,8 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
     gap: 12px;
     padding: 14px 16px;
     max-width: 100%;
@@ -1091,6 +1092,7 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__col--name {
+    grid-column: 1 / -1;
     flex-wrap: wrap;
     align-items: flex-start;
     width: 100%;
@@ -1111,6 +1113,7 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: stretch;
     gap: 4px;
+    min-width: 0;
   }
 
   .extra-services__field-label--mobile {
@@ -1136,17 +1139,14 @@ onBeforeUnmount(() => {
     min-width: 0;
   }
 
-  .extra-services__col--cost,
   .extra-services__col--actions {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  .extra-services__col--actions {
-    justify-content: flex-start;
-    flex-wrap: wrap;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
     padding-bottom: 0;
+    width: auto;
+    max-width: none;
+    min-width: 0;
   }
 }
 </style>
