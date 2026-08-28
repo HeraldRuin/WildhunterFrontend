@@ -368,3 +368,9 @@ export function mapBookingHistoryItem(
     collectionUrl: item.invitation_url || undefined,
   }
 }
+
+export function countPendingInvitations(
+  items: Array<Pick<BookingHistoryItemDto, 'is_invited' | 'invitation_accepted'>>,
+): number {
+  return items.filter(item => item.is_invited && !item.invitation_accepted).length
+}

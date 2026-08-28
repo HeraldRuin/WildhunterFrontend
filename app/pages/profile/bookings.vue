@@ -6,7 +6,7 @@ import type {
 } from '~/composables/useBookingStatusChannel'
 import type { BookingAction, BookingHistoryItem } from '~/types/booking'
 import { ROLE_BASE_ADMIN, ROLE_HUNTER } from '~/utils/roles'
-import { FINISHED_COLLECTION_MODAL_STATUSES, mapBookingHistoryItem } from '~/utils/bookingHistory'
+import { FINISHED_COLLECTION_MODAL_STATUSES, countPendingInvitations, mapBookingHistoryItem } from '~/utils/bookingHistory'
 
 definePageMeta({
   layout: 'profile',
@@ -80,7 +80,7 @@ const invitationCode = computed(() => {
 const {
   data: historyResponse,
   error: historyError,
-  refresh: refreshHistory,
+  refresh: refreshHistoryRaw,
 } = useAsyncData(
   () => `profile-booking-history-${statusFilter.value ?? 'all'}-${page.value}-${bookingIdFilter.value ?? 'none'}-${invitationCode.value ?? 'no-code'}`,
   () => bookingsApi.history({
@@ -94,6 +94,107 @@ const {
     watch: [statusFilter, page, bookingIdFilter, invitationCode],
   },
 )
+
+const {
+  data: invitationsCountResponse,
+  refresh: refreshInvitationsCount,
+} = useAsyncData(
+  'profile-booking-invitations-count',
+  () => bookingsApi.history({ page: 1, status: 'invitation' }),
+  {
+    lazy: true,
+  },
+)
+
+async function refreshHistory() {
+  await refreshHistoryRaw()
+
+  if (isHunter.value && statusFilter.value !== 'invitation') {
+    await refreshInvitationsCount()
+  }
+
+  syncPendingInvitationsCount()
+}
+
+const pendingInvitationsCount = ref(0)
+
+function resolvePendingInvitationsCount(): number | null {
+  const historyItems = historyResponse.value?.data?.bookings?.items
+  const fetchItems = invitationsCountResponse.value?.data?.bookings?.items
+
+  if (statusFilter.value === 'invitation') {
+    if (!historyItems) {
+      return null
+    }
+
+    return countPendingInvitations(historyItems)
+  }
+
+  if (!fetchItems) {
+    return null
+  }
+
+  return countPendingInvitations(fetchItems)
+}
+
+function syncPendingInvitationsCount() {
+  const resolved = resolvePendingInvitationsCount()
+  if (resolved != null) {
+    pendingInvitationsCount.value = resolved
+  }
+}
+
+watch([historyResponse, invitationsCountResponse, statusFilter], syncPendingInvitationsCount, { immediate: true })
+
+const invitationsCount = computed(() => pendingInvitationsCount.value)
+
+function patchInvitationAccepted(bookingCode: string) {
+  const patchResponse = (response: typeof historyResponse.value) => {
+    if (!response?.data?.bookings?.items) {
+      return response
+    }
+
+    return {
+      ...response,
+      data: {
+        ...response.data,
+        bookings: {
+          ...response.data.bookings,
+          items: response.data.bookings.items.map(item =>
+            item.code === bookingCode
+              ? { ...item, invitation_accepted: true }
+              : item,
+          ),
+        },
+      },
+    }
+  }
+
+  historyResponse.value = patchResponse(historyResponse.value)
+  invitationsCountResponse.value = patchResponse(invitationsCountResponse.value)
+  syncPendingInvitationsCount()
+}
+
+function decreasePendingInvitationsCount() {
+  pendingInvitationsCount.value = Math.max(0, pendingInvitationsCount.value - 1)
+}
+
+function handleInvitationAccepted() {
+  const bookingCode = invitationModalBooking.value?.code
+  if (bookingCode) {
+    patchInvitationAccepted(bookingCode)
+  }
+  else {
+    decreasePendingInvitationsCount()
+  }
+
+  void refreshHistory()
+}
+
+function handleInvitationDeclined() {
+  decreasePendingInvitationsCount()
+  void refreshHistory()
+}
 
 const { isBaseAdmin } = useUserRole()
 const isHunter = computed(() => !isBaseAdmin.value)
@@ -430,9 +531,13 @@ const emptyText = computed(() => {
     : 'Список истории бронирований пуст'
 })
 
-watch(statusFilter, () => {
+watch(statusFilter, (status, previousStatus) => {
   page.value = 1
   historyResponse.value = null
+
+  if (previousStatus === 'invitation' && status !== 'invitation' && isHunter.value) {
+    void refreshInvitationsCount()
+  }
 })
 
 watch(routeStatus, (status) => {
@@ -732,6 +837,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
       :role="isBaseAdmin ? ROLE_BASE_ADMIN : ROLE_HUNTER"
       :tab-statuses="tabStatuses"
       :dropdown-statuses="dropdownStatuses"
+      :invitations-count="invitationsCount"
     />
 
     <ProfileBookingMobileSelect
@@ -775,8 +881,8 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
     <ProfileInvitationModal
       :booking="invitationModalBooking"
       @close="invitationModalBooking = null"
-      @accepted="refreshHistory"
-      @declined="refreshHistory"
+      @accepted="handleInvitationAccepted"
+      @declined="handleInvitationDeclined"
     />
     <ProfileCollectionInvitationsModal
       :booking="collectionInvitationsModalBooking"

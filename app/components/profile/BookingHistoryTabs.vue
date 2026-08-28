@@ -7,10 +7,12 @@ const props = withDefaults(defineProps<{
   role?: string | null
   tabStatuses?: string[]
   dropdownStatuses?: string[]
+  invitationsCount?: number
 }>(), {
   role: ROLE_HUNTER,
   tabStatuses: () => [],
   dropdownStatuses: () => [],
+  invitationsCount: 0,
 })
 
 const STATUS_LABELS: Record<string, string> = {
@@ -77,6 +79,14 @@ function isTabActive(tabId: string | undefined) {
 function selectTab(tabId: string | undefined) {
   status.value = tabId
 }
+
+function invitationBadgeLabel(count: number) {
+  if (count <= 0) {
+    return ''
+  }
+
+  return count > 99 ? '99+' : String(count)
+}
 </script>
 
 <template>
@@ -99,7 +109,13 @@ function selectTab(tabId: string | undefined) {
         :aria-selected="isTabActive(tab.id)"
         @click="selectTab(tab.id)"
       >
-        {{ tab.label }}
+        <span class="booking-history-tabs__tab-label">{{ tab.label }}</span>
+        <span
+          v-if="tab.id === 'invitation' && props.invitationsCount > 0"
+          class="booking-history-tabs__badge"
+        >
+          {{ invitationBadgeLabel(props.invitationsCount) }}
+        </span>
       </button>
 
       <CommonSelectField
@@ -134,6 +150,9 @@ function selectTab(tabId: string | undefined) {
 
 .booking-history-tabs__tab {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 0 12px;
   border: none;
   background: none;
@@ -142,6 +161,25 @@ function selectTab(tabId: string | undefined) {
   font-weight: 600;
   cursor: pointer;
   transition: color 0.15s ease;
+}
+
+.booking-history-tabs__tab-label {
+  line-height: 1.2;
+}
+
+.booking-history-tabs__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .booking-history-tabs__tab::after {
