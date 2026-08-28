@@ -467,7 +467,7 @@ function participantBadgeLabel(status: CollectionParticipantStatus) {
 function participantBadgeClass(status: CollectionParticipantStatus) {
   switch (status) {
     case 'confirmed':
-      return ''
+      return 'collection-modal__badge--confirmed'
     case 'pending':
       return 'collection-modal__badge--pending'
     case 'declined':
@@ -538,6 +538,23 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
                 class="collection-modal__badge"
                 :class="participantBadgeClass(participant.status)"
               >
+                <svg
+                  v-if="participant.status === 'confirmed'"
+                  class="collection-modal__badge-icon"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M2 6l3 3 5-5"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
                 {{ participantBadgeLabel(participant.status) }}
               </span>
             </div>
@@ -808,15 +825,25 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 }
 
 .collection-modal__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   flex-shrink: 0;
   padding: 5px 10px;
   border-radius: 6px;
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
+}
+
+.collection-modal__badge--confirmed {
+  background: var(--wh-green);
+  color: var(--wh-white);
+}
+
+.collection-modal__badge-icon {
+  flex-shrink: 0;
 }
 
 .collection-modal__badge--pending {
@@ -990,7 +1017,7 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
   padding: 10px 16px;
   border: none;
   border-radius: 8px;
-  background: var(--wh-green);
+  background: var(--wh-orange-500);
   color: var(--wh-white);
   font-size: 0.88rem;
   font-weight: 600;
@@ -1000,15 +1027,15 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 }
 
 .collection-modal__btn:hover {
-  background: #466144;
+  background: var(--wh-orange-600);
 }
 
 .collection-modal__btn--accent {
-  background: var(--wh-green);
+  background: var(--wh-orange-500);
 }
 
 .collection-modal__btn--accent:hover {
-  background: #466144;
+  background: var(--wh-orange-600);
 }
 
 .collection-modal__btn:disabled {
