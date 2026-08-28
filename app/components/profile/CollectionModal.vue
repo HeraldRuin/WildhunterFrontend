@@ -901,7 +901,7 @@ function updateStatsPanelLayout() {
               >
                 Завершить сбор
               </button>
-              <button type="button" class="collection-modal__btn">
+              <button type="button" class="collection-modal__btn" disabled>
                 Открытый сбор
               </button>
             </div>
