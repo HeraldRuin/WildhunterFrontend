@@ -43,7 +43,7 @@ const emit = defineEmits<{
   width: 36px;
   height: 36px;
   padding: 0;
-  border: 1px solid transparent;
+  border: 1px solid var(--wh-field-border);
   border-radius: 50%;
   background: transparent;
   color: var(--wh-gray-400);
@@ -62,7 +62,7 @@ const emit = defineEmits<{
 
 .modal-close-button:hover:not(:disabled) {
   color: var(--wh-black-text);
-  border-color: var(--wh-gray);
+  border-color: var(--wh-field-border-active);
 }
 
 .modal-close-button:disabled {
