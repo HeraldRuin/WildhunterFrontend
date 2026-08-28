@@ -123,11 +123,15 @@ function resolvePendingInvitationsCount(): number | null {
   const fetchItems = invitationsCountResponse.value?.data?.bookings?.items
 
   if (statusFilter.value === 'invitation') {
-    if (!historyItems) {
-      return null
+    if (historyItems) {
+      return countPendingInvitations(historyItems)
     }
 
-    return countPendingInvitations(historyItems)
+    if (fetchItems) {
+      return countPendingInvitations(fetchItems)
+    }
+
+    return null
   }
 
   if (!fetchItems) {
@@ -143,10 +147,6 @@ function syncPendingInvitationsCount() {
     pendingInvitationsCount.value = resolved
   }
 }
-
-watch([historyResponse, invitationsCountResponse, statusFilter], syncPendingInvitationsCount, { immediate: true })
-
-const invitationsCount = computed(() => pendingInvitationsCount.value)
 
 function patchInvitationAccepted(bookingCode: string) {
   const patchResponse = (response: typeof historyResponse.value) => {
@@ -539,6 +539,10 @@ watch(statusFilter, (status, previousStatus) => {
     void refreshInvitationsCount()
   }
 })
+
+watch([historyResponse, invitationsCountResponse, statusFilter], syncPendingInvitationsCount, { immediate: true })
+
+const invitationsCount = computed(() => pendingInvitationsCount.value)
 
 watch(routeStatus, (status) => {
   statusFilter.value = status === 'invitation' ? 'invitation' : undefined
