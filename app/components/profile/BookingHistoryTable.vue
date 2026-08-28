@@ -426,7 +426,7 @@ onBeforeUnmount(() => {
                   {{ item.status.timer }}
                 </div>
                 <template v-if="item.status.code === 'prepayment_collection'">
-                  <div v-if="item.status.paid" class="booking-table__status-meta">
+                  <div v-if="item.status.paid" class="booking-table__status-meta booking-table__status-meta--collected">
                     {{ item.status.paid }}
                   </div>
                   <div
@@ -435,7 +435,7 @@ onBeforeUnmount(() => {
                   >
                     {{ item.status.subStatus }}
                   </div>
-                  <div v-if="item.status.collected" class="booking-table__status-meta">
+                  <div v-if="item.status.collected" class="booking-table__status-meta booking-table__status-meta--collected">
                     {{ item.status.collected }}
                   </div>
                 </template>
@@ -446,7 +446,7 @@ onBeforeUnmount(() => {
                   >
                     {{ item.status.subStatus }}
                   </div>
-                  <div v-if="item.status.paid" class="booking-table__status-meta">
+                  <div v-if="item.status.paid" class="booking-table__status-meta booking-table__status-meta--collected">
                     {{ item.status.paid }}
                   </div>
                   <div
@@ -455,12 +455,12 @@ onBeforeUnmount(() => {
                   >
                     {{ item.status.collectionStatus }}
                   </div>
-                  <div v-if="item.status.collected" class="booking-table__status-meta">
+                  <div v-if="item.status.collected" class="booking-table__status-meta booking-table__status-meta--collected">
                     {{ item.status.collected }}
                   </div>
                 </template>
                 <template v-else>
-                  <div v-if="item.status.collected" class="booking-table__status-meta">
+                  <div v-if="item.status.collected" class="booking-table__status-meta booking-table__status-meta--collected">
                     {{ item.status.collected }}
                   </div>
                   <div
@@ -469,7 +469,7 @@ onBeforeUnmount(() => {
                   >
                     {{ item.status.subStatus }}
                   </div>
-                  <div v-if="item.status.paid" class="booking-table__status-meta">
+                  <div v-if="item.status.paid" class="booking-table__status-meta booking-table__status-meta--collected">
                     {{ item.status.paid }}
                   </div>
                 </template>
@@ -821,6 +821,10 @@ onBeforeUnmount(() => {
   color: var(--wh-black-text);
   font-size: inherit;
   font-weight: 700;
+}
+
+.booking-table__status-meta--collected {
+  color: var(--wh-black-text);
 }
 
 .booking-table__payment-btn {
