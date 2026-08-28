@@ -72,6 +72,27 @@ const emptySlotCount = computed(() => {
   )
 })
 
+const collectionLinkAbsolute = computed(() => {
+  const url = state.value?.collectionUrl
+  if (!url) return ''
+
+  if (!import.meta.client) return url
+
+  try {
+    return new URL(url, window.location.origin).toString()
+  }
+  catch {
+    return url
+  }
+})
+
+const collectionLinkCopyText = computed(() => {
+  const absolute = collectionLinkAbsolute.value
+  if (!absolute) return ''
+
+  return `Ссылку на сбор охотников ${absolute}`
+})
+
 watch(isOpen, (open) => {
   if (timerInterval) {
     clearInterval(timerInterval)
@@ -257,18 +278,16 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 async function copyCollectionLink() {
-  const url = state.value?.collectionUrl
   if (!import.meta.client) return
 
-  if (!url) {
+  const text = collectionLinkCopyText.value
+  if (!text) {
     notifications.error('Ссылка на сбор недоступна')
     return
   }
 
-  const absolute = new URL(url, window.location.origin).toString()
-
   try {
-    await navigator.clipboard.writeText(absolute)
+    await navigator.clipboard.writeText(text)
     notifications.success('Ссылка скопирована в буфер обмена')
   } catch {
     notifications.error('Не удалось скопировать ссылку')
@@ -488,13 +507,20 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
               Открыт сбор для брони #{{ state.bookingNumber }}
             </h2>
 
-            <button
-              type="button"
-              class="collection-modal__link"
-              @click="copyCollectionLink"
-            >
-              Ссылка на сбор
-            </button>
+            <div class="collection-modal__link-row">
+              <span class="collection-modal__link-label">
+                Прямая ссылка на сбор
+              </span>
+
+              <button
+                v-if="collectionLinkAbsolute"
+                type="button"
+                class="collection-modal__link-url"
+                @click="copyCollectionLink"
+              >
+                {{ collectionLinkAbsolute }}
+              </button>
+            </div>
           </header>
 
           <div class="collection-modal__body">
@@ -691,7 +717,7 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 
 .collection-modal__card {
   position: relative;
-  width: min(100%, 720px);
+  width: min(100%, 1100px);
   padding: 28px 28px 24px;
   border: 1px solid var(--wh-gray-200);
   border-radius: var(--wh-radius);
@@ -702,9 +728,9 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 
 .collection-modal__header {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
   padding-right: 40px;
   margin-bottom: 20px;
 }
@@ -718,19 +744,42 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
   color: var(--wh-gray-900);
 }
 
-.collection-modal__link {
+.collection-modal__link-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 8px;
+}
+
+.collection-modal__link-label {
   flex-shrink: 0;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--wh-gray-900);
+}
+
+.collection-modal__link-url {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
   padding: 0;
   border: none;
   background: none;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  text-align: left;
+  font-size: 0.88rem;
+  line-height: 1.4;
   color: #4aa3d9;
-  font-size: 0.92rem;
-  font-weight: 500;
   cursor: pointer;
   transition: color 0.15s ease;
 }
 
-.collection-modal__link:hover {
+.collection-modal__link-url:hover {
   color: #2f8fc9;
   text-decoration: underline;
 }
@@ -939,7 +988,7 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 .collection-modal__footer {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 10px;
 }
 
