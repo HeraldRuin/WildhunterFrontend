@@ -1034,13 +1034,6 @@ onBeforeUnmount(() => {
 .booking-table__details-popover .modal-close-button {
   top: 4px;
   right: 4px;
-  width: 22px;
-  height: 22px;
-}
-
-.booking-table__details-popover .modal-close-button svg {
-  width: 14px;
-  height: 14px;
 }
 
 .booking-table__details-popover > div + div {

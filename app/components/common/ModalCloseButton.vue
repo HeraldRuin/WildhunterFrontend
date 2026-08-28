@@ -1,10 +1,16 @@
 <script setup lang="ts">
+type ModalCloseButtonVariant = 'icon' | 'text'
+
 withDefaults(defineProps<{
   disabled?: boolean
   ariaLabel?: string
+  variant?: ModalCloseButtonVariant
+  label?: string
 }>(), {
   disabled: false,
   ariaLabel: 'Закрыть',
+  variant: 'text',
+  label: 'Закрыть',
 })
 
 const emit = defineEmits<{
@@ -16,11 +22,21 @@ const emit = defineEmits<{
   <button
     type="button"
     class="modal-close-button"
-    :aria-label="ariaLabel"
+    :class="{ 'modal-close-button--icon': variant === 'icon' }"
+    :aria-label="variant === 'text' ? undefined : ariaLabel"
     :disabled="disabled"
     @click="emit('click')"
   >
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+    <template v-if="variant === 'text'">
+      {{ label }}
+    </template>
+    <svg
+      v-else
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+    >
       <path
         d="M5 5l10 10M15 5L5 15"
         fill="none"
@@ -40,13 +56,18 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
+  width: auto;
+  height: auto;
+  min-height: 36px;
+  padding: 8px 14px;
   border: 1px solid var(--wh-field-border);
-  border-radius: 50%;
+  border-radius: 8px;
   background: transparent;
   color: var(--wh-gray-400);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
   outline: none;
   -webkit-tap-highlight-color: transparent;
@@ -68,6 +89,14 @@ const emit = defineEmits<{
 .modal-close-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.modal-close-button--icon {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 50%;
 }
 
 @media (--wh-tablet) {
