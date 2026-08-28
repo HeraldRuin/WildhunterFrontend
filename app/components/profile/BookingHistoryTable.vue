@@ -410,6 +410,7 @@ onBeforeUnmount(() => {
                   class="booking-table__status-label"
                   :class="{
                     'booking-table__status-label--danger': item.status.code === 'processing',
+                    'booking-table__status-label--confirmed': item.status.code === 'confirmed',
                   }"
                 >
                   {{ item.status.label }}<template v-if="item.status.timerHours"> ({{ item.status.timerHours }} ч)</template>
@@ -804,6 +805,10 @@ onBeforeUnmount(() => {
 
 .booking-table__status-label--danger {
   color: var(--wh-field-error);
+}
+
+.booking-table__status-label--confirmed {
+  color: color-mix(in srgb, var(--wh-green) 72%, black);
 }
 
 .booking-table__status-meta {
