@@ -153,7 +153,6 @@ const targetInviteFieldCount = computed(() => {
 const canAddInviteField = computed(() => {
   return usesExpandedInviteFields.value
     && visibleInviteFieldCount.value < emptySlotCount.value
-    && !canExtendCollection.value
 })
 
 const collectionLinkAbsolute = computed(() => {
@@ -244,7 +243,7 @@ function initializeInviteFields() {
 }
 
 function addInviteField() {
-  if (!canAddInviteField.value) return
+  if (!canAddInviteField.value || canExtendCollection.value) return
 
   visibleInviteFieldCount.value += 1
   inviteQueries.value = [...inviteQueries.value, '']
@@ -838,6 +837,7 @@ function updateStatsPanelLayout() {
               type="button"
               class="collection-modal__add-field-btn"
               aria-label="Добавить поле для поиска"
+              :disabled="canExtendCollection"
               @click="addInviteField"
             >
               +
@@ -1289,10 +1289,15 @@ function updateStatsPanelLayout() {
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 
-.collection-modal__add-field-btn:hover {
+.collection-modal__add-field-btn:hover:not(:disabled) {
   border-color: #e8883a;
   background: #fff7ef;
   color: #e8883a;
+}
+
+.collection-modal__add-field-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .collection-modal__search-results {
