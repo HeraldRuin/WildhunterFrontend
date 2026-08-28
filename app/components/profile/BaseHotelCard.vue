@@ -99,7 +99,10 @@ function closeEdit() {
       @click="closeEdit"
     />
 
-    <div class="base-hotel-card__main">
+    <div
+      class="base-hotel-card__layout"
+      :class="{ 'base-hotel-card__layout--expanded': isEditing }"
+    >
       <div class="base-hotel-card__media">
       <img
         v-if="showImage"
@@ -130,9 +133,9 @@ function closeEdit() {
           />
         </svg>
       </span>
-    </div>
+      </div>
 
-      <div class="base-hotel-card__content">
+      <div class="base-hotel-card__info">
         <div class="base-hotel-card__body">
           <h2 class="base-hotel-card__title">{{ item.title }}</h2>
 
@@ -240,48 +243,48 @@ function closeEdit() {
           </button> -->
         </div>
       </div>
-    </div>
 
-    <div v-if="isEditing" class="base-hotel-card__panel">
-      <div class="base-hotel-card__panel-top">
-        <nav class="base-hotel-card__nav" aria-label="Разделы редактирования">
-          <button
-            v-for="tab in editTabs"
-            :key="tab.id"
-            type="button"
-            class="base-hotel-card__nav-link"
-            :class="{ 'base-hotel-card__nav-link--active': activeEditTab === tab.id }"
-            @click="selectEditTab(tab.id)"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
-      </div>
+      <div v-if="isEditing" class="base-hotel-card__panel">
+        <div class="base-hotel-card__panel-top">
+          <nav class="base-hotel-card__nav" aria-label="Разделы редактирования">
+            <button
+              v-for="tab in editTabs"
+              :key="tab.id"
+              type="button"
+              class="base-hotel-card__nav-link"
+              :class="{ 'base-hotel-card__nav-link--active': activeEditTab === tab.id }"
+              @click="selectEditTab(tab.id)"
+            >
+              {{ tab.label }}
+            </button>
+          </nav>
+        </div>
 
-      <div v-if="activeEditTab === 'content'" class="base-hotel-card__form">
-        <div class="base-hotel-card__form-left">
+        <div v-if="activeEditTab === 'content'" class="base-hotel-card__form">
+          <div class="base-hotel-card__form-left">
+            <CommonFormField
+              v-model="editTitle"
+              label="Название"
+              placeholder="Название отеля"
+              no-margin
+            />
+            <CommonFormField
+              v-model="editRating"
+              label="Рейтинг"
+              placeholder=""
+              no-margin
+            />
+          </div>
           <CommonFormField
-            v-model="editTitle"
-            label="Название"
-            placeholder="Название отеля"
-            no-margin
-          />
-          <CommonFormField
-            v-model="editRating"
-            label="Рейтинг"
+            v-model="editContent"
+            class="base-hotel-card__form-content"
+            label="Контент"
             placeholder=""
+            multiline
+            :rows="4"
             no-margin
           />
         </div>
-        <CommonFormField
-          v-model="editContent"
-          class="base-hotel-card__form-content"
-          label="Контент"
-          placeholder=""
-          multiline
-          :rows="4"
-          no-margin
-        />
       </div>
     </div>
   </article>
@@ -291,7 +294,7 @@ function closeEdit() {
 .base-hotel-card {
   display: flex;
   flex-direction: column;
-  width: 100%;
+  width: fit-content;
   max-width: 100%;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
@@ -302,8 +305,7 @@ function closeEdit() {
 
 .base-hotel-card--expanded {
   position: relative;
-  flex-direction: row;
-  align-items: stretch;
+  width: 100%;
   overflow: visible;
 }
 
@@ -311,41 +313,34 @@ function closeEdit() {
   z-index: 2;
 }
 
-.base-hotel-card__main {
+.base-hotel-card__layout {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: 320px auto;
+  align-items: stretch;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.base-hotel-card__layout--expanded {
+  grid-template-columns: 320px minmax(280px, 360px) minmax(0, 1fr);
   width: 100%;
-  min-width: 0;
 }
 
-.base-hotel-card--expanded .base-hotel-card__main {
+.base-hotel-card__info {
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
-  width: 312px;
-  max-width: 312px;
-  padding: 16px;
-  box-sizing: border-box;
-}
-
-.base-hotel-card__content {
-  display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   min-width: 0;
-  min-height: 180px;
   padding: 20px;
   box-sizing: border-box;
 }
 
-.base-hotel-card--expanded .base-hotel-card__content {
-  min-height: 0;
-  padding: 0;
-}
-
 .base-hotel-card__panel {
-  flex: 1 1 0;
   min-width: 0;
-  padding: 16px 16px 16px 24px;
+  padding: 20px 20px 20px 24px;
+  border-left: 1px solid var(--wh-gray-400);
+  box-sizing: border-box;
   animation: base-hotel-card-panel-in 0.35s ease;
 }
 
@@ -361,7 +356,6 @@ function closeEdit() {
   align-items: center;
   gap: 28px;
   min-width: 0;
-  margin-left: 20px;
 }
 
 .base-hotel-card__nav-link {
@@ -408,8 +402,6 @@ function closeEdit() {
   gap: 16px 20px;
   align-items: start;
   margin-top: 16px;
-  margin-left: 20px;
-  padding-right: 16px;
 }
 
 .base-hotel-card__form-left {
@@ -447,14 +439,6 @@ function closeEdit() {
   background: #ccc;
 }
 
-.base-hotel-card--expanded .base-hotel-card__media {
-  flex-shrink: 0;
-  width: 100%;
-  min-height: 170px;
-  max-height: 180px;
-  border-radius: var(--wh-radius);
-}
-
 .base-hotel-card__image {
   width: 100%;
   height: 100%;
@@ -490,16 +474,7 @@ function closeEdit() {
 
 .base-hotel-card__body {
   min-width: 0;
-}
-
-.base-hotel-card--expanded .base-hotel-card__body {
-  padding: 12px 0 0;
-}
-
-.base-hotel-card--expanded .base-hotel-card__actions {
-  margin-top: 12px;
-  padding: 12px 0 0;
-  justify-content: flex-start;
+  width: 100%;
 }
 
 .base-hotel-card__title {
@@ -564,9 +539,8 @@ function closeEdit() {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: auto;
-  padding-top: 16px;
-  justify-content: flex-end;
+  margin-top: 32px;
+  justify-content: flex-start;
 }
 
 .base-hotel-card__btn {
@@ -612,22 +586,26 @@ function closeEdit() {
 }
 
 @media (--wh-narrow) {
+  .base-hotel-card,
   .base-hotel-card--expanded {
-    flex-direction: column;
-  }
-
-  .base-hotel-card--expanded .base-hotel-card__main {
     width: 100%;
-    max-width: none;
   }
 
-  .base-hotel-card__main {
+  .base-hotel-card__layout,
+  .base-hotel-card__layout--expanded {
     grid-template-columns: 1fr;
+    width: 100%;
   }
 
-  .base-hotel-card__content {
-    min-height: 0;
+  .base-hotel-card__info {
     padding: 16px;
+  }
+
+  .base-hotel-card__panel {
+    padding: 0 16px 16px;
+    border-left: none;
+    border-top: 1px solid var(--wh-gray-400);
+    animation: none;
   }
 
   .base-hotel-card__media,
@@ -637,8 +615,7 @@ function closeEdit() {
   }
 
   .base-hotel-card__actions {
-    justify-content: stretch;
-    padding-top: 12px;
+    width: 100%;
   }
 
   .base-hotel-card__btn:nth-child(1),
@@ -654,12 +631,6 @@ function closeEdit() {
     background: #17a2b8;
   }
 
-  .base-hotel-card__panel {
-    margin: 12px 0 0;
-    padding: 0;
-    animation: none;
-  }
-
   .base-hotel-card__nav {
     gap: 16px 20px;
   }
@@ -670,17 +641,6 @@ function closeEdit() {
 
   .base-hotel-card__form-left {
     gap: 12px;
-  }
-
-  .base-hotel-card--expanded .base-hotel-card__media,
-  .base-hotel-card--expanded .base-hotel-card__body,
-  .base-hotel-card--expanded .base-hotel-card__actions {
-    max-width: none;
-  }
-
-  .base-hotel-card--expanded .base-hotel-card__media,
-  .base-hotel-card--expanded .base-hotel-card__placeholder {
-    max-height: none;
   }
 }
 </style>

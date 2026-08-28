@@ -104,33 +104,35 @@ onMounted(() => {
 
 <template>
   <div class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
+    <div class="base-manage">
+      <header class="profile-page__header">
+        <AppBreadcrumbs :items="breadcrumbs" />
 
-      <ProfileNotificationsBell />
-    </header>
+        <ProfileNotificationsBell />
+      </header>
 
-    <CommonPageTitle divider>Управление базой</CommonPageTitle>
+      <CommonPageTitle divider>Управление базой</CommonPageTitle>
 
-    <p v-if="loadError" class="base-hotels__status base-hotels__status--error">
-      {{ loadError }}
-    </p>
+      <p v-if="loadError" class="base-hotels__status base-hotels__status--error">
+        {{ loadError }}
+      </p>
 
-    <p v-else-if="isLoading" class="base-hotels__status">
-      Загрузка...
-    </p>
+      <p v-else-if="isLoading" class="base-hotels__status">
+        Загрузка...
+      </p>
 
-    <div v-else-if="hotelsCount > 0" class="base-hotels">
-      <div class="base-hotels__list">
-        <ProfileBaseHotelCard
-          v-for="hotel in hotels"
-          :key="hotel.id"
-          :item="hotel"
-        />
+      <div v-else-if="hotelsCount > 0" class="base-hotels">
+        <div class="base-hotels__list">
+          <ProfileBaseHotelCard
+            v-for="hotel in hotels"
+            :key="hotel.id"
+            :item="hotel"
+          />
+        </div>
       </div>
-    </div>
 
-    <p v-else class="base-hotels__empty">Нет отелей</p>
+      <p v-else class="base-hotels__empty">Нет отелей</p>
+    </div>
   </div>
 </template>
 
@@ -141,6 +143,13 @@ onMounted(() => {
   padding-left: 20px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+}
+
+.base-manage {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  max-width: 100%;
 }
 
 .profile-page__header {
@@ -158,13 +167,14 @@ onMounted(() => {
   overflow: visible;
 }
 
-.profile-page :deep(.page-title--divider) {
+.base-manage :deep(.page-title--divider) {
   width: 100%;
 }
 
 .base-hotels,
 .base-hotels__list {
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .base-hotels__list {
@@ -189,7 +199,8 @@ onMounted(() => {
     padding: 12px 8px 32px;
   }
 
-  .profile-page__header {
+  .base-manage {
+    display: flex;
     width: 100%;
   }
 }
@@ -205,6 +216,11 @@ onMounted(() => {
     padding: 0;
     background: transparent;
     border-radius: 0;
+  }
+
+  .base-hotels,
+  .base-hotels__list {
+    width: 100%;
   }
 }
 </style>
