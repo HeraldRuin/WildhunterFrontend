@@ -1,0 +1,314 @@
+<script setup lang="ts">
+import type { RoomManageItem } from '~/components/profile/RoomManageCard.vue'
+
+definePageMeta({
+  layout: 'profile',
+  path: '/rooms',
+})
+
+useHead({
+  title: 'Управление номерами — WH',
+})
+
+const authToken = useAuthToken()
+const ready = ref(false)
+
+onBeforeMount(() => {
+  authToken.initFromStorage()
+
+  if (!authToken.isAuthenticated.value) {
+    const { open: openLoginModal } = useLoginModal()
+    nextTick(() => openLoginModal())
+    void navigateTo('/', { replace: true })
+    return
+  }
+
+  ready.value = true
+})
+
+const breadcrumbs = [
+  { label: 'Главная', to: '/' },
+  { label: 'Параметры' },
+  { label: 'Управление базой', to: '/profile/base' },
+  { label: 'Управление номерами' },
+]
+
+const rooms = ref<RoomManageItem[]>([
+  {
+    id: 1,
+    title: '3-х местный',
+    image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400',
+    quantity: 3,
+    price: 3000,
+    status: 'publish',
+    updatedAt: '19.02.2026 11:51',
+  },
+  {
+    id: 2,
+    title: '4-х местный',
+    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400',
+    quantity: 4,
+    price: 4000,
+    status: 'publish',
+    updatedAt: '16.02.2026 06:49',
+  },
+])
+
+const roomsCount = computed(() => rooms.value.length)
+
+function roomsGenitiveNoun(count: number) {
+  const mod10 = count % 10
+  const mod100 = count % 100
+
+  if (mod10 === 1 && mod100 !== 11) {
+    return 'номера'
+  }
+
+  return 'номеров'
+}
+
+const roomsRangeLabel = computed(() => {
+  if (!roomsCount.value) {
+    return 'Нет номеров'
+  }
+
+  const count = roomsCount.value
+  return `Показаны 1 - ${count} из ${count} ${roomsGenitiveNoun(count)}`
+})
+
+function addRoom() {
+  // UI only — API later
+}
+
+function openAvailability() {
+  // UI only — API later
+}
+
+function toggleVisibility(id: number) {
+  const room = rooms.value.find(item => item.id === id)
+  if (!room) {
+    return
+  }
+
+  room.status = room.status === 'publish' ? 'draft' : 'publish'
+}
+</script>
+
+<template>
+  <div v-if="ready" class="profile-page">
+    <header class="profile-page__header">
+      <AppBreadcrumbs :items="breadcrumbs" />
+
+      <ProfileNotificationsBell />
+    </header>
+
+    <div class="rooms-manage__toolbar">
+      <CommonPageTitle>Управление номерами</CommonPageTitle>
+
+      <div class="rooms-manage__actions">
+        <button
+          type="button"
+          class="rooms-manage__btn rooms-manage__btn--success"
+          @click="addRoom"
+        >
+          + Добавить Номер
+        </button>
+
+        <button
+          type="button"
+          class="rooms-manage__btn rooms-manage__btn--warning"
+          @click="openAvailability"
+        >
+          <svg
+            class="rooms-manage__btn-icon"
+            width="14"
+            height="14"
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />
+            <path d="M2.25 8.25h15.5" stroke="currentColor" stroke-width="1.5" />
+            <path d="M6.5 2.25v3.25M13.5 2.25v3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          Доступные номера
+        </button>
+
+        <NuxtLink
+          to="/profile/base"
+          class="rooms-manage__btn rooms-manage__btn--info"
+        >
+          <svg
+            class="rooms-manage__btn-icon"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Назад к отелю
+        </NuxtLink>
+      </div>
+    </div>
+
+    <p class="rooms-manage__range">{{ roomsRangeLabel }}</p>
+
+    <div v-if="roomsCount > 0" class="rooms-manage__list">
+      <ProfileRoomManageCard
+        v-for="room in rooms"
+        :key="room.id"
+        :item="room"
+        @toggle-visibility="toggleVisibility(room.id)"
+      />
+    </div>
+
+    <p v-else class="rooms-manage__empty">Нет номеров</p>
+  </div>
+</template>
+
+<style scoped>
+.profile-page {
+  padding: 20px 40px 48px;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+}
+
+.profile-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  max-width: 1100px;
+  height: 31px;
+  margin-bottom: 20px;
+  padding: 0;
+  box-sizing: border-box;
+  background: var(--wh-white);
+  border-radius: var(--wh-radius);
+  overflow: visible;
+}
+
+.rooms-manage__toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  max-width: 1100px;
+  margin-bottom: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+.rooms-manage__toolbar :deep(.page-title) {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.rooms-manage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-top: 6px;
+}
+
+.rooms-manage__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 50px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.rooms-manage__btn-icon {
+  flex-shrink: 0;
+}
+
+.rooms-manage__btn--success {
+  background: #28a745;
+}
+
+.rooms-manage__btn--warning {
+  background: #ffc107;
+}
+
+.rooms-manage__btn--info {
+  background: #17a2b8;
+}
+
+.rooms-manage__range {
+  margin: 0 0 8px;
+  color: #6c757d;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.rooms-manage__list {
+  max-width: 1100px;
+}
+
+.rooms-manage__empty {
+  margin: 16px 0 0;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 16px;
+}
+
+@media (--wh-tablet) {
+  .profile-page {
+    padding: 12px 8px 32px;
+  }
+
+  .profile-page__header {
+    width: 100%;
+  }
+
+  .rooms-manage__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rooms-manage__actions {
+    padding-top: 0;
+  }
+}
+
+@media (--wh-mobile) {
+  .profile-page {
+    padding: 16px 20px 32px;
+  }
+
+  .profile-page__header {
+    height: auto;
+    min-height: 31px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  .rooms-manage__btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>

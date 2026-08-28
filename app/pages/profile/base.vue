@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ManagedHotel } from '~/api/hotels'
 import type { BaseHotelItem } from '~/components/profile/BaseHotelCard.vue'
 
 definePageMeta({
@@ -10,28 +11,95 @@ useHead({
   title: 'Управление базой — WH',
 })
 
-const notificationCount = 0
+const { hotels: hotelsApi } = useApi()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Параметр' },
+  { label: 'Параметры' },
   { label: 'Управление базой' },
 ]
 
-const hotels: BaseHotelItem[] = [
-  {
-    id: 1,
-    title: 'Хромой кабан-2',
-    image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800',
-    location: 'Ярославская область',
-    price: 4000,
-    status: 'publish',
-    updatedAt: '04.08.2026 09:45',
-    isFavorite: true,
-  },
-]
+const hotels = ref<BaseHotelItem[]>([])
+const isLoading = ref(true)
+const loadError = ref('')
 
-const hotelsCount = hotels.length
+const hotelsCount = computed(() => hotels.value.length)
+
+function formatUpdatedAt(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date).replace(',', '')
+}
+
+function mapToBaseHotelItem(hotel: ManagedHotel): BaseHotelItem {
+  return {
+    id: hotel.id,
+    title: hotel.title,
+    image: hotel.image_url,
+    location: hotel.location?.name ?? '',
+    price: Number(hotel.price) || 0,
+    status: hotel.status === 'publish' ? 'publish' : 'draft',
+    updatedAt: formatUpdatedAt(hotel.updated_at),
+  }
+}
+
+function extractErrorMessage(source: unknown, fallback: string) {
+  if (!source || typeof source !== 'object') {
+    return fallback
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    data?: unknown
+  }
+
+  if (payload.message) {
+    return payload.message
+  }
+
+  if (payload.data && payload.data !== source) {
+    return extractErrorMessage(payload.data, fallback)
+  }
+
+  return fallback
+}
+
+async function loadHotels() {
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    const response = await hotelsApi.getManage()
+
+    if ('success' in response && response.success) {
+      hotels.value = (response.data ?? []).map(mapToBaseHotelItem)
+      return
+    }
+
+    loadError.value = extractErrorMessage(response, 'Не удалось загрузить базы')
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    loadError.value = extractErrorMessage(data, 'Не удалось загрузить базы')
+  }
+  finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  void loadHotels()
+})
 </script>
 
 <template>
@@ -39,22 +107,20 @@ const hotelsCount = hotels.length
     <header class="profile-page__header">
       <AppBreadcrumbs :items="breadcrumbs" />
 
-      <button type="button" class="profile-page__notifications" aria-label="Уведомления">
-        <img
-          src="/icons/bell.png"
-          alt=""
-          aria-hidden="true"
-          class="profile-page__notifications-icon"
-          width="18"
-          height="22"
-        >
-        <span class="profile-page__notifications-badge">{{ notificationCount }}</span>
-      </button>
+      <ProfileNotificationsBell />
     </header>
 
     <CommonPageTitle divider>Управление базой</CommonPageTitle>
 
-    <div v-if="hotelsCount > 0" class="base-hotels">
+    <p v-if="loadError" class="base-hotels__status base-hotels__status--error">
+      {{ loadError }}
+    </p>
+
+    <p v-else-if="isLoading" class="base-hotels__status">
+      Загрузка...
+    </p>
+
+    <div v-else-if="hotelsCount > 0" class="base-hotels">
       <div class="base-hotels__list">
         <ProfileBaseHotelCard
           v-for="hotel in hotels"
@@ -70,7 +136,10 @@ const hotelsCount = hotels.length
 
 <style scoped>
 .profile-page {
+  width: 100%;
   padding: 20px 40px 48px;
+  padding-left: 20px;
+  box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
 }
 
@@ -79,8 +148,7 @@ const hotelsCount = hotels.length
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: 896px;
-  max-width: 100%;
+  width: 100%;
   height: 31px;
   margin-bottom: 20px;
   padding: 0;
@@ -90,45 +158,12 @@ const hotelsCount = hotels.length
   overflow: visible;
 }
 
-.profile-page__notifications {
-  position: relative;
-  flex-shrink: 0;
-  width: 18px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  overflow: visible;
-}
-
-.profile-page__notifications-icon {
-  display: block;
-  width: 18px;
-  height: 22px;
-  object-fit: contain;
-}
-
-.profile-page__notifications-badge {
-  position: absolute;
-  top: -6px;
-  right: -8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0;
-  border-radius: 50%;
-  background: #e74c3c;
-  color: var(--wh-white);
-  font-size: 0.65rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
 .profile-page :deep(.page-title--divider) {
+  width: 100%;
+}
+
+.base-hotels,
+.base-hotels__list {
   width: 100%;
 }
 
@@ -138,10 +173,15 @@ const hotelsCount = hotels.length
   gap: 30px;
 }
 
+.base-hotels__status,
 .base-hotels__empty {
   margin: 0;
   color: rgba(0, 0, 0, 0.55);
   font-size: 16px;
+}
+
+.base-hotels__status--error {
+  color: #dc3545;
 }
 
 @media (--wh-tablet) {

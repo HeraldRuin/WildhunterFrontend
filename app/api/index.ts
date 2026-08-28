@@ -15,6 +15,7 @@ export type { AuthSuccessResponse, AuthUser, AuthSession } from '~/types/auth'
 export { useSearchApi } from './search'
 export { useLocationApi, mapLocationOfferToItem } from './location'
 export { useHotelsApi, mapHotelOfferToItem } from './hotels'
+export type { ManagedHotel, ManagedHotelLocation, HotelsManageResponse } from './hotels'
 export { useAnimalsApi } from './animals'
 export type {
   ManagedAnimal,

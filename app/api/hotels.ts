@@ -1,4 +1,5 @@
 import type {
+  ApiErrorResponse,
   ApiSuccessResponse,
   HotelDetailApiResponse,
   HotelOffer,
@@ -43,6 +44,28 @@ export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
     map_lng: parseCoord(offer.map_lng),
   }
 }
+
+export interface ManagedHotelLocation {
+  id: number
+  name: string
+  slug: string
+}
+
+export interface ManagedHotel {
+  id: number
+  title: string
+  slug: string
+  image_url: string
+  price: number
+  status: string
+  status_label: string
+  updated_at: string
+  location: ManagedHotelLocation | null
+}
+
+export type HotelsManageResponse =
+  | ApiSuccessResponse<ManagedHotel[]>
+  | ApiErrorResponse
 
 export function useHotelsApi() {
   const { apiFetch } = useApiClient()
@@ -113,6 +136,12 @@ export function useHotelsApi() {
     })
   }
 
+  function getManage() {
+    return apiFetch<HotelsManageResponse>('/hotels/manage', {
+      method: 'GET',
+    })
+  }
+
   return {
     getHotelOffers,
     getHotelOfferItems,
@@ -120,5 +149,6 @@ export function useHotelsApi() {
     getPriceRange,
     getPriceRangeBounds,
     checkAvailability,
+    getManage,
   }
 }
