@@ -50,13 +50,6 @@ function userNickname(user: UserSearchItem) {
   return user.nik || user.user_name || 'ник не задан'
 }
 
-function handleQueryInput(event: Event) {
-  const input = event.target as HTMLInputElement
-  const digits = input.value.replace(/\D/g, '')
-  input.value = digits
-  query.value = digits
-}
-
 function selectUser(user: UserSearchItem) {
   selectedUserId.value = user.id
   submitError.value = ''
@@ -207,15 +200,15 @@ function handleKeydown(event: KeyboardEvent) {
           </h2>
 
           <form class="customer-modal__form" @submit.prevent="saveCustomer">
-            <input
-              :value="query"
-              type="text"
-              inputmode="numeric"
-              class="customer-modal__input"
+            <CommonFormField
+              id="customer-modal-user-id"
               placeholder="Введите ID пользователя"
               aria-label="ID пользователя"
-              @input="handleQueryInput"
-            >
+              digits-only
+              no-margin
+              :model-value="query"
+              @update:model-value="query = $event"
+            />
 
             <div v-if="isSearching" class="customer-modal__message">
               Поиск…
@@ -296,7 +289,7 @@ function handleKeydown(event: KeyboardEvent) {
   position: relative;
   width: min(100%, 760px);
   max-height: calc(100vh - 48px);
-  padding: 20px 24px 18px;
+  padding: 28px 24px 18px;
   overflow-y: auto;
   border-radius: var(--wh-radius);
   background: var(--wh-white);
@@ -314,24 +307,13 @@ function handleKeydown(event: KeyboardEvent) {
 .customer-modal__form {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 16px;
+  margin-top: 8px;
 }
 
-.customer-modal__input {
-  width: 100%;
-  height: 36px;
-  margin: 8px 0;
-  padding: 0 14px;
-  border: 1px solid var(--wh-gray-400);
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
-  font: inherit;
-  outline: none;
-}
-
-.customer-modal__input:focus {
-  border-color: var(--wh-field-border-active);
+.customer-modal__save {
+  align-self: flex-start;
 }
 
 .customer-modal__message {
