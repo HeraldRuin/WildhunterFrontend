@@ -48,8 +48,6 @@ function handleKeydown(event: KeyboardEvent) {
             </div>
           </Transition>
 
-          <CommonModalCloseButton :disabled="isSubmitting" @click="close" />
-
           <h2 id="confirm-modal-title" class="confirm-modal__title">
             {{ options.title }}
           </h2>
@@ -157,7 +155,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .confirm-modal__title {
-  margin: 0 48px 40px 0;
+  margin: 0 0 40px;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 1.05rem;
   font-weight: 600;
