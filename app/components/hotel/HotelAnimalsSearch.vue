@@ -104,6 +104,52 @@ const animalLabel = computed(() => {
   return 'На кого будет охота?'
 })
 
+const animalValueRef = ref<HTMLButtonElement | null>(null)
+const isAnimalLabelTruncated = ref(false)
+let animalValueResizeObserver: ResizeObserver | null = null
+
+if (import.meta.client && typeof ResizeObserver !== 'undefined') {
+  animalValueResizeObserver = new ResizeObserver(() => {
+    updateAnimalLabelTruncation()
+  })
+}
+
+function updateAnimalLabelTruncation() {
+  const el = animalValueRef.value
+
+  if (!el || !selectedAnimal.value) {
+    isAnimalLabelTruncated.value = false
+    return
+  }
+
+  isAnimalLabelTruncated.value = el.scrollHeight > el.clientHeight + 1
+}
+
+const animalLabelTitle = computed(() =>
+  isAnimalLabelTruncated.value ? selectedAnimal.value?.title : undefined,
+)
+
+watch(
+  animalLabel,
+  async () => {
+    await nextTick()
+    updateAnimalLabelTruncation()
+  },
+)
+
+watch(animalValueRef, (el, _prev, onCleanup) => {
+  if (!el || !animalValueResizeObserver) {
+    return
+  }
+
+  animalValueResizeObserver.observe(el)
+  updateAnimalLabelTruncation()
+
+  onCleanup(() => {
+    animalValueResizeObserver?.unobserve(el)
+  })
+})
+
 watch(
   animals,
   (items) => {
@@ -288,10 +334,13 @@ function handleDocumentClick(event: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
+  updateAnimalLabelTruncation()
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleDocumentClick)
+  animalValueResizeObserver?.disconnect()
+  animalValueResizeObserver = null
 })
 
 function handleSubmit() {
@@ -463,12 +512,14 @@ defineExpose({
         >
           <span class="hotel-animals-search__label">Животные</span>
           <button
+            ref="animalValueRef"
             type="button"
             class="hotel-animals-search__value"
             :class="{
               'hotel-animals-search__value--pending': animalsPending,
               'hotel-animals-search__value--empty': !animalsPending && !animalsReady,
             }"
+            :title="animalLabelTitle"
             :disabled="animalsPending || !animalsReady"
             @click="toggleAnimalDropdown"
           >
@@ -591,7 +642,7 @@ defineExpose({
   align-items: stretch;
   gap: 2px;
   width: min(100%, var(--hotel-booking-blocks-width, 100%));
-  height: 81px;
+  min-height: 81px;
 }
 
 .hotel-animals-search__panel {
@@ -609,10 +660,10 @@ defineExpose({
   display: flex;
   flex: 1;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 4px;
   min-width: 0;
-  height: 81px;
+  min-height: 81px;
   padding: 16px 22px;
   border: 1px solid var(--wh-field-border);
   border-radius: var(--wh-radius-lg);
@@ -660,6 +711,7 @@ defineExpose({
 
 .hotel-animals-search__value {
   width: 100%;
+  min-width: 0;
   padding-right: 28px;
   border: none;
   background: transparent;
@@ -670,7 +722,18 @@ defineExpose({
   letter-spacing: -0.05em;
   color: #1c211c;
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+.hotel-animals-search__field--animal .hotel-animals-search__value {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
 }
 
 .hotel-animals-search__value:disabled {
@@ -976,7 +1039,7 @@ defineExpose({
   align-items: center;
   justify-content: center;
   flex: 0 0 397px;
-  height: 81px;
+  min-height: 81px;
   padding: 0 16px;
   border: none;
   border-radius: var(--wh-radius-lg);
