@@ -30,6 +30,24 @@ function handleKeydown(event: KeyboardEvent) {
         @keydown="handleKeydown"
       >
         <div class="confirm-modal__card">
+          <Transition name="confirm-modal-loader-fade">
+            <div
+              v-if="isSubmitting"
+              class="confirm-modal__loader"
+              aria-hidden="true"
+            >
+              <div class="confirm-modal__loader-bg" />
+              <div class="confirm-modal__loader-spinner">
+                <CommonSpinner
+                  variant="ring"
+                  :size="48"
+                  color="var(--wh-green)"
+                  label="Выполнение"
+                />
+              </div>
+            </div>
+          </Transition>
+
           <CommonModalCloseButton :disabled="isSubmitting" @click="close" />
 
           <h2 id="confirm-modal-title" class="confirm-modal__title">
@@ -54,14 +72,7 @@ function handleKeydown(event: KeyboardEvent) {
               :aria-busy="isSubmitting"
               @click="confirm"
             >
-              <CommonSpinner
-                v-if="isSubmitting"
-                variant="ring"
-                :size="18"
-                color="var(--wh-white)"
-                label="Выполнение"
-              />
-              <span v-else class="confirm-modal__icon" aria-hidden="true">✔</span>
+              <span class="confirm-modal__icon" aria-hidden="true">✔</span>
               {{ options.confirmLabel }}
             </button>
           </div>
@@ -109,6 +120,40 @@ function handleKeydown(event: KeyboardEvent) {
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
   transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.confirm-modal__loader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  pointer-events: all;
+}
+
+.confirm-modal__loader-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #fff;
+  opacity: 0.5;
+}
+
+.confirm-modal__loader-spinner {
+  position: relative;
+  z-index: 1;
+}
+
+.confirm-modal-loader-fade-enter-active,
+.confirm-modal-loader-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.confirm-modal-loader-fade-enter-from,
+.confirm-modal-loader-fade-leave-to {
+  opacity: 0;
 }
 
 .confirm-modal__title {
