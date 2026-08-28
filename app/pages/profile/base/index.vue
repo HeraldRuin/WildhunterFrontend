@@ -74,6 +74,10 @@ function extractErrorMessage(source: unknown, fallback: string) {
   return fallback
 }
 
+function onHotelDeleted(id: number) {
+  hotels.value = hotels.value.filter(hotel => hotel.id !== id)
+}
+
 async function loadHotels() {
   isLoading.value = true
   loadError.value = ''
@@ -123,16 +127,19 @@ onMounted(() => {
 
       <div v-else-if="hotelsCount > 0" class="base-hotels">
         <div class="base-hotels__list">
-          <ProfileBaseHotelCard
-            v-for="hotel in hotels"
-            :key="hotel.id"
-            :item="hotel"
-          />
+        <ProfileBaseHotelCard
+          v-for="hotel in hotels"
+          :key="hotel.id"
+          :item="hotel"
+          @deleted="onHotelDeleted"
+        />
         </div>
       </div>
 
       <p v-else class="base-hotels__empty">Нет отелей</p>
     </div>
+
+    <CommonConfirmModal />
   </div>
 </template>
 

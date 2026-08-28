@@ -18,6 +18,16 @@ const props = defineProps<{
   item: BaseHotelItem
 }>()
 
+const emit = defineEmits<{
+  deleted: [id: number]
+}>()
+
+const { hotels: hotelsApi } = useApi()
+const notifications = useNotifications()
+const { open: openConfirmModal } = useConfirmModal()
+
+const isDeleting = ref(false)
+
 const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
 
@@ -39,70 +49,76 @@ const statusLabel = computed(() => {
   }
 })
 
-const visibilityActionLabel = computed(() => {
-  switch (props.item.status) {
-    case 'publish':
-      return 'Скрыть'
-    case 'draft':
-      return 'Опубликовать'
-    default: {
-      const exhaustive: never = props.item.status
-      return exhaustive
+function extractErrorMessage(source: unknown, fallback: string) {
+  if (!source || typeof source !== 'object') {
+    return fallback
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    data?: unknown
+  }
+
+  if (payload.message) {
+    return payload.message
+  }
+
+  if (payload.data && payload.data !== source) {
+    return extractErrorMessage(payload.data, fallback)
+  }
+
+  return fallback
+}
+
+function requestDelete() {
+  if (isDeleting.value) {
+    return
+  }
+
+  openConfirmModal({
+    title: `Вы уверены, что хотите удалить «${props.item.title}»?`,
+    confirmLabel: 'Удалить',
+    onConfirm: () => removeHotel(),
+  })
+}
+
+async function removeHotel() {
+  if (isDeleting.value) {
+    return
+  }
+
+  isDeleting.value = true
+
+  try {
+    const response = await hotelsApi.deleteManage(props.item.id)
+
+    if ('success' in response && response.success) {
+      notifications.success(response.message || 'База удалена')
+      emit('deleted', props.item.id)
+      return
     }
+
+    notifications.error(extractErrorMessage(response, 'Не удалось удалить базу'))
+    throw new Error('delete_hotel_failed')
   }
-})
+  catch (error) {
+    if ((error as Error).message !== 'delete_hotel_failed') {
+      const data = (error as { data?: unknown }).data
+      notifications.error(extractErrorMessage(data, 'Не удалось удалить базу'))
+    }
 
-const isEditing = ref(false)
-
-type BaseHotelEditTab = 'content' | 'places' | 'pricing' | 'attributes'
-
-const editTabs: { id: BaseHotelEditTab, label: string }[] = [
-  { id: 'content', label: 'Контент базы' },
-  { id: 'places', label: 'Места' },
-  { id: 'pricing', label: 'Ценообразование' },
-  { id: 'attributes', label: 'Атрибуты' },
-]
-
-const activeEditTab = ref<BaseHotelEditTab>('content')
-const editTitle = ref('')
-const editRating = ref('')
-const editContent = ref('')
-
-function selectEditTab(tab: BaseHotelEditTab) {
-  activeEditTab.value = tab
-}
-
-function toggleEdit() {
-  isEditing.value = !isEditing.value
-
-  if (isEditing.value) {
-    activeEditTab.value = 'content'
-    editTitle.value = props.item.title
-    editRating.value = ''
-    editContent.value = ''
+    throw error
   }
-}
-
-function closeEdit() {
-  isEditing.value = false
+  finally {
+    isDeleting.value = false
+  }
 }
 </script>
 
 <template>
-  <article
-    class="base-hotel-card"
-    :class="{ 'base-hotel-card--expanded': isEditing }"
-  >
-    <CommonModalCloseButton
-      v-if="isEditing"
-      class="base-hotel-card__close"
-      @click="closeEdit"
-    />
-
-    <div
-      class="base-hotel-card__layout"
-      :class="{ 'base-hotel-card__layout--expanded': isEditing }"
-    >
+  <article class="base-hotel-card">
+    <div class="base-hotel-card__layout">
       <div class="base-hotel-card__media">
       <img
         v-if="showImage"
@@ -221,69 +237,20 @@ function closeEdit() {
           >
             Доступные номера
           </NuxtLink>
-          <button
-            type="button"
+          <NuxtLink
+            :to="`/profile/base/${item.id}`"
             class="base-hotel-card__btn base-hotel-card__btn--warning"
-            @click="toggleEdit"
           >
             Редактировать
-          </button>
-          <!-- <button type="button" class="base-hotel-card__btn base-hotel-card__btn--clone">
-            Клонировать
-          </button> -->
-          <button type="button" class="base-hotel-card__btn base-hotel-card__btn--danger">
+          </NuxtLink>
+          <button
+            type="button"
+            class="base-hotel-card__btn base-hotel-card__btn--danger"
+            :disabled="isDeleting"
+            @click="requestDelete"
+          >
             Удалить
           </button>
-          <!-- <button
-            type="button"
-            class="base-hotel-card__btn"
-            :class="item.status === 'publish' ? 'base-hotel-card__btn--secondary' : 'base-hotel-card__btn--success'"
-          >
-            {{ visibilityActionLabel }}
-          </button> -->
-        </div>
-      </div>
-
-      <div v-if="isEditing" class="base-hotel-card__panel">
-        <div class="base-hotel-card__panel-top">
-          <nav class="base-hotel-card__nav" aria-label="Разделы редактирования">
-            <button
-              v-for="tab in editTabs"
-              :key="tab.id"
-              type="button"
-              class="base-hotel-card__nav-link"
-              :class="{ 'base-hotel-card__nav-link--active': activeEditTab === tab.id }"
-              @click="selectEditTab(tab.id)"
-            >
-              {{ tab.label }}
-            </button>
-          </nav>
-        </div>
-
-        <div v-if="activeEditTab === 'content'" class="base-hotel-card__form">
-          <div class="base-hotel-card__form-left">
-            <CommonFormField
-              v-model="editTitle"
-              label="Название"
-              placeholder="Название отеля"
-              no-margin
-            />
-            <CommonFormField
-              v-model="editRating"
-              label="Рейтинг"
-              placeholder=""
-              no-margin
-            />
-          </div>
-          <CommonFormField
-            v-model="editContent"
-            class="base-hotel-card__form-content"
-            label="Контент"
-            placeholder=""
-            multiline
-            :rows="4"
-            no-margin
-          />
         </div>
       </div>
     </div>
@@ -303,16 +270,6 @@ function closeEdit() {
   overflow: hidden;
 }
 
-.base-hotel-card--expanded {
-  position: relative;
-  width: 100%;
-  overflow: visible;
-}
-
-.base-hotel-card__close {
-  z-index: 2;
-}
-
 .base-hotel-card__layout {
   display: grid;
   grid-template-columns: 320px auto;
@@ -322,11 +279,6 @@ function closeEdit() {
   min-width: 0;
 }
 
-.base-hotel-card__layout--expanded {
-  grid-template-columns: 320px minmax(280px, 360px) minmax(0, 1fr);
-  width: 100%;
-}
-
 .base-hotel-card__info {
   display: flex;
   flex-direction: column;
@@ -334,101 +286,6 @@ function closeEdit() {
   min-width: 0;
   padding: 20px;
   box-sizing: border-box;
-}
-
-.base-hotel-card__panel {
-  min-width: 0;
-  padding: 20px 20px 20px 24px;
-  border-left: 1px solid var(--wh-gray-400);
-  box-sizing: border-box;
-  animation: base-hotel-card-panel-in 0.35s ease;
-}
-
-.base-hotel-card__panel-top {
-  display: flex;
-  align-items: flex-start;
-  padding-right: 40px;
-}
-
-.base-hotel-card__nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 28px;
-  min-width: 0;
-}
-
-.base-hotel-card__nav-link {
-  position: relative;
-  padding: 10px 0 12px;
-  border: none;
-  background: none;
-  color: var(--wh-gray-900);
-  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-  font-size: 0.85rem;
-  font-weight: 700;
-  line-height: 1.3;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.base-hotel-card__nav-link::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--wh-orange-500);
-  transform: scaleX(0);
-  transform-origin: center;
-  transition: transform 0.28s ease;
-}
-
-.base-hotel-card__nav-link--active::after {
-  transform: scaleX(1);
-}
-
-.base-hotel-card__nav-link:not(.base-hotel-card__nav-link--active)::after {
-  transition-duration: 0s;
-}
-
-.base-hotel-card__form {
-  display: grid;
-  grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
-  gap: 16px 20px;
-  align-items: start;
-  margin-top: 16px;
-}
-
-.base-hotel-card__form-left {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.base-hotel-card__form-content {
-  min-width: 0;
-}
-
-.base-hotel-card__form :deep(.form-field__input--textarea) {
-  min-height: 132px;
-}
-
-@keyframes base-hotel-card-panel-in {
-  from {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 .base-hotel-card__media {
@@ -565,10 +422,6 @@ function closeEdit() {
   background: #17a2b8;
 }
 
-.base-hotel-card__btn--clone {
-  background: #007bff;
-}
-
 .base-hotel-card__btn--warning {
   background: #ffc107;
 }
@@ -577,35 +430,18 @@ function closeEdit() {
   background: #dc3545;
 }
 
-.base-hotel-card__btn--secondary {
-  background: #6c757d;
-}
-
-.base-hotel-card__btn--success {
-  background: #28a745;
-}
-
 @media (--wh-narrow) {
-  .base-hotel-card,
-  .base-hotel-card--expanded {
+  .base-hotel-card {
     width: 100%;
   }
 
-  .base-hotel-card__layout,
-  .base-hotel-card__layout--expanded {
+  .base-hotel-card__layout {
     grid-template-columns: 1fr;
     width: 100%;
   }
 
   .base-hotel-card__info {
     padding: 16px;
-  }
-
-  .base-hotel-card__panel {
-    padding: 0 16px 16px;
-    border-left: none;
-    border-top: 1px solid var(--wh-gray-400);
-    animation: none;
   }
 
   .base-hotel-card__media,
@@ -625,22 +461,6 @@ function closeEdit() {
 
   .base-hotel-card__btn:nth-child(n + 3) {
     flex: 1 1 calc(33.333% - 4px);
-  }
-
-  .base-hotel-card__btn--clone {
-    background: #17a2b8;
-  }
-
-  .base-hotel-card__nav {
-    gap: 16px 20px;
-  }
-
-  .base-hotel-card__form {
-    grid-template-columns: 1fr;
-  }
-
-  .base-hotel-card__form-left {
-    gap: 12px;
   }
 }
 </style>

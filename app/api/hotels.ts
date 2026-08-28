@@ -67,6 +67,10 @@ export type HotelsManageResponse =
   | ApiSuccessResponse<ManagedHotel[]>
   | ApiErrorResponse
 
+export type HotelManageDeleteResponse =
+  | ApiSuccessResponse<{ id: number }>
+  | ApiErrorResponse
+
 export function useHotelsApi() {
   const { apiFetch } = useApiClient()
 
@@ -142,6 +146,15 @@ export function useHotelsApi() {
     })
   }
 
+  function deleteManage(hotelId: number | string) {
+    return apiFetch<HotelManageDeleteResponse>(
+      `/hotels/manage/${encodeURIComponent(String(hotelId))}`,
+      {
+        method: 'DELETE',
+      },
+    )
+  }
+
   return {
     getHotelOffers,
     getHotelOfferItems,
@@ -150,5 +163,6 @@ export function useHotelsApi() {
     getPriceRangeBounds,
     checkAvailability,
     getManage,
+    deleteManage,
   }
 }
