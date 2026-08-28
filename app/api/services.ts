@@ -1,4 +1,9 @@
-import type { ApiSuccessResponse, HotelRoomAttribute } from '~/types/api'
+import type {
+  ApiErrorResponse,
+  ApiSuccessResponse,
+  BookingServiceAdditionalCatalog,
+  HotelRoomAttribute,
+} from '~/types/api'
 import { useApiClient } from './client'
 
 export interface FavoriteResponse {
@@ -11,6 +16,39 @@ export interface FavoriteServiceItem {
   service_id: number
   service_model: string
   user_id: number
+}
+
+export interface ManagedAdditionalService extends BookingServiceAdditionalCatalog {
+  type?: string | null
+  can_delete?: boolean
+  can_edit_name?: boolean
+}
+
+export interface AdditionalServiceData {
+  additional: ManagedAdditionalService
+}
+
+export interface AdditionalServicesListData {
+  additionals: ManagedAdditionalService[]
+}
+
+export type AdditionalServicesListResponse =
+  | ApiSuccessResponse<ManagedAdditionalService[] | AdditionalServicesListData>
+  | ApiErrorResponse
+
+export type AdditionalServiceResponse =
+  | ApiSuccessResponse<ManagedAdditionalService | AdditionalServiceData>
+  | ApiErrorResponse
+
+export type AdditionalServiceDeleteResponse =
+  | ApiSuccessResponse<{ id: number }>
+  | ApiErrorResponse
+
+export interface SaveAdditionalServicePayload {
+  name: string
+  calculation_type: 'individual' | 'per_person' | null
+  count: number | null
+  price: number
 }
 
 export function useServicesApi() {
@@ -58,11 +96,50 @@ export function useServicesApi() {
     }
   }
 
+  function getAdditionals() {
+    return apiFetch<AdditionalServicesListResponse>('/services/additionals', {
+      method: 'GET',
+    })
+  }
+
+  function createAdditional(payload: SaveAdditionalServicePayload) {
+    return apiFetch<AdditionalServiceResponse>('/services/additionals', {
+      method: 'POST',
+      body: payload,
+    })
+  }
+
+  function updateAdditional(
+    additionalId: number | string,
+    payload: SaveAdditionalServicePayload,
+  ) {
+    return apiFetch<AdditionalServiceResponse>(
+      `/services/additionals/${encodeURIComponent(String(additionalId))}`,
+      {
+        method: 'PUT',
+        body: payload,
+      },
+    )
+  }
+
+  function deleteAdditional(additionalId: number | string) {
+    return apiFetch<AdditionalServiceDeleteResponse>(
+      `/services/additionals/${encodeURIComponent(String(additionalId))}`,
+      {
+        method: 'DELETE',
+      },
+    )
+  }
+
   return {
     addFavorite,
     removeFavorite,
     getFavorites,
     getAttributes,
     getAttributeGroups,
+    getAdditionals,
+    createAdditional,
+    updateAdditional,
+    deleteAdditional,
   }
 }

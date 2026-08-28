@@ -40,7 +40,17 @@ export { useBookingsApi } from './bookings'
 export { useRolesApi } from './roles'
 export { useReviewsApi, mapServiceReviewToItem } from './reviews'
 export { useServicesApi } from './services'
-export type { FavoriteResponse, FavoriteServiceItem } from './services'
+export type {
+  FavoriteResponse,
+  FavoriteServiceItem,
+  ManagedAdditionalService,
+  AdditionalServiceData,
+  AdditionalServicesListData,
+  AdditionalServicesListResponse,
+  AdditionalServiceResponse,
+  AdditionalServiceDeleteResponse,
+  SaveAdditionalServicePayload,
+} from './services'
 export { useNewsletterApi } from './newsletter'
 export type { NewsletterSubscribePayload, NewsletterSubscribeResponse } from './newsletter'
 export { useContactApi } from './contact'
