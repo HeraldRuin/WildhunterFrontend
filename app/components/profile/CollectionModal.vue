@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { UserSearchItem } from '~/api/user'
-import type { CollectionParticipantStatus } from '~/types/booking'
+import type { CollectionParticipant, CollectionParticipantStatus } from '~/types/booking'
+
+type StatsPanelFilter = 'collected' | 'pending' | 'declined'
 
 const emit = defineEmits<{
   extended: []
@@ -32,6 +34,9 @@ const activeSearchIndex = ref<number | null>(null)
 const isSearching = ref(false)
 const searchError = ref('')
 const timerNow = ref(Date.now())
+const visibleInviteFieldCount = ref(4)
+const INVITE_FIELDS_EXPAND_THRESHOLD = 5
+const INITIAL_EXPANDED_INVITE_FIELDS = 4
 let timerInterval: ReturnType<typeof setInterval> | undefined
 let searchTimeout: ReturnType<typeof setTimeout> | undefined
 let searchRequestId = 0
@@ -48,6 +53,18 @@ const occupiedParticipants = computed(() => {
   if (!state.value) return []
 
   return state.value.participants.filter(participant => participant.status !== 'declined')
+})
+
+const PARTICIPANT_STATUS_ORDER: Record<CollectionParticipantStatus, number> = {
+  confirmed: 0,
+  pending: 1,
+  declined: 2,
+}
+
+const sortedOccupiedParticipants = computed(() => {
+  return [...occupiedParticipants.value].sort((left, right) => {
+    return PARTICIPANT_STATUS_ORDER[left.status] - PARTICIPANT_STATUS_ORDER[right.status]
+  })
 })
 
 const canFinishCollection = computed(() => {
@@ -70,6 +87,73 @@ const emptySlotCount = computed(() => {
       - occupiedParticipants.value.length
       - liveDeclinedParticipants.value.length,
   )
+})
+
+const collectedCount = computed(() => {
+  return occupiedParticipants.value.filter(
+    participant => participant.status === 'confirmed',
+  ).length
+})
+
+const pendingCount = computed(() => {
+  return occupiedParticipants.value.filter(
+    participant => participant.status === 'pending',
+  ).length
+})
+
+const declinedCount = computed(() => liveDeclinedParticipants.value.length)
+
+const activeStatsPanel = ref<StatsPanelFilter | null>(null)
+const cardRef = ref<HTMLElement | null>(null)
+const linkRowRef = ref<HTMLElement | null>(null)
+const footerStatsWrapRef = ref<HTMLElement | null>(null)
+const statsPanelLayout = ref<Record<string, string>>({})
+const STATS_PANEL_GAP = 8
+let statsPanelResizeObserver: ResizeObserver | undefined
+
+const confirmedParticipants = computed(() => {
+  return sortedOccupiedParticipants.value.filter(
+    participant => participant.status === 'confirmed',
+  )
+})
+
+const pendingParticipants = computed(() => {
+  return sortedOccupiedParticipants.value.filter(
+    participant => participant.status === 'pending',
+  )
+})
+
+const statsPanelParticipants = computed<CollectionParticipant[]>(() => {
+  switch (activeStatsPanel.value) {
+    case 'collected':
+      return confirmedParticipants.value
+    case 'pending':
+      return pendingParticipants.value
+    case 'declined':
+      return [...liveDeclinedParticipants.value]
+    default:
+      return []
+  }
+})
+
+const slotsTotal = computed(() => state.value?.slotsTotal ?? 0)
+
+const usesExpandedInviteFields = computed(() => {
+  return slotsTotal.value > INVITE_FIELDS_EXPAND_THRESHOLD
+})
+
+const targetInviteFieldCount = computed(() => {
+  if (!usesExpandedInviteFields.value) {
+    return emptySlotCount.value
+  }
+
+  return Math.min(emptySlotCount.value, visibleInviteFieldCount.value)
+})
+
+const canAddInviteField = computed(() => {
+  return usesExpandedInviteFields.value
+    && visibleInviteFieldCount.value < emptySlotCount.value
+    && !canExtendCollection.value
 })
 
 const collectionLinkAbsolute = computed(() => {
@@ -95,6 +179,8 @@ watch(isOpen, (open) => {
   if (!open) {
     inviteQueries.value = []
     selectedHunters.value = []
+    visibleInviteFieldCount.value = INITIAL_EXPANDED_INVITE_FIELDS
+    activeStatsPanel.value = null
     resetHunterSearch()
     return
   }
@@ -103,8 +189,7 @@ watch(isOpen, (open) => {
   timerInterval = setInterval(() => {
     timerNow.value = Date.now()
   }, 1_000)
-  inviteQueries.value = Array.from({ length: emptySlotCount.value }, () => '')
-  selectedHunters.value = Array.from({ length: emptySlotCount.value }, () => null)
+  initializeInviteFields()
 })
 
 onUnmounted(() => {
@@ -114,11 +199,23 @@ onUnmounted(() => {
   if (searchTimeout) {
     clearTimeout(searchTimeout)
   }
+  statsPanelResizeObserver?.disconnect()
 })
 
-watch(emptySlotCount, (count) => {
+watch(activeStatsPanel, (panel) => {
+  if (panel) {
+    updateStatsPanelLayout()
+    return
+  }
+
+  statsPanelLayout.value = {}
+  statsPanelResizeObserver?.disconnect()
+  statsPanelResizeObserver = undefined
+})
+
+watch(emptySlotCount, () => {
   if (!isOpen.value) return
-  syncInviteSlots(count)
+  syncInviteSlots()
 })
 
 watch(canExtendCollection, (expired) => {
@@ -139,7 +236,28 @@ function resetHunterSearch() {
   searchError.value = ''
 }
 
-function syncInviteSlots(count = emptySlotCount.value) {
+function initializeInviteFields() {
+  visibleInviteFieldCount.value = usesExpandedInviteFields.value
+    ? Math.min(emptySlotCount.value, INITIAL_EXPANDED_INVITE_FIELDS)
+    : emptySlotCount.value
+  syncInviteSlots()
+}
+
+function addInviteField() {
+  if (!canAddInviteField.value) return
+
+  visibleInviteFieldCount.value += 1
+  inviteQueries.value = [...inviteQueries.value, '']
+  selectedHunters.value = [...selectedHunters.value, null]
+  resetHunterSearch()
+}
+
+function syncInviteSlots(count = targetInviteFieldCount.value) {
+  if (usesExpandedInviteFields.value && visibleInviteFieldCount.value > emptySlotCount.value) {
+    visibleInviteFieldCount.value = emptySlotCount.value
+    count = emptySlotCount.value
+  }
+
   const occupiedIds = new Set(
     occupiedParticipants.value
       .map(participant => participant.id)
@@ -172,9 +290,7 @@ function syncInviteSlots(count = emptySlotCount.value) {
 }
 
 function resetInviteSlots() {
-  inviteQueries.value = Array.from({ length: emptySlotCount.value }, () => '')
-  selectedHunters.value = Array.from({ length: emptySlotCount.value }, () => null)
-  resetHunterSearch()
+  syncInviteSlots()
 }
 
 function hunterName(hunter: UserSearchItem) {
@@ -478,6 +594,40 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
     }
   }
 }
+
+function toggleStatsPanel(filter: StatsPanelFilter) {
+  activeStatsPanel.value = activeStatsPanel.value === filter ? null : filter
+}
+
+function updateStatsPanelLayout() {
+  if (!activeStatsPanel.value) {
+    return
+  }
+
+  nextTick(() => {
+    const card = cardRef.value
+    const linkRow = linkRowRef.value
+    const wrap = footerStatsWrapRef.value
+    if (!card || !linkRow || !wrap) {
+      return
+    }
+
+    const cardRect = card.getBoundingClientRect()
+    const linkRect = linkRow.getBoundingClientRect()
+    const wrapRect = wrap.getBoundingClientRect()
+
+    statsPanelLayout.value = {
+      top: `${linkRect.bottom - cardRect.top + STATS_PANEL_GAP}px`,
+      bottom: `${cardRect.bottom - wrapRect.top + STATS_PANEL_GAP}px`,
+      left: `${wrapRect.left - cardRect.left}px`,
+      width: `${wrapRect.width}px`,
+    }
+
+    statsPanelResizeObserver?.disconnect()
+    statsPanelResizeObserver = new ResizeObserver(updateStatsPanelLayout)
+    statsPanelResizeObserver.observe(card)
+  })
+}
 </script>
 
 <template>
@@ -492,7 +642,11 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
         @click="handleBackdropClick"
         @keydown="handleKeydown"
       >
-        <div v-show="!isContentHidden" class="collection-modal__card">
+        <div
+          v-show="!isContentHidden"
+          ref="cardRef"
+          class="collection-modal__card"
+        >
           <CommonModalCloseButton @click="close" />
 
           <header class="collection-modal__header">
@@ -500,7 +654,10 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
               Открыт сбор для брони #{{ state.bookingNumber }}
             </h2>
 
-            <div class="collection-modal__link-row">
+            <div
+              ref="linkRowRef"
+              class="collection-modal__link-row"
+            >
               <span class="collection-modal__link-label">
                 Прямая ссылка на сбор
               </span>
@@ -518,7 +675,7 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 
           <div class="collection-modal__body">
             <div
-              v-for="participant in occupiedParticipants"
+              v-for="participant in sortedOccupiedParticipants"
               :key="participant.id ?? participant.name"
               class="collection-modal__participant"
             >
@@ -666,36 +823,178 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
                 </button>
               </div>
             </div>
+
+            <button
+              v-if="canAddInviteField"
+              type="button"
+              class="collection-modal__add-field-btn"
+              aria-label="Добавить поле для поиска"
+              @click="addInviteField"
+            >
+              +
+            </button>
           </div>
 
           <footer class="collection-modal__footer">
-            <button
-              type="button"
-              class="collection-modal__btn collection-modal__btn--accent"
-              :disabled="!canExtendCollection"
-              @click="requestCollectionExtension"
+            <div
+              ref="footerStatsWrapRef"
+              class="collection-modal__footer-stats-wrap"
             >
-              Продлить сбор
-            </button>
-            <button
-              type="button"
-              class="collection-modal__btn"
-              @click="requestCollectionCancellation"
-            >
-              Отменить сбор
-            </button>
-            <button
-              type="button"
-              class="collection-modal__btn"
-              :disabled="!canFinishCollection"
-              @click="requestCollectionFinish"
-            >
-              Завершить сбор
-            </button>
-            <button type="button" class="collection-modal__btn">
-              Открытый сбор
-            </button>
+              <div class="collection-modal__footer-stats">
+                <button
+                  type="button"
+                  class="collection-modal__footer-stat-link"
+                  :class="{ 'collection-modal__footer-stat-link--active': activeStatsPanel === 'collected' }"
+                  @click="toggleStatsPanel('collected')"
+                >
+                  Собрано {{ collectedCount }}/{{ slotsTotal }}
+                </button>
+                <button
+                  type="button"
+                  class="collection-modal__footer-stat-link"
+                  :class="{ 'collection-modal__footer-stat-link--active': activeStatsPanel === 'pending' }"
+                  @click="toggleStatsPanel('pending')"
+                >
+                  Не подтвержденные {{ pendingCount }}
+                </button>
+                <button
+                  type="button"
+                  class="collection-modal__footer-stat-link"
+                  :class="{ 'collection-modal__footer-stat-link--active': activeStatsPanel === 'declined' }"
+                  @click="toggleStatsPanel('declined')"
+                >
+                  Отклонили {{ declinedCount }}
+                </button>
+              </div>
+            </div>
+
+            <div class="collection-modal__footer-actions">
+              <button
+                type="button"
+                class="collection-modal__btn collection-modal__btn--accent"
+                :disabled="!canExtendCollection"
+                @click="requestCollectionExtension"
+              >
+                Продлить сбор
+              </button>
+              <button
+                type="button"
+                class="collection-modal__btn"
+                @click="requestCollectionCancellation"
+              >
+                Отменить сбор
+              </button>
+              <button
+                type="button"
+                class="collection-modal__btn"
+                :disabled="!canFinishCollection"
+                @click="requestCollectionFinish"
+              >
+                Завершить сбор
+              </button>
+              <button type="button" class="collection-modal__btn">
+                Открытый сбор
+              </button>
+            </div>
           </footer>
+
+          <div
+            v-if="activeStatsPanel"
+            class="collection-modal__stats-panel"
+            :style="statsPanelLayout"
+          >
+            <p
+              v-if="!statsPanelParticipants.length"
+              class="collection-modal__stats-panel-empty"
+            >
+              Список пуст
+            </p>
+
+            <template v-else>
+              <div
+                v-for="participant in statsPanelParticipants"
+                :key="`stats-${participant.id ?? participant.name}`"
+                class="collection-modal__stats-panel-item"
+              >
+                <div class="collection-modal__participant-info">
+                  <div class="collection-modal__participant-name">
+                    {{ participant.name }}
+                  </div>
+                  <div
+                    v-if="participant.email"
+                    class="collection-modal__participant-email"
+                  >
+                    {{ participant.email }}
+                  </div>
+                </div>
+
+                <span
+                  class="collection-modal__status-dot"
+                  :class="`collection-modal__status-dot--${participant.status}`"
+                  :aria-label="participantBadgeLabel(participant.status)"
+                  :title="participantBadgeLabel(participant.status)"
+                >
+                  <svg
+                    v-if="participant.status === 'confirmed'"
+                    class="collection-modal__status-dot-icon"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2 6l3 3 5-5"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <svg
+                    v-else-if="participant.status === 'pending'"
+                    class="collection-modal__status-dot-icon"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="6"
+                      cy="6"
+                      r="4.5"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                    />
+                    <path
+                      d="M6 3.5V6l1.8 1.2"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <svg
+                    v-else
+                    class="collection-modal__status-dot-icon"
+                    width="10"
+                    height="10"
+                    viewBox="0 0 10 10"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2 2l6 6M8 2L2 8"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+              </div>
+            </template>
+          </div>
         </div>
       </div>
     </Transition>
@@ -945,6 +1244,31 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
   color: var(--wh-white);
 }
 
+.collection-modal__add-field-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  min-height: 48px;
+  margin-top: 4px;
+  padding: 0;
+  border: 1px dashed var(--wh-field-border);
+  border-radius: 8px;
+  background: var(--wh-white);
+  color: var(--wh-gray-600);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.collection-modal__add-field-btn:hover {
+  border-color: #e8883a;
+  background: #fff7ef;
+  color: #e8883a;
+}
+
 .collection-modal__search-results {
   position: absolute;
   top: calc(100% + 4px);
@@ -1008,8 +1332,117 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 .collection-modal__footer {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 10px;
+}
+
+.collection-modal__footer-stats-wrap {
+  position: relative;
+}
+
+.collection-modal__footer-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 8px;
+  color: var(--wh-gray-900);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.collection-modal__footer-stat-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.collection-modal__footer-stat-link:hover,
+.collection-modal__footer-stat-link--active {
+  color: var(--wh-orange-500);
+}
+
+.collection-modal__stats-panel {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--wh-orange-500);
+  border-radius: 8px;
+  background: var(--wh-white);
+  box-shadow: var(--wh-shadow);
+}
+
+.collection-modal__stats-panel-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
   justify-content: center;
+  margin: 0;
+  color: var(--wh-gray-600);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.collection-modal__stats-panel-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.collection-modal__stats-panel-item + .collection-modal__stats-panel-item {
+  margin-top: 8px;
+}
+
+.collection-modal__status-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.collection-modal__status-dot-icon {
+  flex-shrink: 0;
+}
+
+.collection-modal__status-dot--confirmed {
+  background: var(--wh-green);
+  color: var(--wh-white);
+}
+
+.collection-modal__status-dot--pending {
+  background: var(--wh-gray-400);
+  color: var(--wh-white);
+}
+
+.collection-modal__status-dot--declined {
+  background: var(--wh-field-error);
+  color: var(--wh-white);
+}
+
+.collection-modal__footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
+  margin-left: auto;
 }
 
 .collection-modal__btn {
@@ -1074,7 +1507,13 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
   }
 
   .collection-modal__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .collection-modal__footer-actions {
     justify-content: stretch;
+    margin-left: 0;
   }
 
   .collection-modal__btn {
@@ -1083,6 +1522,10 @@ function participantBadgeClass(status: CollectionParticipantStatus) {
 }
 
 @media (--wh-mobile) {
+  .collection-modal__link-label {
+    display: none;
+  }
+
   .collection-modal__btn {
     flex: 1 1 100%;
   }
