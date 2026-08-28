@@ -86,13 +86,6 @@ const collectionLinkAbsolute = computed(() => {
   }
 })
 
-const collectionLinkCopyText = computed(() => {
-  const absolute = collectionLinkAbsolute.value
-  if (!absolute) return ''
-
-  return `Ссылку на сбор охотников ${absolute}`
-})
-
 watch(isOpen, (open) => {
   if (timerInterval) {
     clearInterval(timerInterval)
@@ -280,14 +273,14 @@ function handleKeydown(event: KeyboardEvent) {
 async function copyCollectionLink() {
   if (!import.meta.client) return
 
-  const text = collectionLinkCopyText.value
-  if (!text) {
+  const url = collectionLinkAbsolute.value
+  if (!url) {
     notifications.error('Ссылка на сбор недоступна')
     return
   }
 
   try {
-    await navigator.clipboard.writeText(text)
+    await navigator.clipboard.writeText(url)
     notifications.success('Ссылка скопирована в буфер обмена')
   } catch {
     notifications.error('Не удалось скопировать ссылку')
