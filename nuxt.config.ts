@@ -78,6 +78,7 @@ export default defineNuxtConfig({
   routeRules: {
     '/profile': { ssr: false },
     '/profile/**': { ssr: false },
+    '/rooms': { ssr: false },
   },
   /**
    * Prod is served over plain HTTP/1.1 (no HTTP/2 without a real TLS domain).

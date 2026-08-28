@@ -8,12 +8,18 @@ export function isBaseAdminRole(
   roleName?: string | null,
 ): boolean {
   const code = (roleCode || '').trim().toLowerCase()
+  const name = (roleName || '').trim().toLowerCase()
 
-  if (code === ROLE_BASE_ADMIN) {
+  if (code === ROLE_BASE_ADMIN || code === ROLE_SUPERADMIN) {
     return true
   }
 
-  const name = (roleName || '').trim().toLowerCase()
-
-  return name === 'администратор базы' || name === 'baseadmin' || name === 'base admin'
+  return (
+    name === 'администратор базы'
+    || name === 'baseadmin'
+    || name === 'base admin'
+    || name === 'суперадмин'
+    || name === 'superadmin'
+    || code === 'администратор базы'
+  )
 }

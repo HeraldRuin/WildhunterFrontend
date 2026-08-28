@@ -228,7 +228,7 @@ export function useAuthToken() {
   }
 
   function initFromStorage() {
-    if (!import.meta.client || token.value) {
+    if (!import.meta.client) {
       return
     }
 
@@ -238,7 +238,14 @@ export function useAuthToken() {
       return
     }
 
-    applySession(stored, Boolean(localStorage.getItem(TOKEN_KEY)))
+    // Токен может уже быть из cookie, а user — только в localStorage.
+    // Раньше при наличии token гидрация пропускалась → baseadmin слал на /404.
+    const needsToken = !token.value
+    const needsUser = !user.value
+
+    if (needsToken || needsUser) {
+      applySession(stored, Boolean(localStorage.getItem(TOKEN_KEY)))
+    }
   }
 
   return {

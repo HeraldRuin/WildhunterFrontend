@@ -20,19 +20,13 @@ export default defineNuxtRouteMiddleware(async () => {
   }
 
   const { loadProfile } = useProfile()
-  const { isBaseAdmin, roleCode, roleName } = useUserRole()
-  const roleKnown = Boolean(roleCode.value || roleName.value)
+  const { isBaseAdmin } = useUserRole()
 
   if (isBaseAdmin.value) {
     return
   }
 
-  // Роль уже известна и это не админ базы (охотник и др.)
-  if (roleKnown) {
-    window.location.replace('/404')
-    return
-  }
-
+  // Не форсим API: при офлайне/ошибке оставляем кэш роли, иначе ломаем все /profile/*
   await loadProfile()
 
   if (!isBaseAdmin.value) {
