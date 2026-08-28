@@ -662,14 +662,23 @@ function updateStatsPanelLayout() {
                 Прямая ссылка на сбор
               </span>
 
-              <button
-                v-if="collectionLinkAbsolute"
-                type="button"
-                class="collection-modal__link-url"
-                @click="copyCollectionLink"
-              >
-                {{ collectionLinkAbsolute }}
-              </button>
+              <div class="collection-modal__link-wrap">
+                <span
+                  class="collection-modal__link-tooltip"
+                  role="tooltip"
+                >
+                  Прямая ссылка на сбор
+                </span>
+
+                <button
+                  v-if="collectionLinkAbsolute"
+                  type="button"
+                  class="collection-modal__link-url"
+                  @click="copyCollectionLink"
+                >
+                  {{ collectionLinkAbsolute }}
+                </button>
+              </div>
             </div>
           </header>
 
@@ -1040,12 +1049,12 @@ function updateStatsPanelLayout() {
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  padding-right: 40px;
   margin-bottom: 20px;
 }
 
 .collection-modal__title {
   margin: 0;
+  padding-right: 96px;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
@@ -1059,6 +1068,7 @@ function updateStatsPanelLayout() {
   gap: 12px;
   width: 100%;
   min-width: 0;
+  margin-top: 12px;
   padding: 10px 14px;
   border: 1px solid var(--wh-field-border);
   border-radius: 8px;
@@ -1071,10 +1081,20 @@ function updateStatsPanelLayout() {
   color: var(--wh-gray-900);
 }
 
+.collection-modal__link-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.collection-modal__link-tooltip {
+  display: none;
+}
+
 .collection-modal__link-url {
   margin: 0;
   min-width: 0;
-  flex: 1;
+  width: 100%;
   padding: 0;
   border: none;
   background: none;
@@ -1102,13 +1122,19 @@ function updateStatsPanelLayout() {
 
 .collection-modal__participant {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px 16px;
   min-height: 52px;
   padding: 10px 14px;
   border-radius: 8px;
   background: var(--wh-gray-100);
+}
+
+.collection-modal__participant-info {
+  flex: 1 1 auto;
+  min-width: min(100%, max-content);
 }
 
 .collection-modal__participant-name {
@@ -1503,7 +1529,10 @@ function updateStatsPanelLayout() {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
-    padding-right: 36px;
+  }
+
+  .collection-modal__title {
+    padding-right: 88px;
   }
 
   .collection-modal__footer {
@@ -1522,8 +1551,43 @@ function updateStatsPanelLayout() {
 }
 
 @media (--wh-mobile) {
+  .collection-modal__header {
+    align-items: stretch;
+  }
+
   .collection-modal__link-label {
     display: none;
+  }
+
+  .collection-modal__link-row {
+    align-self: stretch;
+  }
+
+  .collection-modal__link-tooltip {
+    display: block;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    z-index: 1;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--wh-gray-900);
+    color: var(--wh-white);
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%);
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+  }
+
+  .collection-modal__link-wrap:hover .collection-modal__link-tooltip,
+  .collection-modal__link-wrap:focus-within .collection-modal__link-tooltip {
+    opacity: 1;
+    visibility: visible;
   }
 
   .collection-modal__btn {
