@@ -387,11 +387,21 @@ watch(isOpen, (open) => {
               >
               <span>
                 Мною прочитаны и принимаются
-                <NuxtLink to="/terms" class="register-modal__terms-link" @click="close">
+                <NuxtLink
+                  to="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="register-modal__terms-link"
+                >
                   Условия использования
                 </NuxtLink>
                 и
-                <NuxtLink to="/politika_konfidencialnosti" class="register-modal__terms-link" @click="close">
+                <NuxtLink
+                  to="/politika_konfidencialnosti"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="register-modal__terms-link"
+                >
                   Политика конфиденциальности
                 </NuxtLink>
               </span>
