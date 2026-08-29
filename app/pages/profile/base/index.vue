@@ -101,6 +101,10 @@ async function loadHotels() {
   }
 }
 
+function addBase() {
+  void navigateTo('/profile/base/new')
+}
+
 onMounted(() => {
   void loadHotels()
 })
@@ -115,7 +119,17 @@ onMounted(() => {
         <ProfileNotificationsBell />
       </header>
 
-      <CommonPageTitle divider>Управление базой</CommonPageTitle>
+      <div class="base-manage__toolbar">
+        <CommonPageTitle>Управление базой</CommonPageTitle>
+
+        <button
+          type="button"
+          class="base-manage__btn base-manage__btn--success"
+          @click="addBase"
+        >
+          + Добавить базу
+        </button>
+      </div>
 
       <p v-if="loadError" class="base-hotels__status base-hotels__status--error">
         {{ loadError }}
@@ -173,8 +187,49 @@ onMounted(() => {
   overflow: visible;
 }
 
-.base-manage :deep(.page-title--divider) {
+.base-manage__toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   width: 100%;
+  margin-bottom: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+.base-manage__toolbar :deep(.page-title) {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.base-manage__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-top: 6px;
+  padding: 7px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.base-manage__btn--success {
+  border-color: var(--wh-green);
+  background: var(--wh-green);
+  color: var(--wh-white);
 }
 
 .base-hotels,
