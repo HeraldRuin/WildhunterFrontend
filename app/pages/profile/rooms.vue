@@ -56,26 +56,6 @@ const rooms = ref<RoomManageItem[]>([
 
 const roomsCount = computed(() => rooms.value.length)
 
-function roomsGenitiveNoun(count: number) {
-  const mod10 = count % 10
-  const mod100 = count % 100
-
-  if (mod10 === 1 && mod100 !== 11) {
-    return 'номера'
-  }
-
-  return 'номеров'
-}
-
-const roomsRangeLabel = computed(() => {
-  if (!roomsCount.value) {
-    return 'Нет номеров'
-  }
-
-  const count = roomsCount.value
-  return `Показаны 1 - ${count} из ${count} ${roomsGenitiveNoun(count)}`
-})
-
 function addRoom() {
   // UI only — API later
 }
@@ -133,33 +113,9 @@ function toggleVisibility(id: number) {
           </svg>
           Доступные номера
         </button>
-
-        <NuxtLink
-          to="/profile/base"
-          class="rooms-manage__btn rooms-manage__btn--info"
-        >
-          <svg
-            class="rooms-manage__btn-icon"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          Назад к отелю
-        </NuxtLink>
       </div>
     </div>
 
-    <p class="rooms-manage__range">{{ roomsRangeLabel }}</p>
 
     <div v-if="roomsCount > 0" class="rooms-manage__list">
       <ProfileRoomManageCard
@@ -251,17 +207,6 @@ function toggleVisibility(id: number) {
 
 .rooms-manage__btn--warning {
   background: #ffc107;
-}
-
-.rooms-manage__btn--info {
-  background: #17a2b8;
-}
-
-.rooms-manage__range {
-  margin: 0 0 8px;
-  color: #6c757d;
-  font-size: 13px;
-  line-height: 1.4;
 }
 
 .rooms-manage__list {
