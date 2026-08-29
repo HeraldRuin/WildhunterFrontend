@@ -351,6 +351,10 @@ async function removeHotel() {
   line-height: 1.4;
 }
 
+.base-hotel-card__meta > span {
+  color: #000;
+}
+
 .base-hotel-card__meta--footer {
   margin: 0;
 }
@@ -366,7 +370,7 @@ async function removeHotel() {
   font-weight: 700;
 }
 
-.base-hotel-card__status {
+.base-hotel-card__meta > .base-hotel-card__status {
   color: var(--wh-orange-500);
   font-weight: 600;
 }
