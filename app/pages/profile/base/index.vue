@@ -153,10 +153,11 @@ onMounted(() => {
 }
 
 .base-manage {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   align-items: stretch;
-  max-width: 100%;
+  width: 100%;
+  max-width: 1100px;
 }
 
 .profile-page__header {
@@ -180,7 +181,7 @@ onMounted(() => {
 
 .base-hotels,
 .base-hotels__list {
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
 }
 
@@ -205,11 +206,6 @@ onMounted(() => {
   .profile-page {
     padding: 12px 8px 32px;
   }
-
-  .base-manage {
-    display: flex;
-    width: 100%;
-  }
 }
 
 @media (--wh-mobile) {
@@ -223,11 +219,6 @@ onMounted(() => {
     padding: 0;
     background: transparent;
     border-radius: 0;
-  }
-
-  .base-hotels,
-  .base-hotels__list {
-    width: 100%;
   }
 }
 </style>

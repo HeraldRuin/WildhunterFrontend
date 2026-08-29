@@ -261,7 +261,7 @@ async function removeHotel() {
 .base-hotel-card {
   display: flex;
   flex-direction: column;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
@@ -272,9 +272,9 @@ async function removeHotel() {
 
 .base-hotel-card__layout {
   display: grid;
-  grid-template-columns: 320px auto;
+  grid-template-columns: 320px 1fr;
   align-items: stretch;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
 }
@@ -431,13 +431,8 @@ async function removeHotel() {
 }
 
 @media (--wh-narrow) {
-  .base-hotel-card {
-    width: 100%;
-  }
-
   .base-hotel-card__layout {
     grid-template-columns: 1fr;
-    width: 100%;
   }
 
   .base-hotel-card__info {
