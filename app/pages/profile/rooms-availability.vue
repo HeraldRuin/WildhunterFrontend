@@ -296,20 +296,20 @@ function shiftMonth(delta: number) {
   flex-direction: column;
   width: 100%;
   flex: 1 1 auto;
-  min-height: calc(100vh - 180px);
+  min-height: 0;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
   background: var(--wh-white);
-  overflow: hidden;
+  overflow: auto;
   box-sizing: border-box;
 }
 
 .rooms-availability__calendar {
   display: flex;
   flex-direction: column;
+  flex: 1 0 auto;
   min-width: 0;
-  min-height: 0;
-  height: 100%;
+  min-height: 100%;
   padding: 0 0 0;
   box-sizing: border-box;
 }
@@ -392,9 +392,9 @@ function shiftMonth(delta: number) {
 .rooms-availability__grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-template-rows: repeat(6, minmax(0, 1fr));
-  flex: 1 1 auto;
-  min-height: 0;
+  grid-template-rows: repeat(6, minmax(110px, 1fr));
+  flex: 1 0 auto;
+  min-height: calc(6 * 110px);
   border-left: none;
 }
 
@@ -485,6 +485,11 @@ function shiftMonth(delta: number) {
     width: 100%;
     justify-content: space-between;
     flex-wrap: wrap;
+  }
+
+  .rooms-availability__grid {
+    grid-template-rows: repeat(6, minmax(96px, 1fr));
+    min-height: calc(6 * 96px);
   }
 
   .rooms-availability__cell {
