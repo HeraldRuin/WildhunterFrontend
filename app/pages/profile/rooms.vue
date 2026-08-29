@@ -35,6 +35,8 @@ const breadcrumbs = [
   { label: 'Управление номерами' },
 ]
 
+const route = useRoute()
+
 const rooms = ref<RoomManageItem[]>([
   {
     id: 1,
@@ -63,7 +65,11 @@ function addRoom() {
 }
 
 function openAvailability() {
-  // UI only — API later
+  const hotelId = route.query.hotelId
+  void navigateTo({
+    path: '/rooms/availability',
+    query: typeof hotelId === 'string' && hotelId ? { hotelId } : undefined,
+  })
 }
 
 function toggleVisibility(id: number) {
