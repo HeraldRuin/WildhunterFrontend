@@ -63,8 +63,62 @@ export interface ManagedHotel {
   location: ManagedHotelLocation | null
 }
 
+export interface ManagedHotelGalleryImage {
+  id: number
+  large: string
+  medium: string
+  thumb: string
+}
+
+export interface ManagedHotelPolicyItem {
+  title?: string | null
+  content?: string | null
+}
+
+export interface ManagedHotelSurroundingItem {
+  name?: string | null
+  content?: string | null
+  value?: string | number | null
+  type?: string | null
+}
+
+export type ManagedHotelSurrounding =
+  | ManagedHotelSurroundingItem[]
+  | Record<string, ManagedHotelSurroundingItem[]>
+  | null
+
+export interface ManagedHotelDetail {
+  id: number
+  slug: string
+  title: string
+  content: string | null
+  star_rate: number | string | null
+  image_id: number | null
+  image_url: string | null
+  gallery: ManagedHotelGalleryImage[]
+  policy: ManagedHotelPolicyItem[] | null
+  surrounding: ManagedHotelSurrounding
+  price: number | string | null
+  extra_price: number | string | null
+  service_fee: number | string | null
+  address: string | null
+  map_lat: number | string | null
+  map_lng: number | string | null
+  map_zoom?: number | string | null
+  location_id: number | null
+  location: ManagedHotelLocation | null
+  term_ids: number[]
+  status: string
+  status_label: string
+  has_food: boolean
+}
+
 export type HotelsManageResponse =
   | ApiSuccessResponse<ManagedHotel[]>
+  | ApiErrorResponse
+
+export type HotelManageDetailResponse =
+  | ApiSuccessResponse<ManagedHotelDetail>
   | ApiErrorResponse
 
 export type HotelManageDeleteResponse =
@@ -146,6 +200,15 @@ export function useHotelsApi() {
     })
   }
 
+  function getManageById(hotelId: number | string) {
+    return apiFetch<HotelManageDetailResponse>(
+      `/hotels/manage/${encodeURIComponent(String(hotelId))}`,
+      {
+        method: 'GET',
+      },
+    )
+  }
+
   function deleteManage(hotelId: number | string) {
     return apiFetch<HotelManageDeleteResponse>(
       `/hotels/manage/${encodeURIComponent(String(hotelId))}`,
@@ -163,6 +226,7 @@ export function useHotelsApi() {
     getPriceRangeBounds,
     checkAvailability,
     getManage,
+    getManageById,
     deleteManage,
   }
 }
