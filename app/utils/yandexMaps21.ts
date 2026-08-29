@@ -35,6 +35,19 @@ export interface YmapsEvent {
   get: (key: string) => unknown
 }
 
+export interface YmapsGeoObject {
+  geometry: {
+    getCoordinates: () => YmapsCoords
+  }
+  getAddressLine: () => string
+}
+
+export interface YmapsGeocodeResult {
+  geoObjects: {
+    get: (index: number) => YmapsGeoObject | null
+  }
+}
+
 export interface YmapsApi {
   ready: (callback: () => void) => void
   Map: new (
@@ -46,12 +59,21 @@ export interface YmapsApi {
     coords: YmapsCoords,
     properties?: Record<string, unknown>,
     options?: Record<string, unknown>,
-  ) => { events: YmapsMap['events'] }
+  ) => {
+    events: YmapsMap['events']
+    geometry: {
+      getCoordinates: () => YmapsCoords
+    }
+  }
   Polyline: new (
     coords: YmapsCoords[],
     properties?: Record<string, unknown>,
     options?: Record<string, unknown>,
   ) => unknown
+  geocode: (
+    request: string | YmapsCoords,
+    options?: Record<string, unknown>,
+  ) => Promise<YmapsGeocodeResult>
   templateLayoutFactory: {
     createClass: (template: string, methods?: Record<string, unknown>) => unknown
   }
