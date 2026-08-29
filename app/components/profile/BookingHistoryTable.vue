@@ -882,12 +882,13 @@ onBeforeUnmount(() => {
 
 .booking-table__action--danger {
   border-color: #dc3545;
-  background: var(--wh-white);
-  color: #dc3545;
+  background: #dc3545;
+  color: var(--wh-white);
 }
 
 .booking-table__action--danger:hover {
-  background: rgba(220, 53, 69, 0.08);
+  border-color: #c82333;
+  background: #c82333;
 }
 
 .booking-table__action--primary {

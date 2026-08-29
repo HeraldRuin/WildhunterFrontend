@@ -1667,7 +1667,7 @@ const hasNewWeapon = computed(() =>
   padding: 0;
   border: none;
   background: none;
-  color: var(--wh-orange-text);
+  color: #dc3545;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -1675,7 +1675,7 @@ const hasNewWeapon = computed(() =>
 }
 
 .weapons-form__cancel:hover {
-  color: var(--wh-orange-600);
+  color: #c82333;
 }
 
 @media (--wh-tablet) {
