@@ -26,6 +26,8 @@ const props = withDefaults(defineProps<{
   rows?: number
   /** textarea вместо input */
   multiline?: boolean
+  /** textarea можно растягивать по высоте (старт как у input при rows=1) */
+  resizable?: boolean
   /** стиль маски пароля (letter-spacing) */
   masked?: boolean
   /** состояние «открыт» (календарь и т.п.) */
@@ -61,6 +63,7 @@ const props = withDefaults(defineProps<{
   readonly: false,
   rows: 4,
   multiline: false,
+  resizable: false,
   masked: false,
   open: false,
   cursorPointer: false,
@@ -433,6 +436,7 @@ function onPaste(event: ClipboardEvent) {
             'form-field__input--with-trailing': hasTrailing,
             'form-field__input--with-trailing-wide': trailingWide,
             'form-field__input--reveal': reveal,
+            'form-field__input--resizable': resizable,
           }"
           :value="displayValue"
           :placeholder="placeholder"
@@ -623,6 +627,14 @@ function onPaste(event: ClipboardEvent) {
 .form-field__input--textarea {
   resize: none;
   min-height: 132px;
+}
+
+.form-field__input--textarea.form-field__input--resizable {
+  resize: vertical;
+  min-height: calc(18px * 1.3 + 24px);
+  height: calc(18px * 1.3 + 24px);
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 .form-field__input--pointer {
