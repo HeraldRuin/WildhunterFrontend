@@ -263,7 +263,7 @@ onUnmounted(() => {
   gap: 10px;
   width: 100%;
   padding: 12px 14px;
-  border: none;
+  border: 1.5px solid transparent;
   border-radius: 10px;
   appearance: none;
   background-color: transparent;
@@ -275,7 +275,7 @@ onUnmounted(() => {
   letter-spacing: -0.05em;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .select-field__option-dot {
@@ -302,9 +302,23 @@ onUnmounted(() => {
 
 .select-field__option:hover,
 .select-field__option--hovered,
-.select-field__option:focus-visible,
+.select-field__option:focus-visible {
+  background-color: transparent;
+  border-color: #e8883a;
+  color: var(--wh-black-text);
+}
+
 .select-field__option--active {
   background-color: #e8883a;
+  border-color: #e8883a;
+  color: #ffffff;
+}
+
+.select-field__option--active:hover,
+.select-field__option--active.select-field__option--hovered,
+.select-field__option--active:focus-visible {
+  background-color: #e8883a;
+  border-color: #e8883a;
   color: #ffffff;
 }
 
