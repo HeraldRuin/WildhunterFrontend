@@ -963,13 +963,13 @@ onBeforeUnmount(() => {
 }
 
 .extra-services__btn--delete {
-  border-color: var(--wh-orange-500);
+  border-color: #dc3545;
   background: var(--wh-white);
-  color: var(--wh-orange-600);
+  color: #dc3545;
 }
 
 .extra-services__btn--delete:hover:not(:disabled) {
-  background: rgba(238, 154, 60, 0.08);
+  background: rgba(220, 53, 69, 0.08);
 }
 
 .extra-services__empty {

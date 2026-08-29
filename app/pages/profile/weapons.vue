@@ -1175,7 +1175,7 @@ const hasNewWeapon = computed(() =>
                   </button>
                   <button
                     type="button"
-                    class="profile-weapon__action"
+                    class="profile-weapon__action profile-weapon__action--delete"
                     :disabled="savingWeaponIndex === card.index"
                     @click="requestDeleteWeapon(card.index)"
                   >
@@ -1540,6 +1540,14 @@ const hasNewWeapon = computed(() =>
 
 .profile-weapon__action:hover:not(:disabled) {
   color: var(--wh-orange-600);
+}
+
+.profile-weapon__action--delete {
+  color: #dc3545;
+}
+
+.profile-weapon__action--delete:hover:not(:disabled) {
+  color: #c82333;
 }
 
 .profile-weapon__action:disabled {

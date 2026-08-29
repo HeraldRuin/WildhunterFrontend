@@ -65,7 +65,10 @@ function handleKeydown(event: KeyboardEvent) {
 
             <button
               type="button"
-              class="confirm-modal__btn confirm-modal__btn--primary"
+              class="confirm-modal__btn"
+              :class="options.confirmLabel === 'Удалить'
+                ? 'confirm-modal__btn--danger'
+                : 'confirm-modal__btn--primary'"
               :disabled="isSubmitting"
               :aria-busy="isSubmitting"
               @click="confirm"
@@ -216,6 +219,17 @@ function handleKeydown(event: KeyboardEvent) {
 .confirm-modal__btn--primary:hover:not(:disabled) {
   border-color: var(--wh-orange-600);
   background: var(--wh-orange-600);
+}
+
+.confirm-modal__btn--danger {
+  border: 1px solid #dc3545;
+  background: #dc3545;
+  color: var(--wh-white);
+}
+
+.confirm-modal__btn--danger:hover:not(:disabled) {
+  border-color: #c82333;
+  background: #c82333;
 }
 
 .confirm-modal-enter-active,
