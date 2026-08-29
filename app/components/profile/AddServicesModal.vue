@@ -1979,7 +1979,7 @@ function handleKeydown(event: KeyboardEvent) {
   padding: 0 16px;
   border: none;
   border-radius: 8px;
-  background: #22c55e;
+  background: var(--wh-green);
   color: var(--wh-white);
   font-size: 0.88rem;
   font-weight: 600;
@@ -1988,7 +1988,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .add-services-modal__save:hover:not(:disabled) {
-  background: #16a34a;
+  background: var(--wh-green);
 }
 
 .add-services-modal__save:disabled,
