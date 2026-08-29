@@ -22,9 +22,18 @@ const emit = defineEmits<{
   deleted: [id: number]
 }>()
 
+const route = useRoute()
 const { rooms: roomsApi } = useApi()
 const notifications = useNotifications()
 const { open: openConfirmModal } = useConfirmModal()
+
+const editTo = computed(() => {
+  const hotelId = route.query.hotelId
+  return {
+    path: `/rooms/${props.item.id}`,
+    query: typeof hotelId === 'string' && hotelId ? { hotelId } : undefined,
+  }
+})
 
 const isDeleting = ref(false)
 const isTogglingVisibility = ref(false)
@@ -269,9 +278,12 @@ async function toggleVisibility() {
         </div>
 
         <div class="room-manage-card__actions">
-          <button type="button" class="room-manage-card__btn room-manage-card__btn--primary">
+          <NuxtLink
+            :to="editTo"
+            class="room-manage-card__btn room-manage-card__btn--primary"
+          >
             Редактировать
-          </button>
+          </NuxtLink>
           <button
             type="button"
             class="room-manage-card__btn room-manage-card__btn--danger"
