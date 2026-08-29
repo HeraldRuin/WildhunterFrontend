@@ -370,18 +370,23 @@ function shiftMonth(delta: number) {
 }
 
 .rooms-availability__weekdays {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   flex-shrink: 0;
   margin-top: 0;
   border-top: none;
   border-left: none;
+  background: var(--wh-white);
 }
 
 .rooms-availability__weekday {
   padding: 10px 6px;
   border-right: 1px solid var(--wh-gray-300);
   border-bottom: 1px solid var(--wh-gray-300);
+  background: var(--wh-white);
   color: #5e6d77;
   font-size: 13px;
   font-weight: 600;
