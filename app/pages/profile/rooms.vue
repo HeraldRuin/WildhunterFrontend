@@ -26,10 +26,12 @@ onBeforeMount(() => {
   ready.value = true
 })
 
+const hotelTitle = 'Хромой кабан-2'
+
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
   { label: 'Параметры' },
-  { label: 'Управление базой', to: '/profile/base' },
+  { label: `Управление базой: ${hotelTitle}`, to: '/profile/base' },
   { label: 'Управление номерами' },
 ]
 
@@ -96,7 +98,7 @@ function toggleVisibility(id: number) {
 
         <button
           type="button"
-          class="rooms-manage__btn rooms-manage__btn--warning"
+          class="rooms-manage__btn rooms-manage__btn--primary"
           @click="openAvailability"
         >
           <svg
@@ -115,7 +117,6 @@ function toggleVisibility(id: number) {
         </button>
       </div>
     </div>
-
 
     <div v-if="roomsCount > 0" class="rooms-manage__list">
       <ProfileRoomManageCard
@@ -182,19 +183,20 @@ function toggleVisibility(id: number) {
 .rooms-manage__btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  min-width: 50px;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 5px;
-  color: #fff;
+  padding: 7px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 13px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
   box-sizing: border-box;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .rooms-manage__btn-icon {
@@ -202,14 +204,27 @@ function toggleVisibility(id: number) {
 }
 
 .rooms-manage__btn--success {
-  background: #28a745;
+  border-color: var(--wh-green);
+  background: var(--wh-green);
+  color: var(--wh-white);
 }
 
-.rooms-manage__btn--warning {
-  background: #ffc107;
+.rooms-manage__btn--primary {
+  border-color: var(--wh-orange-500);
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+}
+
+.rooms-manage__btn--primary:hover {
+  border-color: var(--wh-orange-600);
+  background: var(--wh-orange-600);
 }
 
 .rooms-manage__list {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  width: 100%;
   max-width: 1100px;
 }
 
