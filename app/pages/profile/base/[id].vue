@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import type { ManagedHotel } from '~/api/hotels'
+import type { ManagedHotelDetail } from '~/api/hotels'
+import type { HotelRoomAttribute, HotelRoomAttributeTerm, SearchLocation } from '~/types/api'
+import { DEFAULT_MAP_CENTER } from '~/utils/map'
 
 definePageMeta({
   layout: 'profile',
   middleware: 'baseadmin',
+  profileScrollLock: true,
 })
 
 const route = useRoute()
-const { hotels: hotelsApi } = useApi()
+const { hotels: hotelsApi, services: servicesApi, location: locationApi } = useApi()
 
+const isCreateMode = computed(() => route.params.id === 'new')
 const hotelId = computed(() => Number(route.params.id))
 
 type BaseHotelEditTab = 'content' | 'policy' | 'places' | 'pricing' | 'attributes'
@@ -21,7 +25,7 @@ const editTabs: { id: BaseHotelEditTab, label: string }[] = [
   { id: 'attributes', label: 'Атрибуты' },
 ]
 
-const hotel = ref<ManagedHotel | null>(null)
+const hotel = ref<ManagedHotelDetail | null>(null)
 const isLoading = ref(true)
 const loadError = ref('')
 const activeEditTab = ref<BaseHotelEditTab>('content')
@@ -32,6 +36,30 @@ const hoverRating = ref(0)
 const galleryPreviews = ref<string[]>([])
 const galleryInputRef = ref<HTMLInputElement | null>(null)
 const selectedGalleryIndex = ref<number | null>(null)
+const attributeGroups = ref<HotelRoomAttribute[]>([])
+const attributesLoading = ref(false)
+const attributesError = ref('')
+const selectedTermIds = ref<number[]>([])
+const attrScrollEl = ref<HTMLElement | null>(null)
+const attrPageCount = ref(1)
+const attrPageIndex = ref(0)
+let attributesLoaded = false
+let attrResizeObserver: ResizeObserver | null = null
+
+const editLocationId = ref<number | null>(null)
+const editLocationQuery = ref('')
+const editAddress = ref('')
+const editMapLat = ref('')
+const editMapLng = ref('')
+const editMapZoom = ref('8')
+const mapSearchQuery = ref('')
+const mapSearchError = ref('')
+const isLocationDropdownOpen = ref(false)
+const locations = ref<SearchLocation[]>([])
+const locationsLoading = ref(false)
+const locationsError = ref('')
+const locationMapRef = ref<{ searchByName: (query: string) => Promise<boolean> } | null>(null)
+let locationsLoaded = false
 
 type PolicyItem = {
   id: number
@@ -39,8 +67,21 @@ type PolicyItem = {
   content: string
 }
 
+type SurroundingDistanceType = 'm' | 'km'
+
+type SurroundingItem = {
+  id: number
+  name: string
+  content: string
+  value: string
+  type: SurroundingDistanceType
+}
+
 let policyItemIdSeq = 0
 const policyItems = ref<PolicyItem[]>([])
+
+let surroundingItemIdSeq = 0
+const surroundingItems = ref<SurroundingItem[]>([])
 
 function addPolicyItem() {
   policyItemIdSeq += 1
@@ -53,6 +94,52 @@ function addPolicyItem() {
 
 function removePolicyItem(id: number) {
   policyItems.value = policyItems.value.filter(item => item.id !== id)
+}
+
+function addSurroundingItem() {
+  surroundingItemIdSeq += 1
+  surroundingItems.value.push({
+    id: surroundingItemIdSeq,
+    name: '',
+    content: '',
+    value: '',
+    type: 'km',
+  })
+}
+
+function removeSurroundingItem(id: number) {
+  surroundingItems.value = surroundingItems.value.filter(item => item.id !== id)
+}
+
+function normalizeSurroundingType(value: unknown): SurroundingDistanceType {
+  return value === 'm' ? 'm' : 'km'
+}
+
+function flattenSurroundingSource(source: ManagedHotelDetail['surrounding']): Array<{
+  name?: string | null
+  content?: string | null
+  value?: string | number | null
+  type?: string | null
+}> {
+  if (!source) {
+    return []
+  }
+
+  if (Array.isArray(source)) {
+    return source
+  }
+
+  if (typeof source === 'object') {
+    return Object.values(source).flatMap((group) => {
+      if (!Array.isArray(group)) {
+        return []
+      }
+
+      return group
+    })
+  }
+
+  return []
 }
 
 const ratingStars = [1, 2, 3, 4, 5] as const
@@ -110,7 +197,13 @@ function removeGalleryImage(index: number) {
   selectedGalleryIndex.value = null
 }
 
-const pageTitle = computed(() => hotel.value?.title ?? 'Редактирование базы')
+const pageTitle = computed(() => {
+  if (isCreateMode.value) {
+    return 'Новая база'
+  }
+
+  return hotel.value?.title ?? 'Редактирование базы'
+})
 
 const breadcrumbs = computed(() => [
   { label: 'Главная', to: '/' },
@@ -119,12 +212,306 @@ const breadcrumbs = computed(() => [
   { label: pageTitle.value },
 ])
 
+const showForm = computed(() => isCreateMode.value || Boolean(hotel.value))
+
 useHead({
   title: () => `${pageTitle.value} — WH`,
 })
 
 function selectEditTab(tab: BaseHotelEditTab) {
   activeEditTab.value = tab
+
+  if (tab === 'attributes') {
+    void loadAttributes()
+    scheduleAttrPagesUpdate()
+  }
+
+  if (tab === 'places') {
+    void loadLocations()
+  }
+}
+
+const filteredLocations = computed(() => {
+  const query = editLocationQuery.value.trim().toLowerCase()
+
+  if (!query) {
+    return locations.value
+  }
+
+  return locations.value.filter(item => item.name.toLowerCase().includes(query))
+})
+
+const mapLatNumber = computed(() => {
+  const value = Number(editMapLat.value.replace(',', '.'))
+  return Number.isFinite(value) ? value : null
+})
+
+const mapLngNumber = computed(() => {
+  const value = Number(editMapLng.value.replace(',', '.'))
+  return Number.isFinite(value) ? value : null
+})
+
+const mapZoomNumber = computed(() => {
+  const value = Number(editMapZoom.value.replace(',', '.'))
+  return Number.isFinite(value) && value > 0 ? value : 8
+})
+
+function openLocationDropdown() {
+  isLocationDropdownOpen.value = true
+  void loadLocations()
+}
+
+function closeLocationDropdown() {
+  isLocationDropdownOpen.value = false
+}
+
+function selectLocation(item: SearchLocation) {
+  editLocationId.value = item.id
+  editLocationQuery.value = item.name
+  closeLocationDropdown()
+}
+
+function onLocationQueryInput(value: string) {
+  editLocationQuery.value = value
+
+  const match = locations.value.find(
+    item => item.name.toLowerCase() === value.trim().toLowerCase(),
+  )
+
+  editLocationId.value = match?.id ?? null
+  openLocationDropdown()
+}
+
+function onLocationBlur() {
+  window.setTimeout(() => {
+    closeLocationDropdown()
+  }, 150)
+}
+
+function onMapLatUpdate(value: number) {
+  editMapLat.value = String(value)
+}
+
+function onMapLngUpdate(value: number) {
+  editMapLng.value = String(value)
+}
+
+function onMapZoomUpdate(value: number) {
+  editMapZoom.value = String(Math.round(value))
+}
+
+function onMapAddress(value: string) {
+  if (value) {
+    editAddress.value = value
+  }
+}
+
+async function searchMapByName() {
+  mapSearchError.value = ''
+  const query = mapSearchQuery.value.trim()
+
+  if (!query) {
+    return
+  }
+
+  const found = await locationMapRef.value?.searchByName(query)
+
+  if (!found) {
+    mapSearchError.value = 'Ничего не найдено'
+  }
+}
+
+function onMapSearchKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Enter') {
+    return
+  }
+
+  event.preventDefault()
+  void searchMapByName()
+}
+
+function clearMapSearch() {
+  mapSearchQuery.value = ''
+  mapSearchError.value = ''
+}
+
+async function loadLocations() {
+  if (locationsLoaded || locationsLoading.value) {
+    return
+  }
+
+  locationsLoading.value = true
+  locationsError.value = ''
+
+  try {
+    locations.value = await locationApi.getLocationItems()
+    locationsLoaded = true
+
+    if (editLocationId.value && !editLocationQuery.value) {
+      const match = locations.value.find(item => item.id === editLocationId.value)
+      if (match) {
+        editLocationQuery.value = match.name
+      }
+    }
+  }
+  catch {
+    locationsError.value = 'Не удалось загрузить локации'
+  }
+  finally {
+    locationsLoading.value = false
+  }
+}
+
+function attributeGroupTitle(group: HotelRoomAttribute) {
+  return `Атрибут: ${group.name}`
+}
+
+function termLabel(term: HotelRoomAttributeTerm) {
+  return term.translation?.name || term.name
+}
+
+function isTermSelected(termId: number) {
+  return selectedTermIds.value.includes(termId)
+}
+
+function toggleTerm(termId: number) {
+  if (selectedTermIds.value.includes(termId)) {
+    selectedTermIds.value = selectedTermIds.value.filter(id => id !== termId)
+    return
+  }
+
+  selectedTermIds.value = [...selectedTermIds.value, termId]
+}
+
+function getAttrMaxScroll(el: HTMLElement) {
+  return Math.max(0, el.scrollHeight - el.clientHeight)
+}
+
+function getAttrPageCount(el: HTMLElement) {
+  const pageSize = el.clientHeight || 1
+  const maxScroll = getAttrMaxScroll(el)
+
+  if (maxScroll <= 8) {
+    return 1
+  }
+
+  return Math.max(1, Math.ceil((maxScroll + pageSize) / pageSize))
+}
+
+function getAttrPageIndex(el: HTMLElement, pageCount: number) {
+  if (pageCount <= 1) {
+    return 0
+  }
+
+  const maxScroll = getAttrMaxScroll(el)
+
+  if (el.scrollTop >= maxScroll - 2) {
+    return pageCount - 1
+  }
+
+  return Math.min(
+    pageCount - 1,
+    Math.round((el.scrollTop / maxScroll) * (pageCount - 1)),
+  )
+}
+
+function updateAttrPages() {
+  const el = attrScrollEl.value
+  if (!el) {
+    attrPageCount.value = 1
+    attrPageIndex.value = 0
+    return
+  }
+
+  const pages = getAttrPageCount(el)
+  attrPageCount.value = pages
+  attrPageIndex.value = getAttrPageIndex(el, pages)
+}
+
+function scheduleAttrPagesUpdate() {
+  void nextTick(() => {
+    updateAttrPages()
+    requestAnimationFrame(() => {
+      updateAttrPages()
+      requestAnimationFrame(updateAttrPages)
+    })
+  })
+}
+
+function onAttrScroll() {
+  const el = attrScrollEl.value
+  if (!el) {
+    return
+  }
+
+  attrPageIndex.value = getAttrPageIndex(el, attrPageCount.value)
+}
+
+function scrollAttrToPage(index: number) {
+  const el = attrScrollEl.value
+  if (!el || attrPageCount.value <= 1) {
+    return
+  }
+
+  const maxScroll = getAttrMaxScroll(el)
+  const top = Math.round((index / (attrPageCount.value - 1)) * maxScroll)
+
+  el.scrollTo({ top, behavior: 'smooth' })
+  attrPageIndex.value = index
+}
+
+async function loadAttributes() {
+  if (attributesLoaded || attributesLoading.value) {
+    return
+  }
+
+  attributesLoading.value = true
+  attributesError.value = ''
+
+  try {
+    attributeGroups.value = await servicesApi.getAttributeGroups('hotel')
+    attributesLoaded = true
+    scheduleAttrPagesUpdate()
+  }
+  catch {
+    attributesError.value = 'Не удалось загрузить атрибуты'
+  }
+  finally {
+    attributesLoading.value = false
+  }
+}
+
+function revokeGalleryBlobUrls() {
+  for (const src of galleryPreviews.value) {
+    if (src.startsWith('blob:')) {
+      URL.revokeObjectURL(src)
+    }
+  }
+}
+
+function resetForm() {
+  revokeGalleryBlobUrls()
+  editTitle.value = ''
+  editRating.value = 0
+  editContent.value = ''
+  hoverRating.value = 0
+  galleryPreviews.value = []
+  selectedGalleryIndex.value = null
+  selectedTermIds.value = []
+  policyItems.value = []
+  policyItemIdSeq = 0
+  surroundingItems.value = []
+  surroundingItemIdSeq = 0
+  editLocationId.value = null
+  editLocationQuery.value = ''
+  editAddress.value = ''
+  editMapLat.value = String(DEFAULT_MAP_CENTER.lat)
+  editMapLng.value = String(DEFAULT_MAP_CENTER.lng)
+  editMapZoom.value = '8'
+  mapSearchQuery.value = ''
+  mapSearchError.value = ''
+  isLocationDropdownOpen.value = false
+  activeEditTab.value = 'content'
 }
 
 function extractErrorMessage(source: unknown, fallback: string) {
@@ -149,18 +536,85 @@ function extractErrorMessage(source: unknown, fallback: string) {
   return fallback
 }
 
-function fillFormFromHotel(item: ManagedHotel) {
-  editTitle.value = item.title
-  editRating.value = 0
-  editContent.value = ''
-  galleryPreviews.value = item.image_url ? [item.image_url] : []
+function galleryPreviewUrl(item: ManagedHotelDetail['gallery'][number]) {
+  return item.medium || item.large || item.thumb || ''
+}
+
+function fillFormFromHotel(item: ManagedHotelDetail) {
+  revokeGalleryBlobUrls()
+
+  editTitle.value = item.title ?? ''
+  editRating.value = Math.min(5, Math.max(0, Math.round(Number(item.star_rate) || 0)))
+  editContent.value = item.content ?? ''
   selectedGalleryIndex.value = null
-  policyItems.value = []
+
+  const galleryUrls = (item.gallery ?? [])
+    .map(galleryPreviewUrl)
+    .filter(Boolean)
+
+  galleryPreviews.value = galleryUrls.length
+    ? galleryUrls
+    : (item.image_url ? [item.image_url] : [])
+
   policyItemIdSeq = 0
+  policyItems.value = (item.policy ?? []).map((policyItem) => {
+    policyItemIdSeq += 1
+    return {
+      id: policyItemIdSeq,
+      title: policyItem.title ?? '',
+      content: policyItem.content ?? '',
+    }
+  })
+
+  selectedTermIds.value = Array.isArray(item.term_ids)
+    ? item.term_ids.map(Number).filter(id => Number.isFinite(id) && id > 0)
+    : []
+
+  editLocationId.value = item.location_id ?? item.location?.id ?? null
+  editLocationQuery.value = item.location?.name ?? ''
+  editAddress.value = item.address ?? ''
+
+  const lat = Number(item.map_lat)
+  const lng = Number(item.map_lng)
+  const zoom = Number(item.map_zoom)
+
+  editMapLat.value = Number.isFinite(lat) ? String(lat) : String(DEFAULT_MAP_CENTER.lat)
+  editMapLng.value = Number.isFinite(lng) ? String(lng) : String(DEFAULT_MAP_CENTER.lng)
+  editMapZoom.value = Number.isFinite(zoom) && zoom > 0 ? String(Math.round(zoom)) : '8'
+  mapSearchQuery.value = ''
+  mapSearchError.value = ''
+
+  surroundingItemIdSeq = 0
+  surroundingItems.value = flattenSurroundingSource(item.surrounding)
+    .filter((entry) => {
+      const name = String(entry.name ?? '').trim()
+      const content = String(entry.content ?? '').trim()
+      const value = entry.value == null ? '' : String(entry.value).trim()
+      return Boolean(name || content || value)
+    })
+    .map((entry) => {
+      surroundingItemIdSeq += 1
+      return {
+        id: surroundingItemIdSeq,
+        name: entry.name ?? '',
+        content: entry.content ?? '',
+        value: entry.value == null ? '' : String(entry.value),
+        type: normalizeSurroundingType(entry.type),
+      }
+    })
 }
 
 async function loadHotel() {
+  if (isCreateMode.value) {
+    hotel.value = null
+    resetForm()
+    loadError.value = ''
+    isLoading.value = false
+    return
+  }
+
   if (!Number.isFinite(hotelId.value) || hotelId.value <= 0) {
+    hotel.value = null
     loadError.value = 'Некорректный идентификатор базы'
     isLoading.value = false
     return
@@ -170,24 +624,19 @@ async function loadHotel() {
   loadError.value = ''
 
   try {
-    const response = await hotelsApi.getManage()
+    const response = await hotelsApi.getManageById(hotelId.value)
 
     if ('success' in response && response.success) {
-      const match = (response.data ?? []).find(item => item.id === hotelId.value)
-
-      if (!match) {
-        loadError.value = 'База не найдена'
-        return
-      }
-
-      hotel.value = match
-      fillFormFromHotel(match)
+      hotel.value = response.data
+      fillFormFromHotel(response.data)
       return
     }
 
+    hotel.value = null
     loadError.value = extractErrorMessage(response, 'Не удалось загрузить базу')
   }
   catch (error) {
+    hotel.value = null
     const data = (error as { data?: unknown }).data
     loadError.value = extractErrorMessage(data, 'Не удалось загрузить базу')
   }
@@ -198,6 +647,59 @@ async function loadHotel() {
 
 onMounted(() => {
   void loadHotel()
+  window.addEventListener('resize', scheduleAttrPagesUpdate)
+
+  if (import.meta.client && typeof ResizeObserver !== 'undefined') {
+    attrResizeObserver = new ResizeObserver(() => {
+      updateAttrPages()
+    })
+
+    void nextTick(() => {
+      if (attrScrollEl.value) {
+        attrResizeObserver?.observe(attrScrollEl.value)
+      }
+      updateAttrPages()
+    })
+  }
+  else {
+    scheduleAttrPagesUpdate()
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', scheduleAttrPagesUpdate)
+  attrResizeObserver?.disconnect()
+  attrResizeObserver = null
+})
+
+watch(() => route.params.id, () => {
+  void loadHotel()
+})
+
+watch(() => attributeGroups.value.length, () => {
+  scheduleAttrPagesUpdate()
+  void nextTick(() => {
+    if (attrScrollEl.value && attrResizeObserver) {
+      attrResizeObserver.disconnect()
+      attrResizeObserver.observe(attrScrollEl.value)
+    }
+  })
+})
+
+watch(attrScrollEl, (el) => {
+  if (!el || !attrResizeObserver) {
+    return
+  }
+
+  attrResizeObserver.disconnect()
+  attrResizeObserver.observe(el)
+  updateAttrPages()
+})
+
+watch(activeEditTab, (tab) => {
+  if (tab === 'attributes') {
+    scheduleAttrPagesUpdate()
+  }
 })
 </script>
 
@@ -237,6 +739,23 @@ onMounted(() => {
         </NuxtLink>
       </div>
 
+      <nav
+        v-if="showForm && !loadError && !isLoading"
+        class="base-edit__nav"
+        aria-label="Разделы редактирования"
+      >
+        <button
+          v-for="tab in editTabs"
+          :key="tab.id"
+          type="button"
+          class="base-edit__nav-link"
+          :class="{ 'base-edit__nav-link--active': activeEditTab === tab.id }"
+          @click="selectEditTab(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
+      </nav>
+
       <div class="base-edit__panel-area">
         <div v-if="loadError || isLoading" class="base-edit__panel">
           <div class="base-edit__body">
@@ -250,23 +769,37 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-else-if="hotel" class="base-edit__panel">
-          <div class="base-edit__panel-top">
-            <nav class="base-edit__nav" aria-label="Разделы редактирования">
-              <button
-                v-for="tab in editTabs"
-                :key="tab.id"
-                type="button"
-                class="base-edit__nav-link"
-                :class="{ 'base-edit__nav-link--active': activeEditTab === tab.id }"
-                @click="selectEditTab(tab.id)"
-              >
-                {{ tab.label }}
-              </button>
-            </nav>
+        <div
+          v-else-if="showForm"
+          class="base-edit__panel-shell"
+        >
+          <div
+            v-if="activeEditTab === 'attributes' && attributeGroups.length"
+            class="base-edit__attr-dots"
+            :class="{ 'base-edit__attr-dots--hidden': attrPageCount <= 1 }"
+            role="tablist"
+            aria-label="Страницы атрибутов"
+            :aria-hidden="attrPageCount <= 1"
+          >
+            <button
+              v-for="page in attrPageCount"
+              :key="page"
+              type="button"
+              class="base-edit__attr-dot"
+              :class="{ 'base-edit__attr-dot--active': page - 1 === attrPageIndex }"
+              :aria-label="`Страница ${page}`"
+              :aria-current="page - 1 === attrPageIndex ? 'true' : undefined"
+              :tabindex="attrPageCount > 1 ? 0 : -1"
+              @click="scrollAttrToPage(page - 1)"
+            />
           </div>
 
-          <div class="base-edit__body">
+          <div class="base-edit__panel">
+          <div
+            ref="attrScrollEl"
+            class="base-edit__body"
+            @scroll.passive="onAttrScroll"
+          >
             <div v-if="activeEditTab === 'content'" class="base-edit__content">
               <div class="base-edit__form">
                 <div class="base-edit__form-row">
@@ -444,6 +977,222 @@ onMounted(() => {
                 </div>
               </div>
             </div>
+
+            <div v-else-if="activeEditTab === 'places'" class="base-edit__places">
+              <div class="base-edit__places-form">
+                <div class="base-edit__location-field">
+                  <CommonFormField
+                    :model-value="editLocationQuery"
+                    label="Локация"
+                    placeholder="Выберите локацию"
+                    autocomplete="off"
+                    :open="isLocationDropdownOpen"
+                    no-margin
+                    @update:model-value="onLocationQueryInput"
+                    @focus="openLocationDropdown"
+                    @blur="onLocationBlur"
+                  />
+
+                  <ul
+                    v-if="isLocationDropdownOpen"
+                    class="base-edit__location-dropdown"
+                    role="listbox"
+                    aria-label="Список локаций"
+                  >
+                    <li v-if="locationsLoading" class="base-edit__location-option base-edit__location-option--muted">
+                      Загрузка...
+                    </li>
+                    <li v-else-if="locationsError" class="base-edit__location-option base-edit__location-option--error">
+                      {{ locationsError }}
+                    </li>
+                    <li v-else-if="!filteredLocations.length" class="base-edit__location-option base-edit__location-option--muted">
+                      Ничего не найдено
+                    </li>
+                    <li
+                      v-for="item in filteredLocations"
+                      :key="item.id"
+                      role="option"
+                      class="base-edit__location-option"
+                      :class="{ 'base-edit__location-option--active': editLocationId === item.id }"
+                      @mousedown.prevent="selectLocation(item)"
+                    >
+                      {{ item.name }}
+                    </li>
+                  </ul>
+                </div>
+
+                <CommonFormField
+                  v-model="editAddress"
+                  label="Действительный адрес"
+                  placeholder="Действительный адрес"
+                  no-margin
+                />
+
+                <section class="base-edit__geo" aria-label="Географические координаты">
+                  <h3 class="base-edit__geo-title">Географические координаты</h3>
+
+                  <div class="base-edit__geo-layout">
+                    <ProfileBaseLocationMap
+                      ref="locationMapRef"
+                      :lat="mapLatNumber"
+                      :lng="mapLngNumber"
+                      :zoom="mapZoomNumber"
+                      @update:lat="onMapLatUpdate"
+                      @update:lng="onMapLngUpdate"
+                      @update:zoom="onMapZoomUpdate"
+                      @address="onMapAddress"
+                    />
+
+                    <div class="base-edit__geo-fields">
+                      <CommonFormField
+                        v-model="editMapLat"
+                        label="Широта карты"
+                        placeholder="0"
+                        no-margin
+                      />
+                      <CommonFormField
+                        v-model="editMapLng"
+                        label="Долгота карты"
+                        placeholder="0"
+                        no-margin
+                      />
+                      <CommonFormField
+                        v-model="editMapZoom"
+                        label="Масштаб карты"
+                        placeholder="8"
+                        no-margin
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <div class="base-edit__map-search">
+                  <CommonFormField
+                    v-model="mapSearchQuery"
+                    placeholder="Поиск по имени..."
+                    autocomplete="off"
+                    no-margin
+                    @keydown="onMapSearchKeydown"
+                  >
+                    <template v-if="mapSearchQuery" #trailing>
+                      <button
+                        type="button"
+                        class="base-edit__map-search-clear"
+                        @click="clearMapSearch"
+                      >
+                        очистить
+                      </button>
+                    </template>
+                  </CommonFormField>
+
+                  <p v-if="mapSearchError" class="base-edit__map-search-error">
+                    {{ mapSearchError }}
+                  </p>
+                </div>
+
+                <section class="base-edit__surrounding" aria-label="Окрестности">
+                  <h3 class="base-edit__surrounding-title">Окрестности</h3>
+
+                  <div v-if="surroundingItems.length" class="base-edit__surrounding-table">
+                    <div class="base-edit__surrounding-head" aria-hidden="true">
+                      <span class="base-edit__surrounding-head-cell">Имя</span>
+                      <span class="base-edit__surrounding-head-cell">Контент</span>
+                      <span class="base-edit__surrounding-head-cell">Расстояние</span>
+                      <span class="base-edit__surrounding-head-cell base-edit__surrounding-head-cell--action" />
+                    </div>
+
+                    <div
+                      v-for="item in surroundingItems"
+                      :key="item.id"
+                      class="base-edit__surrounding-row"
+                    >
+                      <CommonFormField
+                        v-model="item.name"
+                        placeholder="Имя"
+                        no-margin
+                      />
+                      <CommonFormField
+                        v-model="item.content"
+                        placeholder="Контент"
+                        multiline
+                        resizable
+                        :rows="1"
+                        no-margin
+                      />
+                      <div class="base-edit__surrounding-distance">
+                        <CommonFormField
+                          v-model="item.value"
+                          placeholder="..."
+                          no-margin
+                        />
+                        <label class="base-edit__surrounding-unit">
+                          <span class="visually-hidden">Единица расстояния</span>
+                          <select v-model="item.type" class="base-edit__surrounding-unit-select">
+                            <option value="m">м</option>
+                            <option value="km">км</option>
+                          </select>
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        class="base-edit__policy-remove"
+                        @click="removeSurroundingItem(item.id)"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <div
+              v-else-if="activeEditTab === 'attributes'"
+              class="base-edit__attributes"
+            >
+              <p v-if="attributesError" class="base-edit__status base-edit__status--error">
+                {{ attributesError }}
+              </p>
+
+              <p v-else-if="attributesLoading" class="base-edit__status">
+                Загрузка атрибутов...
+              </p>
+
+              <p v-else-if="!attributeGroups.length" class="base-edit__status">
+                Нет атрибутов
+              </p>
+
+              <div
+                v-else
+                class="base-edit__attr-list"
+              >
+                <section
+                  v-for="group in attributeGroups"
+                  :key="group.id"
+                  class="base-edit__attr-block"
+                >
+                  <h3 class="base-edit__attr-title">
+                    {{ attributeGroupTitle(group) }}
+                  </h3>
+
+                  <div class="base-edit__attr-body">
+                    <label
+                      v-for="term in group.terms"
+                      :key="term.id"
+                      class="base-edit__attr-item"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="isTermSelected(term.id)"
+                        @change="toggleTerm(term.id)"
+                      >
+                      <span class="base-edit__attr-checkmark" />
+                      <span class="base-edit__attr-label">{{ termLabel(term) }}</span>
+                    </label>
+                  </div>
+                </section>
+              </div>
+            </div>
           </div>
 
           <div class="base-edit__actions">
@@ -472,7 +1221,33 @@ onMounted(() => {
               Добавить элемент
             </button>
 
+            <button
+              v-else-if="activeEditTab === 'places'"
+              type="button"
+              class="base-edit__policy-add"
+              @click="addSurroundingItem"
+            >
+              <svg
+                class="base-edit__gallery-btn-icon"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
+                <path
+                  d="M12 8v8M8 12h8"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Добавить элемент
+            </button>
+
             <CommonSaveButton type="button" class="base-edit__actions-save" />
+          </div>
           </div>
         </div>
       </div>
@@ -484,11 +1259,11 @@ onMounted(() => {
 .profile-page {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
+  width: 100%;
   height: 100%;
   max-height: 100%;
-  width: 100%;
   padding: 20px 40px 48px;
   padding-left: 20px;
   box-sizing: border-box;
@@ -498,11 +1273,12 @@ onMounted(() => {
 
 .base-edit {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   align-items: stretch;
   min-height: 0;
   max-width: 100%;
+  overflow: hidden;
 }
 
 .profile-page__header {
@@ -526,9 +1302,7 @@ onMounted(() => {
   gap: 16px;
   flex-shrink: 0;
   width: 100%;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  margin-bottom: 8px;
   box-sizing: border-box;
 }
 
@@ -540,16 +1314,22 @@ onMounted(() => {
 
 .base-edit__panel-area {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
+  gap: 8px;
   min-height: 0;
+  overflow: hidden;
 }
 
-.base-edit__panel-top {
+.base-edit__panel-shell {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  flex-wrap: wrap;
+  flex: 1 1 0;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .base-edit__back {
@@ -594,10 +1374,10 @@ onMounted(() => {
 
 .base-edit__panel {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   min-height: 0;
-  margin-top: 8px;
+  min-width: 0;
   padding: 24px;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
@@ -606,17 +1386,13 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.base-edit__panel-top {
-  flex-shrink: 0;
-}
-
 .base-edit__body {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   min-height: 0;
-  margin-top: 32px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .base-edit__actions {
@@ -637,7 +1413,13 @@ onMounted(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 28px;
+  flex-shrink: 0;
+  width: 100%;
   min-width: 0;
+  margin-bottom: 16px;
+  padding-bottom: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
 }
 
 .base-edit__nav-link {
@@ -688,6 +1470,394 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.base-edit__places {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__places-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__location-field {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__location-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 240px;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 10px;
+  background: var(--wh-white);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.base-edit__location-option {
+  padding: 10px 14px;
+  color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.base-edit__location-option:hover,
+.base-edit__location-option--active {
+  background: rgba(238, 154, 60, 0.12);
+}
+
+.base-edit__location-option--muted,
+.base-edit__location-option--error {
+  cursor: default;
+}
+
+.base-edit__location-option--muted {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.base-edit__location-option--error {
+  color: #dc3545;
+}
+
+.base-edit__location-option--muted:hover,
+.base-edit__location-option--error:hover {
+  background: transparent;
+}
+
+.base-edit__geo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.base-edit__geo-title {
+  margin: 0;
+  color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+}
+
+.base-edit__geo-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 250px;
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+
+.base-edit__geo-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid rgba(204, 204, 204, 0.8);
+  border-radius: 10px;
+  background: var(--wh-white);
+  box-sizing: border-box;
+}
+
+.base-edit__map-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__map-search-clear {
+  padding: 0;
+  border: none;
+  background: none;
+  color: rgba(0, 0, 0, 0.55);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.base-edit__map-search-clear:hover {
+  color: var(--wh-gray-900);
+}
+
+.base-edit__map-search-error {
+  margin: 0;
+  color: #dc3545;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.base-edit__surrounding {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 8px;
+}
+
+.base-edit__surrounding-title {
+  margin: 0;
+  color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 120%;
+  letter-spacing: -0.05em;
+}
+
+.base-edit__surrounding-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__surrounding-head {
+  display: grid;
+  grid-template-columns: minmax(0, 0.45fr) minmax(0, 1fr) minmax(160px, 0.4fr) 110px;
+  gap: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--wh-gray-400);
+  border-radius: 8px;
+  background: var(--wh-white);
+  box-sizing: border-box;
+}
+
+.base-edit__surrounding-head-cell {
+  color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.base-edit__surrounding-head-cell--action {
+  width: 110px;
+}
+
+.base-edit__surrounding-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.45fr) minmax(0, 1fr) minmax(160px, 0.4fr) 110px;
+  gap: 16px;
+  align-items: start;
+}
+
+.base-edit__surrounding-distance {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 8px;
+  align-items: start;
+  min-width: 0;
+}
+
+.base-edit__surrounding-unit {
+  display: block;
+  min-width: 0;
+}
+
+.base-edit__surrounding-unit-select {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: calc(18px * 1.3 + 24px);
+  padding: 12px 14px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 10px;
+  background: var(--wh-white);
+  color: var(--wh-gray-900);
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%231C211C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.base-edit__surrounding-unit-select:focus {
+  border-color: var(--wh-field-border-active);
+  box-shadow: 0 0 0 3px var(--wh-field-focus-ring);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.base-edit__attributes {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.base-edit__attr-dots {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 8px;
+  width: 10px;
+  padding: 4px 0;
+  z-index: 2;
+}
+
+.base-edit__attr-dots--hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.base-edit__attr-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 1px solid rgb(28 33 28 / 25%);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.base-edit__attr-dot--active {
+  border-color: #e8883a;
+  background: #e8883a;
+}
+
+.base-edit__attr-dot:hover:not(.base-edit__attr-dot--active) {
+  border-color: rgb(28 33 28 / 45%);
+}
+
+.base-edit__attr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__attr-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.base-edit__attr-title {
+  margin: 0;
+  color: #1a2b50;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.base-edit__attr-body {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--wh-gray-400);
+  border-radius: 4px;
+  background: #f5f5f5;
+  box-sizing: border-box;
+}
+
+.base-edit__attr-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.base-edit__attr-item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.base-edit__attr-checkmark {
+  position: relative;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-top: 0;
+  border: 1px solid var(--wh-gray-300);
+  border-radius: 4px;
+  background: var(--wh-white);
+}
+
+.base-edit__attr-item input:checked + .base-edit__attr-checkmark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--wh-orange-500);
+  transform: translate(-50%, -50%);
+}
+
+.base-edit__attr-label {
+  min-width: 0;
 }
 
 .base-edit__policy {
@@ -1025,6 +2195,18 @@ onMounted(() => {
     min-height: 0;
     overflow: auto;
   }
+
+  .base-edit__attr-dots {
+    display: none;
+  }
+
+  .base-edit__attr-body {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .base-edit__geo-layout {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
 }
 
 @media (--wh-mobile) {
@@ -1047,11 +2229,6 @@ onMounted(() => {
     border-radius: 0;
   }
 
-  .base-edit__panel-top {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .base-edit__title-row {
     flex-wrap: wrap;
   }
@@ -1068,9 +2245,26 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
+  .base-edit__geo-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .base-edit__attr-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .base-edit__policy-head,
   .base-edit__policy-row {
     grid-template-columns: 1fr;
+  }
+
+  .base-edit__surrounding-head,
+  .base-edit__surrounding-row {
+    grid-template-columns: 1fr;
+  }
+
+  .base-edit__surrounding-distance {
+    grid-template-columns: minmax(0, 1fr) 88px;
   }
 
   .base-edit__policy-remove {
