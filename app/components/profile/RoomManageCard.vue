@@ -18,8 +18,16 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  toggleVisibility: []
+  visibilityChanged: [status: RoomManageStatus]
+  deleted: [id: number]
 }>()
+
+const { rooms: roomsApi } = useApi()
+const notifications = useNotifications()
+const { open: openConfirmModal } = useConfirmModal()
+
+const isDeleting = ref(false)
+const isTogglingVisibility = ref(false)
 
 const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
@@ -54,6 +62,113 @@ const visibilityActionLabel = computed(() => {
     }
   }
 })
+
+function extractErrorMessage(source: unknown, fallback: string) {
+  if (!source || typeof source !== 'object') {
+    return fallback
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    data?: unknown
+  }
+
+  if (payload.message) {
+    return payload.message
+  }
+
+  if (payload.data && payload.data !== source) {
+    return extractErrorMessage(payload.data, fallback)
+  }
+
+  return fallback
+}
+
+function normalizeStatus(status: string): RoomManageStatus {
+  return status === 'publish' ? 'publish' : 'draft'
+}
+
+function requestDelete() {
+  if (isDeleting.value || isTogglingVisibility.value) {
+    return
+  }
+
+  openConfirmModal({
+    title: `Вы уверены, что хотите удалить «${props.item.title}»?`,
+    confirmLabel: 'Удалить',
+    onConfirm: () => removeRoom(),
+  })
+}
+
+async function removeRoom() {
+  if (isDeleting.value) {
+    return
+  }
+
+  isDeleting.value = true
+
+  try {
+    const response = await roomsApi.deleteManage(props.item.id)
+
+    if ('success' in response && response.success) {
+      notifications.success(response.message || 'Номер удалён')
+      emit('deleted', props.item.id)
+      return
+    }
+
+    notifications.error(extractErrorMessage(response, 'Не удалось удалить номер'))
+    throw new Error('delete_room_failed')
+  }
+  catch (error) {
+    if ((error as Error).message !== 'delete_room_failed') {
+      const data = (error as { data?: unknown }).data
+      notifications.error(extractErrorMessage(data, 'Не удалось удалить номер'))
+    }
+
+    throw error
+  }
+  finally {
+    isDeleting.value = false
+  }
+}
+
+async function toggleVisibility() {
+  if (isTogglingVisibility.value || isDeleting.value) {
+    return
+  }
+
+  isTogglingVisibility.value = true
+
+  const action = props.item.status === 'publish' ? 'hide' : 'publish'
+  const fallbackError = action === 'publish'
+    ? 'Не удалось опубликовать номер'
+    : 'Не удалось скрыть номер'
+
+  try {
+    const response = action === 'publish'
+      ? await roomsApi.publish(props.item.id)
+      : await roomsApi.hide(props.item.id)
+
+    if ('success' in response && response.success) {
+      const nextStatus = normalizeStatus(response.data.status)
+      notifications.success(
+        response.message || (nextStatus === 'publish' ? 'Номер опубликован' : 'Номер скрыт'),
+      )
+      emit('visibilityChanged', nextStatus)
+      return
+    }
+
+    notifications.error(extractErrorMessage(response, fallbackError))
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    notifications.error(extractErrorMessage(data, fallbackError))
+  }
+  finally {
+    isTogglingVisibility.value = false
+  }
+}
 </script>
 
 <template>
@@ -157,14 +272,21 @@ const visibilityActionLabel = computed(() => {
           <button type="button" class="room-manage-card__btn room-manage-card__btn--primary">
             Редактировать
           </button>
-          <button type="button" class="room-manage-card__btn room-manage-card__btn--danger">
+          <button
+            type="button"
+            class="room-manage-card__btn room-manage-card__btn--danger"
+            :disabled="isDeleting || isTogglingVisibility"
+            @click="requestDelete"
+          >
             Удалить
           </button>
           <button
             type="button"
             class="room-manage-card__btn"
             :class="item.status === 'publish' ? 'room-manage-card__btn--secondary' : 'room-manage-card__btn--success'"
-            @click="emit('toggleVisibility')"
+            :disabled="isTogglingVisibility || isDeleting"
+            :aria-busy="isTogglingVisibility"
+            @click="toggleVisibility"
           >
             {{ visibilityActionLabel }}
           </button>

@@ -16,6 +16,16 @@ export { useSearchApi } from './search'
 export { useLocationApi, mapLocationOfferToItem } from './location'
 export { useHotelsApi, mapHotelOfferToItem } from './hotels'
 export type { ManagedHotel, ManagedHotelLocation, HotelsManageResponse, HotelManageDeleteResponse } from './hotels'
+export { useRoomsApi } from './rooms'
+export type {
+  ManagedRoom,
+  RoomsListData,
+  RoomsListResponse,
+  RoomManageStatus as ManagedRoomStatus,
+  RoomManageVisibilityData,
+  RoomManageVisibilityResponse,
+  RoomManageDeleteResponse,
+} from './rooms'
 export { useAnimalsApi } from './animals'
 export type {
   ManagedAnimal,

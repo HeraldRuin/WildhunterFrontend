@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ManagedRoom } from '~/api/rooms'
 import type { RoomManageItem } from '~/components/profile/RoomManageCard.vue'
 
 definePageMeta({
@@ -10,6 +11,7 @@ useHead({
   title: 'Управление номерами — WH',
 })
 
+const { rooms: roomsApi } = useApi()
 const authToken = useAuthToken()
 const ready = ref(false)
 
@@ -37,28 +39,64 @@ const breadcrumbs = [
 
 const route = useRoute()
 
-const rooms = ref<RoomManageItem[]>([
-  {
-    id: 1,
-    title: '3-х местный',
-    image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400',
-    quantity: 3,
-    price: 3000,
-    status: 'publish',
-    updatedAt: '19.02.2026 11:51',
-  },
-  {
-    id: 2,
-    title: '4-х местный',
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400',
-    quantity: 4,
-    price: 4000,
-    status: 'publish',
-    updatedAt: '16.02.2026 06:49',
-  },
-])
+const rooms = ref<RoomManageItem[]>([])
+const isLoading = ref(true)
+const loadError = ref('')
 
 const roomsCount = computed(() => rooms.value.length)
+
+function formatUpdatedAt(value?: string) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date).replace(',', '')
+}
+
+function mapToRoomManageItem(room: ManagedRoom): RoomManageItem {
+  return {
+    id: room.id,
+    title: room.title,
+    image: room.image_url ?? '',
+    quantity: Number(room.number) || 0,
+    price: Number(room.price) || 0,
+    status: room.status === 'publish' ? 'publish' : 'draft',
+    updatedAt: formatUpdatedAt(room.updated_at),
+  }
+}
+
+function extractErrorMessage(source: unknown, fallback: string) {
+  if (!source || typeof source !== 'object') {
+    return fallback
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    data?: unknown
+  }
+
+  if (payload.message) {
+    return payload.message
+  }
+
+  if (payload.data && payload.data !== source) {
+    return extractErrorMessage(payload.data, fallback)
+  }
+
+  return fallback
+}
 
 function addRoom() {
   // UI only — API later
@@ -72,14 +110,45 @@ function openAvailability() {
   })
 }
 
-function toggleVisibility(id: number) {
+function onVisibilityChanged(id: number, status: RoomManageItem['status']) {
   const room = rooms.value.find(item => item.id === id)
   if (!room) {
     return
   }
 
-  room.status = room.status === 'publish' ? 'draft' : 'publish'
+  room.status = status
 }
+
+function onRoomDeleted(id: number) {
+  rooms.value = rooms.value.filter(room => room.id !== id)
+}
+
+async function loadRooms() {
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    const response = await roomsApi.getList()
+
+    if ('success' in response && response.success) {
+      rooms.value = (response.data?.rooms ?? []).map(mapToRoomManageItem)
+      return
+    }
+
+    loadError.value = extractErrorMessage(response, 'Не удалось загрузить номера')
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    loadError.value = extractErrorMessage(data, 'Не удалось загрузить номера')
+  }
+  finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  void loadRooms()
+})
 </script>
 
 <template>
@@ -124,16 +193,27 @@ function toggleVisibility(id: number) {
       </div>
     </div>
 
-    <div v-if="roomsCount > 0" class="rooms-manage__list">
+    <p v-if="loadError" class="rooms-manage__status rooms-manage__status--error">
+      {{ loadError }}
+    </p>
+
+    <p v-else-if="isLoading" class="rooms-manage__status">
+      Загрузка...
+    </p>
+
+    <div v-else-if="roomsCount > 0" class="rooms-manage__list">
       <ProfileRoomManageCard
         v-for="room in rooms"
         :key="room.id"
         :item="room"
-        @toggle-visibility="toggleVisibility(room.id)"
+        @visibility-changed="status => onVisibilityChanged(room.id, status)"
+        @deleted="onRoomDeleted"
       />
     </div>
 
     <p v-else class="rooms-manage__empty">Нет номеров</p>
+
+    <CommonConfirmModal />
   </div>
 </template>
 
@@ -232,6 +312,16 @@ function toggleVisibility(id: number) {
   gap: 30px;
   width: 100%;
   max-width: 1100px;
+}
+
+.rooms-manage__status {
+  margin: 16px 0 0;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 16px;
+}
+
+.rooms-manage__status--error {
+  color: #dc3545;
 }
 
 .rooms-manage__empty {
