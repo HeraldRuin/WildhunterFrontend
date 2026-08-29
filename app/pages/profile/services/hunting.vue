@@ -799,7 +799,7 @@ onBeforeUnmount(() => {
   gap: 10px;
   width: 100%;
   padding: 12px 14px;
-  border: none;
+  border: 1.5px solid transparent;
   border-radius: 10px;
   appearance: none;
   background-color: transparent;
@@ -811,7 +811,7 @@ onBeforeUnmount(() => {
   letter-spacing: -0.05em;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .hunting-org__animal-dot {
@@ -827,19 +827,22 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
 }
 
-.hunting-org__animal:hover:not(:disabled),
-.hunting-org__animal:focus-visible:not(:disabled),
+.hunting-org__animal:hover:not(:disabled):not(.hunting-org__animal--active),
+.hunting-org__animal:focus-visible:not(:disabled):not(.hunting-org__animal--active) {
+  background-color: transparent;
+  border-color: #e8883a;
+  color: var(--wh-black-text, #1c211c);
+}
+
 .hunting-org__animal--active {
   background-color: #e8883a;
+  border-color: #e8883a;
   color: #ffffff;
+  cursor: default;
 }
 
 .hunting-org__animal--active .hunting-org__animal-dot {
   background-color: #ffffff;
-}
-
-.hunting-org__animal--active {
-  cursor: default;
 }
 
 .hunting-org__animal:disabled:not(.hunting-org__animal--active) {

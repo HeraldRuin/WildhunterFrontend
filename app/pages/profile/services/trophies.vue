@@ -566,7 +566,7 @@ onMounted(() => {
   gap: 10px;
   width: 100%;
   padding: 12px 14px;
-  border: none;
+  border: 1.5px solid transparent;
   border-radius: 10px;
   appearance: none;
   background-color: transparent;
@@ -578,7 +578,7 @@ onMounted(() => {
   letter-spacing: -0.05em;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .trophy-cost__animal-dot {
@@ -594,19 +594,22 @@ onMounted(() => {
   overflow-wrap: anywhere;
 }
 
-.trophy-cost__animal:hover:not(:disabled),
-.trophy-cost__animal:focus-visible:not(:disabled),
+.trophy-cost__animal:hover:not(:disabled):not(.trophy-cost__animal--active),
+.trophy-cost__animal:focus-visible:not(:disabled):not(.trophy-cost__animal--active) {
+  background-color: transparent;
+  border-color: #e8883a;
+  color: var(--wh-black-text, #1c211c);
+}
+
 .trophy-cost__animal--active {
   background-color: #e8883a;
+  border-color: #e8883a;
   color: #ffffff;
+  cursor: default;
 }
 
 .trophy-cost__animal--active .trophy-cost__animal-dot {
   background-color: #ffffff;
-}
-
-.trophy-cost__animal--active {
-  cursor: default;
 }
 
 .trophy-cost__animal:disabled:not(.trophy-cost__animal--active) {
