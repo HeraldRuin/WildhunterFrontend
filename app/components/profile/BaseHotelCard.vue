@@ -207,12 +207,7 @@ async function removeHotel() {
               />
             </svg>
             Статус:
-            <span
-              class="base-hotel-card__badge"
-              :class="`base-hotel-card__badge--${item.status}`"
-            >
-              {{ statusLabel }}
-            </span>
+            <span class="base-hotel-card__status">{{ statusLabel }}</span>
           </p>
 
           <p class="base-hotel-card__meta base-hotel-card__meta--footer">
@@ -371,25 +366,9 @@ async function removeHotel() {
   font-weight: 700;
 }
 
-.base-hotel-card__badge {
-  display: inline-block;
-  min-width: 50px;
-  padding: 3px 8px;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 12px;
+.base-hotel-card__status {
+  color: var(--wh-orange-500);
   font-weight: 600;
-  line-height: 1.3;
-  text-align: center;
-  text-transform: capitalize;
-}
-
-.base-hotel-card__badge--publish {
-  background: #28a745;
-}
-
-.base-hotel-card__badge--draft {
-  background: #6c757d;
 }
 
 .base-hotel-card__actions {
