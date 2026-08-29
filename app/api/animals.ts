@@ -105,6 +105,18 @@ export type AnimalsTrophyCostResponse =
   | ApiSuccessResponse<TrophyCostAnimal[]>
   | ApiErrorResponse
 
+export type TrophyCostEntityKind = 'trophies' | 'fines' | 'preparations'
+
+export interface UpdateTrophyCostPayload {
+  type: TrophyCostEntityKind
+  id: number
+  price: number | null
+}
+
+export type UpdateTrophyCostResponse =
+  | ApiSuccessResponse<Record<string, never>>
+  | ApiErrorResponse
+
 export function useAnimalsApi() {
   const { apiFetch } = useApiClient()
 
@@ -180,6 +192,27 @@ export function useAnimalsApi() {
     })
   }
 
+  function updateTrophyCost(payload: UpdateTrophyCostPayload & { type: 'trophies' }) {
+    return apiFetch<UpdateTrophyCostResponse>('/animals/trophy-cost/trophies', {
+      method: 'POST',
+      body: payload,
+    })
+  }
+
+  function updateFineCost(payload: UpdateTrophyCostPayload & { type: 'fines' }) {
+    return apiFetch<UpdateTrophyCostResponse>('/animals/trophy-cost/fines', {
+      method: 'POST',
+      body: payload,
+    })
+  }
+
+  function updatePreparationCost(payload: UpdateTrophyCostPayload & { type: 'preparations' }) {
+    return apiFetch<UpdateTrophyCostResponse>('/animals/trophy-cost/preparations', {
+      method: 'POST',
+      body: payload,
+    })
+  }
+
   function createPeriod(animalId: number | string) {
     return apiFetch<CreateOrganisationPeriodResponse>(
       `/animals/${encodeURIComponent(String(animalId))}/periods`,
@@ -222,6 +255,9 @@ export function useAnimalsApi() {
     deleteManage,
     getOrganisation,
     getTrophyCost,
+    updateTrophyCost,
+    updateFineCost,
+    updatePreparationCost,
     createPeriod,
     updatePeriod,
     deletePeriod,
