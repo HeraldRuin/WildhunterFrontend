@@ -337,8 +337,6 @@ onMounted(() => {
   margin-bottom: 20px;
   padding: 0;
   box-sizing: border-box;
-  background: var(--wh-white);
-  border-radius: var(--wh-radius);
   overflow: visible;
 }
 
