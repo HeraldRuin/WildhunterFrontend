@@ -470,15 +470,20 @@ onBeforeUnmount(() => {
 
     <CommonPageTitle divider>Организация охоты</CommonPageTitle>
 
-    <p v-if="loadError" class="hunting-org__status hunting-org__status--error">
-      {{ loadError }}
-    </p>
+    <div class="hunting-org__body">
+      <p v-if="loadError" class="hunting-org__status hunting-org__status--error">
+        {{ loadError }}
+      </p>
 
-    <p v-else-if="isLoading" class="hunting-org__status">
-      Загрузка...
-    </p>
+      <div
+        v-else-if="isLoading"
+        class="hunting-org__loading"
+        aria-live="polite"
+      >
+        <CommonSpinner variant="ring" size="lg" label="Загрузка организации охоты" />
+      </div>
 
-    <section v-else class="hunting-org">
+      <section v-else class="hunting-org">
       <nav class="hunting-org__animals" aria-label="Животные">
         <button
           v-for="animal in animals"
@@ -664,6 +669,7 @@ onBeforeUnmount(() => {
         </CommonSaveButton>
       </div>
     </section>
+    </div>
 
     <CommonConfirmModal />
   </div>
@@ -671,6 +677,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .profile-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   padding: 20px 40px 48px;
   padding-left: 20px;
   box-sizing: border-box;
@@ -680,11 +690,13 @@ onBeforeUnmount(() => {
 }
 
 .profile-page :deep(.page-title--divider) {
+  flex-shrink: 0;
   width: 100%;
 }
 
 .profile-page__header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -704,6 +716,21 @@ onBeforeUnmount(() => {
 
 .hunting-org__status--error {
   color: var(--wh-field-error, #dc2626);
+}
+
+.hunting-org__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.hunting-org__loading {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
 }
 
 .hunting-org {
@@ -1075,6 +1102,18 @@ onBeforeUnmount(() => {
 
   .profile-page__header {
     width: 100%;
+  }
+
+  .hunting-org__body {
+    flex: none;
+    min-height: 0;
+  }
+
+  .hunting-org__loading {
+    flex: none;
+    align-items: flex-start;
+    min-height: 0;
+    padding-top: 160px;
   }
 
   .hunting-org {

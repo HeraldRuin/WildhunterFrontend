@@ -501,8 +501,12 @@ onBeforeUnmount(() => {
         {{ loadError }}
       </p>
 
-      <div v-else-if="isLoading" class="extra-services__loading">
-        Загрузка...
+      <div
+        v-else-if="isLoading"
+        class="extra-services__loading"
+        aria-live="polite"
+      >
+        <CommonSpinner variant="ring" size="lg" label="Загрузка услуг" />
       </div>
 
       <div v-else class="extra-services__content">
@@ -733,8 +737,6 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   min-height: 220px;
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.55);
 }
 
 .extra-services__content {

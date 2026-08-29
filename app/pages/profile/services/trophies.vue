@@ -270,15 +270,20 @@ onMounted(() => {
 
     <CommonPageTitle divider>Стоимость трофея</CommonPageTitle>
 
-    <p v-if="loadError" class="trophy-cost__status trophy-cost__status--error">
-      {{ loadError }}
-    </p>
+    <div class="trophy-cost__body">
+      <p v-if="loadError" class="trophy-cost__status trophy-cost__status--error">
+        {{ loadError }}
+      </p>
 
-    <p v-else-if="isLoading" class="trophy-cost__status">
-      Загрузка...
-    </p>
+      <div
+        v-else-if="isLoading"
+        class="trophy-cost__loading"
+        aria-live="polite"
+      >
+        <CommonSpinner variant="ring" size="lg" label="Загрузка трофеев и штрафов" />
+      </div>
 
-    <section v-else class="trophy-cost">
+      <section v-else class="trophy-cost">
       <nav class="trophy-cost__animals" aria-label="Животные">
         <button
           v-for="animal in animals"
@@ -449,11 +454,16 @@ onMounted(() => {
         </div>
       </div>
     </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .profile-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   padding: 20px 40px 48px;
   padding-left: 20px;
   box-sizing: border-box;
@@ -461,11 +471,13 @@ onMounted(() => {
 }
 
 .profile-page :deep(.page-title--divider) {
+  flex-shrink: 0;
   width: 100%;
 }
 
 .profile-page__header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -497,6 +509,21 @@ onMounted(() => {
 
 .trophy-cost__status--error {
   color: var(--wh-field-error, #dc2626);
+}
+
+.trophy-cost__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.trophy-cost__loading {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
 }
 
 .trophy-cost {
@@ -700,6 +727,18 @@ onMounted(() => {
 @media (--wh-tablet) {
   .profile-page {
     padding: 12px 8px 32px;
+  }
+
+  .trophy-cost__body {
+    flex: none;
+    min-height: 0;
+  }
+
+  .trophy-cost__loading {
+    flex: none;
+    align-items: flex-start;
+    min-height: 0;
+    padding-top: 160px;
   }
 
   .trophy-cost {
