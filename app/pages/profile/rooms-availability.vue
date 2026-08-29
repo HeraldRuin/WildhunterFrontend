@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { getCalendarDays, getWeekdayNames } from '~/utils/date'
+import type { ManagedRoom, RoomAvailabilityDay } from '~/api/rooms'
+import { formatApiDate, getCalendarDays, getWeekdayNames } from '~/utils/date'
 
 definePageMeta({
   layout: 'profile',
@@ -10,7 +11,10 @@ useHead({
   title: 'Доступные номера — WH',
 })
 
+const SUMMARY_TAB_ID = 'summary'
+
 const route = useRoute()
+const { rooms: roomsApi } = useApi()
 const authToken = useAuthToken()
 const ready = ref(false)
 
@@ -44,31 +48,20 @@ const breadcrumbs = computed(() => [
   { label: 'Наличие' },
 ])
 
-type RoomTab = {
-  id: string
-  label: string
-  price: number
-  quantity: number
-}
+const rooms = ref<ManagedRoom[]>([])
+const roomSelectOptions = computed(() => [
+  { value: SUMMARY_TAB_ID, label: 'Сводный' },
+  ...rooms.value.map(room => ({
+    value: String(room.id),
+    label: room.title,
+  })),
+])
 
-const roomTabs: RoomTab[] = [
-  { id: 'summary', label: 'Сводный', price: 3000, quantity: 3 },
-  { id: '1', label: '3-х местный', price: 3000, quantity: 3 },
-  { id: '2', label: '4-х местный', price: 4000, quantity: 4 },
-]
+const activeTabId = ref(SUMMARY_TAB_ID)
+const isSummaryTab = computed(() => activeTabId.value === SUMMARY_TAB_ID)
 
-const roomSelectOptions = roomTabs.map(tab => ({
-  value: tab.id,
-  label: tab.label,
-}))
-
-const activeTabId = ref('')
-
-const activeTab = computed(() =>
-  roomTabs.find(tab => tab.id === activeTabId.value) ?? roomTabs[0],
-)
-
-const viewDate = ref(new Date(2026, 7, 1))
+const now = new Date()
+const viewDate = ref(new Date(now.getFullYear(), now.getMonth(), 1))
 
 const monthTitle = computed(() => {
   const month = viewDate.value.toLocaleDateString('ru-RU', { month: 'long' })
@@ -77,47 +70,107 @@ const monthTitle = computed(() => {
 
 const weekdays = getWeekdayNames()
 
+const availabilityDays = ref<RoomAvailabilityDay[]>([])
+const availabilityByDate = computed(() => {
+  const map = new Map<string, RoomAvailabilityDay>()
+  for (const day of availabilityDays.value) {
+    map.set(day.start, day)
+  }
+  return map
+})
+
+const isLoadingRooms = ref(true)
+const isLoadingAvailability = ref(false)
+const loadError = ref('')
+const availabilityError = ref('')
+
+const periodRange = computed(() => {
+  const year = viewDate.value.getFullYear()
+  const month = viewDate.value.getMonth()
+  const start = new Date(year, month, 1)
+  const end = new Date(year, month + 1, 0)
+  return {
+    start: formatApiDate(start),
+    end: formatApiDate(end),
+  }
+})
+
 const calendarDays = computed(() =>
-  getCalendarDays(viewDate.value.getFullYear(), viewDate.value.getMonth()).map(day => ({
-    ...day,
-    badge: day.isCurrentMonth ? getDayBadge(day.date) : null,
-  })),
+  getCalendarDays(viewDate.value.getFullYear(), viewDate.value.getMonth()).map(day => {
+    const key = formatApiDate(day.date)
+    const event = day.isCurrentMonth ? availabilityByDate.value.get(key) : undefined
+
+    return {
+      ...day,
+      key,
+      event: event ?? null,
+      bookings: event?.bookings ?? [],
+      badgeText: event?.title ?? null,
+      badgeClass: resolveBadgeClass(event),
+      isCheckoutDay: Boolean(event?.is_checkout_day),
+      canEdit: Boolean(event) && !isSummaryTab.value && !event?.extendedProps?.is_summary,
+    }
+  }),
 )
 
-type DayNote = {
-  label: string
-  quantity?: number
-}
-
-const dayNotes: Record<string, DayNote> = {
-  '2026-08-15': { label: 'Б27 Сбор предоплаты', quantity: 1 },
-  '2026-08-16': { label: 'Б27 Сбор предоплаты (В)', quantity: 1 },
-}
-
-function toDateKey(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function formatPrice(value: number) {
-  return `${new Intl.NumberFormat('ru-RU').format(value).replace(/\s/g, '.')} руб`
-}
-
-function getDayBadge(date: Date) {
-  const note = dayNotes[toDateKey(date)]
-  const quantity = note?.quantity ?? activeTab.value.quantity
-
-  return {
-    note: note?.label ?? null,
-    text: `${formatPrice(activeTab.value.price)} x ${quantity}`,
+function resolveBadgeClass(event?: RoomAvailabilityDay | null) {
+  if (!event) {
+    return ''
   }
+
+  const names = event.classNames ?? []
+
+  if (names.includes('blocked-event') || event.active === 0) {
+    return 'rooms-availability__badge--blocked'
+  }
+
+  if (names.includes('full-book-event') || event.number === 0) {
+    return 'rooms-availability__badge--full'
+  }
+
+  if (event.extendedProps?.price_changed) {
+    return 'rooms-availability__badge--price-changed'
+  }
+
+  if (event.extendedProps?.number_changed) {
+    return 'rooms-availability__badge--number-changed'
+  }
+
+  return 'rooms-availability__badge--available'
+}
+
+function bookingLabel(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
+  const number = booking.booking_number ?? ''
+  const status = booking.statusName || booking.status
+  const checkout = booking.is_checkout ? ' (В)' : ''
+  return `Б${number} ${status}${checkout}`.trim()
+}
+
+function extractErrorMessage(source: unknown, fallback: string) {
+  if (!source || typeof source !== 'object') {
+    return fallback
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    data?: unknown
+  }
+
+  if (payload.message) {
+    return payload.message
+  }
+
+  if (payload.data && payload.data !== source) {
+    return extractErrorMessage(payload.data, fallback)
+  }
+
+  return fallback
 }
 
 function goToday() {
-  const now = new Date()
-  viewDate.value = new Date(now.getFullYear(), now.getMonth(), 1)
+  const today = new Date()
+  viewDate.value = new Date(today.getFullYear(), today.getMonth(), 1)
 }
 
 function shiftMonth(delta: number) {
@@ -127,6 +180,87 @@ function shiftMonth(delta: number) {
     1,
   )
 }
+
+function onDayClick(canEdit: boolean) {
+  if (!canEdit) {
+    return
+  }
+
+  // Редактирование дат — только для конкретного номера (не summary).
+}
+
+async function loadAvailability() {
+  if (!activeTabId.value) {
+    return
+  }
+
+  isLoadingAvailability.value = true
+  availabilityError.value = ''
+
+  try {
+    const response = await roomsApi.getAvailability({
+      id: activeTabId.value,
+      start: periodRange.value.start,
+      end: periodRange.value.end,
+    })
+
+    if ('success' in response && response.success) {
+      availabilityDays.value = response.data ?? []
+      return
+    }
+
+    availabilityDays.value = []
+    availabilityError.value = extractErrorMessage(response, 'Не удалось загрузить календарь')
+  }
+  catch (error) {
+    availabilityDays.value = []
+    const data = (error as { data?: unknown }).data
+    availabilityError.value = extractErrorMessage(data, 'Не удалось загрузить календарь')
+  }
+  finally {
+    isLoadingAvailability.value = false
+  }
+}
+
+async function loadRooms() {
+  isLoadingRooms.value = true
+  loadError.value = ''
+
+  try {
+    const response = await roomsApi.getList()
+
+    if ('success' in response && response.success) {
+      rooms.value = response.data?.rooms ?? []
+      activeTabId.value = SUMMARY_TAB_ID
+      await loadAvailability()
+      return
+    }
+
+    loadError.value = extractErrorMessage(response, 'Не удалось загрузить номера')
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    loadError.value = extractErrorMessage(data, 'Не удалось загрузить номера')
+  }
+  finally {
+    isLoadingRooms.value = false
+  }
+}
+
+watch(
+  [activeTabId, () => periodRange.value.start, () => periodRange.value.end],
+  () => {
+    if (isLoadingRooms.value || loadError.value) {
+      return
+    }
+
+    void loadAvailability()
+  },
+)
+
+onMounted(() => {
+  void loadRooms()
+})
 </script>
 
 <template>
@@ -195,8 +329,35 @@ function shiftMonth(delta: number) {
       </div>
     </div>
 
-    <div class="rooms-availability__layout">
+    <p v-if="loadError" class="rooms-availability__status rooms-availability__status--error">
+      {{ loadError }}
+    </p>
+
+    <div
+      v-else-if="isLoadingRooms"
+      class="rooms-availability__loading"
+      aria-live="polite"
+    >
+      <CommonSpinner variant="ring" size="lg" label="Загрузка номеров" />
+    </div>
+
+    <div
+      v-else
+      class="rooms-availability__layout"
+      :class="{
+        'rooms-availability__layout--summary': isSummaryTab,
+        'rooms-availability__layout--refreshing': isLoadingAvailability,
+      }"
+      :aria-busy="isLoadingAvailability"
+    >
       <section class="rooms-availability__calendar">
+        <p
+          v-if="availabilityError"
+          class="rooms-availability__status rooms-availability__status--error rooms-availability__status--inline"
+        >
+          {{ availabilityError }}
+        </p>
+
         <div class="rooms-availability__weekdays">
           <span
             v-for="day in weekdays"
@@ -209,25 +370,50 @@ function shiftMonth(delta: number) {
 
         <div class="rooms-availability__grid">
           <div
-            v-for="(day, index) in calendarDays"
-            :key="index"
+            v-for="day in calendarDays"
+            :key="day.key"
             class="rooms-availability__cell"
-            :class="{ 'rooms-availability__cell--outside': !day.isCurrentMonth }"
+            :class="{
+              'rooms-availability__cell--outside': !day.isCurrentMonth,
+              'rooms-availability__cell--editable': day.canEdit,
+              'rooms-availability__cell--checkout': day.isCheckoutDay,
+            }"
+            @click="onDayClick(day.canEdit)"
           >
             <span class="rooms-availability__day-num">{{ day.date.getDate() }}</span>
 
-            <template v-if="day.badge">
-              <span
-                v-if="day.badge.note"
-                class="rooms-availability__note"
+            <template v-if="day.isCurrentMonth && day.event">
+              <div
+                v-if="day.bookings.length"
+                class="rooms-availability__bookings"
               >
-                {{ day.badge.note }}
-              </span>
-              <span class="rooms-availability__badge">
-                {{ day.badge.text }}
+                <span
+                  v-for="booking in day.bookings"
+                  :key="`${booking.id}-${booking.is_checkout ? 'out' : 'in'}`"
+                  class="rooms-availability__note"
+                  :class="{ 'rooms-availability__note--checkout': booking.is_checkout }"
+                >
+                  {{ bookingLabel(booking) }}
+                </span>
+              </div>
+
+              <span
+                v-if="day.badgeText"
+                class="rooms-availability__badge"
+                :class="day.badgeClass"
+              >
+                {{ day.badgeText }}
               </span>
             </template>
           </div>
+        </div>
+
+        <div
+          v-if="isLoadingAvailability"
+          class="rooms-availability__refresh"
+          aria-hidden="true"
+        >
+          <CommonSpinner variant="ring" size="lg" label="Загрузка календаря" />
         </div>
       </section>
     </div>
@@ -291,7 +477,29 @@ function shiftMonth(delta: number) {
   justify-self: end;
 }
 
+.rooms-availability__status {
+  margin: 0 0 16px;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 15px;
+}
+
+.rooms-availability__status--error {
+  color: #dc3545;
+}
+
+.rooms-availability__status--inline {
+  margin: 12px 16px 0;
+}
+
+.rooms-availability__loading {
+  display: grid;
+  place-items: center;
+  flex: 1 1 auto;
+  min-height: 280px;
+}
+
 .rooms-availability__layout {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -304,14 +512,29 @@ function shiftMonth(delta: number) {
   box-sizing: border-box;
 }
 
+.rooms-availability__layout--refreshing {
+  pointer-events: none;
+}
+
 .rooms-availability__calendar {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1 0 auto;
   min-width: 0;
   min-height: 100%;
-  padding: 0 0 0;
+  overflow: visible;
   box-sizing: border-box;
+}
+
+.rooms-availability__refresh {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  background: rgb(255 255 255 / 55%);
+  pointer-events: none;
 }
 
 .rooms-availability__month {
@@ -418,8 +641,20 @@ function shiftMonth(delta: number) {
   box-sizing: border-box;
 }
 
+.rooms-availability__layout--summary .rooms-availability__cell {
+  cursor: default;
+}
+
+.rooms-availability__cell--editable {
+  cursor: pointer;
+}
+
 .rooms-availability__cell--outside {
   background: #fafafa;
+}
+
+.rooms-availability__cell--checkout {
+  background: #f3f8fc;
 }
 
 .rooms-availability__cell--outside .rooms-availability__day-num {
@@ -435,6 +670,14 @@ function shiftMonth(delta: number) {
   line-height: 1;
 }
 
+.rooms-availability__bookings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
 .rooms-availability__note {
   max-width: 100%;
   color: var(--wh-gray-900);
@@ -443,6 +686,10 @@ function shiftMonth(delta: number) {
   line-height: 1.2;
   text-align: center;
   overflow-wrap: anywhere;
+}
+
+.rooms-availability__note--checkout {
+  color: #5e6d77;
 }
 
 .rooms-availability__badge {
@@ -454,13 +701,36 @@ function shiftMonth(delta: number) {
   margin-bottom: auto;
   padding: 6px 8px;
   border-radius: 4px;
-  background: var(--wh-green);
-  color: var(--wh-white);
   font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   text-align: center;
   white-space: nowrap;
+}
+
+.rooms-availability__badge--available {
+  background: var(--wh-green);
+  color: var(--wh-white);
+}
+
+.rooms-availability__badge--blocked {
+  background: #fe2727;
+  color: var(--wh-white);
+}
+
+.rooms-availability__badge--full {
+  background: #ff9800;
+  color: var(--wh-white);
+}
+
+.rooms-availability__badge--price-changed {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.rooms-availability__badge--number-changed {
+  background: #d1ecf1;
+  color: #0c5460;
 }
 
 @media (--wh-tablet) {
