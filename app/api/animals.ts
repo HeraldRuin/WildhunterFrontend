@@ -87,6 +87,24 @@ export type DeleteOrganisationPeriodResponse =
   | ApiSuccessResponse<{ id: number }>
   | ApiErrorResponse
 
+export interface TrophyCostItem {
+  id: number
+  type: string
+  price: number | null
+}
+
+export interface TrophyCostAnimal {
+  id: number
+  title: string
+  trophies: TrophyCostItem[]
+  fines: TrophyCostItem[]
+  preparations: TrophyCostItem[]
+}
+
+export type AnimalsTrophyCostResponse =
+  | ApiSuccessResponse<TrophyCostAnimal[]>
+  | ApiErrorResponse
+
 export function useAnimalsApi() {
   const { apiFetch } = useApiClient()
 
@@ -156,6 +174,12 @@ export function useAnimalsApi() {
     })
   }
 
+  function getTrophyCost() {
+    return apiFetch<AnimalsTrophyCostResponse>('/animals/trophy-cost', {
+      method: 'GET',
+    })
+  }
+
   function createPeriod(animalId: number | string) {
     return apiFetch<CreateOrganisationPeriodResponse>(
       `/animals/${encodeURIComponent(String(animalId))}/periods`,
@@ -197,6 +221,7 @@ export function useAnimalsApi() {
     updateManageHuntersCount,
     deleteManage,
     getOrganisation,
+    getTrophyCost,
     createPeriod,
     updatePeriod,
     deletePeriod,
