@@ -1,13 +1,17 @@
 <template>
   <div class="profile-layout">
     <ProfileSidebar />
-    <div class="profile-layout__content">
+    <div
+      class="profile-layout__content"
+      :class="{ 'profile-layout__content--scroll-lock': profileScrollLock }"
+    >
       <slot />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+const route = useRoute()
 const { loadProfile } = useProfile()
 const { user } = useAuth()
 const { fetchUnreadCount, prependRealtime, reset } = useInboxNotifications()
@@ -15,8 +19,22 @@ const { subscribe, disconnect } = useNotificationsChannel((payload) => {
   prependRealtime(payload)
 })
 
+const profileScrollLock = computed(() => {
+  if (route.meta.profileScrollLock === true) {
+    return true
+  }
+
+  // Редактирование базы: только внутренний скролл панели
+  return /^\/profile\/base\/[^/]+\/?$/.test(route.path)
+})
+
 onMounted(() => {
   loadProfile()
+  document.documentElement.classList.add('profile-layout-active')
+})
+
+onBeforeUnmount(() => {
+  document.documentElement.classList.remove('profile-layout-active')
 })
 
 watch(
@@ -40,7 +58,9 @@ watch(
   --profile-sidebar-width: 340px;
   --profile-sidebar-gap: 16px;
 
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   background: var(--wh-gray-100);
 }
 
@@ -48,10 +68,16 @@ watch(
   display: flex;
   flex-direction: column;
   margin-left: calc(var(--profile-sidebar-width) + var(--profile-sidebar-gap) * 2);
-  height: 100vh;
-  max-height: 100vh;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--wh-gray-100);
+}
+
+.profile-layout__content--scroll-lock {
+  overflow: hidden;
 }
 
 @media (--wh-tablet) {
@@ -61,6 +87,9 @@ watch(
     display: flex;
     flex-direction: column;
     gap: var(--profile-sidebar-gap);
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 8px;
     box-sizing: border-box;
   }
@@ -72,12 +101,32 @@ watch(
     max-height: none;
     overflow: visible;
   }
+
+  .profile-layout__content--scroll-lock {
+    overflow: visible;
+  }
 }
 
 @media (--wh-mobile) {
   .profile-layout__content {
     border-radius: var(--wh-radius-lg);
     background: var(--wh-white);
+  }
+}
+</style>
+
+<style>
+html.profile-layout-active,
+html.profile-layout-active body {
+  height: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  html.profile-layout-active,
+  html.profile-layout-active body {
+    height: auto;
+    overflow: visible;
   }
 }
 </style>
