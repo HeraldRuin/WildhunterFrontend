@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import type {
+  TrophyCostAnimal,
+  TrophyCostEntityKind,
+  TrophyCostItem,
+} from '~/api/animals'
+
 definePageMeta({
   layout: 'profile',
   middleware: 'baseadmin',
@@ -19,8 +25,11 @@ interface TrophyAnimal {
   title: string
   trophies: PriceRow[]
   fines: PriceRow[]
-  butchering: PriceRow[]
+  preparations: PriceRow[]
 }
+
+const { animals: animalsApi } = useApi()
+const notifications = useNotifications()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -28,62 +37,227 @@ const breadcrumbs = [
   { label: 'Трофеи и штрафы' },
 ]
 
-const animals = ref<TrophyAnimal[]>([
-  {
-    id: 1,
-    title: 'Косуля европейская',
-    trophies: [
-      { id: 1, label: '1 рог', cost: '123.00' },
-      { id: 2, label: '3 рога', cost: '' },
-      { id: 3, label: '8 рогов', cost: '' },
-      { id: 4, label: '10 рогов', cost: '' },
-      { id: 5, label: 'молодая косуля', cost: '' },
-      { id: 6, label: 'старая косуля', cost: '' },
-    ],
-    fines: [
-      { id: 1, label: 'Промах', cost: '' },
-      { id: 2, label: 'Корова', cost: '' },
-    ],
-    butchering: [
-      { id: 1, label: 'Разделка', cost: '5577.00' },
-    ],
-  },
-  {
-    id: 2,
-    title: 'Лось',
-    trophies: [],
-    fines: [],
-    butchering: [],
-  },
-  {
-    id: 3,
-    title: 'Кабан',
-    trophies: [],
-    fines: [],
-    butchering: [],
-  },
-  {
-    id: 4,
-    title: 'Олень благородный',
-    trophies: [],
-    fines: [],
-    butchering: [],
-  },
-])
-
-const selectedAnimalId = ref(1)
+const animals = ref<TrophyAnimal[]>([])
+const selectedAnimalId = ref<number | null>(null)
+const isLoading = ref(true)
+const loadError = ref('')
+const busyKey = ref<string | null>(null)
 
 const selectedAnimal = computed(() =>
   animals.value.find(item => item.id === selectedAnimalId.value) ?? null,
 )
 
+const isBusy = computed(() =>
+  isLoading.value || busyKey.value != null,
+)
+
+const animalSelectOptions = computed(() =>
+  animals.value.map(item => ({
+    value: String(item.id),
+    label: item.title,
+  })),
+)
+
+const animalSelectValue = computed({
+  get: () => (selectedAnimalId.value == null ? '' : String(selectedAnimalId.value)),
+  set: (value: string) => {
+    const id = Number(value)
+    if (!Number.isFinite(id)) {
+      return
+    }
+
+    selectAnimal(id)
+  },
+})
+
+function formatCost(price: number | null): string {
+  if (price == null) {
+    return ''
+  }
+
+  return new Intl.NumberFormat('ru-RU')
+    .format(Math.round(price))
+    .replace(/\s/g, '.')
+}
+
+function parseAmount(cost: string): number | null {
+  let raw = cost
+    .trim()
+    .replace(/\s*руб\.?\s*/gi, '')
+    .replace(/\s/g, '')
+
+  if (!raw) {
+    return null
+  }
+
+  if (raw.includes(',') && raw.includes('.')) {
+    raw = raw.replace(/\./g, '').replace(',', '.')
+  }
+  else if (raw.includes(',')) {
+    raw = raw.replace(',', '.')
+  }
+  else if (/^\d{1,3}(\.\d{3})+$/.test(raw)) {
+    raw = raw.replace(/\./g, '')
+  }
+
+  const value = Number(raw)
+
+  if (!Number.isFinite(value) || value < 0) {
+    return null
+  }
+
+  return value
+}
+
+function toPriceRow(item: TrophyCostItem): PriceRow {
+  return {
+    id: item.id,
+    label: item.type,
+    cost: formatCost(item.price),
+  }
+}
+
+function toAnimalRow(animal: TrophyCostAnimal): TrophyAnimal {
+  return {
+    id: animal.id,
+    title: animal.title,
+    trophies: (animal.trophies ?? []).map(toPriceRow),
+    fines: (animal.fines ?? []).map(toPriceRow),
+    preparations: (animal.preparations ?? []).map(toPriceRow),
+  }
+}
+
+function extractErrorMessage(source: unknown, fallback: string) {
+  if (!source || typeof source !== 'object') {
+    return fallback
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    errors?: Record<string, string[]>
+    data?: unknown
+  }
+
+  if (payload.errors && typeof payload.errors === 'object') {
+    const first = Object.values(payload.errors).flat().find(Boolean)
+    if (first) {
+      return first
+    }
+  }
+
+  if (payload.message) {
+    return payload.message
+  }
+
+  if (payload.data && payload.data !== source) {
+    return extractErrorMessage(payload.data, fallback)
+  }
+
+  return fallback
+}
+
+function rowBusyKey(kind: TrophyCostEntityKind, id: number) {
+  return `${kind}:${id}`
+}
+
+function isRowBusy(kind: TrophyCostEntityKind, id: number) {
+  return busyKey.value === rowBusyKey(kind, id)
+}
+
+async function loadTrophyCost() {
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    const response = await animalsApi.getTrophyCost()
+
+    if ('success' in response && response.success) {
+      animals.value = (response.data ?? []).map(toAnimalRow)
+
+      if (
+        selectedAnimalId.value == null
+        || !animals.value.some(item => item.id === selectedAnimalId.value)
+      ) {
+        selectedAnimalId.value = animals.value[0]?.id ?? null
+      }
+
+      return
+    }
+
+    loadError.value = extractErrorMessage(response, 'Не удалось загрузить стоимость трофея')
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    loadError.value = extractErrorMessage(data, 'Не удалось загрузить стоимость трофея')
+  }
+  finally {
+    isLoading.value = false
+  }
+}
+
 function selectAnimal(id: number) {
+  if (isBusy.value) {
+    return
+  }
+
   selectedAnimalId.value = id
 }
 
-function savePrice() {
-  // UI only — API later
+async function savePrice(kind: TrophyCostEntityKind, row: PriceRow) {
+  if (isBusy.value) {
+    return
+  }
+
+  const trimmed = row.cost.trim()
+  const price = trimmed === '' ? null : parseAmount(row.cost)
+
+  if (trimmed !== '' && price == null) {
+    notifications.error('Введите корректную стоимость')
+    return
+  }
+
+  busyKey.value = rowBusyKey(kind, row.id)
+
+  try {
+    let response
+
+    switch (kind) {
+      case 'trophies':
+        response = await animalsApi.updateTrophyCost({ type: 'trophies', id: row.id, price })
+        break
+      case 'fines':
+        response = await animalsApi.updateFineCost({ type: 'fines', id: row.id, price })
+        break
+      case 'preparations':
+        response = await animalsApi.updatePreparationCost({ type: 'preparations', id: row.id, price })
+        break
+      default: {
+        const _exhaustive: never = kind
+        throw new Error(`Unknown trophy cost kind: ${_exhaustive}`)
+      }
+    }
+
+    if ('success' in response && response.success) {
+      row.cost = formatCost(price)
+      notifications.success(response.message || 'Сохранено')
+      return
+    }
+
+    notifications.error(extractErrorMessage(response, 'Не удалось сохранить'))
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    notifications.error(extractErrorMessage(data, 'Не удалось сохранить'))
+  }
+  finally {
+    busyKey.value = null
+  }
 }
+
+onMounted(() => {
+  void loadTrophyCost()
+})
 </script>
 
 <template>
@@ -96,7 +270,15 @@ function savePrice() {
 
     <CommonPageTitle divider>Стоимость трофея</CommonPageTitle>
 
-    <section class="trophy-cost">
+    <p v-if="loadError" class="trophy-cost__status trophy-cost__status--error">
+      {{ loadError }}
+    </p>
+
+    <p v-else-if="isLoading" class="trophy-cost__status">
+      Загрузка...
+    </p>
+
+    <section v-else class="trophy-cost">
       <nav class="trophy-cost__animals" aria-label="Животные">
         <button
           v-for="animal in animals"
@@ -104,11 +286,31 @@ function savePrice() {
           type="button"
           class="trophy-cost__animal"
           :class="{ 'trophy-cost__animal--active': animal.id === selectedAnimalId }"
+          :disabled="isBusy && animal.id !== selectedAnimalId"
           @click="selectAnimal(animal.id)"
         >
-          {{ animal.title }}
+          <span class="trophy-cost__animal-dot" aria-hidden="true" />
+          <span class="trophy-cost__animal-label">{{ animal.title }}</span>
         </button>
+
+        <p v-if="!animals.length" class="trophy-cost__animals-empty">
+          Нет животных
+        </p>
       </nav>
+
+      <div class="trophy-cost__animals-select">
+        <CommonSelectField
+          v-model="animalSelectValue"
+          placeholder="Выберите животное"
+          no-margin
+          :options="animalSelectOptions"
+          :disabled="isBusy || !animalSelectOptions.length"
+        />
+
+        <p v-if="!animals.length" class="trophy-cost__animals-empty">
+          Нет животных
+        </p>
+      </div>
 
       <div class="trophy-cost__content">
         <div class="trophy-cost__table">
@@ -128,28 +330,32 @@ function savePrice() {
 
               <label class="trophy-cost__col trophy-cost__col--cost">
                 <span class="visually-hidden">Стоимость: {{ row.label }}</span>
-                <input
-                  v-model="row.cost"
-                  class="trophy-cost__input"
-                  type="text"
-                  inputmode="decimal"
+                <CommonFormField
+                  no-margin
+                  amount-only
                   placeholder="Введите цену"
-                >
+                  :model-value="row.cost"
+                  :disabled="isBusy"
+                  @update:model-value="row.cost = $event"
+                />
               </label>
 
               <div class="trophy-cost__col trophy-cost__col--actions">
                 <button
                   type="button"
                   class="trophy-cost__btn"
-                  @click="savePrice"
+                  :disabled="isBusy"
+                  @click="savePrice('trophies', row)"
                 >
-                  Сохранить
+                  {{ isRowBusy('trophies', row.id) ? 'Сохранение...' : 'Сохранить' }}
                 </button>
               </div>
             </li>
           </ul>
 
-          <p v-else class="trophy-cost__empty">Нет типов трофея</p>
+          <p v-else class="trophy-cost__empty">
+            Для этого животного не настроены типы трофеев.
+          </p>
         </div>
 
         <div class="trophy-cost__table">
@@ -169,28 +375,32 @@ function savePrice() {
 
               <label class="trophy-cost__col trophy-cost__col--cost">
                 <span class="visually-hidden">Стоимость: {{ row.label }}</span>
-                <input
-                  v-model="row.cost"
-                  class="trophy-cost__input"
-                  type="text"
-                  inputmode="decimal"
+                <CommonFormField
+                  no-margin
+                  amount-only
                   placeholder="Введите цену"
-                >
+                  :model-value="row.cost"
+                  :disabled="isBusy"
+                  @update:model-value="row.cost = $event"
+                />
               </label>
 
               <div class="trophy-cost__col trophy-cost__col--actions">
                 <button
                   type="button"
                   class="trophy-cost__btn"
-                  @click="savePrice"
+                  :disabled="isBusy"
+                  @click="savePrice('fines', row)"
                 >
-                  Сохранить
+                  {{ isRowBusy('fines', row.id) ? 'Сохранение...' : 'Сохранить' }}
                 </button>
               </div>
             </li>
           </ul>
 
-          <p v-else class="trophy-cost__empty">Нет типов штрафов</p>
+          <p v-else class="trophy-cost__empty">
+            Для этого животного не настроены типы штрафов.
+          </p>
         </div>
 
         <div class="trophy-cost__table">
@@ -200,38 +410,42 @@ function savePrice() {
             <span class="trophy-cost__col trophy-cost__col--actions" aria-hidden="true" />
           </div>
 
-          <ul v-if="selectedAnimal?.butchering.length" class="trophy-cost__list">
+          <ul v-if="selectedAnimal?.preparations.length" class="trophy-cost__list">
             <li
-              v-for="row in selectedAnimal.butchering"
-              :key="`butchering-${row.id}`"
+              v-for="row in selectedAnimal.preparations"
+              :key="`preparation-${row.id}`"
               class="trophy-cost__row"
             >
               <span class="trophy-cost__col trophy-cost__col--label">{{ row.label }}</span>
 
               <label class="trophy-cost__col trophy-cost__col--cost">
                 <span class="visually-hidden">Стоимость: {{ row.label }}</span>
-                <input
-                  v-model="row.cost"
-                  class="trophy-cost__input"
-                  type="text"
-                  inputmode="decimal"
+                <CommonFormField
+                  no-margin
+                  amount-only
                   placeholder="Введите цену"
-                >
+                  :model-value="row.cost"
+                  :disabled="isBusy"
+                  @update:model-value="row.cost = $event"
+                />
               </label>
 
               <div class="trophy-cost__col trophy-cost__col--actions">
                 <button
                   type="button"
                   class="trophy-cost__btn"
-                  @click="savePrice"
+                  :disabled="isBusy"
+                  @click="savePrice('preparations', row)"
                 >
-                  Сохранить
+                  {{ isRowBusy('preparations', row.id) ? 'Сохранение...' : 'Сохранить' }}
                 </button>
               </div>
             </li>
           </ul>
 
-          <p v-else class="trophy-cost__empty">Нет типов разделки</p>
+          <p v-else class="trophy-cost__empty">
+            Для этого животного не настроены типы разделки.
+          </p>
         </div>
       </div>
     </section>
@@ -275,53 +489,114 @@ function savePrice() {
   border: 0;
 }
 
+.trophy-cost__status {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.trophy-cost__status--error {
+  color: var(--wh-field-error, #dc2626);
+}
+
 .trophy-cost {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  display: flex;
+  align-items: stretch;
   gap: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .trophy-cost__animals {
   display: flex;
+  flex: 0 0 600px;
   flex-direction: column;
   align-items: stretch;
-  padding: 8px 0;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 600px;
+  max-width: 600px;
+  min-width: 0;
+  padding: 8px;
   border-right: 1px solid var(--wh-gray-200, #ddd);
-  background: var(--wh-gray-100, #f5f5f5);
+  border-radius: 4px 0 0 4px;
+  background: var(--wh-white);
+}
+
+.trophy-cost__animals-select {
+  display: none;
 }
 
 .trophy-cost__animal {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
-  padding: 12px 20px;
+  padding: 12px 14px;
   border: none;
-  background: transparent;
-  color: #2f6fed;
+  border-radius: 10px;
+  appearance: none;
+  background-color: transparent;
+  color: var(--wh-black-text, #1c211c);
   font: inherit;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.trophy-cost__animal:hover {
-  background: rgba(255, 255, 255, 0.7);
+.trophy-cost__animal-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: transparent;
+}
+
+.trophy-cost__animal-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.trophy-cost__animal:hover:not(:disabled),
+.trophy-cost__animal:focus-visible:not(:disabled),
+.trophy-cost__animal--active {
+  background-color: #e8883a;
+  color: #ffffff;
+}
+
+.trophy-cost__animal--active .trophy-cost__animal-dot {
+  background-color: #ffffff;
 }
 
 .trophy-cost__animal--active {
-  background: var(--wh-white);
-  color: var(--wh-black-text, #1c211c);
-  font-weight: 500;
   cursor: default;
+}
+
+.trophy-cost__animal:disabled:not(.trophy-cost__animal--active) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.trophy-cost__animals-empty {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
 }
 
 .trophy-cost__content {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   gap: 0;
   min-width: 0;
@@ -349,7 +624,7 @@ function savePrice() {
 
 .trophy-cost__head {
   border-bottom: 1px solid var(--wh-gray-200, #ddd);
-  background: var(--wh-gray-100, #f5f5f5);
+  background: var(--wh-gray-450, #C8C8C8);
   font-size: 14px;
   font-weight: 600;
   color: var(--wh-black-text, #1c211c);
@@ -375,26 +650,8 @@ function savePrice() {
   color: var(--wh-black-text, #1c211c);
 }
 
-.trophy-cost__input {
-  width: 100%;
-  height: 36px;
-  padding: 6px 10px;
-  border: 1px solid var(--wh-gray-200, #ddd);
-  border-radius: 4px;
-  background: var(--wh-white);
-  color: var(--wh-black-text, #1c211c);
-  font: inherit;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.trophy-cost__input:focus {
-  outline: none;
-  border-color: var(--wh-field-border-active, rgba(0, 0, 0, 0.45));
-}
-
-.trophy-cost__input::placeholder {
-  color: rgba(0, 0, 0, 0.35);
+.trophy-cost__col--cost {
+  min-width: 0;
 }
 
 .trophy-cost__col--actions {
@@ -404,25 +661,32 @@ function savePrice() {
 }
 
 .trophy-cost__btn {
-  padding: 7px 14px;
-  border: none;
-  border-radius: 4px;
-  background: #2ea44f;
-  color: var(--wh-white);
+  padding: 7px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
   cursor: pointer;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  border-color: var(--wh-green);
+  background: var(--wh-green);
+  color: var(--wh-white);
 }
 
-.trophy-cost__btn:hover {
-  background: #279443;
+.trophy-cost__btn:hover:not(:disabled) {
+  border-color: var(--wh-green);
+  background: var(--wh-green);
 }
 
-.trophy-cost__btn:active {
+.trophy-cost__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.trophy-cost__btn:active:not(:disabled) {
   opacity: 0.9;
 }
 
@@ -439,7 +703,17 @@ function savePrice() {
   }
 
   .trophy-cost {
-    grid-template-columns: 180px minmax(0, 1fr);
+    flex-direction: column;
+  }
+
+  .trophy-cost__animals {
+    display: none;
+  }
+
+  .trophy-cost__animals-select {
+    display: block;
+    padding: 12px;
+    border-bottom: 1px solid var(--wh-gray-200, #ddd);
   }
 }
 
@@ -452,29 +726,6 @@ function savePrice() {
     height: auto;
     min-height: 31px;
     padding: 0;
-  }
-
-  .trophy-cost {
-    grid-template-columns: 1fr;
-  }
-
-  .trophy-cost__animals {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 12px;
-    border-right: none;
-    border-bottom: 1px solid var(--wh-gray-200, #ddd);
-  }
-
-  .trophy-cost__animal {
-    width: auto;
-    padding: 8px 12px;
-    border-radius: 4px;
-  }
-
-  .trophy-cost__animal--active {
-    background: var(--wh-white);
   }
 
   .trophy-cost__head,
