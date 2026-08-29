@@ -248,6 +248,9 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0;
   padding: 6px 8px;
   list-style: none;
