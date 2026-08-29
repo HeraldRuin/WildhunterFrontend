@@ -422,12 +422,13 @@ async function removeHotel() {
 
 .base-hotel-card__btn--danger {
   border-color: #dc3545;
-  background: var(--wh-white);
-  color: #dc3545;
+  background: #dc3545;
+  color: var(--wh-white);
 }
 
 .base-hotel-card__btn--danger:hover:not(:disabled) {
-  background: rgba(220, 53, 69, 0.08);
+  border-color: #c82333;
+  background: #c82333;
 }
 
 @media (--wh-narrow) {

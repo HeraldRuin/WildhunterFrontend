@@ -448,12 +448,13 @@ async function toggleVisibility() {
 
 .room-manage-card__btn--danger {
   border-color: #dc3545;
-  background: var(--wh-white);
-  color: #dc3545;
+  background: #dc3545;
+  color: var(--wh-white);
 }
 
-.room-manage-card__btn--danger:hover {
-  background: rgba(220, 53, 69, 0.08);
+.room-manage-card__btn--danger:hover:not(:disabled) {
+  border-color: #c82333;
+  background: #c82333;
 }
 
 .room-manage-card__btn--secondary {

@@ -560,7 +560,14 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .finished-collection-modal__actions .finished-collection-modal__delete {
-  color: #d75b69;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: #dc3545;
+  color: var(--wh-white);
+}
+
+.finished-collection-modal__actions .finished-collection-modal__delete:hover {
+  background: #c82333;
 }
 
 .finished-collection-modal__replacement {

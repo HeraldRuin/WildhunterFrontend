@@ -1541,11 +1541,15 @@ const hasNewWeapon = computed(() =>
 }
 
 .profile-weapon__action--delete {
-  color: #dc3545;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: #dc3545;
+  color: var(--wh-white);
 }
 
 .profile-weapon__action--delete:hover:not(:disabled) {
-  color: #c82333;
+  background: #c82333;
+  color: var(--wh-white);
 }
 
 .profile-weapon__action:disabled {
