@@ -15,20 +15,33 @@ const { hotels: hotelsApi, services: servicesApi, location: locationApi } = useA
 const isCreateMode = computed(() => route.params.id === 'new')
 const hotelId = computed(() => Number(route.params.id))
 
-type BaseHotelEditTab = 'content' | 'policy' | 'places' | 'pricing' | 'attributes'
+type BaseHotelEditTab = 'content' | 'places' | 'pricing' | 'attributes'
+type ContentSubTab = 'content' | 'policy'
+type PlacesSubTab = 'location' | 'surrounding'
 
 const editTabs: { id: BaseHotelEditTab, label: string }[] = [
   { id: 'content', label: 'Контент базы' },
-  { id: 'policy', label: 'Политика базы' },
   { id: 'places', label: 'Места' },
   { id: 'pricing', label: 'Ценообразование' },
   { id: 'attributes', label: 'Атрибуты' },
+]
+
+const contentSubTabs: { id: ContentSubTab, label: string }[] = [
+  { id: 'content', label: 'Контент' },
+  { id: 'policy', label: 'Политика' },
+]
+
+const placesSubTabs: { id: PlacesSubTab, label: string }[] = [
+  { id: 'location', label: 'Локация' },
+  { id: 'surrounding', label: 'Окрестности' },
 ]
 
 const hotel = ref<ManagedHotelDetail | null>(null)
 const isLoading = ref(true)
 const loadError = ref('')
 const activeEditTab = ref<BaseHotelEditTab>('content')
+const activeContentTab = ref<ContentSubTab>('content')
+const activePlacesTab = ref<PlacesSubTab>('location')
 const editTitle = ref('')
 const editRating = ref(0)
 const editContent = ref('')
@@ -221,14 +234,27 @@ useHead({
 function selectEditTab(tab: BaseHotelEditTab) {
   activeEditTab.value = tab
 
+  if (tab === 'content') {
+    activeContentTab.value = 'content'
+  }
+
   if (tab === 'attributes') {
     void loadAttributes()
     scheduleAttrPagesUpdate()
   }
 
   if (tab === 'places') {
+    activePlacesTab.value = 'location'
     void loadLocations()
   }
+}
+
+function selectContentTab(tab: ContentSubTab) {
+  activeContentTab.value = tab
+}
+
+function selectPlacesTab(tab: PlacesSubTab) {
+  activePlacesTab.value = tab
 }
 
 const filteredLocations = computed(() => {
@@ -512,6 +538,8 @@ function resetForm() {
   mapSearchError.value = ''
   isLocationDropdownOpen.value = false
   activeEditTab.value = 'content'
+  activeContentTab.value = 'content'
+  activePlacesTab.value = 'location'
 }
 
 function extractErrorMessage(source: unknown, fallback: string) {
@@ -739,22 +767,28 @@ watch(activeEditTab, (tab) => {
         </NuxtLink>
       </div>
 
-      <nav
+      <div
         v-if="showForm && !loadError && !isLoading"
-        class="base-edit__nav"
-        aria-label="Разделы редактирования"
+        class="base-edit__nav-row"
       >
-        <button
-          v-for="tab in editTabs"
-          :key="tab.id"
-          type="button"
-          class="base-edit__nav-link"
-          :class="{ 'base-edit__nav-link--active': activeEditTab === tab.id }"
-          @click="selectEditTab(tab.id)"
+        <nav
+          class="base-edit__nav"
+          aria-label="Разделы редактирования"
         >
-          {{ tab.label }}
-        </button>
-      </nav>
+          <button
+            v-for="tab in editTabs"
+            :key="tab.id"
+            type="button"
+            class="base-edit__nav-link"
+            :class="{ 'base-edit__nav-link--active': activeEditTab === tab.id }"
+            @click="selectEditTab(tab.id)"
+          >
+            {{ tab.label }}
+          </button>
+        </nav>
+
+        <CommonSaveButton type="button" class="base-edit__nav-save" />
+      </div>
 
       <div class="base-edit__panel-area">
         <div v-if="loadError || isLoading" class="base-edit__panel">
@@ -800,7 +834,24 @@ watch(activeEditTab, (tab) => {
             class="base-edit__body"
             @scroll.passive="onAttrScroll"
           >
-            <div v-if="activeEditTab === 'content'" class="base-edit__content">
+            <div v-if="activeEditTab === 'content'" class="base-edit__section">
+              <nav
+                class="base-edit__subnav"
+                aria-label="Разделы контента"
+              >
+                <button
+                  v-for="tab in contentSubTabs"
+                  :key="tab.id"
+                  type="button"
+                  class="base-edit__subnav-link"
+                  :class="{ 'base-edit__subnav-link--active': activeContentTab === tab.id }"
+                  @click="selectContentTab(tab.id)"
+                >
+                  {{ tab.label }}
+                </button>
+              </nav>
+
+              <div v-if="activeContentTab === 'content'" class="base-edit__content">
               <div class="base-edit__form">
                 <div class="base-edit__form-row">
                   <CommonFormField
@@ -939,9 +990,9 @@ watch(activeEditTab, (tab) => {
                   Выбрать изображения
                 </button>
               </section>
-            </div>
+              </div>
 
-            <div v-else-if="activeEditTab === 'policy'" class="base-edit__policy">
+              <div v-else class="base-edit__policy">
               <div class="base-edit__policy-table">
                 <div class="base-edit__policy-head" aria-hidden="true">
                   <span class="base-edit__policy-head-cell">Название</span>
@@ -976,10 +1027,30 @@ watch(activeEditTab, (tab) => {
                   </button>
                 </div>
               </div>
+              </div>
             </div>
 
             <div v-else-if="activeEditTab === 'places'" class="base-edit__places">
-              <div class="base-edit__places-form">
+              <nav
+                class="base-edit__subnav"
+                aria-label="Разделы мест"
+              >
+                <button
+                  v-for="tab in placesSubTabs"
+                  :key="tab.id"
+                  type="button"
+                  class="base-edit__subnav-link"
+                  :class="{ 'base-edit__subnav-link--active': activePlacesTab === tab.id }"
+                  @click="selectPlacesTab(tab.id)"
+                >
+                  {{ tab.label }}
+                </button>
+              </nav>
+
+              <div
+                v-if="activePlacesTab === 'location'"
+                class="base-edit__places-form"
+              >
                 <div class="base-edit__location-field">
                   <CommonFormField
                     :model-value="editLocationQuery"
@@ -1089,7 +1160,12 @@ watch(activeEditTab, (tab) => {
                     {{ mapSearchError }}
                   </p>
                 </div>
+              </div>
 
+              <div
+                v-else
+                class="base-edit__places-form"
+              >
                 <section class="base-edit__surrounding" aria-label="Окрестности">
                   <h3 class="base-edit__surrounding-title">Окрестности</h3>
 
@@ -1195,9 +1271,12 @@ watch(activeEditTab, (tab) => {
             </div>
           </div>
 
-          <div class="base-edit__actions">
+          <div
+            v-if="(activeEditTab === 'content' && activeContentTab === 'policy') || (activeEditTab === 'places' && activePlacesTab === 'surrounding')"
+            class="base-edit__actions"
+          >
             <button
-              v-if="activeEditTab === 'policy'"
+              v-if="activeEditTab === 'content' && activeContentTab === 'policy'"
               type="button"
               class="base-edit__policy-add"
               @click="addPolicyItem"
@@ -1222,7 +1301,7 @@ watch(activeEditTab, (tab) => {
             </button>
 
             <button
-              v-else-if="activeEditTab === 'places'"
+              v-else
               type="button"
               class="base-edit__policy-add"
               @click="addSurroundingItem"
@@ -1245,8 +1324,6 @@ watch(activeEditTab, (tab) => {
               </svg>
               Добавить элемент
             </button>
-
-            <CommonSaveButton type="button" class="base-edit__actions-save" />
           </div>
           </div>
         </div>
@@ -1264,7 +1341,7 @@ watch(activeEditTab, (tab) => {
   width: 100%;
   height: 100%;
   max-height: 100%;
-  padding: 20px 40px 48px;
+  padding: 20px 40px 16px;
   padding-left: 20px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
@@ -1302,7 +1379,9 @@ watch(activeEditTab, (tab) => {
   gap: 16px;
   flex-shrink: 0;
   width: 100%;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
 }
 
@@ -1398,14 +1477,23 @@ watch(activeEditTab, (tab) => {
 .base-edit__actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16px;
   flex-shrink: 0;
   margin-top: 24px;
 }
 
-.base-edit__actions-save {
-  margin-left: auto;
+.base-edit__nav-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .base-edit__nav {
@@ -1413,13 +1501,13 @@ watch(activeEditTab, (tab) => {
   flex-wrap: wrap;
   align-items: center;
   gap: 28px;
-  flex-shrink: 0;
-  width: 100%;
   min-width: 0;
-  margin-bottom: 16px;
-  padding-bottom: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
+  flex: 1 1 auto;
+}
+
+.base-edit__nav-save {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .base-edit__nav-link {
@@ -1472,9 +1560,66 @@ watch(activeEditTab, (tab) => {
   gap: 24px;
 }
 
+.base-edit__section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__subnav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__subnav-link {
+  position: relative;
+  padding: 10px 0 12px;
+  border: none;
+  background: none;
+  color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.base-edit__subnav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--wh-orange-500);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.28s ease;
+}
+
+.base-edit__subnav-link--active::after {
+  transform: scaleX(1);
+}
+
+.base-edit__subnav-link:not(.base-edit__subnav-link--active)::after {
+  transition-duration: 0s;
+}
+
 .base-edit__places {
   display: flex;
   flex-direction: column;
+  gap: 24px;
   width: 100%;
   min-width: 0;
 }
@@ -1620,7 +1765,6 @@ watch(activeEditTab, (tab) => {
   gap: 12px;
   width: 100%;
   min-width: 0;
-  margin-top: 8px;
 }
 
 .base-edit__surrounding-title {
