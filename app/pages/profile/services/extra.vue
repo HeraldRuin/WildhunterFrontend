@@ -847,14 +847,6 @@ onBeforeUnmount(() => {
   list-style: none;
 }
 
-.extra-services__row {
-  border-bottom: 1px solid var(--wh-gray-400);
-}
-
-.extra-services__row:last-child {
-  border-bottom: none;
-}
-
 .extra-services__col--name {
   display: flex;
   align-items: flex-end;
