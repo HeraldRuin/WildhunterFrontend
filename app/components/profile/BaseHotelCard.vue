@@ -233,13 +233,13 @@ async function removeHotel() {
         <div class="base-hotel-card__actions">
           <NuxtLink
             :to="{ path: '/rooms', query: { hotelId: String(item.id) } }"
-            class="base-hotel-card__btn base-hotel-card__btn--info"
+            class="base-hotel-card__btn base-hotel-card__btn--success"
           >
             Доступные номера
           </NuxtLink>
           <NuxtLink
             :to="`/profile/base/${item.id}`"
-            class="base-hotel-card__btn base-hotel-card__btn--warning"
+            class="base-hotel-card__btn base-hotel-card__btn--primary"
           >
             Редактировать
           </NuxtLink>
@@ -395,39 +395,60 @@ async function removeHotel() {
 .base-hotel-card__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   margin-top: 32px;
-  justify-content: flex-start;
+  width: 100%;
+  justify-content: flex-end;
 }
 
 .base-hotel-card__btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 50px;
-  padding: 5px 10px;
-  border: none;
-  border-radius: 5px;
-  color: #fff;
+  padding: 7px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
   box-sizing: border-box;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.base-hotel-card__btn--info {
-  background: #17a2b8;
+.base-hotel-card__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-.base-hotel-card__btn--warning {
-  background: #ffc107;
+.base-hotel-card__btn--success {
+  border-color: var(--wh-green);
+  background: var(--wh-green);
+  color: var(--wh-white);
+}
+
+.base-hotel-card__btn--primary {
+  border-color: var(--wh-orange-500);
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+}
+
+.base-hotel-card__btn--primary:hover {
+  border-color: var(--wh-orange-600);
+  background: var(--wh-orange-600);
 }
 
 .base-hotel-card__btn--danger {
-  background: #dc3545;
+  border-color: #dc3545;
+  background: var(--wh-white);
+  color: #dc3545;
+}
+
+.base-hotel-card__btn--danger:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.08);
 }
 
 @media (--wh-narrow) {
