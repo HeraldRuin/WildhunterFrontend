@@ -105,7 +105,7 @@ const calendarDays = computed(() =>
       key,
       event: event ?? null,
       bookings: event?.bookings ?? [],
-      badgeText: event?.title ?? null,
+      badgeText: isSummaryTab.value ? null : (event?.title ?? null),
       badgeClass: resolveBadgeClass(event),
       isCheckoutDay: Boolean(event?.is_checkout_day),
       canEdit: Boolean(event) && !isSummaryTab.value && !event?.extendedProps?.is_summary,
@@ -141,8 +141,13 @@ function resolveBadgeClass(event?: RoomAvailabilityDay | null) {
 
 function bookingLabel(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
   const number = booking.booking_number ?? ''
-  const status = booking.statusName || booking.status
   const checkout = booking.is_checkout ? ' (В)' : ''
+
+  if (isSummaryTab.value) {
+    return `Б${number}${checkout}`
+  }
+
+  const status = booking.statusName || booking.status
   return `Б${number} ${status}${checkout}`.trim()
 }
 
@@ -424,11 +429,14 @@ onMounted(() => {
 .profile-page {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 0px);
+  flex: 1 1 0;
+  min-height: 0;
   height: 100%;
-  padding: 20px 40px 24px;
+  max-height: 100%;
+  padding: 20px 40px 16px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  overflow: hidden;
 }
 
 .profile-page__header {
@@ -503,7 +511,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   width: 100%;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
@@ -735,6 +743,9 @@ onMounted(() => {
 
 @media (--wh-tablet) {
   .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 12px 8px 32px;
   }
 
@@ -774,6 +785,9 @@ onMounted(() => {
 
 @media (--wh-mobile) {
   .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 16px 20px 32px;
   }
 
