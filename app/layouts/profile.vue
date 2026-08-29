@@ -24,8 +24,19 @@ const profileScrollLock = computed(() => {
     return true
   }
 
-  // Редактирование базы: только внутренний скролл панели
-  return /^\/profile\/base\/[^/]+\/?$/.test(route.path)
+  // Страницы с панелью на всю высоту: только внутренний скролл
+  const path = route.path
+  return (
+    /^\/profile\/base\/[^/]+\/?$/.test(path)
+    || /^\/rooms\/[^/]+\/?$/.test(path)
+    || path === '/profile/bookings'
+    || path === '/profile/favorites'
+    || path === '/profile/animals'
+    || path === '/profile/services/extra'
+    || path === '/profile/services/hunting'
+    || path === '/profile/services/trophies'
+    || path.startsWith('/profile/timers/')
+  )
 })
 
 onMounted(() => {
@@ -122,11 +133,32 @@ html.profile-layout-active body {
   overflow: hidden;
 }
 
+html.profile-layout-active #__nuxt,
+html.profile-layout-active #__nuxt > div {
+  height: 100%;
+}
+
+html.profile-layout-active .profile-layout__content--scroll-lock > * {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
+}
+
 @media (max-width: 1024px) {
   html.profile-layout-active,
   html.profile-layout-active body {
     height: auto;
     overflow: visible;
+  }
+
+  html.profile-layout-active #__nuxt,
+  html.profile-layout-active #__nuxt > div {
+    height: auto;
+  }
+
+  html.profile-layout-active .profile-layout__content--scroll-lock > * {
+    flex: none;
+    max-height: none;
   }
 }
 </style>

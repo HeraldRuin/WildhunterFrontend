@@ -349,13 +349,22 @@ onMounted(() => {
 
 <style scoped>
 .profile-page {
-  padding: 20px 40px 48px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  padding: 20px 40px 16px;
   max-width: 1100px;
+  box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  overflow: hidden;
 }
 
 .profile-page__header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -370,6 +379,7 @@ onMounted(() => {
 
 .animals-manage__toolbar {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -404,6 +414,7 @@ onMounted(() => {
 }
 
 .animals-manage__status {
+  flex-shrink: 0;
   margin: 0 0 16px;
   font-size: 14px;
   line-height: 1.4;
@@ -415,10 +426,14 @@ onMounted(() => {
 }
 
 .animals-manage__panel {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .animals-manage__head,
@@ -548,6 +563,9 @@ onMounted(() => {
 
 @media (--wh-tablet) {
   .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 12px 8px 32px;
   }
 
@@ -558,6 +576,9 @@ onMounted(() => {
 
 @media (--wh-mobile) {
   .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 16px 20px 32px;
   }
 

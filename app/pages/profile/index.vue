@@ -785,7 +785,7 @@ async function handleSubmit() {
 
 <style scoped>
 .profile-page {
-  padding: 20px 40px 48px;
+  padding: 20px 40px 16px;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
 }
 

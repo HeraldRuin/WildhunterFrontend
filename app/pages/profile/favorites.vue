@@ -260,7 +260,7 @@ watch(favoriteHotelIds, (ids) => {
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
-  padding: 20px 40px 0;
+  padding: 20px 40px 16px;
   /* Чуть меньше слева — место под точки у сайдбара */
   padding-left: 20px;
   box-sizing: border-box;

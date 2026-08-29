@@ -240,13 +240,22 @@ onMounted(() => {
 
 <style scoped>
 .profile-page {
-  padding: 20px 40px 48px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  padding: 20px 40px 16px;
   max-width: 960px;
+  box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  overflow: hidden;
 }
 
 .profile-page__header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -259,12 +268,22 @@ onMounted(() => {
   overflow: visible;
 }
 
+.profile-page :deep(.page-title--divider) {
+  flex-shrink: 0;
+}
+
 .timer-settings__panel {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
   padding: 24px 28px 28px;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow: auto;
+  box-sizing: border-box;
 }
 
 .timer-settings__panel--loading {
@@ -315,6 +334,9 @@ onMounted(() => {
 
 @media (--wh-tablet) {
   .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 12px 8px 32px;
   }
 
@@ -323,12 +345,16 @@ onMounted(() => {
   }
 
   .timer-settings__panel {
+    flex: none;
     padding: 20px;
   }
 }
 
 @media (--wh-mobile) {
   .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 16px 20px 32px;
   }
 

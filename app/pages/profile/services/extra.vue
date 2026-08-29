@@ -642,7 +642,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   height: 100%;
   max-height: 100%;
-  padding: 20px 40px 48px;
+  padding: 20px 40px 16px;
   padding-left: 20px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;

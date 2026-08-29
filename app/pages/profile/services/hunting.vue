@@ -681,12 +681,15 @@ onBeforeUnmount(() => {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  padding: 20px 40px 48px;
+  height: 100%;
+  max-height: 100%;
+  padding: 20px 40px 16px;
   padding-left: 20px;
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  overflow: hidden;
 }
 
 .profile-page :deep(.page-title--divider) {
@@ -735,10 +738,12 @@ onBeforeUnmount(() => {
 
 .hunting-org {
   display: flex;
+  flex: 1 1 0;
   align-items: stretch;
   gap: 0;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   max-width: 100%;
   box-sizing: border-box;
   container-type: inline-size;
@@ -746,7 +751,7 @@ onBeforeUnmount(() => {
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .hunting-org__animals {
@@ -1101,6 +1106,9 @@ onBeforeUnmount(() => {
 
 @media (--wh-tablet) {
   .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 12px 8px 32px;
   }
 
@@ -1111,6 +1119,10 @@ onBeforeUnmount(() => {
   .hunting-org__body {
     flex: none;
     min-height: 0;
+  }
+
+  .hunting-org {
+    flex: none;
   }
 
   .hunting-org__loading {
@@ -1149,6 +1161,9 @@ onBeforeUnmount(() => {
 
 @media (--wh-mobile) {
   .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 16px 20px 32px;
   }
 

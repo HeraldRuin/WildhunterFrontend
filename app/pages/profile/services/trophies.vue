@@ -464,10 +464,13 @@ onMounted(() => {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  padding: 20px 40px 48px;
+  height: 100%;
+  max-height: 100%;
+  padding: 20px 40px 16px;
   padding-left: 20px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  overflow: hidden;
 }
 
 .profile-page :deep(.page-title--divider) {
@@ -528,16 +531,18 @@ onMounted(() => {
 
 .trophy-cost {
   display: flex;
+  flex: 1 1 0;
   align-items: stretch;
   gap: 0;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   max-width: 100%;
   box-sizing: border-box;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .trophy-cost__animals {
@@ -729,12 +734,19 @@ onMounted(() => {
 
 @media (--wh-tablet) {
   .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 12px 8px 32px;
   }
 
   .trophy-cost__body {
     flex: none;
     min-height: 0;
+  }
+
+  .trophy-cost {
+    flex: none;
   }
 
   .trophy-cost__loading {
@@ -761,6 +773,9 @@ onMounted(() => {
 
 @media (--wh-mobile) {
   .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
     padding: 16px 20px 32px;
   }
 
