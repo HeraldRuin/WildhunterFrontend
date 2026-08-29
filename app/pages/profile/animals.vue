@@ -277,6 +277,7 @@ onMounted(() => {
         class="animals-manage__select"
         placeholder="Выберите животное"
         no-margin
+        filled-hover
         :options="selectOptions"
         :disabled="isSelectDisabled"
       />

@@ -15,6 +15,8 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   error?: string
   noMargin?: boolean
+  /** When true, hovered options use orange fill + white text instead of orange border. */
+  filledHover?: boolean
 }>(), {
   label: '',
   placeholder: 'Выберите',
@@ -22,6 +24,7 @@ const props = withDefaults(defineProps<{
   disabled: false,
   error: '',
   noMargin: false,
+  filledHover: false,
 })
 
 const model = defineModel<string>({ default: '' })
@@ -83,6 +86,7 @@ onUnmounted(() => {
       'select-field--open': isOpen,
       'select-field--no-margin': noMargin,
       'select-field--error': error,
+      'select-field--filled-hover': filledHover,
     }"
   >
     <span v-if="label" class="select-field__label">{{ label }}</span>
@@ -308,6 +312,14 @@ onUnmounted(() => {
   color: var(--wh-black-text);
 }
 
+.select-field--filled-hover .select-field__option:hover,
+.select-field--filled-hover .select-field__option--hovered,
+.select-field--filled-hover .select-field__option:focus-visible {
+  background-color: #e8883a;
+  border-color: #e8883a;
+  color: #ffffff;
+}
+
 .select-field__option--active {
   background-color: #e8883a;
   border-color: #e8883a;
@@ -323,6 +335,12 @@ onUnmounted(() => {
 }
 
 .select-field__option--active .select-field__option-dot {
+  background-color: #ffffff;
+}
+
+.select-field--filled-hover .select-field__option:hover .select-field__option-dot,
+.select-field--filled-hover .select-field__option--hovered .select-field__option-dot,
+.select-field--filled-hover .select-field__option:focus-visible .select-field__option-dot {
   background-color: #ffffff;
 }
 
