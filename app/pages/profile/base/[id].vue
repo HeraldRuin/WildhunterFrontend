@@ -777,12 +777,7 @@ function buildSavePayload(galleryIds: number[]): HotelManageUpdatePayload {
 }
 
 async function saveHotel() {
-  if (isCreateMode.value || isSaving.value || isLoading.value) {
-    return
-  }
-
-  if (!Number.isFinite(hotelId.value) || hotelId.value <= 0) {
-    notifications.error('Некорректный идентификатор базы')
+  if (isSaving.value || isLoading.value) {
     return
   }
 
@@ -793,27 +788,52 @@ async function saveHotel() {
     return
   }
 
+  if (!isCreateMode.value && (!Number.isFinite(hotelId.value) || hotelId.value <= 0)) {
+    notifications.error('Некорректный идентификатор базы')
+    return
+  }
+
   isSaving.value = true
 
   try {
     await uploadPendingGalleryItems()
 
     const galleryIds = galleryItems.value.map(item => item.id)
-    const response = await hotelsApi.updateManage(hotelId.value, buildSavePayload(galleryIds))
+    const payload = buildSavePayload(galleryIds)
+
+    const response = isCreateMode.value
+      ? await hotelsApi.createManage(payload)
+      : await hotelsApi.updateManage(hotelId.value, payload)
 
     if ('success' in response && response.success) {
       hotel.value = response.data
       fillFormFromHotel(response.data)
-      notifications.success(response.message || 'База сохранена')
+      notifications.success(
+        response.message || (isCreateMode.value ? 'База создана' : 'База сохранена'),
+      )
+
+      if (isCreateMode.value && response.data.id) {
+        await navigateTo(`/profile/base/${response.data.id}`, { replace: true })
+      }
+
       return
     }
 
-    notifications.error(extractErrorMessage(response, 'Не удалось сохранить базу'))
+    notifications.error(
+      extractErrorMessage(
+        response,
+        isCreateMode.value ? 'Не удалось создать базу' : 'Не удалось сохранить базу',
+      ),
+    )
   }
   catch (error) {
     const data = (error as { data?: unknown, message?: string }).data
     notifications.error(
-      extractErrorMessage(data, (error as { message?: string }).message || 'Не удалось сохранить базу'),
+      extractErrorMessage(
+        data,
+        (error as { message?: string }).message
+          || (isCreateMode.value ? 'Не удалось создать базу' : 'Не удалось сохранить базу'),
+      ),
     )
   }
   finally {
@@ -980,7 +1000,7 @@ watch(activeEditTab, (tab) => {
           type="button"
           class="base-edit__nav-save"
           :loading="isSaving"
-          :disabled="isCreateMode || isLoading"
+          :disabled="isLoading"
           @click="saveHotel"
         />
       </div>

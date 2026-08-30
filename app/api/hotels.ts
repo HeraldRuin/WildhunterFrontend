@@ -125,6 +125,30 @@ export type HotelManageDeleteResponse =
   | ApiSuccessResponse<{ id: number }>
   | ApiErrorResponse
 
+export type HotelManageStatus = 'publish' | 'draft' | 'pending'
+
+export interface HotelManageUpdatePayload {
+  title?: string
+  slug?: string
+  content?: string | null
+  star_rate?: number
+  address?: string | null
+  image_id?: number | null
+  gallery?: number[]
+  policy?: ManagedHotelPolicyItem[]
+  surrounding?: ManagedHotelSurroundingItem[]
+  price?: number | string | null
+  extra_price?: unknown
+  service_fee?: unknown
+  map_lat?: string | number | null
+  map_lng?: string | number | null
+  map_zoom?: string | number | null
+  location_id?: number | null
+  status?: HotelManageStatus | string
+  has_food?: boolean
+  term_ids?: number[]
+}
+
 export function useHotelsApi() {
   const { apiFetch } = useApiClient()
 
@@ -209,6 +233,26 @@ export function useHotelsApi() {
     )
   }
 
+  function createManage(payload: HotelManageUpdatePayload) {
+    return apiFetch<HotelManageDetailResponse>('/hotels/manage', {
+      method: 'POST',
+      body: payload,
+    })
+  }
+
+  function updateManage(
+    hotelId: number | string,
+    payload: HotelManageUpdatePayload,
+  ) {
+    return apiFetch<HotelManageDetailResponse>(
+      `/hotels/manage/${encodeURIComponent(String(hotelId))}`,
+      {
+        method: 'PUT',
+        body: payload,
+      },
+    )
+  }
+
   function deleteManage(hotelId: number | string) {
     return apiFetch<HotelManageDeleteResponse>(
       `/hotels/manage/${encodeURIComponent(String(hotelId))}`,
@@ -227,6 +271,8 @@ export function useHotelsApi() {
     checkAvailability,
     getManage,
     getManageById,
+    createManage,
+    updateManage,
     deleteManage,
   }
 }

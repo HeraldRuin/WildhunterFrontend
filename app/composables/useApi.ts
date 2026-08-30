@@ -5,6 +5,7 @@ import {
   useHomeApi,
   useLocationApi,
   useHotelsApi,
+  useMediaApi,
   useRoomsApi,
   useAnimalsApi,
   useBookingsApi,
@@ -28,6 +29,7 @@ export function useApi() {
   const search = useSearchApi()
   const location = useLocationApi()
   const hotels = useHotelsApi()
+  const media = useMediaApi()
   const rooms = useRoomsApi()
   const animals = useAnimalsApi()
   const bookings = useBookingsApi()
@@ -49,6 +51,7 @@ export function useApi() {
     search,
     location,
     hotels,
+    media,
     rooms,
     animals,
     bookings,

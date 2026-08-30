@@ -15,6 +15,11 @@ export type { AuthSuccessResponse, AuthUser, AuthSession } from '~/types/auth'
 export { useSearchApi } from './search'
 export { useLocationApi, mapLocationOfferToItem } from './location'
 export { useHotelsApi, mapHotelOfferToItem } from './hotels'
+export { useMediaApi } from './media'
+export type {
+  MediaFileData,
+  MediaStoreResponse,
+} from './media'
 export type {
   ManagedHotel,
   ManagedHotelLocation,
@@ -26,6 +31,8 @@ export type {
   HotelsManageResponse,
   HotelManageDetailResponse,
   HotelManageDeleteResponse,
+  HotelManageUpdatePayload,
+  HotelManageStatus,
 } from './hotels'
 export { useRoomsApi } from './rooms'
 export type {

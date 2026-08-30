@@ -59,3 +59,21 @@ export function getGalleryImageKey(image: { large?: string, medium?: string, thu
 
   return toMediaImageSize(url, 'large') || url
 }
+
+/** Extract media file id from `/media/{id}/...` URLs. */
+export function extractMediaIdFromUrl(url: string | null | undefined): number | null {
+  const value = url?.trim()
+
+  if (!value) {
+    return null
+  }
+
+  const match = value.match(/\/media\/(\d+)(?:\/|$|\?)/)
+
+  if (!match?.[1]) {
+    return null
+  }
+
+  const id = Number(match[1])
+  return Number.isFinite(id) && id > 0 ? id : null
+}
