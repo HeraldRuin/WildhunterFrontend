@@ -30,6 +30,16 @@ function isBookingNotification(item: InboxNotification): boolean {
     || Boolean(item.event?.startsWith('booking.'))
 }
 
+function isInvitationAcceptedNotification(item: InboxNotification): boolean {
+  const event = (item.event ?? '').toLowerCase()
+  if (event.includes('invitation') && event.includes('accept')) {
+    return true
+  }
+
+  const text = `${item.title} ${item.message}`.toLowerCase()
+  return text.includes('приглашен') && text.includes('принят')
+}
+
 function bookingIdFromLink(link: string): number | undefined {
   const trimmed = link.trim()
   if (!trimmed) {
@@ -58,10 +68,24 @@ function bookingIdFromLink(link: string): number | undefined {
   return undefined
 }
 
+function bookingsTarget(bookingId?: number, openCollection = false): string {
+  const params = new URLSearchParams()
+  if (bookingId) {
+    params.set('booking_id', String(bookingId))
+  }
+  if (openCollection) {
+    params.set('open', 'collection')
+  }
+
+  const query = params.toString()
+  return query ? `/profile/bookings?${query}` : '/profile/bookings'
+}
+
 function resolveNotificationTarget(item: InboxNotification): string | null {
+  const openCollection = isInvitationAcceptedNotification(item)
   const entityId = Number(item.entity_id)
   if (isBookingNotification(item) && Number.isFinite(entityId) && entityId > 0) {
-    return `/profile/bookings?booking_id=${entityId}`
+    return bookingsTarget(entityId, openCollection)
   }
 
   const link = item.link?.trim()
@@ -71,11 +95,11 @@ function resolveNotificationTarget(item: InboxNotification): string | null {
 
   const bookingId = bookingIdFromLink(link)
   if (bookingId) {
-    return `/profile/bookings?booking_id=${bookingId}`
+    return bookingsTarget(bookingId, openCollection)
   }
 
   if (isBookingNotification(item)) {
-    return '/profile/bookings'
+    return bookingsTarget(undefined, openCollection)
   }
 
   return link

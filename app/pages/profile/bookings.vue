@@ -71,6 +71,12 @@ const bookingIdFilter = computed(() => {
   return Number.isFinite(value) && value > 0 ? value : undefined
 })
 
+const openCollectionFromQuery = computed(() => {
+  const raw = route.query.open
+  const value = String(Array.isArray(raw) ? raw[0] ?? '' : raw ?? '').trim()
+  return value === 'collection'
+})
+
 const invitationCode = computed(() => {
   const raw = route.query.code
   const value = String(Array.isArray(raw) ? raw[0] ?? '' : raw ?? '').trim()
@@ -82,6 +88,16 @@ function clearBookingIdFilter() {
   delete query.booking_id
   page.value = 1
   void navigateTo({ path: route.path, query })
+}
+
+function clearOpenCollectionQuery() {
+  if (!openCollectionFromQuery.value) {
+    return
+  }
+
+  const query = { ...route.query }
+  delete query.open
+  void navigateTo({ path: route.path, query }, { replace: true })
 }
 
 const {
@@ -368,6 +384,52 @@ async function openFinishedCollectionModal(booking: BookingHistoryItem) {
     collectionLoadingBookingId.value = null
   }
 }
+
+watch(
+  [openCollectionFromQuery, bookings, isBaseAdmin, historyResponse, historyError],
+  async ([shouldOpen]) => {
+    if (!shouldOpen) {
+      return
+    }
+
+    if (!isBaseAdmin.value) {
+      clearOpenCollectionQuery()
+      return
+    }
+
+    const bookingId = bookingIdFilter.value
+    if (!bookingId) {
+      clearOpenCollectionQuery()
+      return
+    }
+
+    if (historyResponse.value == null && !historyError.value) {
+      return
+    }
+
+    const booking = bookings.value.find(item =>
+      item.id === bookingId
+      || Number(item.number) === bookingId,
+    )
+
+    clearOpenCollectionQuery()
+
+    if (!booking) {
+      return
+    }
+
+    if (
+      booking.status.code
+      && FINISHED_COLLECTION_MODAL_STATUSES.has(booking.status.code)
+    ) {
+      await openFinishedCollectionModal(booking)
+      return
+    }
+
+    openCollectionModal(booking)
+  },
+  { immediate: true },
+)
 
 function applyBookingStatusUpdate(payload: BookingStatusUpdatedPayload) {
   const response = historyResponse.value
