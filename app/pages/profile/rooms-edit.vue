@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ManagedRoom } from '~/api/rooms'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
+import { formatHotelPrice } from '~/utils/hotel'
 
 definePageMeta({
   layout: 'profile',
@@ -37,13 +38,12 @@ const roomsListTo = computed(() => (
   hotelId.value ? { path: '/rooms', query: { hotelId: hotelId.value } } : '/rooms'
 ))
 
-type RoomEditTab = 'content' | 'pricing' | 'attributes' | 'ical'
+type RoomEditTab = 'content' | 'pricing' | 'attributes'
 
 const editTabs: { id: RoomEditTab, label: string }[] = [
   { id: 'content', label: 'Содержимое комнаты' },
   { id: 'pricing', label: 'Ценообразование' },
   { id: 'attributes', label: 'Атрибуты' },
-  { id: 'ical', label: 'ICAL' },
 ]
 
 const room = ref<ManagedRoom | null>(null)
@@ -53,6 +53,12 @@ const activeEditTab = ref<RoomEditTab>('content')
 const editTitle = ref('')
 const editRating = ref(0)
 const editContent = ref('')
+const editPrice = ref('')
+const editRoomsCount = ref('')
+const editMinStayDays = ref('')
+const editBedsCount = ref('')
+const editRoomSize = ref('')
+const editMaxAdults = ref('')
 const hoverRating = ref(0)
 const galleryPreviews = ref<string[]>([])
 const galleryInputRef = ref<HTMLInputElement | null>(null)
@@ -194,10 +200,24 @@ function extractErrorMessage(source: unknown, fallback: string) {
   return fallback
 }
 
+function formatPriceInput(value: number) {
+  if (!Number.isFinite(value)) {
+    return ''
+  }
+
+  return formatHotelPrice(Math.round(value))
+}
+
 function fillFormFromRoom(item: ManagedRoom) {
   editTitle.value = item.title
   editRating.value = 0
   editContent.value = ''
+  editPrice.value = formatPriceInput(item.price)
+  editRoomsCount.value = ''
+  editMinStayDays.value = ''
+  editBedsCount.value = ''
+  editRoomSize.value = ''
+  editMaxAdults.value = ''
   galleryPreviews.value = item.image_url ? [item.image_url] : []
   selectedGalleryIndex.value = null
 }
@@ -207,6 +227,12 @@ function resetFormForCreate() {
   editTitle.value = ''
   editRating.value = 0
   editContent.value = ''
+  editPrice.value = ''
+  editRoomsCount.value = ''
+  editMinStayDays.value = ''
+  editBedsCount.value = ''
+  editRoomSize.value = ''
+  editMaxAdults.value = ''
   hoverRating.value = 0
   galleryPreviews.value = []
   selectedGalleryIndex.value = null
@@ -321,10 +347,11 @@ onMounted(() => {
                 <div class="room-edit__form-row">
                   <CommonFormField
                     v-model="editTitle"
-                    label="Название"
+                    label="Название номера"
                     placeholder="Название номера"
                     no-margin
                   />
+                  <!--
                   <div class="room-edit__rating">
                     <span class="room-edit__rating-label">Рейтинг</span>
                     <div
@@ -374,6 +401,7 @@ onMounted(() => {
                       </button>
                     </div>
                   </div>
+                  -->
                 </div>
                 <CommonFormField
                   v-model="editContent"
@@ -455,6 +483,72 @@ onMounted(() => {
                   Выбрать изображения
                 </button>
               </section>
+            </div>
+
+            <div v-else-if="activeEditTab === 'pricing'" class="room-edit__pricing">
+              <div class="room-edit__pricing-row">
+                <CommonFormField
+                  v-model="editPrice"
+                  label="Стоимость *"
+                  placeholder="0"
+                  amount-only
+                  required
+                  no-margin
+                />
+                <CommonFormField
+                  v-model="editRoomsCount"
+                  label="Количество комнат *"
+                  placeholder="0"
+                  digits-only
+                  required
+                  no-margin
+                />
+              </div>
+
+              <div class="room-edit__pricing-field">
+                <CommonFormField
+                  v-model="editMinStayDays"
+                  label="Минимальные требования к дневному пребыванию"
+                  placeholder="Пример: 2"
+                  digits-only
+                  no-margin
+                />
+                <p class="room-edit__pricing-hint">
+                  Оставьте пустым, если вам не нужно устанавливать опцию минимального количества дней пребывания
+                </p>
+              </div>
+
+              <div class="room-edit__pricing-row">
+                <CommonFormField
+                  v-model="editBedsCount"
+                  label="Количество спальных мест"
+                  placeholder="0"
+                  digits-only
+                  no-margin
+                />
+                <CommonFormField
+                  v-model="editRoomSize"
+                  class="room-edit__pricing-size"
+                  label="Размер номера"
+                  placeholder="0"
+                  digits-only
+                  no-margin
+                >
+                  <template #trailing>
+                    <span class="room-edit__unit">м²</span>
+                  </template>
+                </CommonFormField>
+              </div>
+
+              <div class="room-edit__pricing-row room-edit__pricing-row--single">
+                <CommonFormField
+                  v-model="editMaxAdults"
+                  label="Максимальное число взрослых"
+                  placeholder="0"
+                  digits-only
+                  no-margin
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -644,9 +738,69 @@ onMounted(() => {
 
 .room-edit__form-row {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px 24px;
+  align-items: start;
+}
+
+.room-edit__pricing {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 920px;
+}
+
+.room-edit__pricing-row {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px 24px;
   align-items: start;
+}
+
+.room-edit__pricing-row--single {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.room-edit__pricing-row--single > :first-child {
+  grid-column: 1;
+}
+
+.room-edit__pricing-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.room-edit__pricing-hint {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.45);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.room-edit__pricing-size :deep(.form-field__input--with-trailing) {
+  padding-right: 56px;
+}
+
+.room-edit__unit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--wh-gray-100, #f3f3f3);
+  color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  pointer-events: none;
+  user-select: none;
 }
 
 .room-edit__gallery {
@@ -920,6 +1074,11 @@ onMounted(() => {
   }
 
   .room-edit__form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .room-edit__pricing-row,
+  .room-edit__pricing-row--single {
     grid-template-columns: 1fr;
   }
 }
