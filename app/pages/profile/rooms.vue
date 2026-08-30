@@ -197,9 +197,13 @@ onMounted(() => {
       {{ loadError }}
     </p>
 
-    <p v-else-if="isLoading" class="rooms-manage__status">
-      Загрузка...
-    </p>
+    <div
+      v-else-if="isLoading"
+      class="rooms-manage__loading"
+      aria-live="polite"
+    >
+      <CommonSpinner variant="ring" size="lg" label="Загрузка номеров" />
+    </div>
 
     <div v-else-if="roomsCount > 0" class="rooms-manage__list">
       <ProfileRoomManageCard
@@ -320,6 +324,14 @@ onMounted(() => {
 
 .rooms-manage__status--error {
   color: #dc3545;
+}
+
+.rooms-manage__loading {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
 }
 
 .rooms-manage__empty {

@@ -287,9 +287,13 @@ onMounted(() => {
       {{ loadError }}
     </p>
 
-    <p v-else-if="isLoading" class="animals-manage__status">
-      Загрузка...
-    </p>
+    <div
+      v-else-if="isLoading"
+      class="animals-manage__loading"
+      aria-live="polite"
+    >
+      <CommonSpinner variant="ring" size="lg" label="Загрузка животных" />
+    </div>
 
     <section v-else class="animals-manage__panel">
       <div class="animals-manage__head">
@@ -423,6 +427,14 @@ onMounted(() => {
 
 .animals-manage__status--error {
   color: var(--wh-field-error, #dc2626);
+}
+
+.animals-manage__loading {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
 }
 
 .animals-manage__panel {

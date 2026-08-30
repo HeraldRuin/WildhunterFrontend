@@ -287,9 +287,13 @@ defineExpose({
       aria-label="Карта расположения базы"
     />
 
-    <p v-if="isMapLoading" class="base-location-map__status">
-      Загрузка карты...
-    </p>
+    <div
+      v-if="isMapLoading"
+      class="base-location-map__status"
+      aria-live="polite"
+    >
+      <CommonSpinner variant="ring" size="md" label="Загрузка карты" />
+    </div>
 
     <p v-else-if="mapError" class="base-location-map__status base-location-map__status--error">
       {{ mapError }}

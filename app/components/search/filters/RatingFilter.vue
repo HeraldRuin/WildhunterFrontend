@@ -28,9 +28,13 @@ function toggle(value: string) {
 
 <template>
   <div class="search-filters-rating">
-    <p v-if="pending" class="search-filters-rating__state">
-      Загрузка...
-    </p>
+    <div
+      v-if="pending"
+      class="search-filters-rating__loading"
+      aria-live="polite"
+    >
+      <CommonSpinner variant="ring" size="sm" label="Загрузка рейтинга" />
+    </div>
 
     <ul v-else class="search-filters-rating__list">
       <li
@@ -69,6 +73,13 @@ function toggle(value: string) {
   margin: 0;
   font-size: 0.875rem;
   color: var(--wh-gray-500);
+}
+
+.search-filters-rating__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
 }
 
 .search-filters-rating__list {

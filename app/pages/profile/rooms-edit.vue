@@ -244,9 +244,13 @@ onMounted(() => {
               {{ loadError }}
             </p>
 
-            <p v-else class="room-edit__status">
-              Загрузка...
-            </p>
+            <div
+              v-else
+              class="room-edit__loading"
+              aria-live="polite"
+            >
+              <CommonSpinner variant="ring" size="lg" label="Загрузка номера" />
+            </div>
           </div>
         </div>
 
@@ -529,6 +533,14 @@ onMounted(() => {
 
 .room-edit__status--error {
   color: #dc3545;
+}
+
+.room-edit__loading {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
 }
 
 .room-edit__panel {

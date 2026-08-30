@@ -1105,7 +1105,7 @@ const hasNewWeapon = computed(() =>
               <CommonSelectField
                 v-model="card.weapon.weapon_type_id"
                 label="Тип оружия"
-                :placeholder="weaponTypesLoading ? 'Загрузка...' : 'Добавить оружие'"
+                placeholder="Добавить оружие"
                 :options="weaponTypes"
                 :disabled="weaponTypesLoading || !weaponTypes.length"
                 :error="showWeaponFieldErrors(card.weapon, card.index)
@@ -1117,7 +1117,7 @@ const hasNewWeapon = computed(() =>
               <CommonSelectField
                 v-model="card.weapon.caliber"
                 label="Калибр"
-                :placeholder="calibersLoading ? 'Загрузка...' : 'Добавить калибр'"
+                placeholder="Добавить калибр"
                 :options="calibers"
                 :disabled="calibersLoading || !calibers.length"
                 :error="showWeaponFieldErrors(card.weapon, card.index)

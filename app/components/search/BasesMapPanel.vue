@@ -778,8 +778,7 @@ async function searchMeasurePoint() {
                   role="status"
                   aria-live="polite"
                 >
-                  <span class="bases-map-page__map-spinner" aria-hidden="true" />
-                  <span>Загрузка карты</span>
+                  <CommonSpinner variant="ring" size="md" label="Загрузка карты" />
                 </div>
                 <SearchBasesMap
                   :lat="mapLat"
@@ -1279,25 +1278,7 @@ async function searchMeasurePoint() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
   background: var(--wh-white, #ffffff);
-  color: var(--wh-gray-700, #4a4f4a);
-  font-family: "Inter", sans-serif;
-}
-
-.bases-map-page__map-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--wh-gray-300, #d4d4d4);
-  border-top-color: var(--wh-gray-700, #4a4f4a);
-  border-radius: 50%;
-  animation: bases-map-page-spinner 0.8s linear infinite;
-}
-
-@keyframes bases-map-page-spinner {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 @media (max-width: 960px) {

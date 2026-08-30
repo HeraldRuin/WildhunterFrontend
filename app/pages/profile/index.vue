@@ -719,9 +719,13 @@ async function handleSubmit() {
                     v-if="isAvatarHistoryPanelVisible"
                     class="profile-form__avatar-history"
                   >
-                    <p v-if="avatarHistoryLoading" class="profile-form__avatar-history-message">
-                      Загрузка...
-                    </p>
+                    <div
+                      v-if="avatarHistoryLoading"
+                      class="profile-form__avatar-history-loading"
+                      aria-live="polite"
+                    >
+                      <CommonSpinner variant="ring" size="sm" label="Загрузка истории аватаров" />
+                    </div>
                     <p
                       v-else-if="avatarHistoryError"
                       class="profile-form__avatar-history-message profile-form__avatar-history-message--error"
@@ -1086,6 +1090,15 @@ async function handleSubmit() {
   color: var(--wh-gray-400);
   font-size: 14px;
   line-height: 130%;
+}
+
+.profile-form__avatar-history-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 36px;
 }
 
 .profile-form__avatar-history-message--error {

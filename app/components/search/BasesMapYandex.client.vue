@@ -898,8 +898,7 @@ onBeforeUnmount(() => {
       role="status"
       aria-live="polite"
     >
-      <span class="bases-map__spinner" aria-hidden="true" />
-      <span>Загрузка карты</span>
+      <CommonSpinner variant="ring" size="md" label="Загрузка карты" />
     </div>
   </div>
 </template>
@@ -961,26 +960,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
   border-radius: 12px;
   background: var(--wh-white, #ffffff);
-  color: var(--wh-gray-700, #4a4f4a);
-  font-family: "Inter", sans-serif;
-}
-
-.bases-map__spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--wh-gray-300, #d4d4d4);
-  border-top-color: var(--wh-gray-700, #4a4f4a);
-  border-radius: 50%;
-  animation: bases-map-spinner 0.8s linear infinite;
-}
-
-@keyframes bases-map-spinner {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .bases-map :deep(.bases-map-pin-root) {

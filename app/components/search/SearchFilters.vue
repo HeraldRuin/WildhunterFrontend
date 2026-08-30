@@ -175,12 +175,13 @@ function closeMobile() {
         title="Услуги на базе"
         @open="onAmenitiesOpen"
       >
-        <p
+        <div
           v-if="attributesPending || !attributesRequested"
-          class="search-filters__state"
+          class="search-filters__loading"
+          aria-live="polite"
         >
-          Загрузка атрибутов...
-        </p>
+          <CommonSpinner variant="ring" size="sm" label="Загрузка атрибутов" />
+        </div>
 
         <div
           v-else
@@ -327,6 +328,13 @@ function closeMobile() {
   margin: 0;
   font-size: 0.875rem;
   color: var(--wh-gray-500);
+}
+
+.search-filters__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
 }
 
 .search-filters__attributes {

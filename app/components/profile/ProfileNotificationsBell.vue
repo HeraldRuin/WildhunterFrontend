@@ -130,12 +130,13 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <p
+      <div
         v-if="listPending && !items.length"
-        class="profile-notifications__status"
+        class="profile-notifications__loading"
+        aria-live="polite"
       >
-        Загрузка…
-      </p>
+        <CommonSpinner variant="ring" size="sm" label="Загрузка уведомлений" />
+      </div>
 
       <p
         v-else-if="listError && !items.length"
@@ -280,6 +281,14 @@ onUnmounted(() => {
   font-family: "Inter", sans-serif;
   font-size: 0.875rem;
   color: var(--wh-gray-600);
+}
+
+.profile-notifications__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  padding: 16px 14px;
 }
 
 .profile-notifications__status--error {

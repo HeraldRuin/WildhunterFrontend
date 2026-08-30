@@ -135,9 +135,13 @@ onMounted(() => {
         {{ loadError }}
       </p>
 
-      <p v-else-if="isLoading" class="base-hotels__status">
-        Загрузка...
-      </p>
+      <div
+        v-else-if="isLoading"
+        class="base-hotels__loading"
+        aria-live="polite"
+      >
+        <CommonSpinner variant="ring" size="lg" label="Загрузка баз" />
+      </div>
 
       <div v-else-if="hotelsCount > 0" class="base-hotels">
         <div class="base-hotels__list">
@@ -253,6 +257,14 @@ onMounted(() => {
 
 .base-hotels__status--error {
   color: #dc3545;
+}
+
+.base-hotels__loading {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
 }
 
 @media (--wh-tablet) {
