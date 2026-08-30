@@ -50,7 +50,7 @@ type GalleryItem = {
 }
 
 const editTabs: { id: RoomEditTab, label: string }[] = [
-  { id: 'content', label: 'Содержимое комнаты' },
+  { id: 'content', label: 'Контент номера' },
   { id: 'pricing', label: 'Ценообразование' },
   { id: 'attributes', label: 'Атрибуты' },
 ]
