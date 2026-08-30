@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import type { ManagedHotelDetail } from '~/api/hotels'
+import type { HotelManageUpdatePayload, ManagedHotelDetail } from '~/api/hotels'
 import type { HotelRoomAttribute, HotelRoomAttributeTerm, SearchLocation } from '~/types/api'
 import { DEFAULT_MAP_CENTER } from '~/utils/map'
+import { extractMediaIdFromUrl } from '~/utils/image'
 
 definePageMeta({
   layout: 'profile',
@@ -10,7 +11,8 @@ definePageMeta({
 })
 
 const route = useRoute()
-const { hotels: hotelsApi, services: servicesApi, location: locationApi } = useApi()
+const notifications = useNotifications()
+const { hotels: hotelsApi, media: mediaApi, services: servicesApi, location: locationApi } = useApi()
 
 const isCreateMode = computed(() => route.params.id === 'new')
 const hotelId = computed(() => Number(route.params.id))
@@ -18,6 +20,12 @@ const hotelId = computed(() => Number(route.params.id))
 type BaseHotelEditTab = 'content' | 'places' | 'pricing' | 'attributes'
 type ContentSubTab = 'content' | 'policy'
 type PlacesSubTab = 'location' | 'surrounding'
+
+type GalleryItem = {
+  id: number | null
+  url: string
+  file?: File | null
+}
 
 const editTabs: { id: BaseHotelEditTab, label: string }[] = [
   { id: 'content', label: 'Контент базы' },
@@ -46,7 +54,7 @@ const editTitle = ref('')
 const editRating = ref(0)
 const editContent = ref('')
 const hoverRating = ref(0)
-const galleryPreviews = ref<string[]>([])
+const galleryItems = ref<GalleryItem[]>([])
 const galleryInputRef = ref<HTMLInputElement | null>(null)
 const selectedGalleryIndex = ref<number | null>(null)
 const attributeGroups = ref<HotelRoomAttribute[]>([])
@@ -56,6 +64,7 @@ const selectedTermIds = ref<number[]>([])
 const attrScrollEl = ref<HTMLElement | null>(null)
 const attrPageCount = ref(1)
 const attrPageIndex = ref(0)
+const isSaving = ref(false)
 let attributesLoaded = false
 let attrResizeObserver: ResizeObserver | null = null
 
@@ -188,9 +197,13 @@ function onGalleryFilesSelected(event: Event) {
     return
   }
 
-  galleryPreviews.value = [
-    ...galleryPreviews.value,
-    ...files.map(file => URL.createObjectURL(file)),
+  galleryItems.value = [
+    ...galleryItems.value,
+    ...files.map(file => ({
+      id: null as number | null,
+      url: URL.createObjectURL(file),
+      file,
+    })),
   ]
   selectedGalleryIndex.value = null
   input.value = ''
@@ -201,13 +214,70 @@ function selectGalleryImage(index: number) {
 }
 
 function removeGalleryImage(index: number) {
-  const src = galleryPreviews.value[index]
-  if (src?.startsWith('blob:')) {
-    URL.revokeObjectURL(src)
+  const item = galleryItems.value[index]
+  if (item?.url.startsWith('blob:')) {
+    URL.revokeObjectURL(item.url)
   }
 
-  galleryPreviews.value = galleryPreviews.value.filter((_, i) => i !== index)
+  galleryItems.value = galleryItems.value.filter((_, i) => i !== index)
   selectedGalleryIndex.value = null
+}
+
+function resolveGalleryItemId(item: {
+  id?: number | null
+  large?: string | null
+  medium?: string | null
+  thumb?: string | null
+}, fallbackUrl = ''): number | null {
+  const directId = Number(item.id)
+  if (Number.isFinite(directId) && directId > 0) {
+    return directId
+  }
+
+  return extractMediaIdFromUrl(item.large || item.medium || item.thumb || fallbackUrl)
+}
+
+function uniquePositiveIds(ids: Array<number | null | undefined>): number[] {
+  const result: number[] = []
+  const seen = new Set<number>()
+
+  for (const value of ids) {
+    const id = Number(value)
+    if (!Number.isFinite(id) || id <= 0 || seen.has(id)) {
+      continue
+    }
+
+    seen.add(id)
+    result.push(id)
+  }
+
+  return result
+}
+
+async function uploadPendingGalleryItems() {
+  const nextItems = [...galleryItems.value]
+
+  for (let index = 0; index < nextItems.length; index += 1) {
+    const item = nextItems[index]
+    if (!item || item.id != null || !item.file) {
+      continue
+    }
+
+    const uploaded = await mediaApi.store(item.file)
+    const previousUrl = item.url
+
+    nextItems[index] = {
+      id: uploaded.id,
+      url: uploaded.url || item.url,
+      file: null,
+    }
+
+    if (previousUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previousUrl)
+    }
+  }
+
+  galleryItems.value = nextItems
 }
 
 const pageTitle = computed(() => {
@@ -508,9 +578,9 @@ async function loadAttributes() {
 }
 
 function revokeGalleryBlobUrls() {
-  for (const src of galleryPreviews.value) {
-    if (src.startsWith('blob:')) {
-      URL.revokeObjectURL(src)
+  for (const item of galleryItems.value) {
+    if (item.url.startsWith('blob:')) {
+      URL.revokeObjectURL(item.url)
     }
   }
 }
@@ -521,7 +591,7 @@ function resetForm() {
   editRating.value = 0
   editContent.value = ''
   hoverRating.value = 0
-  galleryPreviews.value = []
+  galleryItems.value = []
   selectedGalleryIndex.value = null
   selectedTermIds.value = []
   policyItems.value = []
@@ -576,13 +646,48 @@ function fillFormFromHotel(item: ManagedHotelDetail) {
   editContent.value = item.content ?? ''
   selectedGalleryIndex.value = null
 
-  const galleryUrls = (item.gallery ?? [])
-    .map(galleryPreviewUrl)
-    .filter(Boolean)
+  const galleryFromApi = (item.gallery ?? [])
+    .map((galleryItem) => {
+      const url = galleryPreviewUrl(galleryItem)
+      if (!url) {
+        return null
+      }
 
-  galleryPreviews.value = galleryUrls.length
-    ? galleryUrls
-    : (item.image_url ? [item.image_url] : [])
+      return {
+        id: resolveGalleryItemId(galleryItem, url),
+        url,
+        file: null,
+      }
+    })
+    .filter((galleryItem): galleryItem is GalleryItem => Boolean(galleryItem))
+
+  const uniqueGallery: GalleryItem[] = []
+  const seenIds = new Set<number>()
+
+  for (const galleryItem of galleryFromApi) {
+    if (galleryItem.id != null) {
+      if (seenIds.has(galleryItem.id)) {
+        continue
+      }
+      seenIds.add(galleryItem.id)
+    }
+
+    uniqueGallery.push(galleryItem)
+  }
+
+  if (uniqueGallery.length) {
+    galleryItems.value = uniqueGallery
+  }
+  else if (item.image_url) {
+    galleryItems.value = [{
+      id: item.image_id ?? extractMediaIdFromUrl(item.image_url),
+      url: item.image_url,
+      file: null,
+    }]
+  }
+  else {
+    galleryItems.value = []
+  }
 
   policyItemIdSeq = 0
   policyItems.value = (item.policy ?? []).map((policyItem) => {
@@ -630,6 +735,90 @@ function fillFormFromHotel(item: ManagedHotelDetail) {
         type: normalizeSurroundingType(entry.type),
       }
     })
+}
+
+function buildSavePayload(galleryIds: number[]): HotelManageUpdatePayload {
+  const current = hotel.value
+  const uniqueGalleryIds = uniquePositiveIds(galleryIds)
+  const currentImageId = current?.image_id ?? null
+  const imageId = uniqueGalleryIds.includes(currentImageId ?? -1)
+    ? currentImageId
+    : (uniqueGalleryIds[0] ?? null)
+
+  return {
+    title: editTitle.value.trim(),
+    slug: current?.slug,
+    content: editContent.value,
+    star_rate: Math.min(5, Math.max(0, Math.round(editRating.value) || 0)),
+    address: editAddress.value.trim(),
+    image_id: imageId,
+    gallery: uniqueGalleryIds,
+    policy: policyItems.value.map(item => ({
+      title: item.title.trim(),
+      content: item.content.trim(),
+    })),
+    surrounding: surroundingItems.value.map(item => ({
+      name: item.name.trim(),
+      content: item.content.trim(),
+      value: item.value.trim(),
+      type: item.type,
+    })),
+    price: current?.price ?? null,
+    extra_price: current?.extra_price ?? [],
+    service_fee: current?.service_fee ?? [],
+    map_lat: editMapLat.value.trim(),
+    map_lng: editMapLng.value.trim(),
+    map_zoom: editMapZoom.value.trim(),
+    location_id: editLocationId.value,
+    status: current?.status ?? 'publish',
+    has_food: current?.has_food ?? false,
+    term_ids: [...selectedTermIds.value],
+  }
+}
+
+async function saveHotel() {
+  if (isCreateMode.value || isSaving.value || isLoading.value) {
+    return
+  }
+
+  if (!Number.isFinite(hotelId.value) || hotelId.value <= 0) {
+    notifications.error('Некорректный идентификатор базы')
+    return
+  }
+
+  const title = editTitle.value.trim()
+
+  if (!title) {
+    notifications.error('Укажите название базы')
+    return
+  }
+
+  isSaving.value = true
+
+  try {
+    await uploadPendingGalleryItems()
+
+    const galleryIds = galleryItems.value.map(item => item.id)
+    const response = await hotelsApi.updateManage(hotelId.value, buildSavePayload(galleryIds))
+
+    if ('success' in response && response.success) {
+      hotel.value = response.data
+      fillFormFromHotel(response.data)
+      notifications.success(response.message || 'База сохранена')
+      return
+    }
+
+    notifications.error(extractErrorMessage(response, 'Не удалось сохранить базу'))
+  }
+  catch (error) {
+    const data = (error as { data?: unknown, message?: string }).data
+    notifications.error(
+      extractErrorMessage(data, (error as { message?: string }).message || 'Не удалось сохранить базу'),
+    )
+  }
+  finally {
+    isSaving.value = false
+  }
 }
 
 async function loadHotel() {
@@ -787,7 +976,13 @@ watch(activeEditTab, (tab) => {
           </button>
         </nav>
 
-        <CommonSaveButton type="button" class="base-edit__nav-save" />
+        <CommonSaveButton
+          type="button"
+          class="base-edit__nav-save"
+          :loading="isSaving"
+          :disabled="isCreateMode || isLoading"
+          @click="saveHotel"
+        />
       </div>
 
       <div class="base-edit__panel-area">
@@ -797,9 +992,13 @@ watch(activeEditTab, (tab) => {
               {{ loadError }}
             </p>
 
-            <p v-else class="base-edit__status">
-              Загрузка...
-            </p>
+            <div
+              v-else
+              class="base-edit__loading"
+              aria-live="polite"
+            >
+              <CommonSpinner variant="ring" size="lg" label="Загрузка базы" />
+            </div>
           </div>
         </div>
 
@@ -924,10 +1123,10 @@ watch(activeEditTab, (tab) => {
               <section class="base-edit__gallery" aria-label="Галерея">
                 <h3 class="base-edit__gallery-title">Галерея</h3>
 
-                <div v-if="galleryPreviews.length" class="base-edit__gallery-list">
+                <div v-if="galleryItems.length" class="base-edit__gallery-list">
                   <div
-                    v-for="(src, index) in galleryPreviews"
-                    :key="`${src}-${index}`"
+                    v-for="(item, index) in galleryItems"
+                    :key="`${item.id ?? 'new'}-${item.url}-${index}`"
                     class="base-edit__gallery-item"
                     :class="{ 'base-edit__gallery-item--selected': selectedGalleryIndex === index }"
                     role="button"
@@ -938,7 +1137,7 @@ watch(activeEditTab, (tab) => {
                     @keydown.space.prevent="selectGalleryImage(index)"
                   >
                     <img
-                      :src="src"
+                      :src="item.url"
                       :alt="`Фото галереи ${index + 1}`"
                       class="base-edit__gallery-image"
                     >
@@ -1070,8 +1269,11 @@ watch(activeEditTab, (tab) => {
                     role="listbox"
                     aria-label="Список локаций"
                   >
-                    <li v-if="locationsLoading" class="base-edit__location-option base-edit__location-option--muted">
-                      Загрузка...
+                    <li
+                      v-if="locationsLoading"
+                      class="base-edit__location-option base-edit__location-option--muted base-edit__location-option--loading"
+                    >
+                      <CommonSpinner variant="ring" size="sm" label="Загрузка локаций" />
                     </li>
                     <li v-else-if="locationsError" class="base-edit__location-option base-edit__location-option--error">
                       {{ locationsError }}
@@ -1169,7 +1371,7 @@ watch(activeEditTab, (tab) => {
                 <section class="base-edit__surrounding" aria-label="Окрестности">
                   <h3 class="base-edit__surrounding-title">Окрестности</h3>
 
-                  <div v-if="surroundingItems.length" class="base-edit__surrounding-table">
+                  <div class="base-edit__surrounding-table">
                     <div class="base-edit__surrounding-head" aria-hidden="true">
                       <span class="base-edit__surrounding-head-cell">Имя</span>
                       <span class="base-edit__surrounding-head-cell">Контент</span>
@@ -1198,7 +1400,7 @@ watch(activeEditTab, (tab) => {
                       <div class="base-edit__surrounding-distance">
                         <CommonFormField
                           v-model="item.value"
-                          placeholder="..."
+                          digits-only
                           no-margin
                         />
                         <label class="base-edit__surrounding-unit">
@@ -1230,9 +1432,13 @@ watch(activeEditTab, (tab) => {
                 {{ attributesError }}
               </p>
 
-              <p v-else-if="attributesLoading" class="base-edit__status">
-                Загрузка атрибутов...
-              </p>
+              <div
+                v-else-if="attributesLoading"
+                class="base-edit__loading base-edit__loading--inline"
+                aria-live="polite"
+              >
+                <CommonSpinner variant="ring" size="lg" label="Загрузка атрибутов" />
+              </div>
 
               <p v-else-if="!attributeGroups.length" class="base-edit__status">
                 Нет атрибутов
@@ -1449,6 +1655,19 @@ watch(activeEditTab, (tab) => {
 
 .base-edit__status--error {
   color: #dc3545;
+}
+
+.base-edit__loading {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+}
+
+.base-edit__loading--inline {
+  flex: 0 0 auto;
+  min-height: 160px;
 }
 
 .base-edit__panel {
@@ -1679,6 +1898,16 @@ watch(activeEditTab, (tab) => {
 
 .base-edit__location-option--muted {
   color: rgba(0, 0, 0, 0.55);
+}
+
+.base-edit__location-option--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  cursor: default;
 }
 
 .base-edit__location-option--error {
