@@ -11,7 +11,6 @@ export interface BaseHotelItem {
   price: number
   status: BaseHotelStatus
   updatedAt: string
-  isFavorite?: boolean
 }
 
 const props = defineProps<{
@@ -133,22 +132,6 @@ async function removeHotel() {
       >
         <span>Фото отсутствует</span>
       </div>
-      <span
-        class="base-hotel-card__favorite"
-        :class="{ 'base-hotel-card__favorite--active': item.isFavorite }"
-        aria-hidden="true"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-            fill="currentColor"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </span>
       </div>
 
       <div class="base-hotel-card__info">
@@ -309,19 +292,6 @@ async function removeHotel() {
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 500;
-}
-
-.base-hotel-card__favorite {
-  position: absolute;
-  top: 0;
-  right: 5px;
-  z-index: 2;
-  padding: 10px;
-  color: #fff;
-}
-
-.base-hotel-card__favorite--active {
-  color: #ff0000;
 }
 
 .base-hotel-card__body {
