@@ -17,6 +17,7 @@ const {
   close,
   hide,
   reopen,
+  markCollectionExtended,
   addParticipant,
   isDeclinedHunter,
   liveDeclinedParticipants,
@@ -411,6 +412,7 @@ async function extendCollection() {
 
     if (response.success) {
       notifications.success(response.message || 'Сбор успешно продлён')
+      markCollectionExtended()
       reopen()
       emit('extended')
       return

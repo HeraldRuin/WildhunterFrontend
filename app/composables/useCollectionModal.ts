@@ -245,6 +245,33 @@ export function useCollectionModal() {
     }
   }
 
+  function markCollectionExtended() {
+    if (!state.value) return
+
+    state.value = {
+      ...state.value,
+      timerExpired: false,
+      timerEndAt: undefined,
+    }
+  }
+
+  function syncTimerFromBooking(booking: BookingHistoryItem) {
+    if (!state.value) return
+
+    if (
+      state.value.bookingId !== booking.id
+      && state.value.bookingCode !== booking.code
+    ) {
+      return
+    }
+
+    state.value = {
+      ...state.value,
+      timerEndAt: booking.status.timerEndAt,
+      timerExpired: booking.status.timer === '00 мин 00 сек',
+    }
+  }
+
   function addParticipant(participant: CollectionParticipant) {
     if (!state.value) return
 
@@ -359,6 +386,8 @@ export function useCollectionModal() {
     close,
     hide,
     reopen,
+    markCollectionExtended,
+    syncTimerFromBooking,
     addParticipant,
     applyInvitationUpdate,
     isDeclinedHunter,

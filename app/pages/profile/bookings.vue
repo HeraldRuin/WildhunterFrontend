@@ -22,7 +22,12 @@ const { bookings: bookingsApi } = useApi()
 const { user } = useAuth()
 const notifications = useNotifications()
 
-const { open: openCollectionModal, applyInvitationUpdate } = useCollectionModal()
+const {
+  open: openCollectionModal,
+  applyInvitationUpdate,
+  syncTimerFromBooking,
+  state: collectionModalState,
+} = useCollectionModal()
 const { open: openCancelBookingModal } = useCancelBookingModal()
 const { open: openAddServicesModal } = useAddServicesModal()
 const { open: openCalculationModal } = useCalculationModal()
@@ -142,6 +147,20 @@ async function refreshHistory() {
   }
 
   syncPendingInvitationsCount()
+}
+
+async function handleCollectionExtended() {
+  await refreshHistory()
+
+  const bookingCode = collectionModalState.value?.bookingCode
+  if (!bookingCode) {
+    return
+  }
+
+  const booking = bookings.value.find(item => item.code === bookingCode)
+  if (booking) {
+    syncTimerFromBooking(booking)
+  }
 }
 
 const pendingInvitationsCount = ref(0)
@@ -968,7 +987,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
     </div>
 
     <ProfileCollectionModal
-      @extended="refreshHistory"
+      @extended="handleCollectionExtended"
       @cancelled="refreshHistory"
       @finished="refreshHistory"
     />
