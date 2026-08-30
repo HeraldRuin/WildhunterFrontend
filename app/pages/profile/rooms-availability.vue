@@ -49,6 +49,7 @@ const breadcrumbs = computed(() => [
 ])
 
 const rooms = ref<ManagedRoom[]>([])
+const resolvedHotelId = ref<number | null>(null)
 const roomSelectOptions = computed(() => [
   { value: SUMMARY_TAB_ID, label: 'Сводный' },
   ...rooms.value.map(room => ({
@@ -246,6 +247,7 @@ async function loadRooms() {
 
     if ('success' in response && response.success) {
       rooms.value = response.data?.rooms ?? []
+      resolvedHotelId.value = response.data?.hotel_id ?? null
       activeTabId.value = SUMMARY_TAB_ID
       await loadAvailability()
       return
@@ -261,6 +263,30 @@ async function loadRooms() {
     isLoadingRooms.value = false
   }
 }
+
+function periodOverlapsAvailability(
+  startDate: string,
+  endDate: string,
+) {
+  // periodRange.end — исключающая граница
+  return startDate < periodRange.value.end && endDate >= periodRange.value.start
+}
+
+const { subscribe: subscribeRoomAvailability } = useRoomAvailabilityChannel((payload) => {
+  if (!periodOverlapsAvailability(payload.start_date, payload.end_date)) {
+    return
+  }
+
+  void loadAvailability()
+})
+
+watch(
+  resolvedHotelId,
+  (id) => {
+    subscribeRoomAvailability(id)
+  },
+  { immediate: true },
+)
 
 watch(
   [activeTabId, () => periodRange.value.start, () => periodRange.value.end],
