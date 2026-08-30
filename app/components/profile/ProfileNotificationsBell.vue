@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { InboxNotification } from '~/types/api'
+
 const {
   items,
   unreadCount,
@@ -21,6 +23,63 @@ const badgeLabel = computed(() => {
 
   return count > 99 ? '99+' : String(count)
 })
+
+function isBookingNotification(item: InboxNotification): boolean {
+  return item.entity_type === 'booking'
+    || item.category === 'booking'
+    || Boolean(item.event?.startsWith('booking.'))
+}
+
+function bookingIdFromLink(link: string): number | undefined {
+  const trimmed = link.trim()
+  if (!trimmed) {
+    return undefined
+  }
+
+  try {
+    const url = new URL(trimmed, 'http://local.invalid')
+    const fromQuery = Number(url.searchParams.get('booking_id'))
+    if (Number.isFinite(fromQuery) && fromQuery > 0) {
+      return fromQuery
+    }
+
+    const pathMatch = url.pathname.match(/\/profile\/bookings\/(\d+)\/?$/)
+    if (pathMatch?.[1]) {
+      const fromPath = Number(pathMatch[1])
+      if (Number.isFinite(fromPath) && fromPath > 0) {
+        return fromPath
+      }
+    }
+  }
+  catch {
+    // Некорректный link — ниже вернём undefined.
+  }
+
+  return undefined
+}
+
+function resolveNotificationTarget(item: InboxNotification): string | null {
+  const entityId = Number(item.entity_id)
+  if (isBookingNotification(item) && Number.isFinite(entityId) && entityId > 0) {
+    return `/profile/bookings?booking_id=${entityId}`
+  }
+
+  const link = item.link?.trim()
+  if (!link) {
+    return null
+  }
+
+  const bookingId = bookingIdFromLink(link)
+  if (bookingId) {
+    return `/profile/bookings?booking_id=${bookingId}`
+  }
+
+  if (isBookingNotification(item)) {
+    return '/profile/bookings'
+  }
+
+  return link
+}
 
 async function openList() {
   isOpen.value = true
@@ -53,16 +112,27 @@ async function selectItem(id: string) {
 
   closeList()
 
-  if (item.link) {
-    const link = item.link.trim()
-
-    if (/^https?:\/\//i.test(link)) {
-      await navigateTo(link, { external: true })
-      return
-    }
-
-    await navigateTo(link)
+  const target = resolveNotificationTarget(item)
+  if (!target) {
+    return
   }
+
+  if (/^https?:\/\//i.test(target)) {
+    await navigateTo(target, { external: true })
+    return
+  }
+
+  if (target.startsWith('/profile/bookings')) {
+    const url = new URL(target, 'http://local.invalid')
+    const query: Record<string, string> = {}
+    url.searchParams.forEach((value, key) => {
+      query[key] = value
+    })
+    await navigateTo({ path: '/profile/bookings', query })
+    return
+  }
+
+  await navigateTo(target)
 }
 
 async function onMarkAllRead() {

@@ -862,6 +862,9 @@ export interface InboxNotificationCreatedPayload {
   message: string
   link: string | null
   category: string | null
+  entity_type?: string | null
+  entity_id?: number | null
+  event?: string | null
   unread: true
   created_at: string
   time_ago: string

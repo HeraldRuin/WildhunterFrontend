@@ -89,7 +89,7 @@ const {
   error: historyError,
   refresh: refreshHistoryRaw,
 } = useAsyncData(
-  () => `profile-booking-history-${statusFilter.value ?? 'all'}-${page.value}-${bookingIdFilter.value ?? 'none'}-${invitationCode.value ?? 'no-code'}`,
+  'profile-booking-history',
   () => bookingsApi.history({
     page: page.value,
     status: statusFilter.value,
@@ -101,6 +101,11 @@ const {
     watch: [statusFilter, page, bookingIdFilter, invitationCode],
   },
 )
+
+watch(bookingIdFilter, () => {
+  page.value = 1
+  historyResponse.value = null
+})
 
 const {
   data: invitationsCountResponse,
@@ -224,8 +229,9 @@ const dropdownStatuses = computed(() =>
 
 const bookings = computed<BookingHistoryItem[]>(() => {
   const rootHotel = historyResponse.value?.data?.hotel
+  const filterId = bookingIdFilter.value
 
-  return (historyResponse.value?.data?.bookings?.items ?? []).map((item) => {
+  const mapped = (historyResponse.value?.data?.bookings?.items ?? []).map((item) => {
     const booking = mapBookingHistoryItem(item, {
       hotelSlug: rootHotel?.slug,
       locationSlug: rootHotel?.location?.slug,
@@ -244,6 +250,15 @@ const bookings = computed<BookingHistoryItem[]>(() => {
 
     return booking
   })
+
+  if (!filterId) {
+    return mapped
+  }
+
+  return mapped.filter(booking =>
+    booking.id === filterId
+    || Number(booking.number) === filterId,
+  )
 })
 
 const selectedMobileBookingId = ref<number | null>(null)
