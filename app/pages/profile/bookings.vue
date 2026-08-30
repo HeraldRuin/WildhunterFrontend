@@ -926,7 +926,6 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
       class="bookings-page__clear-filter"
       @click="clearBookingIdFilter"
     >
-      <span class="bookings-page__clear-filter-icon" aria-hidden="true">×</span>
       Очистить фильтр и показать все брони
     </button>
 
@@ -1055,34 +1054,26 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 .bookings-page__clear-filter {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  align-self: flex-end;
   flex-shrink: 0;
   margin-bottom: 16px;
-  padding: 0;
+  padding: 12px 24px;
   border: none;
-  background: transparent;
-  color: #5e6d77;
+  border-radius: 999px;
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
   font: inherit;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.3;
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .bookings-page__clear-filter:hover {
-  color: var(--wh-gray-900);
-}
-
-.bookings-page__clear-filter-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1em;
-  height: 1em;
-  font-size: 18px;
-  line-height: 1;
-  color: #8a96a0;
+  background: var(--wh-orange-600);
+  transform: var(--wh-button-hover-lift);
 }
 
 .bookings-page__table-area {
