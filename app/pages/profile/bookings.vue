@@ -77,6 +77,13 @@ const invitationCode = computed(() => {
   return value || undefined
 })
 
+function clearBookingIdFilter() {
+  const query = { ...route.query }
+  delete query.booking_id
+  page.value = 1
+  void navigateTo({ path: route.path, query })
+}
+
 const {
   data: historyResponse,
   error: historyError,
@@ -836,7 +843,18 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
     <CommonPageTitle divider>Бронирования</CommonPageTitle>
 
+    <button
+      v-if="bookingIdFilter"
+      type="button"
+      class="bookings-page__clear-filter"
+      @click="clearBookingIdFilter"
+    >
+      <span class="bookings-page__clear-filter-icon" aria-hidden="true">×</span>
+      Очистить фильтр и показать все брони
+    </button>
+
     <ProfileBookingHistoryTabs
+      v-else
       v-model="statusFilter"
       :role="isBaseAdmin ? ROLE_BASE_ADMIN : ROLE_HUNTER"
       :tab-statuses="tabStatuses"
@@ -845,6 +863,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
     />
 
     <ProfileBookingMobileSelect
+      v-if="!bookingIdFilter"
       v-model="selectedMobileBookingId"
       :items="bookings"
     />
@@ -954,6 +973,39 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 .bookings-page :deep(.booking-history-tabs) {
   flex-shrink: 0;
+}
+
+.bookings-page__clear-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-bottom: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #5e6d77;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.bookings-page__clear-filter:hover {
+  color: var(--wh-gray-900);
+}
+
+.bookings-page__clear-filter-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  font-size: 18px;
+  line-height: 1;
+  color: #8a96a0;
 }
 
 .bookings-page__table-area {

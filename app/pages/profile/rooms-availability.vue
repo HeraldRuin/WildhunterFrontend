@@ -139,10 +139,15 @@ function resolveBadgeClass(event?: RoomAvailabilityDay | null) {
   return 'rooms-availability__badge--available'
 }
 
-function bookingNumberLabel(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
-  const number = booking.booking_number ?? ''
-  const checkout = booking.is_checkout ? ' (В)' : ''
-  return `Б${number}${checkout}`
+function bookingNumberText(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
+  return `Б${booking.booking_number ?? ''}`
+}
+
+function bookingHistoryTo(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
+  return {
+    path: '/profile/bookings',
+    query: { booking_id: String(booking.id) },
+  }
 }
 
 function bookingStatusText(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
@@ -401,21 +406,25 @@ onMounted(() => {
                   class="rooms-availability__note"
                   :class="{ 'rooms-availability__note--checkout': booking.is_checkout }"
                 >
-                  <template v-if="isSummaryTab">
-                    {{ bookingNumberLabel(booking) }}
-                  </template>
-                  <template v-else>
-                    {{ bookingNumberLabel(booking) }}
-                    <span
-                      v-if="bookingStatusText(booking)"
-                      class="rooms-availability__note-status"
-                      :class="isAwaitingConfirmationStatus(booking)
-                        ? 'rooms-availability__note-status--awaiting'
-                        : 'rooms-availability__note-status--other'"
-                    >
-                      {{ bookingStatusText(booking) }}
-                    </span>
-                  </template>
+                  <NuxtLink
+                    :to="bookingHistoryTo(booking)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="rooms-availability__note-link"
+                    @click.stop
+                  >
+                    {{ bookingNumberText(booking) }}
+                  </NuxtLink>
+                  <template v-if="booking.is_checkout"> (В)</template>
+                  <span
+                    v-if="!isSummaryTab && bookingStatusText(booking)"
+                    class="rooms-availability__note-status"
+                    :class="isAwaitingConfirmationStatus(booking)
+                      ? 'rooms-availability__note-status--awaiting'
+                      : 'rooms-availability__note-status--other'"
+                  >
+                    {{ bookingStatusText(booking) }}
+                  </span>
                 </span>
               </div>
 
@@ -715,6 +724,19 @@ onMounted(() => {
 
 .rooms-availability__note--checkout {
   color: #5e6d77;
+}
+
+.rooms-availability__note-link {
+  color: #4aa3d9;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.rooms-availability__note-link:hover {
+  color: #2f8fc9;
+  text-decoration: underline;
 }
 
 .rooms-availability__note-status {
