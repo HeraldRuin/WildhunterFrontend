@@ -37,8 +37,12 @@ export type {
 export { useRoomsApi } from './rooms'
 export type {
   ManagedRoom,
+  ManagedRoomDetail,
+  ManagedRoomGalleryImage,
   RoomsListData,
   RoomsListResponse,
+  RoomManageDetailResponse,
+  RoomManageUpdatePayload,
   RoomManageStatus as ManagedRoomStatus,
   RoomManageVisibilityData,
   RoomManageVisibilityResponse,

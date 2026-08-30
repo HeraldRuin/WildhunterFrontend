@@ -1,7 +1,7 @@
 import type { ApiErrorResponse, ApiSuccessResponse } from '~/types/api'
 import { useApiClient } from './client'
 
-export type RoomManageStatus = 'publish' | 'draft'
+export type RoomManageStatus = 'publish' | 'draft' | 'pending'
 
 export interface ManagedRoom {
   id: number
@@ -13,6 +13,35 @@ export interface ManagedRoom {
   updated_at?: string
 }
 
+export interface ManagedRoomGalleryImage {
+  id: number
+  large?: string | null
+  medium?: string | null
+  thumb?: string | null
+}
+
+/** Полный номер для формы создания/редактирования (RoomManageEditResource). */
+export interface ManagedRoomDetail {
+  id: number
+  title: string
+  content: string | null
+  image_id: number | null
+  image_url: string | null
+  gallery: ManagedRoomGalleryImage[]
+  price: number | string | null
+  number: number | null
+  beds: number | null
+  size: number | null
+  adults: number | null
+  children: number | null
+  status: string
+  status_label: string
+  min_day_stays: number | null
+  ical_import_url: string | null
+  video: string | null
+  term_ids: number[]
+}
+
 export interface RoomsListData {
   hotel_id: number
   rooms: ManagedRoom[]
@@ -21,6 +50,28 @@ export interface RoomsListData {
 export type RoomsListResponse =
   | ApiSuccessResponse<RoomsListData>
   | ApiErrorResponse
+
+export type RoomManageDetailResponse =
+  | ApiSuccessResponse<ManagedRoomDetail>
+  | ApiErrorResponse
+
+export interface RoomManageUpdatePayload {
+  title: string
+  content?: string | null
+  image_id?: number | null
+  gallery?: number[] | null
+  price?: number | null
+  number?: number | null
+  beds?: number | null
+  size?: number | null
+  adults?: number | null
+  children?: number | null
+  status?: RoomManageStatus | string | null
+  min_day_stays?: number | null
+  ical_import_url?: string | null
+  video?: string | null
+  term_ids?: number[] | null
+}
 
 export interface RoomManageVisibilityData {
   id: number
@@ -90,6 +141,32 @@ export function useRoomsApi() {
     })
   }
 
+  function getById(roomId: number | string) {
+    return apiFetch<RoomManageDetailResponse>(
+      `/rooms/${encodeURIComponent(String(roomId))}`,
+      {
+        method: 'GET',
+      },
+    )
+  }
+
+  function create(payload: RoomManageUpdatePayload) {
+    return apiFetch<RoomManageDetailResponse>('/rooms', {
+      method: 'POST',
+      body: payload,
+    })
+  }
+
+  function update(roomId: number | string, payload: RoomManageUpdatePayload) {
+    return apiFetch<RoomManageDetailResponse>(
+      `/rooms/${encodeURIComponent(String(roomId))}`,
+      {
+        method: 'PUT',
+        body: payload,
+      },
+    )
+  }
+
   function getAvailability(query: RoomsAvailabilityQuery) {
     return apiFetch<RoomsAvailabilityResponse>('/rooms/availability', {
       method: 'GET',
@@ -131,6 +208,9 @@ export function useRoomsApi() {
 
   return {
     getList,
+    getById,
+    create,
+    update,
     getAvailability,
     publish,
     hide,
