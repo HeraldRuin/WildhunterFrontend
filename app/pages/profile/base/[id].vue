@@ -1977,7 +1977,7 @@ watch(activeEditTab, (tab) => {
   z-index: 20;
   max-height: 240px;
   margin: 0;
-  padding: 6px 0;
+  padding: 6px 8px;
   list-style: none;
   border: 1px solid var(--wh-field-border);
   border-radius: 10px;
@@ -1989,6 +1989,7 @@ watch(activeEditTab, (tab) => {
 
 .base-edit__location-option {
   padding: 10px 14px;
+  border-radius: 10px;
   color: var(--wh-gray-900);
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 16px;
