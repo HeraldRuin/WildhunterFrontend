@@ -99,7 +99,11 @@ function extractErrorMessage(source: unknown, fallback: string) {
 }
 
 function addRoom() {
-  // UI only — API later
+  const hotelId = route.query.hotelId
+  void navigateTo({
+    path: '/rooms/new',
+    query: typeof hotelId === 'string' && hotelId ? { hotelId } : undefined,
+  })
 }
 
 function openAvailability() {

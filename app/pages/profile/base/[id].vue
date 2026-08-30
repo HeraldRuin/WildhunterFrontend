@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { HotelManageUpdatePayload, ManagedHotelDetail } from '~/api/hotels'
 import type { HotelRoomAttribute, HotelRoomAttributeTerm, SearchLocation } from '~/types/api'
+import { getHotelPath } from '~/utils/hotel'
 import { DEFAULT_MAP_CENTER } from '~/utils/map'
 import { extractMediaIdFromUrl } from '~/utils/image'
 
@@ -285,15 +286,42 @@ const pageTitle = computed(() => {
     return 'Новая база'
   }
 
-  return hotel.value?.title ?? 'Редактирование базы'
+  return 'Редактирование базы'
 })
 
-const breadcrumbs = computed(() => [
-  { label: 'Главная', to: '/' },
-  { label: 'Параметры' },
-  { label: 'Управление базой', to: '/profile/base' },
-  { label: pageTitle.value },
-])
+const basePublicTo = computed(() => {
+  const locationSlug = hotel.value?.location?.slug
+  const hotelSlug = hotel.value?.slug
+
+  if (!locationSlug || !hotelSlug) {
+    return undefined
+  }
+
+  return getHotelPath(locationSlug, hotelSlug)
+})
+
+const breadcrumbs = computed(() => {
+  const items: Array<{ label: string, to?: string }> = [
+    { label: 'Главная', to: '/' },
+    { label: 'Параметры' },
+    { label: 'Управление базой', to: '/profile/base' },
+  ]
+
+  if (!isCreateMode.value) {
+    const baseTitle = hotel.value?.title?.trim() || editTitle.value.trim()
+
+    if (baseTitle) {
+      items.push({
+        label: baseTitle,
+        to: basePublicTo.value,
+      })
+    }
+  }
+
+  items.push({ label: pageTitle.value })
+
+  return items
+})
 
 const showForm = computed(() => isCreateMode.value || Boolean(hotel.value))
 

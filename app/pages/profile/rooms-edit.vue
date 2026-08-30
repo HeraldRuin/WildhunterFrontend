@@ -24,6 +24,7 @@ onBeforeMount(() => {
   ready.value = true
 })
 
+const isCreateMode = computed(() => route.params.id === 'new')
 const roomId = computed(() => Number(route.params.id))
 
 const hotelId = computed(() => {
@@ -55,6 +56,7 @@ const hoverRating = ref(0)
 const galleryPreviews = ref<string[]>([])
 const galleryInputRef = ref<HTMLInputElement | null>(null)
 const selectedGalleryIndex = ref<number | null>(null)
+const showForm = computed(() => isCreateMode.value || !!room.value)
 
 const ratingStars = [1, 2, 3, 4, 5] as const
 
@@ -111,11 +113,20 @@ function removeGalleryImage(index: number) {
   selectedGalleryIndex.value = null
 }
 
-const pageTitle = computed(() => room.value?.title ?? 'Редактирование номера')
+const hotelTitle = 'Хромой кабан-2'
+
+const hotelEditTo = computed(() => (
+  hotelId.value ? `/profile/base/${hotelId.value}` : '/profile/base'
+))
+
+const pageTitle = computed(() => (
+  isCreateMode.value ? 'Новый номер' : 'Редактирование номера'
+))
 
 const breadcrumbs = computed(() => [
   { label: 'Главная', to: '/' },
   { label: 'Параметры' },
+  { label: hotelTitle, to: hotelEditTo.value },
   { label: 'Управление базой', to: '/profile/base' },
   { label: 'Управление номерами', to: roomsListTo.value },
   { label: pageTitle.value },
@@ -159,7 +170,24 @@ function fillFormFromRoom(item: ManagedRoom) {
   selectedGalleryIndex.value = null
 }
 
+function resetFormForCreate() {
+  room.value = null
+  editTitle.value = ''
+  editRating.value = 0
+  editContent.value = ''
+  hoverRating.value = 0
+  galleryPreviews.value = []
+  selectedGalleryIndex.value = null
+  loadError.value = ''
+  isLoading.value = false
+}
+
 async function loadRoom() {
+  if (isCreateMode.value) {
+    resetFormForCreate()
+    return
+  }
+
   if (!Number.isFinite(roomId.value) || roomId.value <= 0) {
     loadError.value = 'Некорректный идентификатор номера'
     isLoading.value = false
@@ -254,7 +282,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-else-if="room" class="room-edit__panel">
+        <div v-else-if="showForm" class="room-edit__panel">
           <div class="room-edit__panel-top">
             <nav class="room-edit__nav" aria-label="Разделы редактирования">
               <button
