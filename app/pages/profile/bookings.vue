@@ -386,14 +386,9 @@ async function openFinishedCollectionModal(booking: BookingHistoryItem) {
 }
 
 watch(
-  [openCollectionFromQuery, bookings, isBaseAdmin, historyResponse, historyError],
+  [openCollectionFromQuery, bookings, historyResponse, historyError],
   async ([shouldOpen]) => {
     if (!shouldOpen) {
-      return
-    }
-
-    if (!isBaseAdmin.value) {
-      clearOpenCollectionQuery()
       return
     }
 
@@ -414,7 +409,7 @@ watch(
 
     clearOpenCollectionQuery()
 
-    if (!booking) {
+    if (!booking?.isMasterHunter) {
       return
     }
 
