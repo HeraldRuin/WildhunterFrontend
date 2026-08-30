@@ -764,13 +764,31 @@ watch(activeEditTab, (tab) => {
 
       <div class="room-edit__title-row">
         <CommonPageTitle>{{ pageTitle }}</CommonPageTitle>
+      </div>
+
+      <div
+        v-if="showForm && !loadError && !isLoading"
+        class="room-edit__nav-row"
+      >
+        <nav
+          class="room-edit__nav"
+          aria-label="Разделы редактирования"
+        >
+          <button
+            v-for="tab in editTabs"
+            :key="tab.id"
+            type="button"
+            class="room-edit__nav-link"
+            :class="{ 'room-edit__nav-link--active': activeEditTab === tab.id }"
+            @click="selectEditTab(tab.id)"
+          >
+            {{ tab.label }}
+          </button>
+        </nav>
 
         <CommonSaveButton
-          v-if="showForm"
           type="button"
-          class="room-edit__save"
-          width="auto"
-          mobile-width="100%"
+          class="room-edit__nav-save"
           :loading="isSaving"
           :disabled="isLoading"
           @click="saveRoom"
@@ -820,21 +838,6 @@ watch(activeEditTab, (tab) => {
           </div>
 
           <div class="room-edit__panel">
-          <div class="room-edit__panel-top">
-            <nav class="room-edit__nav" aria-label="Разделы редактирования">
-              <button
-                v-for="tab in editTabs"
-                :key="tab.id"
-                type="button"
-                class="room-edit__nav-link"
-                :class="{ 'room-edit__nav-link--active': activeEditTab === tab.id }"
-                @click="selectEditTab(tab.id)"
-              >
-                {{ tab.label }}
-              </button>
-            </nav>
-          </div>
-
           <div
             ref="attrScrollEl"
             class="room-edit__body"
@@ -1148,13 +1151,9 @@ watch(activeEditTab, (tab) => {
 }
 
 .room-edit__title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   flex-shrink: 0;
   width: 100%;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
@@ -1162,13 +1161,11 @@ watch(activeEditTab, (tab) => {
 
 .room-edit__title-row :deep(.page-title) {
   margin: 0;
-  flex: 1;
-  min-width: 0;
 }
 
 .room-edit__panel-area {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   gap: 8px;
   min-height: 0;
@@ -1177,28 +1174,13 @@ watch(activeEditTab, (tab) => {
 
 .room-edit__panel-shell {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   align-items: stretch;
   gap: 12px;
   min-height: 0;
   min-width: 0;
   width: 100%;
   overflow: hidden;
-}
-
-.room-edit__panel-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-}
-
-.room-edit__save {
-  flex-shrink: 0;
-  min-width: 0;
-  padding: 10px 24px;
-  white-space: nowrap;
 }
 
 .room-edit__status {
@@ -1226,11 +1208,10 @@ watch(activeEditTab, (tab) => {
 
 .room-edit__panel {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  margin-top: 0;
   padding: 24px;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
@@ -1241,12 +1222,24 @@ watch(activeEditTab, (tab) => {
 
 .room-edit__body {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   min-height: 0;
-  margin-top: 32px;
   overflow: auto;
   overscroll-behavior: contain;
+}
+
+.room-edit__nav-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .room-edit__nav {
@@ -1255,6 +1248,12 @@ watch(activeEditTab, (tab) => {
   align-items: center;
   gap: 28px;
   min-width: 0;
+  flex: 1 1 auto;
+}
+
+.room-edit__nav-save {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .room-edit__nav-link {
@@ -1767,19 +1766,6 @@ watch(activeEditTab, (tab) => {
     padding: 0;
     background: transparent;
     border-radius: 0;
-  }
-
-  .room-edit__panel-top {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .room-edit__title-row {
-    flex-wrap: wrap;
-  }
-
-  .room-edit__save {
-    width: 100%;
   }
 
   .room-edit__nav {
