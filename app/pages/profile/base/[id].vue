@@ -361,6 +361,11 @@ const filteredLocations = computed(() => {
     return locations.value
   }
 
+  const selected = locations.value.find(item => item.id === editLocationId.value)
+  if (selected && selected.name.toLowerCase() === query) {
+    return locations.value
+  }
+
   return locations.value.filter(item => item.name.toLowerCase().includes(query))
 })
 
@@ -386,6 +391,15 @@ function openLocationDropdown() {
 
 function closeLocationDropdown() {
   isLocationDropdownOpen.value = false
+}
+
+function toggleLocationDropdown() {
+  if (isLocationDropdownOpen.value) {
+    closeLocationDropdown()
+    return
+  }
+
+  openLocationDropdown()
 }
 
 function selectLocation(item: SearchLocation) {
@@ -1304,11 +1318,38 @@ watch(activeEditTab, (tab) => {
                     placeholder="Выберите локацию"
                     autocomplete="off"
                     :open="isLocationDropdownOpen"
+                    cursor-pointer
                     no-margin
                     @update:model-value="onLocationQueryInput"
                     @focus="openLocationDropdown"
                     @blur="onLocationBlur"
-                  />
+                  >
+                    <template #trailing>
+                      <button
+                        type="button"
+                        class="base-edit__location-chevron-btn"
+                        tabindex="-1"
+                        :aria-label="isLocationDropdownOpen ? 'Закрыть список локаций' : 'Открыть список локаций'"
+                        @mousedown.prevent="toggleLocationDropdown"
+                      >
+                        <svg
+                          class="base-edit__location-chevron"
+                          :class="{ 'base-edit__location-chevron--open': isLocationDropdownOpen }"
+                          viewBox="0 0 12 8"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M1 2 6 6.5 11 2"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    </template>
+                  </CommonFormField>
 
                   <ul
                     v-if="isLocationDropdownOpen"
@@ -1905,6 +1946,29 @@ watch(activeEditTab, (tab) => {
   min-width: 0;
 }
 
+.base-edit__location-chevron-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #1c211c;
+  cursor: pointer;
+}
+
+.base-edit__location-chevron {
+  display: block;
+  width: 12px;
+  height: 8px;
+  transition: transform 0.2s ease;
+}
+
+.base-edit__location-chevron--open {
+  transform: rotate(180deg);
+}
+
 .base-edit__location-dropdown {
   position: absolute;
   top: calc(100% + 6px);
@@ -1931,11 +1995,16 @@ watch(activeEditTab, (tab) => {
   font-weight: 400;
   line-height: 1.3;
   cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.base-edit__location-option:hover,
 .base-edit__location-option--active {
   background: rgba(238, 154, 60, 0.12);
+}
+
+.base-edit__location-option:hover {
+  background: #e8883a;
+  color: #ffffff;
 }
 
 .base-edit__location-option--muted,
@@ -1964,6 +2033,7 @@ watch(activeEditTab, (tab) => {
 .base-edit__location-option--muted:hover,
 .base-edit__location-option--error:hover {
   background: transparent;
+  color: inherit;
 }
 
 .base-edit__geo {
