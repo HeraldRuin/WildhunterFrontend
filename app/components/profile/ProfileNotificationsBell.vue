@@ -95,11 +95,6 @@ function bookingsTarget(bookingId?: number, openCollection = false): string {
 }
 
 function resolveNotificationTarget(item: InboxNotification): string | null {
-  // Охотнику при отмене сбора достаточно уведомления — без перехода в историю броней.
-  if (isCollectionCancelledNotification(item)) {
-    return null
-  }
-
   const openCollection = isInvitationAcceptedNotification(item)
   const entityId = Number(item.entity_id)
   if (isBookingNotification(item) && Number.isFinite(entityId) && entityId > 0) {
@@ -108,6 +103,10 @@ function resolveNotificationTarget(item: InboxNotification): string | null {
 
   const link = item.link?.trim()
   if (!link) {
+    // «Сбор охотников отменён» иногда без link — всё равно ведём на бронь по тексту/entity.
+    if (isCollectionCancelledNotification(item) && Number.isFinite(entityId) && entityId > 0) {
+      return bookingsTarget(entityId)
+    }
     return null
   }
 
@@ -116,8 +115,11 @@ function resolveNotificationTarget(item: InboxNotification): string | null {
     return bookingsTarget(bookingId, openCollection)
   }
 
-  if (isBookingNotification(item)) {
-    return bookingsTarget(undefined, openCollection)
+  if (isBookingNotification(item) || isCollectionCancelledNotification(item)) {
+    return bookingsTarget(
+      Number.isFinite(entityId) && entityId > 0 ? entityId : undefined,
+      openCollection,
+    )
   }
 
   return link
