@@ -7,6 +7,8 @@ interface NavItem {
   to: string
   iconSrc: string
   showChevron?: boolean
+  /** Клик по родителю открывает подменю и сразу ведёт на `to` */
+  navigateOnOpen?: boolean
   children?: Array<{ label: string, to: string }>
 }
 
@@ -28,6 +30,11 @@ const baseNavItems: NavItem[] = [
   { label: 'Избранное', to: '/profile/favorites', iconSrc: '/icons/favorites.svg' },
 ]
 
+const baseNavChildren = [
+  { label: 'Управление номерами', to: '/rooms' },
+  { label: 'Доступные номера', to: '/rooms/availability' },
+]
+
 const servicesNavChildren = [
   { label: 'Организация охоты', to: '/profile/services/hunting' },
   { label: 'Трофеи и штрафы', to: '/profile/services/trophies' },
@@ -46,7 +53,8 @@ const settingsSubNavItems: NavItem[] = [
     labelShort: 'База',
     to: '/profile/base',
     iconSrc: '/icons/base-building.svg',
-    showChevron: false,
+    navigateOnOpen: true,
+    children: baseNavChildren,
   },
   {
     label: 'Животные',
@@ -70,9 +78,9 @@ const settingsSubNavItems: NavItem[] = [
 
 const settingsSectionPaths = [
   ...settingsSubNavItems.map(item => item.to),
+  ...baseNavChildren.map(item => item.to),
   ...servicesNavChildren.map(item => item.to),
   ...timerNavChildren.map(item => item.to),
-  '/rooms',
 ]
 
 const isSettingsRoute = computed(() =>
@@ -170,6 +178,22 @@ function toggleSubmenu(to: string) {
   }
 
   openSubmenus.value[to] = willOpen
+}
+
+async function handleParentNavClick(item: NavItem) {
+  if (item.navigateOnOpen) {
+    if (isCompactSidebar.value) {
+      openSubmenus.value = { [item.to]: true }
+    }
+    else {
+      openSubmenus.value[item.to] = true
+    }
+
+    await navigateTo(item.to)
+    return
+  }
+
+  toggleSubmenu(item.to)
 }
 
 async function handleSettingsBack() {
@@ -308,7 +332,7 @@ async function goHome(event: MouseEvent) {
           <span class="profile-sidebar__nav-text">Назад</span>
         </button>
 
-        <!-- Планшет/мобила: только подпункты раскрытого «Услуги» / «Таймеры» -->
+        <!-- Планшет/мобила: только подпункты раскрытого пункта настроек -->
         <template v-if="compactDrilldownItem?.children?.length">
           <NuxtLink
             v-for="child in compactDrilldownItem.children"
@@ -333,7 +357,7 @@ async function goHome(event: MouseEvent) {
                 'profile-sidebar__nav-link--compact': Boolean(item.labelShort),
                 'profile-sidebar__nav-link--open': isSubmenuOpen(item.to),
               }"
-              @click="toggleSubmenu(item.to)"
+              @click="handleParentNavClick(item)"
             >
               <span class="profile-sidebar__nav-icon" aria-hidden="true">
                 <img
