@@ -310,7 +310,7 @@ onUnmounted(() => {
   right: 0;
   z-index: 50;
   width: min(360px, calc(100vw - 32px));
-  border: 1px solid var(--wh-gray);
+  border: 1px solid var(--wh-orange-500);
   border-radius: 14px;
   background: var(--wh-white);
   color: var(--wh-black-text);
@@ -423,6 +423,10 @@ onUnmounted(() => {
   font-weight: 400;
   line-height: 1.35;
   color: var(--wh-gray-600);
+}
+
+.profile-notifications__option:hover .profile-notifications__option-message {
+  color: var(--wh-orange-500);
 }
 
 .profile-notifications__option-time {
