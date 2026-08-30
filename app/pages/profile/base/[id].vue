@@ -3,7 +3,7 @@ import type { HotelManageUpdatePayload, ManagedHotelDetail } from '~/api/hotels'
 import type { HotelRoomAttribute, HotelRoomAttributeTerm, SearchLocation } from '~/types/api'
 import { getHotelPath } from '~/utils/hotel'
 import { DEFAULT_MAP_CENTER } from '~/utils/map'
-import { extractMediaIdFromUrl } from '~/utils/image'
+import { extractMediaIdFromUrl, shouldShowOfferImage } from '~/utils/image'
 
 definePageMeta({
   layout: 'profile',
@@ -690,7 +690,7 @@ function fillFormFromHotel(item: ManagedHotelDetail) {
   const galleryFromApi = (item.gallery ?? [])
     .map((galleryItem) => {
       const url = galleryPreviewUrl(galleryItem)
-      if (!url) {
+      if (!shouldShowOfferImage(url)) {
         return null
       }
 
@@ -719,10 +719,10 @@ function fillFormFromHotel(item: ManagedHotelDetail) {
   if (uniqueGallery.length) {
     galleryItems.value = uniqueGallery
   }
-  else if (item.image_url) {
+  else if (shouldShowOfferImage(item.image_url)) {
     galleryItems.value = [{
       id: item.image_id ?? extractMediaIdFromUrl(item.image_url),
-      url: item.image_url,
+      url: item.image_url!,
       file: null,
     }]
   }

@@ -3,7 +3,7 @@ import type { ManagedRoomDetail, RoomManageUpdatePayload } from '~/api/rooms'
 import type { HotelRoomAttribute, HotelRoomAttributeTerm } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { formatHotelPrice } from '~/utils/hotel'
-import { extractMediaIdFromUrl } from '~/utils/image'
+import { extractMediaIdFromUrl, shouldShowOfferImage } from '~/utils/image'
 
 definePageMeta({
   layout: 'profile',
@@ -501,7 +501,7 @@ function fillFormFromRoom(item: ManagedRoomDetail) {
   const galleryFromApi = (item.gallery ?? [])
     .map((galleryItem) => {
       const url = galleryPreviewUrl(galleryItem)
-      if (!url) {
+      if (!shouldShowOfferImage(url)) {
         return null
       }
 
@@ -530,10 +530,10 @@ function fillFormFromRoom(item: ManagedRoomDetail) {
   if (uniqueGallery.length) {
     galleryItems.value = uniqueGallery
   }
-  else if (item.image_url) {
+  else if (shouldShowOfferImage(item.image_url)) {
     galleryItems.value = [{
       id: item.image_id ?? extractMediaIdFromUrl(item.image_url),
-      url: item.image_url,
+      url: item.image_url!,
       file: null,
     }]
   }
