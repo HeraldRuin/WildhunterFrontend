@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import type { ManagedRoom } from '~/api/rooms'
+import type { ManagedRoomDetail, RoomManageUpdatePayload } from '~/api/rooms'
+import type { HotelRoomAttribute, HotelRoomAttributeTerm } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { formatHotelPrice } from '~/utils/hotel'
+import { extractMediaIdFromUrl } from '~/utils/image'
 
 definePageMeta({
   layout: 'profile',
@@ -9,7 +11,8 @@ definePageMeta({
 })
 
 const route = useRoute()
-const { rooms: roomsApi } = useApi()
+const notifications = useNotifications()
+const { rooms: roomsApi, media: mediaApi, services: servicesApi } = useApi()
 const authToken = useAuthToken()
 const ready = ref(false)
 
@@ -40,14 +43,21 @@ const roomsListTo = computed(() => (
 
 type RoomEditTab = 'content' | 'pricing' | 'attributes'
 
+type GalleryItem = {
+  id: number | null
+  url: string
+  file?: File | null
+}
+
 const editTabs: { id: RoomEditTab, label: string }[] = [
   { id: 'content', label: 'Содержимое комнаты' },
   { id: 'pricing', label: 'Ценообразование' },
   { id: 'attributes', label: 'Атрибуты' },
 ]
 
-const room = ref<ManagedRoom | null>(null)
+const room = ref<ManagedRoomDetail | null>(null)
 const isLoading = ref(true)
+const isSaving = ref(false)
 const loadError = ref('')
 const activeEditTab = ref<RoomEditTab>('content')
 const editTitle = ref('')
@@ -59,8 +69,17 @@ const editMinStayDays = ref('')
 const editBedsCount = ref('')
 const editRoomSize = ref('')
 const editMaxAdults = ref('')
+const selectedTermIds = ref<number[]>([])
+const attributeGroups = ref<HotelRoomAttribute[]>([])
+const attributesLoading = ref(false)
+const attributesError = ref('')
+const attrScrollEl = ref<HTMLElement | null>(null)
+const attrPageCount = ref(1)
+const attrPageIndex = ref(0)
+let attributesLoaded = false
+let attrResizeObserver: ResizeObserver | null = null
 const hoverRating = ref(0)
-const galleryPreviews = ref<string[]>([])
+const galleryItems = ref<GalleryItem[]>([])
 const galleryInputRef = ref<HTMLInputElement | null>(null)
 const selectedGalleryIndex = ref<number | null>(null)
 const showForm = computed(() => isCreateMode.value || !!room.value)
@@ -98,9 +117,13 @@ function onGalleryFilesSelected(event: Event) {
     return
   }
 
-  galleryPreviews.value = [
-    ...galleryPreviews.value,
-    ...files.map(file => URL.createObjectURL(file)),
+  galleryItems.value = [
+    ...galleryItems.value,
+    ...files.map(file => ({
+      id: null as number | null,
+      url: URL.createObjectURL(file),
+      file,
+    })),
   ]
   selectedGalleryIndex.value = null
   input.value = ''
@@ -111,13 +134,78 @@ function selectGalleryImage(index: number) {
 }
 
 function removeGalleryImage(index: number) {
-  const src = galleryPreviews.value[index]
-  if (src?.startsWith('blob:')) {
-    URL.revokeObjectURL(src)
+  const item = galleryItems.value[index]
+  if (item?.url.startsWith('blob:')) {
+    URL.revokeObjectURL(item.url)
   }
 
-  galleryPreviews.value = galleryPreviews.value.filter((_, i) => i !== index)
+  galleryItems.value = galleryItems.value.filter((_, i) => i !== index)
   selectedGalleryIndex.value = null
+}
+
+function resolveGalleryItemId(item: {
+  id?: number | null
+  large?: string | null
+  medium?: string | null
+  thumb?: string | null
+}, fallbackUrl = ''): number | null {
+  const directId = Number(item.id)
+  if (Number.isFinite(directId) && directId > 0) {
+    return directId
+  }
+
+  return extractMediaIdFromUrl(item.large || item.medium || item.thumb || fallbackUrl)
+}
+
+function uniquePositiveIds(ids: Array<number | null | undefined>): number[] {
+  const result: number[] = []
+  const seen = new Set<number>()
+
+  for (const value of ids) {
+    const id = Number(value)
+    if (!Number.isFinite(id) || id <= 0 || seen.has(id)) {
+      continue
+    }
+
+    seen.add(id)
+    result.push(id)
+  }
+
+  return result
+}
+
+async function uploadPendingGalleryItems() {
+  const nextItems = [...galleryItems.value]
+
+  for (let index = 0; index < nextItems.length; index += 1) {
+    const item = nextItems[index]
+    if (!item || item.id != null || !item.file) {
+      continue
+    }
+
+    const uploaded = await mediaApi.store(item.file)
+    const previousUrl = item.url
+
+    nextItems[index] = {
+      id: uploaded.id,
+      url: uploaded.url || item.url,
+      file: null,
+    }
+
+    if (previousUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previousUrl)
+    }
+  }
+
+  galleryItems.value = nextItems
+}
+
+function revokeGalleryBlobUrls() {
+  for (const item of galleryItems.value) {
+    if (item.url.startsWith('blob:')) {
+      URL.revokeObjectURL(item.url)
+    }
+  }
 }
 
 const hotelTitle = 'Хромой кабан-2'
@@ -176,6 +264,130 @@ useHead({
 
 function selectEditTab(tab: RoomEditTab) {
   activeEditTab.value = tab
+
+  if (tab === 'attributes') {
+    void loadAttributes()
+    scheduleAttrPagesUpdate()
+  }
+}
+
+function attributeGroupTitle(group: HotelRoomAttribute) {
+  return `Атрибут: ${group.name}`
+}
+
+function termLabel(term: HotelRoomAttributeTerm) {
+  return term.translation?.name || term.name
+}
+
+function isTermSelected(termId: number) {
+  return selectedTermIds.value.includes(termId)
+}
+
+function toggleTerm(termId: number) {
+  if (selectedTermIds.value.includes(termId)) {
+    selectedTermIds.value = selectedTermIds.value.filter(id => id !== termId)
+    return
+  }
+
+  selectedTermIds.value = [...selectedTermIds.value, termId]
+}
+
+function getAttrMaxScroll(el: HTMLElement) {
+  return Math.max(0, el.scrollHeight - el.clientHeight)
+}
+
+function getAttrPageCount(el: HTMLElement) {
+  const pageSize = el.clientHeight || 1
+  const maxScroll = getAttrMaxScroll(el)
+
+  if (maxScroll <= 8) {
+    return 1
+  }
+
+  return Math.max(1, Math.ceil((maxScroll + pageSize) / pageSize))
+}
+
+function getAttrPageIndex(el: HTMLElement, pageCount: number) {
+  if (pageCount <= 1) {
+    return 0
+  }
+
+  const maxScroll = getAttrMaxScroll(el)
+
+  if (el.scrollTop >= maxScroll - 2) {
+    return pageCount - 1
+  }
+
+  return Math.min(
+    pageCount - 1,
+    Math.round((el.scrollTop / maxScroll) * (pageCount - 1)),
+  )
+}
+
+function updateAttrPages() {
+  const el = attrScrollEl.value
+  if (!el) {
+    attrPageCount.value = 1
+    attrPageIndex.value = 0
+    return
+  }
+
+  const pages = getAttrPageCount(el)
+  attrPageCount.value = pages
+  attrPageIndex.value = getAttrPageIndex(el, pages)
+}
+
+function scheduleAttrPagesUpdate() {
+  void nextTick(() => {
+    updateAttrPages()
+    requestAnimationFrame(() => {
+      updateAttrPages()
+      requestAnimationFrame(updateAttrPages)
+    })
+  })
+}
+
+function onAttrScroll() {
+  const el = attrScrollEl.value
+  if (!el) {
+    return
+  }
+
+  attrPageIndex.value = getAttrPageIndex(el, attrPageCount.value)
+}
+
+function scrollAttrToPage(index: number) {
+  const el = attrScrollEl.value
+  if (!el || attrPageCount.value <= 1) {
+    return
+  }
+
+  const maxScroll = getAttrMaxScroll(el)
+  const top = Math.round((index / (attrPageCount.value - 1)) * maxScroll)
+
+  el.scrollTo({ top, behavior: 'smooth' })
+  attrPageIndex.value = index
+}
+
+async function loadAttributes() {
+  if (attributesLoaded || attributesLoading.value) {
+    return
+  }
+
+  attributesLoading.value = true
+  attributesError.value = ''
+
+  try {
+    attributeGroups.value = await servicesApi.getAttributeGroups('hotel_room')
+    attributesLoaded = true
+    scheduleAttrPagesUpdate()
+  }
+  catch {
+    attributesError.value = 'Не удалось загрузить атрибуты'
+  }
+  finally {
+    attributesLoading.value = false
+  }
 }
 
 function extractErrorMessage(source: unknown, fallback: string) {
@@ -200,29 +412,138 @@ function extractErrorMessage(source: unknown, fallback: string) {
   return fallback
 }
 
-function formatPriceInput(value: number) {
-  if (!Number.isFinite(value)) {
+function formatPriceInput(value: number | string | null | undefined) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) {
     return ''
   }
 
-  return formatHotelPrice(Math.round(value))
+  return formatHotelPrice(Math.round(num))
 }
 
-function fillFormFromRoom(item: ManagedRoom) {
-  editTitle.value = item.title
+function formatOptionalInt(value: number | null | undefined) {
+  if (value == null) {
+    return ''
+  }
+
+  const num = Number(value)
+  if (!Number.isFinite(num)) {
+    return ''
+  }
+
+  return String(Math.trunc(num))
+}
+
+function parseOptionalInt(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const num = Number(trimmed)
+  if (!Number.isFinite(num)) {
+    return null
+  }
+
+  return Math.trunc(num)
+}
+
+function parsePrice(value: string): number | null {
+  let raw = value
+    .trim()
+    .replace(/\s*руб\.?\s*/gi, '')
+    .replace(/\s/g, '')
+
+  if (!raw) {
+    return null
+  }
+
+  if (raw.includes(',') && raw.includes('.')) {
+    raw = raw.replace(/\./g, '').replace(',', '.')
+  }
+  else if (raw.includes(',')) {
+    raw = raw.replace(',', '.')
+  }
+  else if (/^\d{1,3}(\.\d{3})+$/.test(raw)) {
+    raw = raw.replace(/\./g, '')
+  }
+
+  const price = Number(raw)
+  if (!Number.isFinite(price) || price < 0) {
+    return null
+  }
+
+  return price
+}
+
+function galleryPreviewUrl(item: ManagedRoomDetail['gallery'][number]) {
+  return item.medium || item.large || item.thumb || ''
+}
+
+function fillFormFromRoom(item: ManagedRoomDetail) {
+  revokeGalleryBlobUrls()
+
+  editTitle.value = item.title ?? ''
   editRating.value = 0
-  editContent.value = ''
+  editContent.value = item.content ?? ''
   editPrice.value = formatPriceInput(item.price)
-  editRoomsCount.value = ''
-  editMinStayDays.value = ''
-  editBedsCount.value = ''
-  editRoomSize.value = ''
-  editMaxAdults.value = ''
-  galleryPreviews.value = item.image_url ? [item.image_url] : []
+  editRoomsCount.value = formatOptionalInt(item.number)
+  editMinStayDays.value = formatOptionalInt(item.min_day_stays)
+  editBedsCount.value = formatOptionalInt(item.beds)
+  editRoomSize.value = formatOptionalInt(item.size)
+  editMaxAdults.value = formatOptionalInt(item.adults)
+  hoverRating.value = 0
   selectedGalleryIndex.value = null
+  selectedTermIds.value = Array.isArray(item.term_ids)
+    ? item.term_ids.map(Number).filter(id => Number.isFinite(id) && id > 0)
+    : []
+
+  const galleryFromApi = (item.gallery ?? [])
+    .map((galleryItem) => {
+      const url = galleryPreviewUrl(galleryItem)
+      if (!url) {
+        return null
+      }
+
+      return {
+        id: resolveGalleryItemId(galleryItem, url),
+        url,
+        file: null,
+      }
+    })
+    .filter((galleryItem): galleryItem is GalleryItem => Boolean(galleryItem))
+
+  const uniqueGallery: GalleryItem[] = []
+  const seenIds = new Set<number>()
+
+  for (const galleryItem of galleryFromApi) {
+    if (galleryItem.id != null) {
+      if (seenIds.has(galleryItem.id)) {
+        continue
+      }
+      seenIds.add(galleryItem.id)
+    }
+
+    uniqueGallery.push(galleryItem)
+  }
+
+  if (uniqueGallery.length) {
+    galleryItems.value = uniqueGallery
+  }
+  else if (item.image_url) {
+    galleryItems.value = [{
+      id: item.image_id ?? extractMediaIdFromUrl(item.image_url),
+      url: item.image_url,
+      file: null,
+    }]
+  }
+  else {
+    galleryItems.value = []
+  }
 }
 
 function resetFormForCreate() {
+  revokeGalleryBlobUrls()
   room.value = null
   editTitle.value = ''
   editRating.value = 0
@@ -234,10 +555,109 @@ function resetFormForCreate() {
   editRoomSize.value = ''
   editMaxAdults.value = ''
   hoverRating.value = 0
-  galleryPreviews.value = []
+  galleryItems.value = []
   selectedGalleryIndex.value = null
+  selectedTermIds.value = []
   loadError.value = ''
   isLoading.value = false
+}
+
+function buildSavePayload(galleryIds: number[]): RoomManageUpdatePayload {
+  const current = room.value
+  const uniqueGalleryIds = uniquePositiveIds(galleryIds)
+  const currentImageId = current?.image_id ?? null
+  const imageId = uniqueGalleryIds.includes(currentImageId ?? -1)
+    ? currentImageId
+    : (uniqueGalleryIds[0] ?? null)
+
+  return {
+    title: editTitle.value.trim(),
+    content: editContent.value.trim() || null,
+    image_id: imageId,
+    gallery: uniqueGalleryIds,
+    price: parsePrice(editPrice.value),
+    number: parseOptionalInt(editRoomsCount.value),
+    beds: parseOptionalInt(editBedsCount.value),
+    size: parseOptionalInt(editRoomSize.value),
+    adults: parseOptionalInt(editMaxAdults.value),
+    children: current?.children ?? null,
+    status: current?.status ?? 'draft',
+    min_day_stays: parseOptionalInt(editMinStayDays.value),
+    ical_import_url: current?.ical_import_url ?? null,
+    video: current?.video ?? null,
+    term_ids: [...selectedTermIds.value],
+  }
+}
+
+function roomEditPath(id: number) {
+  return hotelId.value
+    ? { path: `/rooms/${id}`, query: { hotelId: hotelId.value } }
+    : `/rooms/${id}`
+}
+
+async function saveRoom() {
+  if (isSaving.value || isLoading.value) {
+    return
+  }
+
+  const title = editTitle.value.trim()
+
+  if (!title) {
+    notifications.error('Укажите название номера')
+    return
+  }
+
+  if (!isCreateMode.value && (!Number.isFinite(roomId.value) || roomId.value <= 0)) {
+    notifications.error('Некорректный идентификатор номера')
+    return
+  }
+
+  isSaving.value = true
+
+  try {
+    await uploadPendingGalleryItems()
+
+    const galleryIds = galleryItems.value.map(item => item.id)
+    const payload = buildSavePayload(galleryIds)
+
+    const response = isCreateMode.value
+      ? await roomsApi.create(payload)
+      : await roomsApi.update(roomId.value, payload)
+
+    if ('success' in response && response.success) {
+      room.value = response.data
+      fillFormFromRoom(response.data)
+      notifications.success(
+        response.message || (isCreateMode.value ? 'Номер создан' : 'Номер сохранён'),
+      )
+
+      if (isCreateMode.value && response.data.id) {
+        await navigateTo(roomEditPath(response.data.id), { replace: true })
+      }
+
+      return
+    }
+
+    notifications.error(
+      extractErrorMessage(
+        response,
+        isCreateMode.value ? 'Не удалось создать номер' : 'Не удалось сохранить номер',
+      ),
+    )
+  }
+  catch (error) {
+    const data = (error as { data?: unknown, message?: string }).data
+    notifications.error(
+      extractErrorMessage(
+        data,
+        (error as { message?: string }).message
+          || (isCreateMode.value ? 'Не удалось создать номер' : 'Не удалось сохранить номер'),
+      ),
+    )
+  }
+  finally {
+    isSaving.value = false
+  }
 }
 
 async function loadRoom() {
@@ -247,6 +667,7 @@ async function loadRoom() {
   }
 
   if (!Number.isFinite(roomId.value) || roomId.value <= 0) {
+    room.value = null
     loadError.value = 'Некорректный идентификатор номера'
     isLoading.value = false
     return
@@ -256,24 +677,19 @@ async function loadRoom() {
   loadError.value = ''
 
   try {
-    const response = await roomsApi.getList()
+    const response = await roomsApi.getById(roomId.value)
 
     if ('success' in response && response.success) {
-      const match = (response.data?.rooms ?? []).find(item => item.id === roomId.value)
-
-      if (!match) {
-        loadError.value = 'Номер не найден'
-        return
-      }
-
-      room.value = match
-      fillFormFromRoom(match)
+      room.value = response.data
+      fillFormFromRoom(response.data)
       return
     }
 
+    room.value = null
     loadError.value = extractErrorMessage(response, 'Не удалось загрузить номер')
   }
   catch (error) {
+    room.value = null
     const data = (error as { data?: unknown }).data
     loadError.value = extractErrorMessage(data, 'Не удалось загрузить номер')
   }
@@ -284,6 +700,56 @@ async function loadRoom() {
 
 onMounted(() => {
   void loadRoom()
+  window.addEventListener('resize', scheduleAttrPagesUpdate)
+
+  if (import.meta.client && typeof ResizeObserver !== 'undefined') {
+    attrResizeObserver = new ResizeObserver(() => {
+      updateAttrPages()
+    })
+
+    void nextTick(() => {
+      if (attrScrollEl.value) {
+        attrResizeObserver?.observe(attrScrollEl.value)
+      }
+      updateAttrPages()
+    })
+  }
+  else {
+    scheduleAttrPagesUpdate()
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', scheduleAttrPagesUpdate)
+  attrResizeObserver?.disconnect()
+  attrResizeObserver = null
+  revokeGalleryBlobUrls()
+})
+
+watch(() => attributeGroups.value.length, () => {
+  scheduleAttrPagesUpdate()
+  void nextTick(() => {
+    if (attrScrollEl.value && attrResizeObserver) {
+      attrResizeObserver.disconnect()
+      attrResizeObserver.observe(attrScrollEl.value)
+    }
+  })
+})
+
+watch(attrScrollEl, (el) => {
+  if (!el || !attrResizeObserver) {
+    return
+  }
+
+  attrResizeObserver.disconnect()
+  attrResizeObserver.observe(el)
+  updateAttrPages()
+})
+
+watch(activeEditTab, (tab) => {
+  if (tab === 'attributes') {
+    scheduleAttrPagesUpdate()
+  }
 })
 </script>
 
@@ -305,6 +771,9 @@ onMounted(() => {
           class="room-edit__save"
           width="auto"
           mobile-width="100%"
+          :loading="isSaving"
+          :disabled="isLoading"
+          @click="saveRoom"
         />
       </div>
 
@@ -325,7 +794,32 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-else-if="showForm" class="room-edit__panel">
+        <div
+          v-else-if="showForm"
+          class="room-edit__panel-shell"
+        >
+          <div
+            v-if="activeEditTab === 'attributes' && attributeGroups.length"
+            class="room-edit__attr-dots"
+            :class="{ 'room-edit__attr-dots--hidden': attrPageCount <= 1 }"
+            role="tablist"
+            aria-label="Страницы атрибутов"
+            :aria-hidden="attrPageCount <= 1"
+          >
+            <button
+              v-for="page in attrPageCount"
+              :key="page"
+              type="button"
+              class="room-edit__attr-dot"
+              :class="{ 'room-edit__attr-dot--active': page - 1 === attrPageIndex }"
+              :aria-label="`Страница ${page}`"
+              :aria-current="page - 1 === attrPageIndex ? 'true' : undefined"
+              :tabindex="attrPageCount > 1 ? 0 : -1"
+              @click="scrollAttrToPage(page - 1)"
+            />
+          </div>
+
+          <div class="room-edit__panel">
           <div class="room-edit__panel-top">
             <nav class="room-edit__nav" aria-label="Разделы редактирования">
               <button
@@ -341,7 +835,11 @@ onMounted(() => {
             </nav>
           </div>
 
-          <div class="room-edit__body">
+          <div
+            ref="attrScrollEl"
+            class="room-edit__body"
+            @scroll.passive="onAttrScroll"
+          >
             <div v-if="activeEditTab === 'content'" class="room-edit__content">
               <div class="room-edit__form">
                 <div class="room-edit__form-row">
@@ -417,10 +915,10 @@ onMounted(() => {
               <section class="room-edit__gallery" aria-label="Галерея">
                 <h3 class="room-edit__gallery-title">Галерея</h3>
 
-                <div v-if="galleryPreviews.length" class="room-edit__gallery-list">
+                <div v-if="galleryItems.length" class="room-edit__gallery-list">
                   <div
-                    v-for="(src, index) in galleryPreviews"
-                    :key="`${src}-${index}`"
+                    v-for="(item, index) in galleryItems"
+                    :key="`${item.id ?? 'new'}-${item.url}-${index}`"
                     class="room-edit__gallery-item"
                     :class="{ 'room-edit__gallery-item--selected': selectedGalleryIndex === index }"
                     role="button"
@@ -431,7 +929,7 @@ onMounted(() => {
                     @keydown.space.prevent="selectGalleryImage(index)"
                   >
                     <img
-                      :src="src"
+                      :src="item.url"
                       :alt="`Фото галереи ${index + 1}`"
                       class="room-edit__gallery-image"
                     >
@@ -550,6 +1048,59 @@ onMounted(() => {
                 />
               </div>
             </div>
+
+            <div
+              v-else-if="activeEditTab === 'attributes'"
+              class="room-edit__attributes"
+            >
+              <p v-if="attributesError" class="room-edit__status room-edit__status--error">
+                {{ attributesError }}
+              </p>
+
+              <div
+                v-else-if="attributesLoading"
+                class="room-edit__loading room-edit__loading--inline"
+                aria-live="polite"
+              >
+                <CommonSpinner variant="ring" size="lg" label="Загрузка атрибутов" />
+              </div>
+
+              <p v-else-if="!attributeGroups.length" class="room-edit__status">
+                Нет атрибутов
+              </p>
+
+              <div
+                v-else
+                class="room-edit__attr-list"
+              >
+                <section
+                  v-for="group in attributeGroups"
+                  :key="group.id"
+                  class="room-edit__attr-block"
+                >
+                  <h3 class="room-edit__attr-title">
+                    {{ attributeGroupTitle(group) }}
+                  </h3>
+
+                  <div class="room-edit__attr-body">
+                    <label
+                      v-for="term in group.terms"
+                      :key="term.id"
+                      class="room-edit__attr-item"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="isTermSelected(term.id)"
+                        @change="toggleTerm(term.id)"
+                      >
+                      <span class="room-edit__attr-checkmark" />
+                      <span class="room-edit__attr-label">{{ termLabel(term) }}</span>
+                    </label>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
           </div>
         </div>
       </div>
@@ -619,7 +1170,20 @@ onMounted(() => {
   display: flex;
   flex: 1;
   flex-direction: column;
+  gap: 8px;
   min-height: 0;
+  overflow: hidden;
+}
+
+.room-edit__panel-shell {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .room-edit__panel-top {
@@ -655,12 +1219,18 @@ onMounted(() => {
   min-height: 220px;
 }
 
+.room-edit__loading--inline {
+  flex: 0 0 auto;
+  min-height: 160px;
+}
+
 .room-edit__panel {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  margin-top: 8px;
+  min-width: 0;
+  margin-top: 0;
   padding: 24px;
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
@@ -676,6 +1246,7 @@ onMounted(() => {
   min-height: 0;
   margin-top: 32px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .room-edit__nav {
@@ -801,6 +1372,140 @@ onMounted(() => {
   letter-spacing: -0.02em;
   pointer-events: none;
   user-select: none;
+}
+
+.room-edit__attributes {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.room-edit__attr-dots {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 8px;
+  width: 10px;
+  padding: 4px 0;
+  z-index: 2;
+}
+
+.room-edit__attr-dots--hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.room-edit__attr-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 1px solid rgb(28 33 28 / 25%);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.room-edit__attr-dot--active {
+  border-color: #e8883a;
+  background: #e8883a;
+}
+
+.room-edit__attr-dot:hover:not(.room-edit__attr-dot--active) {
+  border-color: rgb(28 33 28 / 45%);
+}
+
+.room-edit__attr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
+}
+
+.room-edit__attr-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.room-edit__attr-title {
+  margin: 0;
+  color: #1a2b50;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.room-edit__attr-body {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--wh-gray-400);
+  border-radius: 4px;
+  background: #f5f5f5;
+  box-sizing: border-box;
+}
+
+.room-edit__attr-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.room-edit__attr-item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.room-edit__attr-checkmark {
+  position: relative;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-top: 0;
+  border: 1px solid var(--wh-gray-300);
+  border-radius: 4px;
+  background: var(--wh-white);
+}
+
+.room-edit__attr-item input:checked + .room-edit__attr-checkmark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--wh-orange-500);
+  transform: translate(-50%, -50%);
+}
+
+.room-edit__attr-label {
+  min-width: 0;
 }
 
 .room-edit__gallery {
@@ -1034,6 +1739,14 @@ onMounted(() => {
     min-height: 0;
     overflow: auto;
   }
+
+  .room-edit__attr-dots {
+    display: none;
+  }
+
+  .room-edit__attr-body {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (--wh-mobile) {
@@ -1080,6 +1793,10 @@ onMounted(() => {
   .room-edit__pricing-row,
   .room-edit__pricing-row--single {
     grid-template-columns: 1fr;
+  }
+
+  .room-edit__attr-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>
