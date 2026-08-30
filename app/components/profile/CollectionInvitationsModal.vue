@@ -44,11 +44,13 @@ function handleKeydown(event: KeyboardEvent) {
         @keydown="handleKeydown"
       >
         <div class="collection-invitations-modal__card">
-          <CommonModalCloseButton @click="close" />
+          <header class="collection-invitations-modal__header">
+            <h2 id="collection-invitations-modal-title" class="collection-invitations-modal__title">
+              Открыт сбор для охотников
+            </h2>
 
-          <h2 id="collection-invitations-modal-title" class="collection-invitations-modal__title">
-            Открыт сбор для охотников
-          </h2>
+            <CommonModalCloseButton @click="close" />
+          </header>
 
           <section class="collection-invitations-modal__participants">
             <h3 class="collection-invitations-modal__subtitle">
@@ -119,14 +121,29 @@ function handleKeydown(event: KeyboardEvent) {
   box-shadow: var(--wh-shadow);
 }
 
+.collection-invitations-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
 .collection-invitations-modal__title {
-  margin: 0 44px 22px 0;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
   padding: 14px 16px;
   border-radius: 6px;
   background: var(--wh-green-gray);
   color: var(--wh-green-900);
   font-size: 1rem;
   font-weight: 600;
+}
+
+.collection-invitations-modal__header :deep(.modal-close-button) {
+  position: static;
+  flex-shrink: 0;
 }
 
 .collection-invitations-modal__subtitle {
