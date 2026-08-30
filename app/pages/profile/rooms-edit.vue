@@ -64,11 +64,12 @@ const editTitle = ref('')
 const editRating = ref(0)
 const editContent = ref('')
 const editPrice = ref('')
-const editRoomsCount = ref('')
+const editRoomsCount = ref('1')
 const editMinStayDays = ref('')
-const editBedsCount = ref('')
+const editBedsCount = ref('1')
 const editRoomSize = ref('')
-const editMaxAdults = ref('')
+const editMaxAdults = ref('1')
+const fieldErrors = ref<Record<string, string[]>>({})
 const selectedTermIds = ref<number[]>([])
 const attributeGroups = ref<HotelRoomAttribute[]>([])
 const attributesLoading = ref(false)
@@ -412,6 +413,103 @@ function extractErrorMessage(source: unknown, fallback: string) {
   return fallback
 }
 
+const FIELD_ERROR_TABS: Record<string, RoomEditTab> = {
+  title: 'content',
+  content: 'content',
+  gallery: 'content',
+  image_id: 'content',
+  price: 'pricing',
+  number: 'pricing',
+  beds: 'pricing',
+  size: 'pricing',
+  adults: 'pricing',
+  children: 'pricing',
+  min_day_stays: 'pricing',
+  term_ids: 'attributes',
+}
+
+function getFieldError(field: string) {
+  return fieldErrors.value[field]?.[0] || ''
+}
+
+function clearFieldError(field: string) {
+  if (!fieldErrors.value[field]) {
+    return
+  }
+
+  const nextErrors = { ...fieldErrors.value }
+  delete nextErrors[field]
+  fieldErrors.value = nextErrors
+}
+
+function getApiErrorPayload(source: unknown) {
+  if (!source || typeof source !== 'object') {
+    return null
+  }
+
+  const payload = source as {
+    success?: boolean
+    message?: string
+    errors?: Record<string, string[] | string> | unknown[]
+    error_code?: string
+    code?: string
+    data?: unknown
+  }
+
+  if (
+    payload.success === false
+    || payload.message
+    || payload.error_code
+    || payload.code
+    || payload.errors
+  ) {
+    return payload
+  }
+
+  if (payload.data && payload.data !== source) {
+    return getApiErrorPayload(payload.data)
+  }
+
+  return null
+}
+
+function applyValidationErrors(data: unknown) {
+  const response = getApiErrorPayload(data)
+
+  if (!response) {
+    return false
+  }
+
+  const normalized: Record<string, string[]> = {}
+  const rawErrors = response.errors
+
+  if (rawErrors && !Array.isArray(rawErrors) && typeof rawErrors === 'object') {
+    for (const [key, value] of Object.entries(rawErrors)) {
+      if (Array.isArray(value) && value.length > 0) {
+        normalized[key] = value.map(String)
+      }
+      else if (typeof value === 'string' && value) {
+        normalized[key] = [value]
+      }
+    }
+  }
+
+  const fieldKeys = Object.keys(normalized).filter(key => key in FIELD_ERROR_TABS)
+
+  if (fieldKeys.length === 0) {
+    return false
+  }
+
+  fieldErrors.value = normalized
+
+  const preferredTab = FIELD_ERROR_TABS[fieldKeys[0]!]
+  if (preferredTab && !fieldKeys.some(key => FIELD_ERROR_TABS[key] === activeEditTab.value)) {
+    activeEditTab.value = preferredTab
+  }
+
+  return true
+}
+
 function formatPriceInput(value: number | string | null | undefined) {
   const num = Number(value)
   if (!Number.isFinite(num)) {
@@ -432,6 +530,15 @@ function formatOptionalInt(value: number | null | undefined) {
   }
 
   return String(Math.trunc(num))
+}
+
+function formatPositiveIntOrDefault(value: number | null | undefined, fallback = '1') {
+  const formatted = formatOptionalInt(value)
+  if (!formatted || formatted === '0') {
+    return fallback
+  }
+
+  return formatted
 }
 
 function parseOptionalInt(value: string): number | null {
@@ -487,11 +594,11 @@ function fillFormFromRoom(item: ManagedRoomDetail) {
   editRating.value = 0
   editContent.value = item.content ?? ''
   editPrice.value = formatPriceInput(item.price)
-  editRoomsCount.value = formatOptionalInt(item.number)
+  editRoomsCount.value = formatPositiveIntOrDefault(item.number)
   editMinStayDays.value = formatOptionalInt(item.min_day_stays)
-  editBedsCount.value = formatOptionalInt(item.beds)
+  editBedsCount.value = formatPositiveIntOrDefault(item.beds)
   editRoomSize.value = formatOptionalInt(item.size)
-  editMaxAdults.value = formatOptionalInt(item.adults)
+  editMaxAdults.value = formatPositiveIntOrDefault(item.adults)
   hoverRating.value = 0
   selectedGalleryIndex.value = null
   selectedTermIds.value = Array.isArray(item.term_ids)
@@ -549,11 +656,12 @@ function resetFormForCreate() {
   editRating.value = 0
   editContent.value = ''
   editPrice.value = ''
-  editRoomsCount.value = ''
+  editRoomsCount.value = '1'
   editMinStayDays.value = ''
-  editBedsCount.value = ''
+  editBedsCount.value = '1'
   editRoomSize.value = ''
-  editMaxAdults.value = ''
+  editMaxAdults.value = '1'
+  fieldErrors.value = {}
   hoverRating.value = 0
   galleryItems.value = []
   selectedGalleryIndex.value = null
@@ -603,7 +711,8 @@ async function saveRoom() {
   const title = editTitle.value.trim()
 
   if (!title) {
-    notifications.error('Укажите название номера')
+    fieldErrors.value = { title: ['Укажите название номера'] }
+    activeEditTab.value = 'content'
     return
   }
 
@@ -613,6 +722,7 @@ async function saveRoom() {
   }
 
   isSaving.value = true
+  fieldErrors.value = {}
 
   try {
     await uploadPendingGalleryItems()
@@ -627,6 +737,7 @@ async function saveRoom() {
     if ('success' in response && response.success) {
       room.value = response.data
       fillFormFromRoom(response.data)
+      fieldErrors.value = {}
       notifications.success(
         response.message || (isCreateMode.value ? 'Номер создан' : 'Номер сохранён'),
       )
@@ -635,6 +746,10 @@ async function saveRoom() {
         await navigateTo(roomEditPath(response.data.id), { replace: true })
       }
 
+      return
+    }
+
+    if (applyValidationErrors(response)) {
       return
     }
 
@@ -647,6 +762,11 @@ async function saveRoom() {
   }
   catch (error) {
     const data = (error as { data?: unknown, message?: string }).data
+
+    if (applyValidationErrors(data)) {
+      return
+    }
+
     notifications.error(
       extractErrorMessage(
         data,
@@ -850,7 +970,9 @@ watch(activeEditTab, (tab) => {
                     v-model="editTitle"
                     label="Название номера"
                     placeholder="Название номера"
+                    :error="getFieldError('title')"
                     no-margin
+                    @update:model-value="clearFieldError('title')"
                   />
                   <!--
                   <div class="room-edit__rating">
@@ -911,7 +1033,9 @@ watch(activeEditTab, (tab) => {
                   placeholder=""
                   multiline
                   :rows="4"
+                  :error="getFieldError('content')"
                   no-margin
+                  @update:model-value="clearFieldError('content')"
                 />
               </div>
 
@@ -994,15 +1118,19 @@ watch(activeEditTab, (tab) => {
                   placeholder="0"
                   amount-only
                   required
+                  :error="getFieldError('price')"
                   no-margin
+                  @update:model-value="clearFieldError('price')"
                 />
                 <CommonFormField
                   v-model="editRoomsCount"
                   label="Количество комнат *"
-                  placeholder="0"
+                  placeholder="1"
                   digits-only
                   required
+                  :error="getFieldError('number')"
                   no-margin
+                  @update:model-value="clearFieldError('number')"
                 />
               </div>
 
@@ -1010,9 +1138,11 @@ watch(activeEditTab, (tab) => {
                 <CommonFormField
                   v-model="editMinStayDays"
                   label="Минимальные требования к дневному пребыванию"
-                  placeholder="Пример: 2"
+                  placeholder="Например: 2 дня"
                   digits-only
+                  :error="getFieldError('min_day_stays')"
                   no-margin
+                  @update:model-value="clearFieldError('min_day_stays')"
                 />
                 <p class="room-edit__pricing-hint">
                   Оставьте пустым, если вам не нужно устанавливать опцию минимального количества дней пребывания
@@ -1023,9 +1153,11 @@ watch(activeEditTab, (tab) => {
                 <CommonFormField
                   v-model="editBedsCount"
                   label="Количество спальных мест"
-                  placeholder="0"
+                  placeholder="1"
                   digits-only
+                  :error="getFieldError('beds')"
                   no-margin
+                  @update:model-value="clearFieldError('beds')"
                 />
                 <CommonFormField
                   v-model="editRoomSize"
@@ -1033,7 +1165,9 @@ watch(activeEditTab, (tab) => {
                   label="Размер номера"
                   placeholder="0"
                   digits-only
+                  :error="getFieldError('size')"
                   no-margin
+                  @update:model-value="clearFieldError('size')"
                 >
                   <template #trailing>
                     <span class="room-edit__unit">м²</span>
@@ -1044,10 +1178,13 @@ watch(activeEditTab, (tab) => {
               <div class="room-edit__pricing-row room-edit__pricing-row--single">
                 <CommonFormField
                   v-model="editMaxAdults"
-                  label="Максимальное число взрослых"
-                  placeholder="0"
+                  label="Максимальное число взрослых *"
+                  placeholder="1"
                   digits-only
+                  required
+                  :error="getFieldError('adults')"
                   no-margin
+                  @update:model-value="clearFieldError('adults')"
                 />
               </div>
             </div>

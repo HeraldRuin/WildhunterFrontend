@@ -94,6 +94,10 @@ const fieldId = computed(() => props.id || generatedId)
 const hasIcon = computed(() => Boolean(props.icon) || Boolean(slots.icon))
 const hasTrailing = computed(() => Boolean(slots.trailing))
 
+const requiredAsteriskMatch = computed(() => props.label.match(/^(.*?)(\s*\*)$/))
+const labelText = computed(() => requiredAsteriskMatch.value?.[1] ?? props.label)
+const labelRequiredAsterisk = computed(() => requiredAsteriskMatch.value?.[2] ?? '')
+
 const effectiveMaxLength = computed(() => {
   if (props.documentNumberKind) {
     return hunterDocumentMaxLength(props.documentNumberKind)
@@ -417,7 +421,13 @@ function onPaste(event: ClipboardEvent) {
     </template>
 
     <template v-else>
-      <label v-if="label" class="form-field__label" :for="fieldId">{{ label }}</label>
+      <label v-if="label" class="form-field__label" :for="fieldId">
+        {{ labelText }}<span
+          v-if="labelRequiredAsterisk"
+          class="form-field__required"
+          aria-hidden="true"
+        >{{ labelRequiredAsterisk }}</span>
+      </label>
 
       <div class="form-field__control">
         <span v-if="hasIcon" class="form-field__icon" aria-hidden="true">
@@ -554,6 +564,10 @@ function onPaste(event: ClipboardEvent) {
   line-height: 120%;
   letter-spacing: -0.05em;
   color: var(--wh-gray-900);
+}
+
+.form-field__required {
+  color: var(--wh-orange-500);
 }
 
 .form-field__control {
