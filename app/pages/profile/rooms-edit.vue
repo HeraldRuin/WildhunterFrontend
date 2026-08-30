@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ManagedRoom } from '~/api/rooms'
+import type { BreadcrumbItem } from '~/types/breadcrumb'
 
 definePageMeta({
   layout: 'profile',
@@ -123,14 +124,45 @@ const pageTitle = computed(() => (
   isCreateMode.value ? 'Новый номер' : 'Редактирование номера'
 ))
 
-const breadcrumbs = computed(() => [
-  { label: 'Главная', to: '/' },
-  { label: 'Параметры' },
-  { label: hotelTitle, to: hotelEditTo.value },
-  { label: 'Управление базой', to: '/profile/base' },
-  { label: 'Управление номерами', to: roomsListTo.value },
-  { label: pageTitle.value },
-])
+const roomTitle = computed(() => {
+  const fromRoom = room.value?.title?.trim()
+  if (fromRoom) {
+    return fromRoom
+  }
+
+  const fromForm = editTitle.value.trim()
+  return fromForm || null
+})
+
+const roomEditTo = computed(() => {
+  if (isCreateMode.value || !Number.isFinite(roomId.value) || roomId.value <= 0) {
+    return undefined
+  }
+
+  return hotelId.value
+    ? { path: `/rooms/${roomId.value}`, query: { hotelId: hotelId.value } }
+    : `/rooms/${roomId.value}`
+})
+
+const breadcrumbs = computed(() => {
+  const items: BreadcrumbItem[] = [
+    { label: 'Главная', to: '/' },
+    { label: 'Управление базой', to: '/profile/base' },
+    { label: hotelTitle, to: hotelEditTo.value },
+    { label: 'Управление номерами', to: roomsListTo.value },
+  ]
+
+  if (roomTitle.value) {
+    items.push({
+      label: roomTitle.value,
+      ...(roomEditTo.value ? { to: roomEditTo.value } : {}),
+    })
+  }
+
+  items.push({ label: pageTitle.value })
+
+  return items
+})
 
 useHead({
   title: () => `${pageTitle.value} — WH`,
