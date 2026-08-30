@@ -254,12 +254,36 @@ function handleAvatarError() {
 const roleName = computed(() => profile.value?.role_name || user.value?.role_name || '')
 const memberSince = computed(() => formatMemberSince(profile.value?.created_at ?? user.value?.created_at ?? ''))
 
+const allNavPaths = computed(() => [
+  ...baseNavItems.map(item => item.to),
+  ...settingsSubNavItems.flatMap(item => [
+    item.to,
+    ...(item.children?.map(child => child.to) ?? []),
+  ]),
+])
+
 function isActive(to: string) {
   if (to === '/profile') {
     return route.path === '/profile' || route.path === '/profile/'
   }
 
-  return route.path === to || route.path.startsWith(`${to}/`)
+  if (route.path === to) {
+    return true
+  }
+
+  if (!route.path.startsWith(`${to}/`)) {
+    return false
+  }
+
+  // Не подсвечивать короткий путь, если есть более длинный пункт меню
+  // (например /rooms не активен на /rooms/availability)
+  const hasLongerMatch = allNavPaths.value.some(
+    path => path !== to
+      && path.startsWith(`${to}/`)
+      && (route.path === path || route.path.startsWith(`${path}/`)),
+  )
+
+  return !hasLongerMatch
 }
 
 async function handleLogout() {
