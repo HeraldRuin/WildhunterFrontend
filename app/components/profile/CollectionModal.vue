@@ -411,7 +411,7 @@ async function extendCollection() {
 
     if (response.success) {
       notifications.success(response.message || 'Сбор успешно продлён')
-      close()
+      reopen()
       emit('extended')
       return
     }
