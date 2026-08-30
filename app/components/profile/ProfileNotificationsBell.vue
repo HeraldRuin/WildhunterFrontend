@@ -40,6 +40,19 @@ function isInvitationAcceptedNotification(item: InboxNotification): boolean {
   return text.includes('приглашен') && text.includes('принят')
 }
 
+function isCollectionCancelledNotification(item: InboxNotification): boolean {
+  const event = (item.event ?? '').toLowerCase()
+  if (
+    (event.includes('collection') || event.includes('gathering'))
+    && (event.includes('cancel') || event.includes('cancelled'))
+  ) {
+    return true
+  }
+
+  const text = `${item.title} ${item.message}`.toLowerCase()
+  return text.includes('сбор') && text.includes('отмен')
+}
+
 function bookingIdFromLink(link: string): number | undefined {
   const trimmed = link.trim()
   if (!trimmed) {
@@ -82,6 +95,11 @@ function bookingsTarget(bookingId?: number, openCollection = false): string {
 }
 
 function resolveNotificationTarget(item: InboxNotification): string | null {
+  // Охотнику при отмене сбора достаточно уведомления — без перехода в историю броней.
+  if (isCollectionCancelledNotification(item)) {
+    return null
+  }
+
   const openCollection = isInvitationAcceptedNotification(item)
   const entityId = Number(item.entity_id)
   if (isBookingNotification(item) && Number.isFinite(entityId) && entityId > 0) {
