@@ -88,7 +88,9 @@ const periodRange = computed(() => {
   const year = viewDate.value.getFullYear()
   const month = viewDate.value.getMonth()
   const start = new Date(year, month, 1)
-  const end = new Date(year, month + 1, 0)
+  // API (periodDate + DatePeriod) принимает end как исключающую границу,
+  // как FullCalendar: для августа нужен end = 1 сентября, иначе 31-е не вернётся.
+  const end = new Date(year, month + 1, 1)
   return {
     start: formatApiDate(start),
     end: formatApiDate(end),
