@@ -10,7 +10,6 @@ useHead({
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Параметры' },
   { label: 'Таймер сбора' },
 ]
 </script>

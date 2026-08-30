@@ -15,7 +15,6 @@ const { hotels: hotelsApi } = useApi()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Параметры' },
   { label: 'Управление базой' },
 ]
 

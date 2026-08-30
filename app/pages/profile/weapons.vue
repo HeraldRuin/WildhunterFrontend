@@ -202,7 +202,6 @@ const hunterBilletActionLabel = computed(() =>
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Параметры' },
   { label: 'Лицензия на оружие' },
 ]
 

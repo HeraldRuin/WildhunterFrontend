@@ -303,7 +303,6 @@ const basePublicTo = computed(() => {
 const breadcrumbs = computed(() => {
   const items: Array<{ label: string, to?: string }> = [
     { label: 'Главная', to: '/' },
-    { label: 'Параметры' },
     { label: 'Управление базой', to: '/profile/base' },
   ]
 

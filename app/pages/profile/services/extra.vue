@@ -25,7 +25,6 @@ const { open: openConfirmModal } = useConfirmModal()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Параметры' },
   { label: 'Дополнительные услуги' },
 ]
 

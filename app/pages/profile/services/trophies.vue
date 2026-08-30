@@ -33,7 +33,6 @@ const notifications = useNotifications()
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Параметры' },
   { label: 'Трофеи и штрафы' },
 ]
 

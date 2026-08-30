@@ -14,7 +14,6 @@ const { loadCurrentPassword, refreshCurrentPassword, setCurrentPassword, readCac
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Параметры' },
   { label: 'Изменить пароль' },
 ]
 

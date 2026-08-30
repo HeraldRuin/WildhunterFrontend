@@ -32,7 +32,6 @@ const hotelTitle = 'Хромой кабан-2'
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
-  { label: 'Параметры' },
   { label: `Управление базой: ${hotelTitle}`, to: '/profile/base' },
   { label: 'Управление номерами' },
 ]
