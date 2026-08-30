@@ -152,7 +152,7 @@ const breadcrumbs = computed(() => {
     { label: 'Управление номерами', to: roomsListTo.value },
   ]
 
-  if (roomTitle.value) {
+  if (!isCreateMode.value && roomTitle.value) {
     items.push({
       label: roomTitle.value,
       ...(roomEditTo.value ? { to: roomEditTo.value } : {}),
@@ -273,28 +273,13 @@ onMounted(() => {
       <div class="room-edit__title-row">
         <CommonPageTitle>{{ pageTitle }}</CommonPageTitle>
 
-        <NuxtLink
-          :to="roomsListTo"
-          class="room-edit__back"
-        >
-          <svg
-            class="room-edit__back-icon"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          Назад к списку номеров
-        </NuxtLink>
+        <CommonSaveButton
+          v-if="showForm"
+          type="button"
+          class="room-edit__save"
+          width="auto"
+          mobile-width="100%"
+        />
       </div>
 
       <div class="room-edit__panel-area">
@@ -472,10 +457,6 @@ onMounted(() => {
               </section>
             </div>
           </div>
-
-          <div class="room-edit__actions">
-            <CommonSaveButton type="button" class="room-edit__actions-save" />
-          </div>
         </div>
       </div>
     </div>
@@ -555,34 +536,11 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.room-edit__back {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 16px;
-  border: 1.5px solid var(--wh-green);
-  border-radius: 999px;
-  background: var(--wh-green);
-  color: var(--wh-white);
-  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.3;
-  text-decoration: none;
+.room-edit__save {
+  flex-shrink: 0;
+  min-width: 0;
+  padding: 10px 24px;
   white-space: nowrap;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
-  box-sizing: border-box;
-}
-
-.room-edit__back:hover {
-  opacity: 0.92;
-}
-
-.room-edit__back-icon {
-  flex-shrink: 0;
 }
 
 .room-edit__status {
@@ -624,19 +582,6 @@ onMounted(() => {
   min-height: 0;
   margin-top: 32px;
   overflow: auto;
-}
-
-.room-edit__actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-shrink: 0;
-  margin-top: 24px;
-}
-
-.room-edit__actions-save {
-  margin-left: auto;
 }
 
 .room-edit__nav {
@@ -966,8 +911,8 @@ onMounted(() => {
     flex-wrap: wrap;
   }
 
-  .room-edit__back {
-    align-self: flex-start;
+  .room-edit__save {
+    width: 100%;
   }
 
   .room-edit__nav {
