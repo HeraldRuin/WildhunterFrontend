@@ -992,29 +992,6 @@ watch(activeEditTab, (tab) => {
 
       <div class="base-edit__title-row">
         <CommonPageTitle>{{ pageTitle }}</CommonPageTitle>
-
-        <NuxtLink
-          to="/profile/base"
-          class="base-edit__back"
-        >
-          <svg
-            class="base-edit__back-icon"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          Назад к списку баз
-        </NuxtLink>
       </div>
 
       <div
@@ -1667,10 +1644,6 @@ watch(activeEditTab, (tab) => {
 }
 
 .base-edit__title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   flex-shrink: 0;
   width: 100%;
   margin-bottom: 16px;
@@ -1681,8 +1654,6 @@ watch(activeEditTab, (tab) => {
 
 .base-edit__title-row :deep(.page-title) {
   margin: 0;
-  flex: 1;
-  min-width: 0;
 }
 
 .base-edit__panel-area {
@@ -1703,36 +1674,6 @@ watch(activeEditTab, (tab) => {
   min-width: 0;
   width: 100%;
   overflow: hidden;
-}
-
-.base-edit__back {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 16px;
-  border: 1.5px solid var(--wh-green);
-  border-radius: 999px;
-  background: var(--wh-green);
-  color: var(--wh-white);
-  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.3;
-  text-decoration: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
-  box-sizing: border-box;
-}
-
-.base-edit__back:hover {
-  opacity: 0.92;
-}
-
-.base-edit__back-icon {
-  flex-shrink: 0;
 }
 
 .base-edit__status {
@@ -2718,14 +2659,6 @@ watch(activeEditTab, (tab) => {
     padding: 0;
     background: transparent;
     border-radius: 0;
-  }
-
-  .base-edit__title-row {
-    flex-wrap: wrap;
-  }
-
-  .base-edit__back {
-    align-self: flex-start;
   }
 
   .base-edit__nav {
