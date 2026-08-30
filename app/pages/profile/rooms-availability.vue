@@ -139,16 +139,19 @@ function resolveBadgeClass(event?: RoomAvailabilityDay | null) {
   return 'rooms-availability__badge--available'
 }
 
-function bookingLabel(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
+function bookingNumberLabel(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
   const number = booking.booking_number ?? ''
   const checkout = booking.is_checkout ? ' (В)' : ''
+  return `Б${number}${checkout}`
+}
 
-  if (isSummaryTab.value) {
-    return `Б${number}${checkout}`
-  }
+function bookingStatusText(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
+  return (booking.statusName || booking.status || '').trim()
+}
 
-  const status = booking.statusName || booking.status
-  return `Б${number} ${status}${checkout}`.trim()
+function isAwaitingConfirmationStatus(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
+  const status = bookingStatusText(booking).toLowerCase()
+  return booking.code === 'processing' || status.includes('ожидается подтверждение')
 }
 
 function extractErrorMessage(source: unknown, fallback: string) {
@@ -398,7 +401,21 @@ onMounted(() => {
                   class="rooms-availability__note"
                   :class="{ 'rooms-availability__note--checkout': booking.is_checkout }"
                 >
-                  {{ bookingLabel(booking) }}
+                  <template v-if="isSummaryTab">
+                    {{ bookingNumberLabel(booking) }}
+                  </template>
+                  <template v-else>
+                    {{ bookingNumberLabel(booking) }}
+                    <span
+                      v-if="bookingStatusText(booking)"
+                      class="rooms-availability__note-status"
+                      :class="isAwaitingConfirmationStatus(booking)
+                        ? 'rooms-availability__note-status--awaiting'
+                        : 'rooms-availability__note-status--other'"
+                    >
+                      {{ bookingStatusText(booking) }}
+                    </span>
+                  </template>
                 </span>
               </div>
 
@@ -698,6 +715,18 @@ onMounted(() => {
 
 .rooms-availability__note--checkout {
   color: #5e6d77;
+}
+
+.rooms-availability__note-status {
+  margin-left: 0.25em;
+}
+
+.rooms-availability__note-status--awaiting {
+  color: #d32f2f;
+}
+
+.rooms-availability__note-status--other {
+  color: #ed6c02;
 }
 
 .rooms-availability__badge {
