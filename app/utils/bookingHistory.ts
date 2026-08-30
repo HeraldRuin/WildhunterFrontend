@@ -159,6 +159,10 @@ function mapActions(
       continue
     }
 
+    if (action.code === 'cancel_collection') {
+      continue
+    }
+
     mapped.push({
       id: ACTION_ID_MAP[action.code],
       label:
