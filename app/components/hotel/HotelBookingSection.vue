@@ -1109,7 +1109,7 @@ onMounted(() => {
   width: 480px;
   min-width: min(100%, var(--wh-auth-modal-width));
   max-width: 100%;
-  padding: 48px 36px 32px;
+  padding: 56px 36px 36px;
   border-radius: var(--wh-radius);
   background: var(--wh-white);
   box-shadow: var(--wh-shadow);
@@ -1118,7 +1118,7 @@ onMounted(() => {
 }
 
 .hotel-booking-confirm__title {
-  margin: 0 0 28px;
+  margin: 8px 0 36px;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 1.25rem;
   font-weight: 600;
