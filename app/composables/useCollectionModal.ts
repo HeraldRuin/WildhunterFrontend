@@ -170,6 +170,38 @@ function parseCollected(collected?: string): { current: number, total: number } 
   return { current, total }
 }
 
+function invitationToParticipant(
+  invitation: BookingInvitationParticipant,
+  booking: BookingHistoryItem,
+): CollectionParticipant {
+  const status = participantStatusFromInvitation(invitation)
+  const declined = status === 'declined'
+    || isRememberedDeclinedHunter(
+      booking.id,
+      booking.number,
+      invitation.hunterId,
+    )
+
+  if (declined && invitation.hunterId) {
+    rememberDeclinedHunter(booking.id, invitation.hunterId)
+    rememberDeclinedHunter(Number(booking.number), invitation.hunterId)
+  }
+
+  return {
+    id: invitation.hunterId,
+    invitationId: invitation.invitationId,
+    name: invitation.name,
+    email: invitation.email,
+    status: declined ? 'declined' : status,
+  }
+}
+
+function buildDeclinedParticipants(booking: BookingHistoryItem): CollectionParticipant[] {
+  return (booking.collectionInvitations ?? [])
+    .map(invitation => invitationToParticipant(invitation, booking))
+    .filter(participant => participant.status === 'declined')
+}
+
 function buildMockState(booking: BookingHistoryItem): CollectionModalState {
   const collected = parseCollected(booking.status.collected)
   const slotsTotal = booking.hunt?.hunters && booking.hunt.hunters > 0
@@ -181,28 +213,7 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
     MOCK_PARTICIPANTS.length,
   )
   const invitedParticipants: CollectionParticipant[] = (booking.collectionInvitations ?? [])
-    .map((invitation) => {
-      const status = participantStatusFromInvitation(invitation)
-      const declined = status === 'declined'
-        || isRememberedDeclinedHunter(
-          booking.id,
-          booking.number,
-          invitation.hunterId,
-        )
-
-      if (declined && invitation.hunterId) {
-        rememberDeclinedHunter(booking.id, invitation.hunterId)
-        rememberDeclinedHunter(Number(booking.number), invitation.hunterId)
-      }
-
-      return {
-        id: invitation.hunterId,
-        invitationId: invitation.invitationId,
-        name: invitation.name,
-        email: invitation.email,
-        status: declined ? 'declined' as const : status,
-      }
-    })
+    .map(invitation => invitationToParticipant(invitation, booking))
     .filter(participant => participant.status !== 'declined')
 
   return {
@@ -221,7 +232,7 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
 
 export function useCollectionModal() {
   function open(booking: BookingHistoryItem) {
-    liveDeclinedParticipants.value = []
+    liveDeclinedParticipants.value = buildDeclinedParticipants(booking)
     state.value = buildMockState(booking)
     isContentHidden.value = false
     isOpen.value = true
@@ -282,6 +293,7 @@ export function useCollectionModal() {
       return
     }
 
+    liveDeclinedParticipants.value = buildDeclinedParticipants(booking)
     state.value = buildMockState(booking)
   }
 
