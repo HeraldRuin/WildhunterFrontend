@@ -2008,7 +2008,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .add-services-modal__cancel:hover:not(:disabled) {
-  color: var(--wh-gray-900);
+  color: var(--wh-orange-500);
 }
 
 .add-services-modal__delete {
