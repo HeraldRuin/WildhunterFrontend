@@ -312,15 +312,25 @@ onBeforeUnmount(() => {
                     v-if="showDetailsButtons && item.accommodation.rooms?.length"
                     class="booking-table__rooms"
                   >
-                    <div>
-                      Общее кол-во номеров: {{ item.accommodation.roomsTotal ?? item.accommodation.rooms.length }}
-                      <template
-                        v-for="(room, roomIndex) in item.accommodation.rooms"
-                        :key="`room-${item.id}-${roomIndex}`"
-                      >
-                        <br>
-                        {{ room.name }}, вместимость = {{ room.capacity }}, кол-во = {{ room.quantity }}
-                      </template>
+                    <div class="booking-table__stay-grid">
+                      <div>
+                        <template
+                          v-for="(room, roomIndex) in item.accommodation.rooms"
+                          :key="`room-${item.id}-${roomIndex}`"
+                        >
+                          <template v-if="roomIndex > 0"><br></template>
+                          {{ room.name }}, Вместимость номера = {{ room.capacity }} чел.
+                        </template>
+                      </div>
+                      <div>
+                        <template
+                          v-for="(room, roomIndex) in item.accommodation.rooms"
+                          :key="`room-booked-${item.id}-${roomIndex}`"
+                        >
+                          <template v-if="roomIndex > 0"><br></template>
+                          Забронировано номеров: {{ room.quantity }}
+                        </template>
+                      </div>
                     </div>
                     <div>
                       <template v-if="hasAccommodationTotals(item.accommodation)">
@@ -787,6 +797,11 @@ onBeforeUnmount(() => {
   padding: 6px 8px;
   border: 1px solid var(--wh-gray-200);
   border-radius: 4px;
+}
+
+.booking-table__rooms > .booking-table__stay-grid {
+  padding: 0;
+  border: none;
 }
 
 .booking-table__status-label {
