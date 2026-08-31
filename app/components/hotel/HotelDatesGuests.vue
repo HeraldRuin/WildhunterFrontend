@@ -53,6 +53,7 @@ const activeDatePart = ref<'start' | 'end' | null>(null)
 
 const datesFieldRef = ref<HTMLElement | null>(null)
 const guestsFieldRef = ref<HTMLElement | null>(null)
+const adultsInputRef = ref<HTMLInputElement | null>(null)
 
 function formatAdultsLabel(count: number) {
   const mod10 = count % 10
@@ -119,6 +120,12 @@ function closeDatesDropdown() {
 function toggleGuestsDropdown() {
   isGuestsOpen.value = !isGuestsOpen.value
   closeOtherDropdowns(isGuestsOpen.value ? 'guests' : undefined)
+
+  if (isGuestsOpen.value) {
+    void nextTick(() => {
+      adultsInputRef.value?.focus()
+    })
+  }
 }
 
 function openDatesDropdown() {
@@ -406,6 +413,7 @@ defineExpose({
                   −
                 </button>
                 <input
+                  ref="adultsInputRef"
                   type="text"
                   inputmode="numeric"
                   pattern="[0-9]*"
@@ -755,13 +763,15 @@ defineExpose({
 
 .hotel-dates-guests__guest-count {
   box-sizing: border-box;
-  width: 2rem;
-  min-width: 2rem;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2rem;
   margin: 0;
-  padding: 0;
-  border: none;
+  padding: 0 4px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 8px;
   appearance: none;
-  background: transparent;
+  background: var(--wh-white);
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 1rem;
   font-weight: 500;
@@ -769,12 +779,17 @@ defineExpose({
   letter-spacing: -0.05em;
   color: var(--wh-black-text);
   text-align: center;
+  cursor: text;
+}
+
+.hotel-dates-guests__guest-count:hover {
+  border-color: color-mix(in srgb, var(--wh-black-text) 35%, var(--wh-field-border));
 }
 
 .hotel-dates-guests__guest-count:focus {
-  outline: 1px solid currentColor;
-  outline-offset: 2px;
-  border-radius: 2px;
+  outline: none;
+  border-color: var(--wh-orange-500);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--wh-orange-500) 25%, transparent);
 }
 
 .hotel-dates-guests__submit {

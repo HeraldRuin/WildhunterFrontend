@@ -87,6 +87,7 @@ const hoveredAnimalId = ref<string | null>(null)
 
 const datesFieldRef = ref<HTMLElement | null>(null)
 const huntersFieldRef = ref<HTMLElement | null>(null)
+const adultsInputRef = ref<HTMLInputElement | null>(null)
 const animalFieldRef = ref<HTMLElement | null>(null)
 
 const animals = computed(() => props.animals)
@@ -217,6 +218,12 @@ function closeDatesDropdown() {
 function toggleHuntersDropdown() {
   isHuntersOpen.value = !isHuntersOpen.value
   closeOtherDropdowns(isHuntersOpen.value ? 'hunters' : undefined)
+
+  if (isHuntersOpen.value) {
+    void nextTick(() => {
+      adultsInputRef.value?.focus()
+    })
+  }
 }
 
 function toggleAnimalDropdown() {
@@ -497,6 +504,7 @@ defineExpose({
                   −
                 </button>
                 <input
+                  ref="adultsInputRef"
                   type="text"
                   inputmode="numeric"
                   pattern="[0-9]*"
@@ -982,13 +990,15 @@ defineExpose({
 
 .hotel-animals-search__stepper-count {
   box-sizing: border-box;
-  width: 2rem;
-  min-width: 2rem;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2rem;
   margin: 0;
-  padding: 0;
-  border: none;
+  padding: 0 4px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 8px;
   appearance: none;
-  background: transparent;
+  background: var(--wh-white);
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 1rem;
   font-weight: 500;
@@ -996,12 +1006,17 @@ defineExpose({
   letter-spacing: -0.05em;
   color: var(--wh-black-text);
   text-align: center;
+  cursor: text;
+}
+
+.hotel-animals-search__stepper-count:hover {
+  border-color: color-mix(in srgb, var(--wh-black-text) 35%, var(--wh-field-border));
 }
 
 .hotel-animals-search__stepper-count:focus {
-  outline: 1px solid currentColor;
-  outline-offset: 2px;
-  border-radius: 2px;
+  outline: none;
+  border-color: var(--wh-orange-500);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--wh-orange-500) 25%, transparent);
 }
 
 .hotel-animals-search__dropdown-option {
