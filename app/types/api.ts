@@ -637,6 +637,7 @@ export interface BookingHistoryRoomDto {
   price_total?: number | null
   price_per_person?: number | null
   adults: number
+  beds?: number | null
 }
 
 export interface BookingHistoryHotelDto {

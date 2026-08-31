@@ -319,7 +319,7 @@ onBeforeUnmount(() => {
                           :key="`room-${item.id}-${roomIndex}`"
                         >
                           <template v-if="roomIndex > 0"><br></template>
-                          {{ room.name }}, Вместимость номера = {{ room.capacity }} чел.
+                          {{ room.name }}<br>Вместимость номера = {{ room.capacity }} чел.<template v-if="room.beds != null"><br>Кол-во спальных мест: {{ room.beds }}</template>
                         </template>
                       </div>
                       <div>
@@ -688,9 +688,9 @@ onBeforeUnmount(() => {
 
 .booking-table th:nth-child(4),
 .booking-table__details {
-  width: 340px;
-  min-width: 300px;
-  max-width: 380px;
+  width: 400px;
+  min-width: 360px;
+  max-width: 440px;
 }
 
 .booking-table th:nth-child(5),
@@ -702,9 +702,9 @@ onBeforeUnmount(() => {
 
 .booking-table th:nth-child(7),
 .booking-table td.booking-table__actions {
-  width: 200px;
-  min-width: 200px;
-  max-width: 200px;
+  width: 160px;
+  min-width: 160px;
+  max-width: 160px;
 }
 
 .booking-table th:nth-child(6),
@@ -895,8 +895,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: 168px;
-  padding: 7px 16px;
+  width: 140px;
+  padding: 7px 12px;
   border-radius: 999px;
   border: 1.5px solid transparent;
   font-size: 0.75rem;
@@ -913,7 +913,7 @@ onBeforeUnmount(() => {
 
 .booking-table__action[aria-busy="true"] {
   width: auto;
-  min-width: 168px;
+  min-width: 140px;
 }
 
 .booking-table__action--danger {
@@ -1049,7 +1049,7 @@ onBeforeUnmount(() => {
   .booking-table__action,
   .booking-table__action[aria-busy="true"] {
     width: 100%;
-    min-width: 168px;
+    min-width: 140px;
     box-sizing: border-box;
   }
 }

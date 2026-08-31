@@ -62,6 +62,7 @@ export interface CollectionModalState {
 export interface BookingRoomDetail {
   name: string
   capacity: number
+  beds?: number | null
   quantity: number
   pricePerDay: number
   priceTotal?: number | null

@@ -299,6 +299,7 @@ export function mapBookingHistoryItem(
         rooms: rooms.map(room => ({
           name: room.title || 'Номер',
           capacity: room.adults || 0,
+          beds: room.beds ?? null,
           quantity: room.number || 0,
           pricePerDay: room.price || 0,
           priceTotal: room.price_total ?? null,
