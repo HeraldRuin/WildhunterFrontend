@@ -755,7 +755,6 @@ onMounted(() => {
           @click.self="closeNoHuntConfirm"
         >
           <div class="hotel-booking-confirm__card">
-            <CommonModalCloseButton @click="closeNoHuntConfirm" />
 
             <h2 id="hotel-booking-confirm-title" class="hotel-booking-confirm__title">
               Вы уверены, что хотите забронировать номер без охоты?
@@ -791,7 +790,6 @@ onMounted(() => {
           @click.self="closeNoRoomConfirm"
         >
           <div class="hotel-booking-confirm__card">
-            <CommonModalCloseButton @click="closeNoRoomConfirm" />
 
             <h2 id="hotel-no-room-confirm-title" class="hotel-booking-confirm__title">
               Вы уверены, что хотите забронировать охоту без номера?
@@ -827,7 +825,6 @@ onMounted(() => {
           @click.self="closeStayDateWarning"
         >
           <div class="hotel-booking-confirm__card">
-            <CommonModalCloseButton @click="closeStayDateWarning" />
 
             <h2 id="hotel-stay-date-warning-title" class="hotel-booking-confirm__title">
               Пожалуйста, выберите дату
@@ -856,7 +853,6 @@ onMounted(() => {
           @click.self="closeAnimalWarning"
         >
           <div class="hotel-booking-confirm__card">
-            <CommonModalCloseButton @click="closeAnimalWarning" />
 
             <h2 id="hotel-animal-warning-title" class="hotel-booking-confirm__title">
               {{ animalWarningTitle }}
@@ -885,7 +881,6 @@ onMounted(() => {
           @click.self="closeHuntDateWarning"
         >
           <div class="hotel-booking-confirm__card">
-            <CommonModalCloseButton @click="closeHuntDateWarning" />
 
             <h2 id="hotel-hunt-date-warning-title" class="hotel-booking-confirm__title">
               Пожалуйста, выберите дату охоты
@@ -914,7 +909,6 @@ onMounted(() => {
           @click.self="closeApiMessage"
         >
           <div class="hotel-booking-confirm__card">
-            <CommonModalCloseButton @click="closeApiMessage" />
 
             <h2 id="hotel-api-message-title" class="hotel-booking-confirm__title">
               {{ apiMessage }}
