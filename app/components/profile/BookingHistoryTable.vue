@@ -319,7 +319,7 @@ onBeforeUnmount(() => {
                           :key="`room-${item.id}-${roomIndex}`"
                         >
                           <template v-if="roomIndex > 0"><br></template>
-                          {{ room.name }}<br>Вместимость номера = {{ room.capacity }} чел.<template v-if="room.beds != null"><br>Кол-во спальных мест: {{ room.beds }}</template>
+                          {{ room.name }}<br>Вместимость номера: {{ room.capacity }} чел.<template v-if="room.beds != null"><br>Кол-во спальных мест: {{ room.beds }}</template>
                         </template>
                       </div>
                       <div>
