@@ -42,7 +42,6 @@ function writeJson(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value))
   } catch {
-    // ignore quota / private mode
   }
 }
 
@@ -54,7 +53,6 @@ function removeKey(key: string) {
   try {
     localStorage.removeItem(key)
   } catch {
-    // ignore
   }
 }
 

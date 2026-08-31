@@ -2,9 +2,9 @@
 export interface SelectFieldOption {
   value: string
   label: string
-  /** Closed trigger text; falls back to `label` when omitted. */
+
   triggerLabel?: string
-  /** Shown only in the open list (e.g. price sum), not in the closed trigger. */
+
   suffix?: string
 }
 
@@ -15,7 +15,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   error?: string
   noMargin?: boolean
-  /** When true, hovered options use orange fill + white text instead of orange border. */
+
   filledHover?: boolean
 }>(), {
   label: '',

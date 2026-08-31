@@ -1,6 +1,6 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
-  /** Нижняя разделительная линия под заголовком */
+
   divider?: boolean
 }>(), {
   divider: false,

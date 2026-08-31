@@ -262,7 +262,6 @@ async function handleSubmit() {
 
   isSubmitting.value = true
 
-  // Повторный сабмит с уже показанными ошибками — не трогаем DOM до конца оверлея
   const useOverlay = hasValidationFeedback.value
 
   if (useOverlay) {

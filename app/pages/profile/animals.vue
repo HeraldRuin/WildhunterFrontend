@@ -164,7 +164,6 @@ function onMinHuntersInput(animal: AnimalRow, event: Event) {
   const input = event.target as HTMLInputElement
   const raw = input.value.replace(/\D/g, '')
   animal.huntersCountInput = raw
-  // Иначе буква остаётся в DOM, если отфильтрованное значение не изменилось
   if (input.value !== raw) {
     input.value = raw
   }

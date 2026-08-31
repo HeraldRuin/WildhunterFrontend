@@ -109,7 +109,6 @@ watch(
       return
     }
 
-    // Пока checkout грузится — показываем текст с экрана подтверждения.
     if (!specialRequirements.value.trim()) {
       specialRequirements.value = pendingNotes.value
     }
@@ -200,7 +199,6 @@ function mapDraftToView(data: HotelBookingDraft) {
 }
 
 const booking = computed(() => {
-  // Пока сохраняем — держим черновик на экране под оверлеем.
   if (isConfirmingBooking.value && draft.value) {
     return mapDraftToView(draft.value)
   }
@@ -276,7 +274,6 @@ async function confirmSaveBooking() {
         await bookings.updateCustomerNotes(code, notes)
       }
       catch {
-        // Notes are optional after create — booking itself already succeeded.
       }
     }
 
@@ -998,7 +995,6 @@ async function confirmSaveBooking() {
   cursor: not-allowed;
 }
 
-/* Узкий десктоп: уменьшаем фото и кнопку, зелёной плашке больше места */
 @media (max-width: 1440px) and (min-width: 1025px) {
   .booking-confirmation__summary {
     gap: 10px 12px;

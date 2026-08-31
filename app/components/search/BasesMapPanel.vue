@@ -25,7 +25,7 @@ const measureSearchError = ref('')
 const measureOriginPoint = ref<{ lat: number, lng: number, key: number } | null>(null)
 const isGridList = computed(() => listColumns.value === 2)
 const isGridMulti = computed(() => isGridList.value && props.hotels.length > 1)
-/** Collapsed strip + compact thumbs: content is dense; page dots steal width and mislead. */
+
 const isCollapsedGridList = computed(() => isListCollapsed.value && isGridList.value)
 
 const listEl = ref<HTMLElement | null>(null)
@@ -41,7 +41,6 @@ function getListPageCount(el: HTMLElement) {
   const pageSize = el.clientHeight || 1
   const maxScroll = getListMaxScroll(el)
 
-  // Ignore tiny overflow from subpixels/padding so a nearly-full list stays one page.
   if (maxScroll <= 8) {
     return 1
   }
@@ -840,19 +839,18 @@ async function searchMeasurePoint() {
   grid-template-columns: 520px minmax(0, 1fr);
 }
 
-/* Compact mode with one hotel: sidebar fits a single card, no empty second slot. */
 .bases-map-page__layout--grid-single {
   grid-template-columns: 254px minmax(0, 1fr);
 }
 
 .bases-map-page__layout--collapsed {
-  /* Photo strip only; widen when pagination dots are present. */
+
   grid-template-columns: 120px minmax(0, 1fr);
   column-gap: 8px;
 }
 
 .bases-map-page__layout--collapsed:has(.bases-map-page__list-wrap--with-dots) {
-  /* dots (8) + gap (10) + photo (120) */
+
   grid-template-columns: 138px minmax(0, 1fr);
 }
 
@@ -884,10 +882,6 @@ async function searchMeasurePoint() {
   min-height: 0;
 }
 
-/*
- * Collapsed: toolbar stays in the photo column rhythm (spacer + controls),
- * then extends over the map so collapse sits outside the narrow strip.
- */
 .bases-map-page__layout--collapsed .bases-map-page__controls-wrap {
   grid-column: 1 / -1;
   grid-row: 1;
@@ -912,17 +906,12 @@ async function searchMeasurePoint() {
   padding-left: 8px;
 }
 
-/*
- * Collapsed toolbar (296px) overhangs the map column.
- * Shift measure search past it so it sits to the right of the icons, not under them.
- * 296 - sidebar(120) - column-gap(8) + gap(8) = 176
- */
 .bases-map-page__layout--collapsed .bases-map-page__measure-search {
   margin-left: 176px;
 }
 
 .bases-map-page__layout--collapsed:has(.bases-map-page__list-wrap--with-dots) .bases-map-page__measure-search {
-  /* 296 - 138 - 8 + 8 */
+
   margin-left: 158px;
 }
 
@@ -1130,7 +1119,7 @@ async function searchMeasurePoint() {
   display: flex;
   align-items: stretch;
   gap: 8px;
-  /* basis 0 so the wrap is capped by the sidebar, not by card content */
+
   flex: 1 1 0;
   min-height: 0;
   min-width: 0;
@@ -1205,7 +1194,6 @@ async function searchMeasurePoint() {
   padding: 1px;
 }
 
-/* Collapsed + compact: two small thumbs per row inside the 120px strip. */
 .bases-map-page__list--collapsed-grid {
   grid-template-columns: 1fr 1fr;
   gap: 6px;

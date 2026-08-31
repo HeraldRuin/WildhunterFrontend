@@ -3,13 +3,13 @@ export type SpinnerVariant = 'ring' | 'dots' | 'pulse'
 export type SpinnerSize = number | 'sm' | 'md' | 'lg'
 
 const props = withDefaults(defineProps<{
-  /** Вид спиннера */
+
   variant?: SpinnerVariant
-  /** Цвет акцента (CSS color / var) */
+
   color?: string
-  /** Размер: число в px или пресет */
+
   size?: SpinnerSize
-  /** Подпись для скринридеров */
+
   label?: string
 }>(), {
   variant: 'ring',

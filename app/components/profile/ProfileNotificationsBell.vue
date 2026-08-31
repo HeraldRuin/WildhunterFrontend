@@ -75,7 +75,6 @@ function bookingIdFromLink(link: string): number | undefined {
     }
   }
   catch {
-    // Некорректный link — ниже вернём undefined.
   }
 
   return undefined
@@ -95,7 +94,6 @@ function bookingsTarget(bookingId?: number, openCollection = false): string {
 }
 
 function resolveNotificationTarget(item: InboxNotification): string | null {
-  // Отмена сбора: бронь уже недоступна — только отметить прочитанным, без перехода.
   if (isCollectionCancelledNotification(item)) {
     return null
   }

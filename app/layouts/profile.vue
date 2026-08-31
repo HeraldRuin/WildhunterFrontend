@@ -24,7 +24,6 @@ const profileScrollLock = computed(() => {
     return true
   }
 
-  // Страницы с панелью на всю высоту: только внутренний скролл
   const path = route.path
   return (
     /^\/profile\/base\/[^/]+\/?$/.test(path)

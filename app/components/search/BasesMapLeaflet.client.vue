@@ -22,11 +22,11 @@ const props = withDefaults(defineProps<{
   zoom?: number
   markers?: BasesMapMarker[]
   activeId?: number | null
-  /** Increment to fit all markers into view. */
+
   fitVersion?: number
-  /** Click map for origin point, then a base to see distance. */
+
   measureMode?: boolean
-  /** External origin from address/coords search. */
+
   measureOriginPoint?: { lat: number, lng: number, key?: number } | null
 }>(), {
   lat: DEFAULT_MAP_CENTER.lat,
@@ -211,7 +211,6 @@ function tooltipOffsetForDirection(direction: TooltipDirection): [number, number
   }
 }
 
-/** Pick tooltip side so it stays inside the map viewport. */
 function resolveTooltipDirection(lat: number, lng: number, isMulti: boolean): TooltipDirection {
   if (!map) {
     return 'top'
@@ -341,7 +340,6 @@ function setMeasureOrigin(latlng: LatLng, pan = false) {
   measureOrigin = latlng
   syncMeasureGraphics()
 
-  // Pan to the point without changing zoom (measure mode keeps the overview).
   if (pan && map) {
     map.panTo(latlng, {
       animate: true,
@@ -360,7 +358,6 @@ function setMeasureTarget(lat: number, lng: number) {
   fitMeasurePoints()
 }
 
-/** Zoom out (never in) so origin and target are both in view. */
 function fitMeasurePoints() {
   if (!map || !leaflet || !measureOrigin || !measureTarget) {
     return
@@ -373,13 +370,11 @@ function fitMeasurePoints() {
 
   map.flyToBounds(leaflet.latLngBounds([measureOrigin, measureTarget]), {
     padding: [64, 64],
-    // Cap at current zoom so we only zoom out / pan, never zoom in.
     maxZoom: map.getZoom(),
     duration: 0.55,
   })
 }
 
-/** With a single base, auto-pick it as the measure end after placing origin. */
 function applySingleBaseTargetIfNeeded() {
   if (props.markers.length !== 1) {
     return
@@ -432,7 +427,6 @@ function syncMarkers() {
         : 'bases-map-tooltip',
     })
 
-    // Set side before open so the first paint is already correct.
     marker.on('mouseover', () => {
       const tooltip = marker.getTooltip()
       if (!tooltip || !leaflet) {
@@ -453,7 +447,6 @@ function syncMarkers() {
       const direction = resolveTooltipDirection(cluster.lat, cluster.lng, isMulti)
       applyTooltipDirection(tooltip, direction)
 
-      // Recompute screen position after direction/offset change.
       const layerPoint = map.latLngToLayerPoint(marker.getLatLng())
       const tooltipWithPosition = tooltip as Tooltip & {
         _setPosition?: (point: { x: number, y: number }) => void
@@ -463,7 +456,6 @@ function syncMarkers() {
 
     marker.on('click', () => {
       if (cluster.items.length > 1) {
-        // Measure mode: distance to the cluster center, don't drill into it.
         if (props.measureMode) {
           if (measureOrigin) {
             setMeasureTarget(cluster.lat, cluster.lng)
@@ -622,7 +614,6 @@ watch(
       return
     }
 
-    // Search replaced a single-base measure with several bases — drop the line.
     if (props.markers.length !== 1) {
       resetMeasure()
       return

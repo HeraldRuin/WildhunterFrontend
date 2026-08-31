@@ -326,10 +326,6 @@ async function handleFavoriteClick(event: MouseEvent) {
   padding: 8px;
 }
 
-/*
- * Snap card width immediately; animate only the media 96px → 120px.
- * Animating card width while media is 100% made the photo briefly fill the wide sidebar.
- */
 .map-hotel-card--image-only {
   position: relative;
   grid-template-columns: 120px;
@@ -376,7 +372,6 @@ async function handleFavoriteClick(event: MouseEvent) {
   border-radius: 12px;
 }
 
-/* Collapsed sidebar + compact mode: fill half-width grid cell (~56px). */
 .map-hotel-card--image-only-compact {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto;
@@ -540,7 +535,6 @@ async function handleFavoriteClick(event: MouseEvent) {
 }
 </style>
 
-<!-- Teleported tip is outside the component root subtree for positioning; unscoped block. -->
 <style>
 .map-hotel-card-tip {
   position: fixed;

@@ -1,4 +1,4 @@
-/** Minimal typing for Yandex Maps JS API 2.1 used by BasesMapYandex. */
+
 export type YmapsCoords = [number, number]
 
 export interface YmapsMap {

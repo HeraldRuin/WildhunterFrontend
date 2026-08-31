@@ -70,7 +70,7 @@ export default defineNuxtConfig({
       reverbPort: Number(process.env.NUXT_PUBLIC_REVERB_PORT || (apiUrl.protocol === 'https:' ? 443 : 8080)),
       reverbScheme: process.env.NUXT_PUBLIC_REVERB_SCHEME || apiUrl.protocol.replace(':', ''),
       broadcastAuthUrl: process.env.NUXT_PUBLIC_BROADCAST_AUTH_URL || `${apiUrl.origin}/broadcasting/auth`,
-      /** `leaflet` (OSM) or `yandex` — switch via NUXT_PUBLIC_MAP_PROVIDER */
+
       mapProvider: process.env.NUXT_PUBLIC_MAP_PROVIDER || 'leaflet',
       yandexMapsApiKey: process.env.NUXT_PUBLIC_YANDEX_MAPS_API_KEY || '',
     },
@@ -81,18 +81,13 @@ export default defineNuxtConfig({
     '/rooms': { ssr: false },
     '/rooms/**': { ssr: false },
   },
-  /**
-   * Prod is served over plain HTTP/1.1 (no HTTP/2 without a real TLS domain).
-   * Merge vendor JS into fewer chunks to reduce the request waterfall.
-   * Keep CSS code-splitting on — cssCodeSplit:false breaks scoped page styles in Nuxt.
-   */
+
   vite: {
     build: {
       assetsInlineLimit: 4096,
       rolldownOptions: {
         output: {
           codeSplitting: {
-            // Prefer fewer larger files under HTTP/1.1 (6-conn limit).
             minSize: 80_000,
             groups: [
               { name: 'vendor', test: /node_modules[\\/]/ },

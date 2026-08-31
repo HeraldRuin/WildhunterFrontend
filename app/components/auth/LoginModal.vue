@@ -55,7 +55,6 @@ async function handleSubmit() {
     const result = await login(email.value, password.value, rememberMe.value)
 
     if (!result.success) {
-      // API often returns errors: [] with a top-level message (e.g. invalid credentials)
       if (hasFieldErrors(result.errors)) {
         fieldErrors.value = result.errors
       } else {

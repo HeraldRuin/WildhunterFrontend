@@ -4,7 +4,7 @@ import { formatDisplayDate, startOfDay } from '~/utils/date'
 
 const props = withDefaults(defineProps<{
   animals?: HotelAnimalItem[]
-  /** Hotel detail still loading — show spinner in the animals field */
+
   animalsPending?: boolean
   stayCheckIn?: Date | null
   stayCheckOut?: Date | null

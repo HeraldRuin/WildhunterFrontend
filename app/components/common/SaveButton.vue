@@ -3,11 +3,11 @@ const props = withDefaults(defineProps<{
   type?: 'button' | 'submit'
   disabled?: boolean
   loading?: boolean
-  /** CSS border-radius, например var(--wh-radius-lg) */
+
   radius?: string
-  /** Ширина на desktop / tablet */
+
   width?: string
-  /** Ширина на mobile */
+
   mobileWidth?: string
 }>(), {
   type: 'button',

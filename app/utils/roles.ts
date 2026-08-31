@@ -1,4 +1,4 @@
-/** Коды ролей из API (`Modules\Role\Models\Role`) */
+
 export const ROLE_SUPERADMIN = 'superadmin'
 export const ROLE_BASE_ADMIN = 'baseadmin'
 export const ROLE_HUNTER = 'hunter'

@@ -138,8 +138,6 @@ const locationLabel = computed(() => {
     return selectedLocation.value.name
   }
 
-  // Keep showing that a location filter is active while the list loads —
-  // otherwise the field looks empty while /bases/map still filters by id.
   if (location.value) {
     return locationsLoading.value ? 'Загрузка...' : 'Выбранный регион'
   }
@@ -437,7 +435,6 @@ function submitSearch() {
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
 
-  // If URL has location/animal but the cached lists are empty, refetch names for labels.
   if (location.value && !locations.value?.length) {
     void refreshLocations()
   }

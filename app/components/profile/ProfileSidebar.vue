@@ -7,7 +7,7 @@ interface NavItem {
   to: string
   iconSrc: string
   showChevron?: boolean
-  /** Клик по родителю открывает подменю и сразу ведёт на `to` */
+
   navigateOnOpen?: boolean
   children?: Array<{ label: string, to: string }>
 }
@@ -89,7 +89,7 @@ const isSettingsRoute = computed(() =>
 
 const settingsMenuOpen = ref(false)
 const openSubmenus = ref<Record<string, boolean>>({})
-/** Планшет / мобильный: сайдбар ≤1024px */
+
 const isCompactSidebar = ref(false)
 
 watch(
@@ -129,7 +129,6 @@ watch(
 
 const showSettingsMenu = computed(() => isBaseAdmin.value && settingsMenuOpen.value)
 
-/** На компактном сайдбаре — drill-down: только дети раскрытого пункта */
 const compactDrilldownItem = computed(() => {
   if (!isCompactSidebar.value || !showSettingsMenu.value) {
     return null
@@ -275,8 +274,6 @@ function isActive(to: string) {
     return false
   }
 
-  // Не подсвечивать короткий путь, если есть более длинный пункт меню
-  // (например /rooms не активен на /rooms/availability)
   const hasLongerMatch = allNavPaths.value.some(
     path => path !== to
       && path.startsWith(`${to}/`)
@@ -291,7 +288,6 @@ async function handleLogout() {
     await logout()
   }
   catch {
-    // Сессия уже очищена в finally — переход на главную всё равно нужен.
   }
 
   await navigateTo('/')
@@ -356,7 +352,6 @@ async function goHome(event: MouseEvent) {
           <span class="profile-sidebar__nav-text">Назад</span>
         </button>
 
-        <!-- Планшет/мобила: только подпункты раскрытого пункта настроек -->
         <template v-if="compactDrilldownItem?.children?.length">
           <NuxtLink
             v-for="child in compactDrilldownItem.children"
@@ -679,7 +674,6 @@ async function goHome(event: MouseEvent) {
   opacity: 0.95;
 }
 
-/* Вложенные пункты только на десктопе (раскрытие в том же списке) */
 .profile-sidebar__nav-link--nested {
   padding-left: 48px;
   font-size: 16px;
@@ -822,7 +816,6 @@ async function goHome(event: MouseEvent) {
     box-sizing: border-box;
   }
 
-  /* Настройки = тот же стиль, что основное меню (без лишних отступов) */
   .profile-sidebar__nav-link--back,
   .profile-sidebar__nav-link--nested,
   .profile-sidebar__nav-link--drilldown {
@@ -833,7 +826,6 @@ async function goHome(event: MouseEvent) {
     font-weight: 500;
   }
 
-  /* 3 подпункта + «Назад» ≈ высота меню из 4–5 пунктов */
   .profile-sidebar__nav--drilldown .profile-sidebar__nav-link {
     min-height: 50px;
     padding-top: 12px;

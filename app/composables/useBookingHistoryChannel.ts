@@ -89,7 +89,6 @@ export function useBookingHistoryChannel(
         echo.disconnect()
       }
       catch {
-        // Обрыв WS не должен блокировать уход со страницы / выход.
       }
 
       echo = null

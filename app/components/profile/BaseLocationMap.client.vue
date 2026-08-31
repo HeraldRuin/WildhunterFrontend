@@ -103,7 +103,6 @@ async function reverseGeocode(coords: YmapsCoords) {
     }
   }
   catch {
-    // reverse geocode is best-effort
   }
 }
 

@@ -48,7 +48,6 @@ const { data: locationHotels, pending: hotelsPending } = useAsyncData(
         return cached
       }
 
-      // Drop stale list payload from before the API started returning coords.
       const hasCoords = cached.some(
         item => item.map_lat != null && item.map_lng != null,
       )

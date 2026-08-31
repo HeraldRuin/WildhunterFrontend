@@ -30,7 +30,6 @@ export async function fetchHotelDetail(params: HotelDetailParams): Promise<Hotel
     }
   }
   catch {
-    // Network / timeout — caller shows error UI, never cache mock as real data
   }
 
   return null
@@ -43,17 +42,14 @@ function getHotelDetailKey(params: HotelDetailParams) {
 function getCachedHotelData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {
   const cached = nuxtApp.payload?.data?.[key] ?? nuxtApp.static?.data?.[key]
 
-  // Prefetch may leave a Promise in payload — never treat it as ready data
   if (!cached || typeof (cached as { then?: unknown }).then === 'function') {
     return undefined
   }
 
-  // Failed fetches store null — do not reuse, allow refetch
   if (cached === null) {
     return undefined
   }
 
-  // Stale cache from before hotel detail returned animals — refetch
   const hotel = cached as { animals?: unknown }
   if (Array.isArray(hotel.animals) && hotel.animals.length === 0) {
     return undefined
@@ -71,7 +67,6 @@ export function useHotelDetail(params: MaybeRefOrGetter<HotelDetailParams>) {
     {
       watch: [resolved],
       lazy: true,
-      // Reuse payload on client navigations (browser back) without re-blurring
       getCachedData: (key, nuxtApp) => getCachedHotelData(key, nuxtApp),
     },
   )
@@ -89,12 +84,10 @@ export function prefetchHotelDetail(locationSlug?: string, hotelSlug?: string) {
   const nuxtApp = useNuxtApp()
   const existing = nuxtApp.payload?.data?.[key]
 
-  // Already resolved hotel data
   if (existing && typeof (existing as { then?: unknown }).then !== 'function') {
     return
   }
 
-  // Prefetch already in flight
   if (existing && typeof (existing as { then?: unknown }).then === 'function') {
     return
   }
@@ -108,7 +101,6 @@ export function prefetchHotelDetail(locationSlug?: string, hotelSlug?: string) {
       return
     }
 
-    // Do not cache failed loads — otherwise mock-shaped null blocks refetch
     delete nuxtApp.payload.data[key]
   }).catch(() => {
     delete nuxtApp.payload.data[key]

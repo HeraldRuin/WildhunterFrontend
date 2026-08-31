@@ -7,7 +7,7 @@
 }
 
 :root {
-  /* Breakpoints — синхронно с app/assets/css/breakpoints.css */
+
   --wh-bp-tablet: 1024px;
   --wh-bp-narrow: 768px;
   --wh-bp-mobile: 640px;
@@ -39,18 +39,18 @@
   --wh-container: 1240px;
   --wh-auth-modal-width: 440px;
 
-  /* Обводка полей: default / active (focus, open) / кольцо фокуса */
+
   --wh-field-border: rgba(0, 0, 0, 0.2);
   --wh-field-border-active: rgba(0, 0, 0, 0.45);
   --wh-field-focus-ring: rgba(0, 0, 0, 0.06);
 
-  /* Валидация: цвет текста ошибки и (опционально) окантовки */
+
   --wh-field-error: #dc2626;
   --wh-field-error-ring: rgb(220 38 38 / 12%);
-  /* 1 — красить окантовку при ошибке, 0 — только текст под полем */
+
   --wh-field-error-border-enabled: 0;
 
-  /* 1 — поднимать кнопку при hover, 0 — без подъёма */
+
   --wh-button-hover-lift-enabled: 0;
   --wh-button-hover-lift: translateY(calc(-1px * var(--wh-button-hover-lift-enabled)));
 

@@ -14,7 +14,6 @@ export default defineNuxtRouteMiddleware(async () => {
     return navigateTo('/', { replace: true })
   }
 
-  // Роль и 404 только на клиенте — createError/navigateTo здесь давали 500
   if (!import.meta.client) {
     return
   }
@@ -26,7 +25,6 @@ export default defineNuxtRouteMiddleware(async () => {
     return
   }
 
-  // Не форсим API: при офлайне/ошибке оставляем кэш роли, иначе ломаем все /profile/*
   await loadProfile()
 
   if (!isBaseAdmin.value) {

@@ -12,44 +12,44 @@ defineOptions({ inheritAttrs: false })
 const attrs = useAttrs()
 
 const props = withDefaults(defineProps<{
-  /** Пустой label — только placeholder (модалки и т.п.) */
+
   label?: string
   placeholder?: string
   modelValue?: string
   type?: string
   error?: string
-  /** URL иконки слева внутри инпута */
+
   icon?: string
   id?: string
   disabled?: boolean
   readonly?: boolean
   rows?: number
-  /** textarea вместо input */
+
   multiline?: boolean
-  /** textarea можно растягивать по высоте (старт как у input при rows=1) */
+
   resizable?: boolean
-  /** стиль маски пароля (letter-spacing) */
+
   masked?: boolean
-  /** состояние «открыт» (календарь и т.п.) */
+
   open?: boolean
   cursorPointer?: boolean
-  /** плавное появление значения (профиль) */
+
   reveal?: boolean
-  /** убрать нижний отступ (когда gap задаёт родитель) */
+
   noMargin?: boolean
-  /** разрешить только цифры */
+
   digitsOnly?: boolean
-  /** сумма: цифры и один разделитель (, или .) — без букв */
+
   amountOnly?: boolean
-  /** серия и номер охотдокумента */
+
   documentNumberKind?: HunterDocumentKind
-  /** лимит символов (обычный input) */
+
   maxLength?: number
-  /** скелетон вместо лейбла и инпута */
+
   skeleton?: boolean
-  /** Широкий trailing (сгенерировать + глаз) */
+
   trailingWide?: boolean
-  /** Не привязывать :value — браузер сам управляет autofill (пароли) */
+
   allowAutofill?: boolean
 }>(), {
   label: '',
@@ -122,13 +122,11 @@ const inputAttrs = computed(() => ({
         : attrs.inputmode as InputHTMLAttributes['inputmode'],
 }) as InputHTMLAttributes)
 
-/** Пустое / пробельное значение → '', чтобы браузер показал placeholder */
 const displayValue = computed(() => {
   const value = props.modelValue ?? ''
   return value.trim() === '' ? '' : value
 })
 
-/** allowAutofill: без :value только пока модель пуста — иначе type toggle сбрасывает поле */
 const bindValueFromModel = computed(() => {
   if (!props.allowAutofill) {
     return true
@@ -254,13 +252,11 @@ function syncDomValue(source?: Event | HTMLInputElement) {
     return
   }
 
-  // Браузерное autofill: в DOM есть значение, в Vue — нет.
   if (!modelValue && domValue) {
     emit('update:modelValue', normalizeInputValue(domValue))
     return
   }
 
-  // Controlled input перезаписал DOM — восстанавливаем из модели.
   if (modelValue && !domValue) {
     target.value = modelValue
     return

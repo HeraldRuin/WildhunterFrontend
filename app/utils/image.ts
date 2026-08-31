@@ -3,7 +3,6 @@ const MEDIA_SIZE_PATTERN = /\/(thumb|medium|large|max_large)(?=\?|$)/
 
 export type MediaImageSize = 'thumb' | 'medium' | 'large' | 'max_large'
 
-/** Rewrite /media/{id}/{size} URLs to a preferred size variant. */
 export function toMediaImageSize(url: string | null | undefined, size: MediaImageSize): string {
   const value = url?.trim()
 
@@ -18,7 +17,6 @@ export function toMediaImageSize(url: string | null | undefined, size: MediaImag
   return value.replace(MEDIA_SIZE_PATTERN, `/${size}`)
 }
 
-/** Переключатель: true — наша CSS-заглушка, false — картинка no_image из API */
 export const USE_CUSTOM_OFFER_PLACEHOLDER = true
 
 export function isMissingOfferImage(image?: string | null) {
@@ -49,7 +47,6 @@ export function isValidGalleryImage(image: { large?: string, medium?: string, th
   return [image.large, image.medium, image.thumb].some(url => shouldShowOfferImage(url))
 }
 
-/** Canonical key so /media/{id}/thumb|medium|large count as one photo. */
 export function getGalleryImageKey(image: { large?: string, medium?: string, thumb?: string }) {
   const url = (image.large || image.medium || image.thumb || '').trim()
 
@@ -60,7 +57,6 @@ export function getGalleryImageKey(image: { large?: string, medium?: string, thu
   return toMediaImageSize(url, 'large') || url
 }
 
-/** Extract media file id from `/media/{id}/...` URLs. */
 export function extractMediaIdFromUrl(url: string | null | undefined): number | null {
   const value = url?.trim()
 

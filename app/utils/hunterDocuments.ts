@@ -1,9 +1,7 @@
 export type HunterDocumentKind = 'billet' | 'license'
 
-/** 2 буквы серии + разделитель + 11 цифр номера */
 export const HUNTER_BILLET_NUMBER_MAX_LENGTH = 14
 
-/** 3 буквы серии + разделитель + 8 цифр номера */
 export const HUNTER_LICENSE_NUMBER_MAX_LENGTH = 12
 
 const DOCUMENT_NUMBER_DISALLOWED = /[^0-9A-Za-zА-Яа-яЁё\s\-№Nn]/g

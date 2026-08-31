@@ -30,7 +30,6 @@ const cachedLocationName = computed(() => {
   return homeLocations.value?.find(item => item.id === locationId.value)?.title ?? ''
 })
 
-// getCachedData: назад с отеля не дергает API снова и не показывает спиннер.
 const { data: locationHotels, pending: hotelsPending } = useAsyncData(
   () => `location-hotels-${route.params.id}`,
   async () => {
@@ -53,7 +52,6 @@ const { data: locationHotels, pending: hotelsPending } = useAsyncData(
   },
 )
 
-// Не блокируем переход: имя берём из кэша главной / ответа отелей, API — fallback.
 const { data: fetchedLocationName } = useAsyncData(
   () => `location-name-${route.params.id}`,
   async () => {
@@ -375,7 +373,7 @@ function handleFiltersReset() {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 16px;
-  /* Keep title row height so filters don't jump when count goes to 0. */
+
   min-height: calc(32px * 1.3);
 }
 

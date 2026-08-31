@@ -1,4 +1,4 @@
-/** «Тверская область» → «Тверской области» для фразы «в …». */
+
 export function formatLocationInPrepositional(name: string) {
   const trimmed = name.trim()
 

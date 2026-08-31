@@ -90,7 +90,7 @@ function scrollBy(direction: 'prev' | 'next') {
 
 @media (--wh-desktop) {
   .best-locations__inner.container {
-    /* 3×389px карточки + 2×16px gap + стрелки и отступы */
+
     width: min(100% - 32px, 1292px);
   }
 }

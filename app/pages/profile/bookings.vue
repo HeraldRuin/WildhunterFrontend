@@ -1035,7 +1035,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
   height: 100%;
   max-height: 100%;
   padding: 20px 40px 16px;
-  /* Чуть меньше слева — место под точки у сайдбара */
+
   padding-left: 20px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;

@@ -238,8 +238,6 @@ export function useAuthToken() {
       return
     }
 
-    // Токен может уже быть из cookie, а user — только в localStorage.
-    // Раньше при наличии token гидрация пропускалась → baseadmin слал на /404.
     const needsToken = !token.value
     const needsUser = !user.value
 

@@ -13,9 +13,9 @@ import {
 import { formatHotelPriceLabel } from '~/utils/hotel'
 
 const props = withDefaults(defineProps<{
-  /** Ширина всего блока, например `100%`, `90%`, `720px` */
+
   width?: string
-  /** Ширина внутренних форм (поля и кнопка) */
+
   blocksWidth?: string
 }>(), {
   width: '90%',
@@ -75,7 +75,7 @@ const animalAvailability = ref<{
   hunters: number
   price: number
 } | null>(null)
-/** Stay dates that were set when animal availability was last confirmed. */
+
 const animalAvailabilityStay = ref<{
   checkIn: number
   checkOut: number
@@ -190,7 +190,6 @@ function handleStayDatesChange(payload: { checkIn: Date | null, checkOut: Date |
     || prevCheckOut?.getTime() !== payload.checkOut?.getTime()
   const hasNewDates = Boolean(payload.checkIn && payload.checkOut)
 
-  // Clearing stay dates keeps hunt result.
   if (!datesChanged || !hasNewDates || !animalAvailability.value || !payload.checkIn || !payload.checkOut) {
     return
   }
@@ -202,8 +201,6 @@ function handleStayDatesChange(payload: { checkIn: Date | null, checkOut: Date |
     && stayAtCheck.checkOut === startOfDay(payload.checkOut).getTime(),
   )
 
-  // Restore the same stay (e.g. 6–7 after clear) and hunt date still fits — keep result.
-  // A different period (e.g. 6–8) clears it.
   if (!sameStayAsCheck) {
     clearAnimalAvailability()
   }
@@ -422,7 +419,6 @@ async function proceedBook() {
       return
     }
 
-    // API still expects a stay range; for hunt-only use hunt day → next day.
     const huntDay = parseDisplayDate(huntDateRaw)
     checkIn = huntDate
     checkOut = huntDay
@@ -618,7 +614,6 @@ watch(
   () => {
     tryAutoCheckFromSearch()
   },
-  // Template ref обновляется после render — без post автопоиск часто пропускается.
   { flush: 'post' },
 )
 
@@ -1088,8 +1083,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  /* Blur stays on a non-fading layer; animating opacity + backdrop-filter
-     briefly inflates box-shadows on the search blocks behind. */
+
   isolation: isolate;
 }
 
@@ -1169,7 +1163,7 @@ onMounted(() => {
 
 .hotel-booking-confirm-enter-active,
 .hotel-booking-confirm-leave-active {
-  /* Duration only — root opacity stays 1 so backdrop-filter does not bloom. */
+
   transition: visibility 0.2s linear;
 }
 

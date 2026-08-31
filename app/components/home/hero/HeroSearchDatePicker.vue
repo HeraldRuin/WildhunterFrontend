@@ -78,7 +78,6 @@ function focusMonthForPart(part: 'start' | 'end' | null) {
     return
   }
 
-  // No selected date: open on the earliest allowed month (e.g. stay month for hunt date)
   if (props.minDate) {
     viewMonth.value = startOfDay(props.minDate)
   }
@@ -121,7 +120,6 @@ function selectDate(date: Date) {
     return
   }
 
-  // Standard range: 1st click = start, 2nd = end; after a complete range, next click starts over.
   const rangeComplete = Boolean(start.value && end.value)
 
   if (!start.value || rangeComplete) {

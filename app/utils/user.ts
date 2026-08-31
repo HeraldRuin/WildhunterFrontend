@@ -214,7 +214,6 @@ export function formatMemberSince(value: string): string {
   const date = new Date(trimmed)
 
   if (Number.isNaN(date.getTime())) {
-    // API may already return a localized date string, e.g. "24 июня 2026 г."
     return trimmed
   }
 

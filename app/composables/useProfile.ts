@@ -19,7 +19,6 @@ import {
 const PROFILE_CACHE_PREFIX = 'wh_profile_user'
 const ROLES_CACHE_KEY = 'wh_profile_roles'
 
-/** Общий на все вызовы useProfile — иначе layout + page стартуют два параллельных запроса */
 let loadProfilePromise: Promise<void> | null = null
 
 function readStorageJson<T>(key: string): T | null {
@@ -48,7 +47,6 @@ function writeStorageJson(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value))
   } catch {
-    // ignore quota / private mode
   }
 }
 
@@ -60,7 +58,6 @@ function removeStorageKey(key: string) {
   try {
     localStorage.removeItem(key)
   } catch {
-    // ignore
   }
 }
 
@@ -133,7 +130,6 @@ export function useProfile() {
         writeStorageJson(ROLES_CACHE_KEY, response.data)
       }
     } catch {
-      // Справочник ролей не обязателен для отображения профиля.
     }
 
     return roleOptions.value
@@ -305,7 +301,6 @@ export function useProfile() {
 
     const shouldUseCacheOnly = !force && !cacheNeedsAvatarRefresh(userId)
 
-    // Обычный заход: кэш без запроса, но если в кэше нет аватара — идём в API
     if (shouldUseCacheOnly && hydrateFromCache(userId)) {
       return
     }
@@ -327,7 +322,6 @@ export function useProfile() {
       try {
         const [response, roles] = await Promise.all([
           userApi.getUser(userId),
-          // Справочник ролей кэшируем отдельно; при обновлении профиля не дёргаем /roles снова
           ensureRoles(false),
         ])
 
@@ -390,7 +384,6 @@ export function useProfile() {
         patchCachedProfile({ avatar: responseAvatar })
       }
 
-      // Сразу пишем номер билета в кэш — не ждём ответ GET /user
       if (profile.value && payload.hunter_billet_number != null) {
         patchCachedProfile({
           hunter_billet_number: String(payload.hunter_billet_number).trim(),
@@ -399,7 +392,6 @@ export function useProfile() {
 
       await loadProfile(true)
 
-      // После POST /user API иногда не возвращает avatar_url — не затираем старый аватар
       if (!uploadedNewAvatar && !selectedExistingAvatar && profile.value && !profile.value.avatar && previousAvatar) {
         patchCachedProfile({ avatar: previousAvatar })
       } else if ((uploadedNewAvatar || selectedExistingAvatar) && responseAvatar && profile.value && !profile.value.avatar) {

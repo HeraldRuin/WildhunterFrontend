@@ -68,7 +68,6 @@ export function useAuth() {
 
       return { success: true as const }
     } catch (error) {
-      // $fetch throws on 4xx; API body is on error.data
       const data = (error as { data?: ApiErrorResponse }).data
       return {
         success: false as const,
@@ -102,7 +101,6 @@ export function useAuth() {
         await auth.logout()
       }
     } catch {
-      // Даже если сервер недоступен, очищаем локальную сессию.
     } finally {
       authToken.clearSession()
       resetProfile()

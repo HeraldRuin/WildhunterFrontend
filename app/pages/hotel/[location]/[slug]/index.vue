@@ -18,7 +18,6 @@ const hotelParams = computed(() => ({
 
 const { data: hotel, pending: hotelPending, refresh: refreshHotel } = useHotelDetail(hotelParams)
 const placeholderHotel = computed(() => createMockHotelDetail(hotelParams.value))
-// Blur silhouette only while loading or after a failed fetch — never treat mock as real hotel
 const isHotelLoading = computed(() => hotelPending.value && !hotel.value)
 const hasHotelError = computed(() => !hotelPending.value && !hotel.value)
 const showHotelPlaceholder = computed(() => isHotelLoading.value || hasHotelError.value)
@@ -323,7 +322,7 @@ function handleRetryHotelLoad() {
 }
 
 .hotel-page__header :deep(.hero-header) {
-  /* Desktop: side gutters shrink toward tablet; tablet/mobile override below */
+
   width: min(100%, calc(100vw - 2 * clamp(12px, 1.5vw + 4px, 80px)));
   border: 1px solid var(--wh-gray-400);
   border-top: none;
@@ -342,7 +341,6 @@ function handleRetryHotelLoad() {
   user-select: none;
 }
 
-/* Blur header/description while hotel data loads; booking stays sharp */
 .hotel-page__body--loading .hotel-page__hero-inner > :not(.hotel-gallery):not(.hotel-page__booking) {
   filter: blur(5px);
   opacity: 0.55;
@@ -415,7 +413,7 @@ function handleRetryHotelLoad() {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  /* Desktop: wide screens keep gutters; near tablet they collapse hard */
+
   width: min(100%, calc(100vw - 2 * clamp(16px, 12vw - 140px, 110px)));
   margin-inline: auto;
 }
@@ -591,7 +589,6 @@ function handleRetryHotelLoad() {
   height: 28px;
   object-fit: contain;
 }
-
 
 @media (--wh-tablet) {
   .hotel-page__header :deep(.hero-header) {

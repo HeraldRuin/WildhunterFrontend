@@ -224,10 +224,7 @@ function handleWheel(event: WheelEvent) {
 }
 
 function handlePointerDown(event: PointerEvent) {
-  if (!event.cancelable) {
-    // Continue without preventDefault() if non-cancelable.
-  }
-  else {
+  if (event.cancelable) {
     event.preventDefault()
   }
 
@@ -235,7 +232,6 @@ function handlePointerDown(event: PointerEvent) {
   nextPointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
   activePointers.value = nextPointers
 
-  // Pinch starts when two pointers are active, regardless of current zoom.
   if (activePointers.value.size === 2) {
     const entries = Array.from(activePointers.value.values())
     const dx = entries[0].x - entries[1].x
@@ -246,7 +242,6 @@ function handlePointerDown(event: PointerEvent) {
     pinchStartDistance.value = distance || 1
     pinchStartZoom.value = lightboxZoom.value
 
-    // Keep panning stable during pinch; pan will be re-applied by zoom watcher.
     lightboxDragging.value = false
     lightboxPanX.value = 0
     lightboxPanY.value = 0
@@ -255,7 +250,6 @@ function handlePointerDown(event: PointerEvent) {
     return
   }
 
-  // Single-pointer: fallback to existing pan behavior.
   if (!canPanLightbox.value || event.button !== 0) {
     return
   }
@@ -314,7 +308,6 @@ function handlePointerUp(event: PointerEvent) {
   if (pinchActive.value && activePointers.value.size < 2) {
     pinchActive.value = false
     lightboxDragging.value = false
-    // Pan will be constrained by zoom watcher.
     return
   }
 
@@ -329,7 +322,6 @@ function handlePointerUp(event: PointerEvent) {
     ;(event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId)
   }
   catch {
-    // ignore
   }
 }
 

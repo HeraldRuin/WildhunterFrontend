@@ -13,7 +13,7 @@ const COLLAPSED_THUMB_COUNT = 4
 const TABLET_THUMB_TIER_WIDE = 6
 const TABLET_THUMB_TIER_MEDIUM = 4
 const TABLET_THUMB_TIER_NARROW = 2
-/** Limit parallel large downloads so thumbs/main medium stay snappy */
+
 const PREFETCH_CONCURRENCY = 2
 
 const collapsedThumbCount = ref(COLLAPSED_THUMB_COUNT)
@@ -61,13 +61,13 @@ const galleryLayoutClass = computed(() => ({
 
 const activeIndex = ref(0)
 const expanded = ref(false)
-/** large URLs already in browser cache — allows instant swap after medium preview */
+
 const readyLargeUrls = ref(new Set<string>())
-/** Painted main src — keep previous frame until the next URL is decoded */
+
 const paintedMainSrc = ref('')
-/** Main URLs that failed to load — skip when falling back */
+
 const failedMainUrls = ref(new Set<string>())
-/** Thumb URLs that finished loading — avoids dark "more" scrim on empty gray */
+
 const loadedThumbUrls = ref(new Set<string>())
 
 const thumbImages = computed(() => {
@@ -94,7 +94,6 @@ const mainImage = computed(() => {
   const medium = item.medium || ''
   const thumb = item.thumb || ''
 
-  // Show cached medium immediately; promote to large once prefetched/loaded.
   if (large && readyLargeUrls.value.has(large)) {
     return large
   }
@@ -152,7 +151,6 @@ function bindThumbImg(el: Element | ComponentPublicInstance | null) {
     return
   }
 
-  // Cached images may skip @load if complete before the listener is attached.
   if (el.complete && el.naturalWidth > 0) {
     markThumbLoaded(el)
   }
@@ -321,13 +319,11 @@ async function paintMainSrc(url: string) {
     return
   }
 
-  // First paint: let the <img> load normally (better LCP). Later swaps wait for decode.
   if (!paintedMainSrc.value) {
     paintedMainSrc.value = url
     return
   }
 
-  // Keep current frame visible while the next URL downloads/decodes.
   const img = new Image()
   img.decoding = 'async'
   img.src = url
@@ -338,7 +334,6 @@ async function paintMainSrc(url: string) {
     }
   }
   catch {
-    // decode can reject on error — keep the current frame
   }
 
   if (mainImage.value === url && img.naturalWidth > 0) {
@@ -389,7 +384,6 @@ function selectImage(index: number) {
   activeIndex.value = index
   failedMainUrls.value = new Set()
 
-  // Instant frame from the thumb grid cache; watch(mainImage) upgrades to medium/large.
   if (switching) {
     const instant = item.thumb || item.medium || item.large || ''
     if (instant) {
@@ -478,7 +472,7 @@ function handleCarouselScroll() {
     carouselScrollLock.value = true
     activeIndex.value = closestIndex
     failedMainUrls.value = new Set()
-  
+
     const instant = item.thumb || item.medium || item.large || ''
     if (instant) {
       paintedMainSrc.value = instant

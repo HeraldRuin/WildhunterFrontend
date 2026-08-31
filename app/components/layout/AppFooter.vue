@@ -128,7 +128,7 @@ const legalLinks = [
 
 .footer__grid {
   display: grid;
-  /* Последняя колонка (соцсети) по контенту — 5×48px + gaps не влезают в 1fr на ширинах ~1025–1600 */
+
   grid-template-columns: repeat(4, minmax(0, 1fr)) max-content;
   gap: 32px;
 }
@@ -175,7 +175,7 @@ const legalLinks = [
 }
 
 .footer__bottom {
-  /* border-top: 1px solid var(--wh-black-text); */
+
 }
 
 .footer__bottom-inner {

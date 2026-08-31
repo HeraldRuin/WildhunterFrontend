@@ -2,7 +2,7 @@
 import { formatDisplayDate, parseDisplayDate, startOfDay } from '~/utils/date'
 
 const props = withDefaults(defineProps<{
-  /** Ширина внутренних блоков (поля и кнопка), например `100%`, `720px`, `75%` */
+
   blocksWidth?: string
   loading?: boolean
 }>(), {
@@ -44,7 +44,7 @@ function adultsFromQuery() {
 const checkIn = ref<Date | null>(parseDisplayDate(queryString('checkIn')))
 const checkOut = ref<Date | null>(parseDisplayDate(queryString('checkOut')))
 const adultsCount = ref(adultsFromQuery())
-/** Даты пришли из поиска (query) — нужен автозапуск «Проверить наличие». */
+
 const hasDatesFromSearch = ref(Boolean(checkIn.value && checkOut.value))
 
 const isDatesOpen = ref(false)
@@ -139,8 +139,6 @@ function openDatesDropdown() {
   closeOtherDropdowns('dates')
 
   if (seedingCheckIn) {
-    // Re-assert after DOM swap (placeholder → dates), so the same click
-    // that removed the target cannot leave the calendar closed.
     void nextTick(() => {
       isDatesOpen.value = true
       activeDatePart.value = 'start'
@@ -226,7 +224,6 @@ function clearGuests(event: MouseEvent) {
 function handleDocumentClick(event: MouseEvent) {
   const target = event.target
 
-  // Ignore detached nodes from the same click that replaced the placeholder.
   if (!(target instanceof Node) || !document.contains(target)) {
     return
   }

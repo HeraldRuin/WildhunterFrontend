@@ -18,7 +18,6 @@ const editingMax = ref(false)
 const min = computed(() => props.boundMin)
 const max = computed(() => props.boundMax)
 
-// Step must divide (max - min), else native range snaps off the edge (1200…38000 + step 500 → 37700).
 const step = computed(() => {
   const span = max.value - min.value
   if (span <= 0) {
@@ -93,7 +92,6 @@ function commitMax() {
   editingMax.value = false
 }
 
-// Remount ranges when bounds change — native range keeps a clamped thumb if value briefly exceeded max.
 const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
 </script>
 

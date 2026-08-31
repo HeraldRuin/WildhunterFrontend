@@ -52,7 +52,6 @@ export function useInboxNotifications() {
       unreadCount.value = Number(response.data.unread_count) || 0
     }
     catch {
-      // Badge не критичен — молча игнорируем сбой.
     }
   }
 

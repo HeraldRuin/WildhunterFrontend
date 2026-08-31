@@ -110,26 +110,6 @@ useHead({
   background: var(--wh-white);
 }
 
-/*
-.blog-listing__bg {
-  position: absolute;
-  inset: -32px;
-  z-index: -2;
-  background: url('/images/blog/listing-bg.jpg') center / cover no-repeat;
-  filter: blur(10px) brightness(1.25);
-  transform: scale(1.06);
-}
-
-.blog-listing::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: rgb(255 255 255 / 55%);
-  pointer-events: none;
-}
-*/
-
 .blog-listing__inner.container {
   display: flex;
   flex-direction: column;

@@ -15,7 +15,6 @@ export const DEFAULT_SEARCH_FILTERS: SearchFiltersState = {
   hasMeals: '',
 }
 
-/** Parse selected amenity checkbox ids into numeric term_ids for /hotels/search. */
 export function toSearchTermIds(amenities: string[]): number[] {
   return amenities
     .map(Number)
@@ -41,7 +40,6 @@ export function toSearchPriceFilter(
   }
 }
 
-/** Sidebar / hero filters → POST /hotels/search body (no client-side list filtering). */
 export function buildHotelSearchBody(options: {
   filters: SearchFiltersState
   priceBounds: { min: number, max: number }
@@ -194,7 +192,6 @@ export const MOCK_SEARCH_ITEMS: BookableItem[] = [
 const MOCK_RATINGS = [9.8, 9.2, 8.7, 9.5, 8.9, 9.1, 8.4, 9.0, 8.6, 9.3, 8.8, 9.4]
 const MOCK_REVIEWS = [32, 18, 45, 27, 51, 14, 38, 22, 29, 16, 41, 33]
 
-/** Qualitative rating buckets for star_rate stored on a 0–5 scale. */
 const REVIEW_RATING_RANGES: Record<string, { min: number, max: number }> = {
   excellent: { min: 4.5, max: 5 },
   very_good: { min: 4, max: 4.5 },
@@ -202,7 +199,6 @@ const REVIEW_RATING_RANGES: Record<string, { min: number, max: number }> = {
   poor: { min: 3, max: 3.5 },
 }
 
-/** Client-side match for qualitative keys (`excellent`) or numeric thresholds (`"4"`). */
 export function matchesReviewRatingFilter(score: number, selected: string[]): boolean {
   if (!selected.length || !Number.isFinite(score) || score <= 0) {
     return !selected.length

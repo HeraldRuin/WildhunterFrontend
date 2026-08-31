@@ -31,7 +31,6 @@ const { isBaseAdmin } = useUserRole()
 const { weapons: weaponsApi } = useApi()
 const notifications = useNotifications()
 
-// Если роль уже известна (из сессии) — сразу на штатную 404
 if (import.meta.client && isBaseAdmin.value) {
   window.location.replace('/404')
 }
@@ -39,9 +38,6 @@ if (import.meta.client && isBaseAdmin.value) {
 useHead({
   title: 'Лицензия на оружие — WH',
 })
-
-
-
 
 const pulseUnsavedSave = ref(false)
 const pulseNotificationId = ref<string | null>(null)
@@ -56,7 +52,6 @@ const userWeaponsLoading = ref(false)
 const userWeaponsError = ref('')
 const cachedWeaponsCount = ref(0)
 
-/** Свёрнутые блоки с названием; данные ещё грузятся — вместо шеврона спиннер */
 const showWeaponPlaceholders = computed(() =>
   userWeaponsLoading.value
   && weapons.value.length === 0
@@ -68,7 +63,6 @@ type WeaponCardView =
   | { key: string, index: number, loading: false, weapon: UserWeapon }
 
 const weaponCards = computed<WeaponCardView[]>(() => {
-  // Ключ по индексу — одни и те же блоки, без leave/enter анимации при подгрузке
   if (weapons.value.length > 0) {
     return weapons.value.map((weapon, index) => ({
       key: `slot-${index}`,
@@ -89,7 +83,6 @@ const weaponCards = computed<WeaponCardView[]>(() => {
   return []
 })
 
-/** Левая колонка: 1, 2… — раскрытие #1 просто опускает #2, без перескока к #3 */
 const weaponCardColumns = computed(() => {
   const cards = weaponCards.value
   const leftCount = Math.ceil(cards.length / 2)
@@ -249,7 +242,6 @@ async function loadUserWeapons(options: { force?: boolean, silent?: boolean } = 
       return
     }
 
-    // Обычный заход — только кэш, без /user/weapons
     if (!options.force && hydrateWeaponsFromCache()) {
       return
     }
@@ -351,7 +343,6 @@ async function bootWeaponsPage() {
   await loadProfile()
   await refreshHunterBilletOnPageEnter()
 
-  // Есть полный кэш списка — сразу показываем, но номер билета всё равно подтягиваем при необходимости
   if (hydrateWeaponsFromCache()) {
     await ensureHunterBilletLoaded()
     syncHunterBilletSnapshot()
@@ -361,7 +352,6 @@ async function bootWeaponsPage() {
     return
   }
 
-  // Только старое число блоков — плейсхолдеры, один запрос для заполнения кэша
   cachedWeaponsCount.value = currentUserId()
     ? readUserWeaponsCountCache(currentUserId()!)
     : 0
@@ -571,7 +561,6 @@ function handleLicenseDateDocumentClick(event: MouseEvent) {
 onMounted(async () => {
   await loadProfile()
 
-  // Жёсткий уход на штатную 404 — без createError/navigateTo (они давали 500)
   if (isBaseAdmin.value) {
     window.location.replace('/404')
     return
@@ -592,7 +581,6 @@ onActivated(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleLicenseDateDocumentClick)
 })
-
 
 function stopSavePulse() {
   pulseUnsavedSave.value = false
@@ -621,7 +609,6 @@ function requestDeleteWeapon(index: number) {
     return
   }
 
-  // Новая несохранённая строка — убираем сразу
   if (isNewWeapon(weapon)) {
     weapons.value.splice(index, 1)
     persistWeaponsCache(weapons.value)
@@ -851,7 +838,6 @@ async function saveHunterBillet() {
   const trimmed = profile.value.hunter_billet_number.trim()
 
   try {
-    // Билет сохраняется через POST /user/weapons (можно только hunter_billet_number)
     const response = await weaponsApi.saveUserWeapon({
       hunter_billet_number: trimmed,
     })
@@ -859,7 +845,6 @@ async function saveHunterBillet() {
     if ('success' in response && response.success) {
       clearFieldError('hunter_billet_number')
       submitError.value = ''
-      // Сначала фиксируем в профиле и localStorage — GET может вернуть пусто (старый API / кэш auth)
       applyHunterBilletFromApi(trimmed)
       await loadUserWeapons({ force: true, silent: true })
       if (!profile.value?.hunter_billet_number.trim()) {
@@ -1289,7 +1274,7 @@ const hasNewWeapon = computed(() =>
 }
 
 .weapons-form__billet-row :deep(.form-field) {
-  /* Как одна карточка лицензии в двухколоночной сетке */
+
   flex: 0 0 calc((100% - 12px) / 2);
   width: calc((100% - 12px) / 2);
   max-width: calc((100% - 12px) / 2);

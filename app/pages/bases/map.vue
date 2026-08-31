@@ -23,7 +23,6 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     label: 'Базы',
     to: {
       path: '/bases',
-      // Keep hero search (dates, guests, location, animal) when leaving the map.
       query: route.query,
     },
   },
@@ -68,7 +67,6 @@ const searchRequest = computed(() => {
   return {
     catalog,
     body,
-    // Force reactivity when only query values change.
     key: route.fullPath,
   }
 })
@@ -127,7 +125,6 @@ async function loadMapHotels() {
       .filter((item): item is MapHotelItem => item != null)
   }
   catch {
-    // Keep previous results visible if a refresh fails.
   }
   finally {
     if (loadId === searchLoadId) {
@@ -145,7 +142,6 @@ watch(
   },
 )
 
-/** Drop empty hero fields so cleared location/animal actually leave the URL. */
 function toSearchQuery(payload: Record<string, string>) {
   const query: Record<string, string> = {}
 

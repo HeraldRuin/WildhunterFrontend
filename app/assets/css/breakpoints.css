@@ -1,8 +1,4 @@
-/**
- * Единые брейкпоинты проекта.
- * В стилях: @media (--wh-tablet) { ... }
- * Значения дублируются в :root (main.css) для справки и JS при необходимости.
- */
+
 @custom-media --wh-tablet (max-width: 1024px);
 @custom-media --wh-desktop (min-width: 1025px);
 @custom-media --wh-narrow (max-width: 768px);

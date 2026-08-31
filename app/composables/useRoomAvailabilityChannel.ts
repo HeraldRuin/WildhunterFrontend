@@ -98,7 +98,6 @@ export function useRoomAvailabilityChannel(
         echo.disconnect()
       }
       catch {
-        // Обрыв WS не должен блокировать уход со страницы / выход.
       }
 
       echo = null

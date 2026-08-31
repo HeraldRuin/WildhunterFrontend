@@ -40,7 +40,6 @@ export function useCurrentPassword() {
         return cachedPassword.value
       }
 
-      // useState после SSR может остаться null — подтягиваем sessionStorage
       const fromStorage = readSessionCache()
       if (fromStorage) {
         cachedPassword.value = fromStorage
@@ -54,7 +53,6 @@ export function useCurrentPassword() {
       if ('success' in response && response.success) {
         const password = response.data?.current_password || null
 
-        // Не затираем локальный кэш (логин/регистрация), если API вернул null
         if (password) {
           persist(password)
           return password
@@ -63,7 +61,6 @@ export function useCurrentPassword() {
         return cachedPassword.value || readSessionCache()
       }
     } catch {
-      // Поле остаётся пустым — пользователь введёт пароль вручную.
     }
 
     return cachedPassword.value || readSessionCache()

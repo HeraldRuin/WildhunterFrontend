@@ -83,7 +83,6 @@ function fitMapToContainer() {
 function withQuietMove(run: () => void) {
   ignoreBoundsChange = true
   run()
-  // boundschange may fire after animation frame / short delay
   window.setTimeout(() => {
     ignoreBoundsChange = false
     if (map && lastClusterZoom !== map.getZoom()) {
@@ -146,7 +145,6 @@ function tooltipHtml(items: BasesMapMarker[]) {
   return `<div class="bases-map-tooltip__title">${formatBasesCount(items.length)} рядом</div><ul class="bases-map-tooltip__list">${rows}</ul>`
 }
 
-/** Pick tooltip side so it stays inside the map viewport (same as Leaflet). */
 function resolveTooltipDirection(root: HTMLElement, isMulti: boolean): TooltipDirection {
   if (!mapEl.value) {
     return 'top'
@@ -233,7 +231,6 @@ function ensureLayouts() {
     return
   }
 
-  // Tooltip lives on the pin so it always tracks the marker (events-pane blocks DOM hover).
   pinLayout = ymapsApi.templateLayoutFactory.createClass(
     `<div class="bases-map-pin-root" data-cluster-key="$[properties.clusterKey]" style="width:$[properties.pinSize]px;height:$[properties.pinSize]px;">
       <div class="bases-map-pin $[properties.pinClass]">
@@ -511,7 +508,6 @@ function onMapClick(event: YmapsEvent) {
 }
 
 function onMapActionBegin() {
-  // Pins move under the cursor during pan/zoom — drop stale tooltip.
   hideTooltip()
 }
 
@@ -520,7 +516,6 @@ function onBoundsChange(event: YmapsEvent) {
     return
   }
 
-  // Clusters depend on zoom only (mercator pixels), not pan — skip rebuild while dragging.
   const newZoom = event.get('newZoom') as number | undefined
   const oldZoom = event.get('oldZoom') as number | undefined
   if (newZoom != null && oldZoom != null && newZoom === oldZoom) {
@@ -580,7 +575,6 @@ function syncMarkers() {
       },
       {
         iconLayout: pinLayout,
-        // Hit area on the events-pane (DOM pins sit underneath and never receive mouse).
         iconShape: {
           type: 'Circle',
           coordinates: [0, 0],
@@ -727,9 +721,7 @@ onMounted(async () => {
       zoom: DEFAULT_MAP_CENTER.zoom,
       controls: ['zoomControl'],
     }, {
-      // Follow container width when the hotel list collapses/expands.
       autoFitToViewport: 'always',
-      // Fewer interactive POIs — less UI chrome, snappier map.
       yandexMapDisablePoiInteractivity: true,
     }) as YmapsMap & { getCenter: () => YmapsCoords }
 
@@ -1125,7 +1117,6 @@ onBeforeUnmount(() => {
   padding-top: 4px;
 }
 
-/* Keep «Открыть в Яндекс Картах» / taxi bottom-right; hide constructor/logo promo. */
 .bases-map :deep([class*="copyrights-pane"]),
 .bases-map :deep([class*="copyright-pane"]) {
   left: auto !important;
@@ -1146,14 +1137,12 @@ onBeforeUnmount(() => {
   bottom: 8px !important;
 }
 
-/* «Как добраться» + «Доехать на такси» in one row (taxi stays hidden until Yandex shows it). */
 .bases-map :deep([class*="gotoymaps"]),
 .bases-map :deep([class*="gototaxi"]) {
   flex: 0 0 auto !important;
   vertical-align: middle;
 }
 
-/* Hide logo, constructor promo and «Условия использования»; keep open-in-maps / taxi. */
 .bases-map :deep([class*="gototech"]),
 .bases-map :deep([class*="copyright__logo"]),
 .bases-map :deep([class*="copyright-logo"]),

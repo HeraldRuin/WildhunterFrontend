@@ -20,7 +20,6 @@ export interface ManagedRoomGalleryImage {
   thumb?: string | null
 }
 
-/** Полный номер для формы создания/редактирования (RoomManageEditResource). */
 export interface ManagedRoomDetail {
   id: number
   title: string
@@ -93,7 +92,7 @@ export interface RoomAvailabilityBooking {
   code: string
   status: string
   statusName: string
-  /** Эта бронь в этот день выезжает */
+
   is_checkout: boolean
 }
 
@@ -114,7 +113,7 @@ export interface RoomAvailabilityDay {
   title: string
   classNames?: string[]
   occupiedRooms?: number | null
-  /** В этот день есть хотя бы один выезд */
+
   is_checkout_day?: boolean
   extendedProps: RoomAvailabilityExtendedProps
   bookings?: RoomAvailabilityBooking[]

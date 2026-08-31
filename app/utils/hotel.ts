@@ -338,7 +338,6 @@ export function formatHotelPrice(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value).replace(/\s/g, '.')
 }
 
-/** Отображаемая строка цены с валютой — менять формат здесь. */
 export function formatHotelPriceLabel(value: number) {
   return `${formatHotelPrice(value)} руб`
 }

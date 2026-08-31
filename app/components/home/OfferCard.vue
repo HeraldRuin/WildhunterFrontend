@@ -22,12 +22,6 @@ function queryParam(key: string): string {
   return Array.isArray(raw) ? String(raw[0] || '') : String(raw || '')
 }
 
-/**
- * Даты/гости для страницы отеля.
- * На /bases в hero всегда видны даты (из URL или сегодня/завтра) —
- * их нужно передать, иначе на отеле поле пустое и автопоиск не стартует.
- * С главной (без /bases) даты не подставляем — пустой блок по задумке.
- */
 function searchQueryForHotel() {
   const query: Record<string, string> = {}
 

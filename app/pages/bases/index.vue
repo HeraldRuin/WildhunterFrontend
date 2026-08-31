@@ -36,11 +36,6 @@ function queryString(key: string): string {
   return Array.isArray(value) ? String(value[0] || '') : String(value || '')
 }
 
-/**
- * /hotels/search требует даты; без них страница в каталоге и term_ids не уходят.
- * Сразу пишем дефолтные даты/гостей в URL (как в hero), чтобы фильтр атрибутов
- * работал без отдельного нажатия «Искать».
- */
 if (!queryString('checkIn') || !queryString('checkOut')) {
   await navigateTo({
     path: '/bases',
@@ -59,7 +54,6 @@ function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp
     ?? nuxtApp.static.data[key] as T | undefined
 }
 
-// Без await/lazy: иначе URL меняется, а страница ждёт /hotels/price-range + /hotels/offers.
 const { data: priceBounds } = useAsyncData(
   'hotel-price-range',
   () => hotelsApi.getPriceRangeBounds(),
@@ -119,13 +113,11 @@ function toCatalogResult(items: OfferItem[]): NormalizedSearchResult {
   }
 }
 
-/** Without dates → full catalog via /hotels/offers; with dates → availability search. */
 const isCatalogMode = computed(() => !queryString('checkIn') && !queryString('checkOut'))
 
 const searchRequest = computed(() => {
   const catalog = isCatalogMode.value
 
-  // Search mode: dates + guests (+ location/animal) are the base request; sidebar filters append.
   const body: HotelSearchBody = catalog
     ? {}
     : buildHotelSearchBody({
@@ -139,7 +131,6 @@ const searchRequest = computed(() => {
       })
 
   return {
-    // Catalog is loaded once; pagination is client-side.
     page: catalog ? 1 : currentPage.value,
     catalog,
     body,
@@ -175,28 +166,23 @@ const { data: searchResult, refresh, pending: searchPending } = useAsyncData(
   },
   {
     lazy: true,
-    // Запросом управляет watch(searchRequest) — иначе кэш/lazy и смена query расходятся.
     immediate: false,
     default: emptySearchResult,
     getCachedData: (key, nuxtApp) => {
-      // Ключ один (`hotel-search`) без query — кэш можно брать только для каталога.
-      // Иначе после /bases без дат сюда попадали все отели, а поиск с location/dates не шёл.
       if (queryString('checkIn') || queryString('checkOut')) {
         return undefined
       }
 
-      // Кэш `home-hotel-offers` здесь использовать нельзя: на главной API
-      // возвращает только лучшие предложения, а не полный каталог.
       return getCachedPageData<NormalizedSearchResult>(key, nuxtApp)
     },
   },
 )
 
 const isSearchLoading = ref(false)
-/** Spinner on «Искать» — separate from results-area loading. */
+
 const isButtonSearching = ref(false)
 const hasSearchItems = computed(() => (searchResult.value?.items.length ?? 0) > 0)
-/** Full-page spinner only when there is nothing to show yet. */
+
 const isResultsLoading = computed(() => {
   if (hasSearchItems.value) {
     return false
@@ -215,7 +201,6 @@ watch(
 )
 
 watch(searchRequest, async (req, prev) => {
-  // Полный каталог уже есть в кэше /bases и запрос не изменился — не дёргаем API снова.
   if (
     req.catalog
     && hasSearchItems.value
@@ -232,8 +217,6 @@ watch(searchRequest, async (req, prev) => {
   }
 
   const loadId = ++searchLoadId
-  // Keep existing cards mounted while refreshing — swapping to the loading flex
-  // box reuses the same DOM node and can leave cards inside it (broken layout).
   if (!hasSearchItems.value) {
     isSearchLoading.value = true
   }
@@ -247,7 +230,6 @@ watch(searchRequest, async (req, prev) => {
   }
 }, { immediate: true })
 
-// Обратный переход на главную — без ожидания скачивания чанка.
 onMounted(() => {
   void preloadRouteComponents('/')
 })
@@ -317,7 +299,6 @@ watch(totalPages, (pages) => {
   }
 })
 
-/** Drop empty hero fields so cleared location/animal actually leave the URL. */
 function toSearchQuery(payload: Record<string, string>) {
   const query: Record<string, string> = {}
 
@@ -344,8 +325,6 @@ async function handleSearch(payload: Record<string, string>) {
       path: '/bases',
       query: toSearchQuery(payload),
     })
-    // Button spinner is owned here: watch can skip (same query) or lose a
-    // loadId race and never clear isButtonSearching.
     await refresh()
   }
   finally {

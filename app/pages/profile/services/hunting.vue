@@ -769,7 +769,6 @@ onBeforeUnmount(() => {
   background: var(--wh-white);
 }
 
-/* Список и инпуты плавно сужаются: от ~1823px до переноса наверх (~1540px) */
 @media (max-width: 1823px) and (min-width: 1541px) {
   .hunting-org__animals {
     flex: 0 1 clamp(220px, 38cqi, 600px);
@@ -1046,7 +1045,6 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
-/* Список сверху и сужение инпутов: от ~1540px до планшета (~1025px) */
 @media (max-width: 1540px) and (min-width: 1025px) {
   .hunting-org {
     flex-direction: column;
@@ -1085,7 +1083,6 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Кнопки в два ряда: от ~1243px до планшета (~1025px) */
 @media (max-width: 1243px) and (min-width: 1025px) {
   .hunting-org__col--actions {
     flex-direction: column;
@@ -1094,7 +1091,6 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Кнопки в два ряда на планшете: от ~837px до мобильного */
 @media (max-width: 837px) and (min-width: 641px) {
   .hunting-org__col--actions {
     flex-direction: column;

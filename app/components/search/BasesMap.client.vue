@@ -10,11 +10,11 @@ const props = withDefaults(defineProps<{
   zoom?: number
   markers?: BasesMapMarker[]
   activeId?: number | null
-  /** Increment to fit all markers into view. */
+
   fitVersion?: number
-  /** Click map for origin point, then a base to see distance. */
+
   measureMode?: boolean
-  /** External origin from address/coords search. */
+
   measureOriginPoint?: { lat: number, lng: number, key?: number } | null
 }>(), {
   lat: DEFAULT_MAP_CENTER.lat,
