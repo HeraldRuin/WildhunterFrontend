@@ -255,8 +255,140 @@ async function removeAnimal(animal: AnimalRow) {
   }
 }
 
+const scrollEl = ref<HTMLElement | null>(null)
+const listPageCount = ref(1)
+const listPageIndex = ref(0)
+let listResizeObserver: ResizeObserver | null = null
+
+function getListMaxScroll(el: HTMLElement) {
+  return Math.max(0, el.scrollHeight - el.clientHeight)
+}
+
+function getListPageCount(el: HTMLElement) {
+  const pageSize = el.clientHeight || 1
+  const maxScroll = getListMaxScroll(el)
+
+  if (maxScroll <= 8) {
+    return 1
+  }
+
+  return Math.max(1, Math.ceil((maxScroll + pageSize) / pageSize))
+}
+
+function getListPageIndex(el: HTMLElement, pageCount: number) {
+  if (pageCount <= 1) {
+    return 0
+  }
+
+  const maxScroll = getListMaxScroll(el)
+
+  if (el.scrollTop >= maxScroll - 2) {
+    return pageCount - 1
+  }
+
+  return Math.min(
+    pageCount - 1,
+    Math.round((el.scrollTop / maxScroll) * (pageCount - 1)),
+  )
+}
+
+function updateListPages() {
+  const el = scrollEl.value
+  if (!el) {
+    listPageCount.value = 1
+    listPageIndex.value = 0
+    return
+  }
+
+  const pages = getListPageCount(el)
+  listPageCount.value = pages
+  listPageIndex.value = getListPageIndex(el, pages)
+}
+
+function scheduleListPagesUpdate() {
+  void nextTick(() => {
+    updateListPages()
+    requestAnimationFrame(() => {
+      updateListPages()
+      requestAnimationFrame(updateListPages)
+    })
+  })
+}
+
+function onListScroll() {
+  const el = scrollEl.value
+  if (!el) {
+    return
+  }
+
+  listPageIndex.value = getListPageIndex(el, listPageCount.value)
+}
+
+function scrollListToPage(index: number) {
+  const el = scrollEl.value
+  if (!el || listPageCount.value <= 1) {
+    return
+  }
+
+  const maxScroll = getListMaxScroll(el)
+  const top = Math.round((index / (listPageCount.value - 1)) * maxScroll)
+
+  el.scrollTo({ top, behavior: 'smooth' })
+  listPageIndex.value = index
+}
+
+watch(() => animals.value.length, () => {
+  scheduleListPagesUpdate()
+  void nextTick(() => {
+    if (scrollEl.value && listResizeObserver) {
+      listResizeObserver.disconnect()
+      listResizeObserver.observe(scrollEl.value)
+    }
+  })
+})
+
+watch(isLoading, (loading) => {
+  if (!loading) {
+    scheduleListPagesUpdate()
+  }
+})
+
+watch(scrollEl, (el) => {
+  if (!el || !listResizeObserver) {
+    return
+  }
+
+  listResizeObserver.disconnect()
+  listResizeObserver.observe(el)
+  updateListPages()
+})
+
 onMounted(() => {
   void loadManage()
+
+  window.addEventListener('resize', scheduleListPagesUpdate)
+
+  if (import.meta.client && typeof ResizeObserver !== 'undefined') {
+    listResizeObserver = new ResizeObserver(() => {
+      updateListPages()
+    })
+
+    void nextTick(() => {
+      if (scrollEl.value) {
+        listResizeObserver?.observe(scrollEl.value)
+      }
+      updateListPages()
+    })
+  }
+  else {
+    scheduleListPagesUpdate()
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', scheduleListPagesUpdate)
+  listResizeObserver?.disconnect()
+  listResizeObserver = null
 })
 </script>
 
@@ -294,57 +426,95 @@ onMounted(() => {
       <CommonSpinner variant="ring" size="lg" label="Загрузка животных" />
     </div>
 
-    <section v-else class="animals-manage__panel">
-      <div class="animals-manage__head">
-        <span class="animals-manage__col animals-manage__col--name">Имя</span>
-        <span class="animals-manage__col animals-manage__col--hunters">Минимальное количество охотников</span>
-        <span class="animals-manage__col animals-manage__col--actions" aria-hidden="true" />
-      </div>
-
-      <ul v-if="animals.length" class="animals-manage__list">
-        <li
-          v-for="animal in animals"
-          :key="animal.id"
-          class="animals-manage__row"
+    <div v-else class="animals-manage__content">
+      <div class="animals-manage__shell">
+        <div
+          class="animals-manage__dots"
+          :class="{ 'animals-manage__dots--hidden': !(animals.length && listPageCount > 1) }"
+          role="tablist"
+          aria-label="Страницы списка животных"
+          :aria-hidden="!(animals.length && listPageCount > 1)"
         >
-          <span class="animals-manage__col animals-manage__col--name">{{ animal.title }}</span>
+          <button
+            v-for="page in listPageCount"
+            :key="page"
+            type="button"
+            class="animals-manage__dot"
+            :class="{ 'animals-manage__dot--active': page - 1 === listPageIndex }"
+            :aria-label="`Страница ${page}`"
+            :aria-current="page - 1 === listPageIndex ? 'true' : undefined"
+            :tabindex="animals.length && listPageCount > 1 ? 0 : -1"
+            @click="scrollListToPage(page - 1)"
+          />
+        </div>
 
-          <div class="animals-manage__col animals-manage__col--hunters">
-            <input
-              class="animals-manage__input"
-              type="text"
-              inputmode="numeric"
-              :value="animal.huntersCountInput"
-              :disabled="busyAnimalId === animal.id || isAdding"
-              :aria-label="`Минимальное количество охотников: ${animal.title}`"
-              @keydown="onMinHuntersKeydown"
-              @input="onMinHuntersInput(animal, $event)"
-            >
-            <button
-              type="button"
-              class="animals-manage__btn animals-manage__btn--save"
-              :disabled="busyAnimalId != null || isAdding"
-              @click="saveAnimal(animal)"
-            >
-              Сохранить
-            </button>
+        <section class="animals-manage__panel">
+          <p v-if="!animals.length" class="animals-manage__empty">
+            Нет животных
+          </p>
+
+          <div
+            v-else
+            ref="scrollEl"
+            class="animals-manage__scroll"
+            @scroll.passive="onListScroll"
+          >
+            <div class="animals-manage__table">
+              <div class="animals-manage__head">
+                <span class="animals-manage__col animals-manage__col--name">Имя</span>
+                <div class="animals-manage__col animals-manage__col--controls">
+                  <span class="animals-manage__col animals-manage__col--hunters">Минимальное количество охотников</span>
+                </div>
+              </div>
+
+              <ul class="animals-manage__list">
+                <li
+                  v-for="animal in animals"
+                  :key="animal.id"
+                  class="animals-manage__row"
+                >
+                  <span class="animals-manage__col animals-manage__col--name">{{ animal.title }}</span>
+
+                  <div class="animals-manage__col animals-manage__col--controls">
+                    <div class="animals-manage__col animals-manage__col--hunters">
+                      <input
+                        class="animals-manage__input"
+                        type="text"
+                        inputmode="numeric"
+                        :value="animal.huntersCountInput"
+                        :disabled="busyAnimalId === animal.id || isAdding"
+                        :aria-label="`Минимальное количество охотников: ${animal.title}`"
+                        @keydown="onMinHuntersKeydown"
+                        @input="onMinHuntersInput(animal, $event)"
+                      >
+                      <button
+                        type="button"
+                        class="animals-manage__btn animals-manage__btn--save"
+                        :disabled="busyAnimalId != null || isAdding"
+                        @click="saveAnimal(animal)"
+                      >
+                        Сохранить
+                      </button>
+                    </div>
+
+                    <div class="animals-manage__col animals-manage__col--actions">
+                      <button
+                        type="button"
+                        class="animals-manage__btn animals-manage__btn--delete"
+                        :disabled="busyAnimalId != null || isAdding"
+                        @click="requestRemoveAnimal(animal)"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
-
-          <div class="animals-manage__col animals-manage__col--actions">
-            <button
-              type="button"
-              class="animals-manage__btn animals-manage__btn--delete"
-              :disabled="busyAnimalId != null || isAdding"
-              @click="requestRemoveAnimal(animal)"
-            >
-              Удалить
-            </button>
-          </div>
-        </li>
-      </ul>
-
-      <p v-else class="animals-manage__empty">Нет животных</p>
-    </section>
+        </section>
+      </div>
+    </div>
 
     <CommonConfirmModal />
   </div>
@@ -356,13 +526,19 @@ onMounted(() => {
   flex-direction: column;
   flex: 1 1 0;
   min-height: 0;
+  min-width: 0;
   height: 100%;
   max-height: 100%;
+  max-width: 100%;
   padding: 20px 40px 16px;
-  max-width: 1100px;
+  padding-left: 20px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   overflow: hidden;
+}
+
+.profile-page :deep(.page-title) {
+  width: 100%;
 }
 
 .profile-page__header {
@@ -371,8 +547,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: 1100px;
-  max-width: 100%;
+  width: 100%;
   height: 31px;
   margin-bottom: 20px;
   padding: 0;
@@ -382,11 +557,12 @@ onMounted(() => {
 
 .animals-manage__toolbar {
   display: flex;
+  flex-wrap: nowrap;
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: 1100px;
+  width: 100%;
   max-width: 100%;
   margin-bottom: 24px;
   padding-bottom: 16px;
@@ -396,14 +572,34 @@ onMounted(() => {
 
 .animals-manage__toolbar :deep(.page-title) {
   margin: 0;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .animals-manage__select {
-  flex-shrink: 0;
-  width: 320px;
-  max-width: 100%;
+  flex: 0 1 480px;
+  width: 480px;
+  min-width: 220px;
+  max-width: 480px;
+}
+
+@media (max-width: 1280px) and (min-width: 1025px) {
+  .animals-manage__toolbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .animals-manage__toolbar :deep(.page-title) {
+    min-width: max-content;
+  }
+
+  .animals-manage__select {
+    flex: 0 1 320px;
+    width: 320px;
+    min-width: 220px;
+    max-width: 100%;
+  }
 }
 
 .animals-manage__select :deep(.select-field__list) {
@@ -436,32 +632,115 @@ onMounted(() => {
   min-height: 220px;
 }
 
+.animals-manage__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.animals-manage__shell {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.animals-manage__dots {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 8px;
+  width: 10px;
+  padding: 4px 0;
+  z-index: 2;
+}
+
+.animals-manage__dots--hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.animals-manage__dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 1px solid rgb(28 33 28 / 25%);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.animals-manage__dot--active {
+  border-color: #e8883a;
+  background: #e8883a;
+}
+
+.animals-manage__dot:hover:not(.animals-manage__dot--active) {
+  border-color: rgb(28 33 28 / 45%);
+}
+
 .animals-manage__panel {
   display: flex;
   flex: 1 1 0;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px;
+  overflow: hidden;
+}
+
+.animals-manage__scroll {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
   overflow: auto;
+}
+
+.animals-manage__table {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns:
+    minmax(0, 1fr)
+    max-content;
+  column-gap: 12px;
 }
 
 .animals-manage__head,
 .animals-manage__row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   align-items: center;
-  gap: 12px;
   padding: 14px 20px;
+  box-sizing: border-box;
 }
 
 .animals-manage__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   border-bottom: 1px solid var(--wh-gray-200, #ddd);
   background: var(--wh-gray-450, #C8C8C8);
   font-size: 14px;
   font-weight: 600;
   color: var(--wh-black-text, #1c211c);
+  box-shadow: 0 1px 0 var(--wh-gray-200, #ddd);
 }
 
 .animals-manage__head .animals-manage__col--name {
@@ -471,6 +750,7 @@ onMounted(() => {
 }
 
 .animals-manage__list {
+  display: contents;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -485,20 +765,33 @@ onMounted(() => {
 }
 
 .animals-manage__col--name {
+  min-width: 0;
   font-size: 14px;
   font-weight: 400;
   color: var(--wh-black-text, #1c211c);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.animals-manage__col--controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  min-width: 0;
 }
 
 .animals-manage__col--hunters {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 10px;
 }
 
 .animals-manage__col--actions {
   display: flex;
-  justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .animals-manage__input {
@@ -574,6 +867,7 @@ onMounted(() => {
 
 @media (--wh-tablet) {
   .profile-page {
+    width: 100%;
     height: auto;
     max-height: none;
     overflow: visible;
@@ -581,6 +875,54 @@ onMounted(() => {
   }
 
   .profile-page__header {
+    width: 100%;
+  }
+
+  .animals-manage__toolbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .animals-manage__toolbar :deep(.page-title) {
+    min-width: max-content;
+  }
+
+  .animals-manage__select {
+    flex: 1 1 320px;
+    width: 320px;
+    min-width: 220px;
+    max-width: 100%;
+  }
+
+  .animals-manage__content {
+    flex: none;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .animals-manage__shell {
+    width: 100%;
+  }
+
+  .animals-manage__panel {
+    flex: none;
+    width: 100%;
+    min-height: calc(100dvh - 220px);
+  }
+
+  .animals-manage__dots {
+    display: none;
+  }
+
+  .animals-manage__scroll {
+    flex: none;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .animals-manage__table {
     width: 100%;
   }
 }
@@ -606,42 +948,79 @@ onMounted(() => {
     align-items: stretch;
   }
 
+  .animals-manage__toolbar :deep(.page-title) {
+    min-width: 0;
+    white-space: normal;
+  }
+
   .animals-manage__select {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .animals-manage__panel {
+    overflow: visible;
+  }
+
+  .animals-manage__scroll {
+    overflow: visible;
+  }
+
+  .animals-manage__table {
+    display: block;
     width: 100%;
   }
 
   .animals-manage__head {
+    display: grid;
     grid-template-columns: 1fr;
+    grid-column: auto;
     gap: 10px;
     padding: 14px 16px;
   }
 
-  .animals-manage__head .animals-manage__col--actions {
-    display: none;
+  .animals-manage__head .animals-manage__col--hunters {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .animals-manage__list {
+    display: block;
   }
 
   .animals-manage__row {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
+    grid-column: auto;
+    grid-template-columns: none;
     column-gap: 6px;
     row-gap: 10px;
     padding: 14px 16px;
   }
 
   .animals-manage__col--name {
+    display: block;
     flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
     white-space: normal;
-    overflow-wrap: break-word;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    text-overflow: clip;
+  }
+
+  .animals-manage__col--controls {
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .animals-manage__col--hunters {
     gap: 6px;
-  }
-
-  .animals-manage__col--actions {
-    justify-content: flex-start;
   }
 }
 </style>
