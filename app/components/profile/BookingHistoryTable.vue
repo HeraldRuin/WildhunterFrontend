@@ -18,66 +18,10 @@ const emit = defineEmits<{
   customer: [booking: BookingHistoryItem]
 }>()
 
-const openDetailsId = ref<number | null>(null)
-const popoverStyle = ref<Record<string, string>>({})
-const detailsButtonRefs = new Map<number, HTMLElement>()
 const scrollEl = ref<HTMLElement | null>(null)
 const listPageCount = ref(1)
 const listPageIndex = ref(0)
 let listResizeObserver: ResizeObserver | null = null
-
-const openDetailsItem = computed(() =>
-  props.items.find(item => item.id === openDetailsId.value) ?? null,
-)
-
-const openDetailsRooms = computed<BookingRoomDetail[]>(() =>
-  openDetailsItem.value?.accommodation?.rooms ?? [],
-)
-
-function setDetailsButtonRef(id: number, el: Element | null) {
-  if (el instanceof HTMLElement) {
-    detailsButtonRefs.set(id, el)
-    return
-  }
-
-  detailsButtonRefs.delete(id)
-}
-
-function updatePopoverPosition() {
-  if (openDetailsId.value === null) return
-
-  const button = detailsButtonRefs.get(openDetailsId.value)
-  if (!button) return
-
-  const rect = button.getBoundingClientRect()
-  const gap = 8
-  const estimatedWidth = Math.min(520, window.innerWidth - 16)
-  const spaceRight = window.innerWidth - rect.right - gap
-  const placeLeft = spaceRight < estimatedWidth && rect.left > spaceRight
-
-  popoverStyle.value = {
-    top: `${Math.max(8, rect.top)}px`,
-    left: placeLeft
-      ? `${Math.max(8, rect.left - estimatedWidth - gap)}px`
-      : `${rect.right + gap}px`,
-  }
-}
-
-function closeDetails() {
-  openDetailsId.value = null
-}
-
-function toggleDetails(id: number) {
-  if (openDetailsId.value === id) {
-    closeDetails()
-    return
-  }
-
-  openDetailsId.value = id
-  nextTick(() => {
-    updatePopoverPosition()
-  })
-}
 
 function isCollectionActionLoading(booking: BookingHistoryItem, action: BookingAction) {
   return props.loadingCollectionBookingId === booking.id
@@ -112,6 +56,18 @@ function formatPrice(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value)
 }
 
+function roomDayTotal(room: BookingRoomDetail) {
+  return room.pricePerDay * room.quantity
+}
+
+function roomStayTotal(room: BookingRoomDetail, nights: number) {
+  return roomDayTotal(room) * Math.max(nights, 1)
+}
+
+function roomsStayTotal(rooms: BookingRoomDetail[], nights: number) {
+  return rooms.reduce((sum, room) => sum + roomStayTotal(room, nights), 0)
+}
+
 function isPaymentVisibleStatus(code?: string) {
   return code === 'finish_bed_collection'
     || code === 'paid'
@@ -121,36 +77,6 @@ function isPaymentVisibleStatus(code?: string) {
 function isHuntingFinishedCollection(item: BookingHistoryItem) {
   return item.type === 'animal' && item.status.code === 'finished_collection'
 }
-
-function handleDocumentClick(event: MouseEvent) {
-  if (openDetailsId.value === null) return
-
-  const target = event.target
-  if (!(target instanceof Node)) return
-
-  const button = detailsButtonRefs.get(openDetailsId.value)
-  const popover = document.querySelector('.booking-table__details-popover')
-
-  if (button?.contains(target) || popover?.contains(target)) {
-    return
-  }
-
-  closeDetails()
-}
-
-function handleKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    closeDetails()
-  }
-}
-
-watch(openDetailsId, (id) => {
-  if (id === null || !import.meta.client) return
-
-  nextTick(() => {
-    updatePopoverPosition()
-  })
-})
 
 function getListMaxScroll(el: HTMLElement) {
   return Math.max(0, el.scrollHeight - el.clientHeight)
@@ -248,10 +174,6 @@ watch(scrollEl, (el) => {
 })
 
 onMounted(() => {
-  document.addEventListener('click', handleDocumentClick)
-  document.addEventListener('keydown', handleKeydown)
-  window.addEventListener('resize', updatePopoverPosition)
-  window.addEventListener('scroll', updatePopoverPosition, true)
   window.addEventListener('resize', scheduleListPagesUpdate)
 
   if (import.meta.client && typeof ResizeObserver !== 'undefined') {
@@ -272,10 +194,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleDocumentClick)
-  document.removeEventListener('keydown', handleKeydown)
-  window.removeEventListener('resize', updatePopoverPosition)
-  window.removeEventListener('scroll', updatePopoverPosition, true)
   window.removeEventListener('resize', scheduleListPagesUpdate)
   listResizeObserver?.disconnect()
   listResizeObserver = null
@@ -371,35 +289,71 @@ onBeforeUnmount(() => {
               <div class="booking-table__value">
                 <template v-if="item.accommodation">
                   <strong>Проживание:</strong>
-                  <div>
-                    Заезд: {{ item.accommodation.checkIn }}<br>
-                    Выезд: {{ item.accommodation.checkOut }}<br>
-                    {{ nightsLabel(item.accommodation.nights) }}<br>
-                    {{ item.accommodation.guests }} чел.
+                  <div class="booking-table__stay-grid">
+                    <div>
+                      Заезд: {{ item.accommodation.checkIn }}<br>
+                      Выезд: {{ item.accommodation.checkOut }}
+                    </div>
+                    <div>
+                      Длительность: {{ nightsLabel(item.accommodation.nights) }}<br>
+                      Кол-во: {{ item.accommodation.guests }} чел.
+                    </div>
                   </div>
 
                   <div
                     v-if="showDetailsButtons && item.accommodation.rooms?.length"
-                    class="booking-table__details-more"
+                    class="booking-table__rooms"
                   >
-                    <button
-                      :ref="(el) => setDetailsButtonRef(item.id, el as Element | null)"
-                      type="button"
-                      class="booking-table__details-btn"
-                      :aria-expanded="openDetailsId === item.id"
-                      @click.stop="toggleDetails(item.id)"
-                    >
-                      Подробности
-                    </button>
+                    <div>
+                      Общее кол-во номеров: {{ item.accommodation.roomsTotal ?? item.accommodation.rooms.length }}
+                      <template
+                        v-for="(room, roomIndex) in item.accommodation.rooms"
+                        :key="`room-${item.id}-${roomIndex}`"
+                      >
+                        <br>
+                        {{ room.name }}, вместимость = {{ room.capacity }}, кол-во = {{ room.quantity }}
+                      </template>
+                    </div>
+                    <div>
+                      <template
+                        v-for="(room, roomIndex) in item.accommodation.rooms"
+                        :key="`room-price-${item.id}-${roomIndex}`"
+                      >
+                        <template v-if="roomIndex > 0"><br><br></template>
+                        Сумма за сутки = {{ formatHotelPriceLabel(roomDayTotal(room)) }}<br>
+                        Сумма за проживание = {{ formatHotelPriceLabel(roomStayTotal(room, item.accommodation.nights)) }}
+                      </template>
+                      <template v-if="item.accommodation.rooms.length > 1">
+                        <br><br>
+                        Итого = {{ formatHotelPriceLabel(roomsStayTotal(item.accommodation.rooms, item.accommodation.nights)) }}
+                      </template>
+                      <template v-else-if="item.payment?.total">
+                        <br>
+                        Итого по брони = {{ formatHotelPriceLabel(item.payment.total) }}
+                      </template>
+                    </div>
                   </div>
                 </template>
 
                 <template v-if="item.hunt">
                   <strong>Охота:</strong>
-                  <div>
-                    Дата: {{ item.hunt.date }}<br>
-                    Животное: {{ item.hunt.animal }}<br>
-                    {{ item.hunt.hunters }} чел.
+                  <div class="booking-table__stay-grid">
+                    <div>
+                      Дата: {{ item.hunt.date }}<br>
+                      Животное: {{ item.hunt.animal }}<br>
+                      Кол-во: {{ item.hunt.hunters }} чел.
+                    </div>
+                    <div>
+                      <template v-if="item.hunt.pricePerHunter != null">
+                        Цена охоты = {{ formatHotelPriceLabel(item.hunt.pricePerHunter) }}<br>
+                      </template>
+                      <template v-if="item.hunt.total != null">
+                        Общая сумма = {{ formatHotelPriceLabel(item.hunt.total) }}
+                      </template>
+                      <template v-if="item.hunt.pricePerHunter == null && item.hunt.total == null">
+                        —
+                      </template>
+                    </div>
                   </div>
                 </template>
               </div>
@@ -409,15 +363,22 @@ onBeforeUnmount(() => {
                 <div
                   class="booking-table__status-label"
                   :class="{
-                    'booking-table__status-label--danger': item.status.code === 'processing',
-                    'booking-table__status-label--confirmed': item.status.code === 'confirmed',
+                    'booking-table__status-label--danger':
+                      item.status.code === 'processing'
+                      || item.status.code === 'cancelled',
+                    'booking-table__status-label--confirmed':
+                      item.status.code === 'confirmed'
+                      || item.status.code === 'finish_bed_collection',
+                    'booking-table__status-label--collection':
+                      item.status.code === 'collection'
+                      || item.status.code === 'prepayment_collection',
                   }"
                 >
                   {{ item.status.label }}<template v-if="item.status.timerHours"> ({{ item.status.timerHours }} ч)</template>
                 </div>
                 <div
                   v-if="item.status.timer && item.status.code !== 'finish_bed_collection'"
-                  class="booking-table__status-meta"
+                  class="booking-table__status-meta booking-table__status-meta--timer"
                   :class="{
                     'booking-table__status-meta--expired':
                       item.status.timer === '00 мин 00 сек'
@@ -542,26 +503,6 @@ onBeforeUnmount(() => {
       </table>
       </div>
     </div>
-
-    <Teleport to="body">
-      <div
-        v-if="openDetailsItem?.accommodation && openDetailsRooms.length"
-        class="booking-table__details-popover"
-        role="tooltip"
-        :style="popoverStyle"
-      >
-        <CommonModalCloseButton @click="closeDetails" />
-        <div>
-          Общее кол-во номеров: {{ openDetailsItem.accommodation.roomsTotal ?? openDetailsRooms.length }}
-        </div>
-        <div
-          v-for="(room, roomIndex) in openDetailsRooms"
-          :key="`open-room-${roomIndex}`"
-        >
-          {{ room.name }}, вместимость = {{ room.capacity }}, кол-во = {{ room.quantity }}, цена = {{ formatHotelPriceLabel(room.pricePerDay) }}/сут
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -696,16 +637,16 @@ onBeforeUnmount(() => {
 
 .booking-table th:nth-child(4),
 .booking-table__details {
-  width: 180px;
-  min-width: 160px;
-  max-width: 200px;
+  width: 340px;
+  min-width: 300px;
+  max-width: 380px;
 }
 
 .booking-table th:nth-child(5),
 .booking-table__status {
-  width: 220px;
-  min-width: 200px;
-  max-width: 240px;
+  width: 160px;
+  min-width: 140px;
+  max-width: 180px;
 }
 
 .booking-table th:nth-child(7),
@@ -717,9 +658,9 @@ onBeforeUnmount(() => {
 
 .booking-table th:nth-child(6),
 .booking-table__payment {
-  width: 180px;
-  min-width: 160px;
-  max-width: 240px;
+  width: 120px;
+  min-width: 100px;
+  max-width: 140px;
 }
 
 .booking-table__payment-summary {
@@ -773,42 +714,61 @@ onBeforeUnmount(() => {
   margin-top: 0;
 }
 
-.booking-table__details .booking-table__value > div:not(.booking-table__details-more) {
-  color: var(--wh-gray-600);
+.booking-table__details .booking-table__value > div:not(.booking-table__rooms):not(.booking-table__stay-grid) {
+  color: #4a4a4a;
+  font-weight: 500;
 }
 
-.booking-table__details-more {
+.booking-table__stay-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  color: #4a4a4a;
+  font-weight: 500;
+}
+
+.booking-table__stay-grid > div {
+  padding: 6px 8px;
+  border: 1px solid var(--wh-gray-400);
+  border-radius: 4px;
+}
+
+.booking-table__rooms {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 8px;
+  color: #4a4a4a;
+  font-weight: 500;
 }
 
-.booking-table__details-btn {
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--wh-orange-500);
-  font-size: 0.78rem;
-  font-weight: 600;
-  line-height: 1.2;
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-
-.booking-table__details-btn:hover {
-  background: transparent;
-  opacity: 0.7;
+.booking-table__rooms > div {
+  padding: 6px 8px;
+  border: 1px solid var(--wh-gray-400);
+  border-radius: 4px;
 }
 
 .booking-table__status-label {
-  color: var(--wh-black-text);
-  font-weight: 700;
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: var(--wh-gray-600);
+  color: var(--wh-white);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .booking-table__status-label--danger {
-  color: var(--wh-field-error);
+  background: var(--wh-field-error);
 }
 
 .booking-table__status-label--confirmed {
-  color: color-mix(in srgb, var(--wh-green) 72%, black);
+  background: #25a447;
+}
+
+.booking-table__status-label--collection {
+  background: #2f8fc9;
 }
 
 .booking-table__status-meta {
@@ -817,19 +777,39 @@ onBeforeUnmount(() => {
   font-size: 0.78rem;
 }
 
+.booking-table__status-meta--timer {
+  color: var(--wh-black-text);
+  font-weight: 600;
+}
+
 .booking-table__status-meta--expired {
   color: var(--wh-field-error);
 }
 
 .booking-table__status-meta--substatus {
-  margin-top: 16px;
-  color: var(--wh-black-text);
-  font-size: inherit;
-  font-weight: 700;
+  display: block;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: #25a447;
+  color: var(--wh-white);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .booking-table__status-meta--collected {
-  color: var(--wh-black-text);
+  display: block;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: var(--wh-gray-600);
+  color: var(--wh-white);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .booking-table__payment-btn {
@@ -1015,41 +995,6 @@ onBeforeUnmount(() => {
     width: 100%;
     min-width: 168px;
     box-sizing: border-box;
-  }
-}
-</style>
-
-<style>
-.booking-table__details-popover {
-  position: fixed;
-  z-index: 1100;
-  width: 520px;
-  max-width: 520px;
-  padding: 10px 32px 10px 12px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 6px;
-  background: var(--wh-white);
-  box-shadow: 0 12px 40px rgba(17, 24, 39, 0.32);
-  color: var(--wh-gray-900);
-  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-  font-size: 0.78rem;
-  line-height: 1.45;
-  pointer-events: auto;
-}
-
-.booking-table__details-popover .modal-close-button {
-  top: 4px;
-  right: 4px;
-}
-
-.booking-table__details-popover > div + div {
-  margin-top: 4px;
-}
-
-@media (--wh-mobile) {
-  .booking-table__details-popover {
-    width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px);
   }
 }
 </style>
