@@ -64,6 +64,8 @@ export interface BookingRoomDetail {
   capacity: number
   quantity: number
   pricePerDay: number
+  priceTotal?: number | null
+  pricePerPerson?: number | null
 }
 
 export interface BookingAccommodationDetails {
@@ -73,6 +75,8 @@ export interface BookingAccommodationDetails {
   guests: number
   roomsTotal?: number
   rooms?: BookingRoomDetail[]
+  total?: number | null
+  totalPerPerson?: number | null
 }
 
 export interface BookingHuntDetails {
@@ -80,7 +84,10 @@ export interface BookingHuntDetails {
   animal: string
   hunters: number
   pricePerHunter?: number | null
+  priceTotal?: number | null
+  pricePerPerson?: number | null
   total?: number | null
+  totalPerPerson?: number | null
 }
 
 export interface BookingStatusInfo {

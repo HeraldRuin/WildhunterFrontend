@@ -294,11 +294,15 @@ export function mapBookingHistoryItem(
         nights: details.duration_days || 0,
         guests: details.total_guests || 0,
         roomsTotal: rooms.reduce((sum, room) => sum + (room.number || 0), 0) || rooms.length,
+        total: details.amount_accommodation ?? null,
+        totalPerPerson: details.amount_accommodation_per_person ?? null,
         rooms: rooms.map(room => ({
           name: room.title || 'Номер',
           capacity: room.adults || 0,
           quantity: room.number || 0,
           pricePerDay: room.price || 0,
+          priceTotal: room.price_total ?? null,
+          pricePerPerson: room.price_per_person ?? null,
         })),
       }
 
@@ -310,7 +314,10 @@ export function mapBookingHistoryItem(
           animal: details.animal?.title || '—',
           hunters: Number(details.total_hunting) || 0,
           pricePerHunter: details.animal?.price ?? null,
+          priceTotal: details.animal?.price_total ?? null,
+          pricePerPerson: details.animal?.price_per_person ?? null,
           total: details.amount_hunting ?? null,
+          totalPerPerson: details.amount_hunting_per_person ?? null,
         }
       : undefined
 
