@@ -87,6 +87,15 @@ export type ManagedHotelSurrounding =
   | Record<string, ManagedHotelSurroundingItem[]>
   | null
 
+export type ManagedHotelExtraPriceType = 'one_time' | 'per_day'
+
+export interface ManagedHotelExtraPriceItem {
+  name?: string | null
+  price?: number | string | null
+  type?: ManagedHotelExtraPriceType | string | null
+  per_person?: boolean | string | null
+}
+
 export interface ManagedHotelDetail {
   id: number
   slug: string
@@ -99,8 +108,14 @@ export interface ManagedHotelDetail {
   policy: ManagedHotelPolicyItem[] | null
   surrounding: ManagedHotelSurrounding
   price: number | string | null
-  extra_price: number | string | null
-  service_fee: number | string | null
+  extra_price: ManagedHotelExtraPriceItem[] | null
+  service_fee: unknown
+  check_in_time?: string | null
+  check_out_time?: string | null
+  min_day_before_booking?: number | string | null
+  min_day_stays?: number | string | null
+  enable_extra_price?: boolean | number | null
+  enable_service_fee?: boolean | number | null
   address: string | null
   map_lat: number | string | null
   map_lng: number | string | null
@@ -138,8 +153,14 @@ export interface HotelManageUpdatePayload {
   policy?: ManagedHotelPolicyItem[]
   surrounding?: ManagedHotelSurroundingItem[]
   price?: number | string | null
-  extra_price?: unknown
+  extra_price?: ManagedHotelExtraPriceItem[]
   service_fee?: unknown
+  check_in_time?: string | null
+  check_out_time?: string | null
+  min_day_before_booking?: number | null
+  min_day_stays?: number | null
+  enable_extra_price?: boolean
+  enable_service_fee?: boolean
   map_lat?: string | number | null
   map_lng?: string | number | null
   map_zoom?: string | number | null

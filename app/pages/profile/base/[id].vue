@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { HotelManageUpdatePayload, ManagedHotelDetail } from '~/api/hotels'
+import type { HotelManageUpdatePayload, ManagedHotelDetail, ManagedHotelExtraPriceItem, ManagedHotelExtraPriceType } from '~/api/hotels'
 import type { HotelRoomAttribute, HotelRoomAttributeTerm, SearchLocation } from '~/types/api'
-import { getHotelPath } from '~/utils/hotel'
+import { formatHotelPrice, getHotelPath } from '~/utils/hotel'
 import { DEFAULT_MAP_CENTER } from '~/utils/map'
 import { extractMediaIdFromUrl, shouldShowOfferImage } from '~/utils/image'
 
@@ -106,6 +106,28 @@ const policyItems = ref<PolicyItem[]>([])
 let surroundingItemIdSeq = 0
 const surroundingItems = ref<SurroundingItem[]>([])
 
+type ExtraPriceFormItem = {
+  id: number
+  name: string
+  price: string
+  type: ManagedHotelExtraPriceType
+  perPerson: boolean
+}
+
+let extraPriceItemIdSeq = 0
+const editCheckInTime = ref('')
+const editCheckOutTime = ref('')
+const editMinAdvanceBooking = ref('')
+const editMinStayDays = ref('')
+const editPrice = ref('')
+const editEnableExtraPrice = ref(false)
+const extraPriceItems = ref<ExtraPriceFormItem[]>([])
+
+const extraPriceTypeOptions: { value: ManagedHotelExtraPriceType, label: string }[] = [
+  { value: 'one_time', label: 'Разово' },
+  { value: 'per_day', label: 'За день' },
+]
+
 function addPolicyItem() {
   policyItemIdSeq += 1
   policyItems.value.push({
@@ -132,6 +154,121 @@ function addSurroundingItem() {
 
 function removeSurroundingItem(id: number) {
   surroundingItems.value = surroundingItems.value.filter(item => item.id !== id)
+}
+
+function formatPriceInput(value: number | string | null | undefined) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) {
+    return ''
+  }
+
+  return formatHotelPrice(Math.round(num))
+}
+
+function formatOptionalInt(value: number | string | null | undefined) {
+  if (value == null || value === '') {
+    return ''
+  }
+
+  const num = Number(value)
+  if (!Number.isFinite(num)) {
+    return ''
+  }
+
+  return String(Math.trunc(num))
+}
+
+function parseOptionalInt(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const num = Number(trimmed)
+  if (!Number.isFinite(num)) {
+    return null
+  }
+
+  return Math.trunc(num)
+}
+
+function parsePrice(value: string): number | null {
+  let raw = value
+    .trim()
+    .replace(/\s*руб\.?\s*/gi, '')
+    .replace(/\s/g, '')
+
+  if (!raw) {
+    return null
+  }
+
+  if (raw.includes(',') && raw.includes('.')) {
+    raw = raw.replace(/\./g, '').replace(',', '.')
+  }
+  else if (raw.includes(',')) {
+    raw = raw.replace(',', '.')
+  }
+  else if (/^\d{1,3}(\.\d{3})+$/.test(raw)) {
+    raw = raw.replace(/\./g, '')
+  }
+
+  const price = Number(raw)
+  if (!Number.isFinite(price) || price < 0) {
+    return null
+  }
+
+  return price
+}
+
+function normalizeExtraPriceType(value: unknown): ManagedHotelExtraPriceType {
+  return value === 'one_time' ? 'one_time' : 'per_day'
+}
+
+function isExtraPricePerPerson(value: unknown): boolean {
+  return value === true || value === 1 || value === '1' || value === 'on'
+}
+
+function mapExtraPriceFromApi(items: ManagedHotelExtraPriceItem[] | null | undefined): ExtraPriceFormItem[] {
+  if (!Array.isArray(items)) {
+    return []
+  }
+
+  return items.map((item) => {
+    extraPriceItemIdSeq += 1
+    return {
+      id: extraPriceItemIdSeq,
+      name: item.name ?? '',
+      price: item.price == null || item.price === '' ? '' : String(item.price),
+      type: normalizeExtraPriceType(item.type),
+      perPerson: isExtraPricePerPerson(item.per_person),
+    }
+  })
+}
+
+function buildExtraPricePayload(): ManagedHotelExtraPriceItem[] {
+  return extraPriceItems.value
+    .filter(item => item.name.trim() || item.price.trim())
+    .map(item => ({
+      name: item.name.trim(),
+      price: parsePrice(item.price) ?? 0,
+      type: item.type,
+      ...(item.perPerson ? { per_person: 'on' as const } : {}),
+    }))
+}
+
+function addExtraPriceItem() {
+  extraPriceItemIdSeq += 1
+  extraPriceItems.value.push({
+    id: extraPriceItemIdSeq,
+    name: '',
+    price: '',
+    type: 'per_day',
+    perPerson: false,
+  })
+}
+
+function removeExtraPriceItem(id: number) {
+  extraPriceItems.value = extraPriceItems.value.filter(item => item.id !== id)
 }
 
 function normalizeSurroundingType(value: unknown): SurroundingDistanceType {
@@ -639,6 +776,14 @@ function resetForm() {
   policyItemIdSeq = 0
   surroundingItems.value = []
   surroundingItemIdSeq = 0
+  editCheckInTime.value = ''
+  editCheckOutTime.value = ''
+  editMinAdvanceBooking.value = ''
+  editMinStayDays.value = ''
+  editPrice.value = ''
+  editEnableExtraPrice.value = false
+  extraPriceItems.value = []
+  extraPriceItemIdSeq = 0
   editLocationId.value = null
   editLocationQuery.value = ''
   editAddress.value = ''
@@ -776,6 +921,15 @@ function fillFormFromHotel(item: ManagedHotelDetail) {
         type: normalizeSurroundingType(entry.type),
       }
     })
+
+  editCheckInTime.value = item.check_in_time ?? ''
+  editCheckOutTime.value = item.check_out_time ?? ''
+  editMinAdvanceBooking.value = formatOptionalInt(item.min_day_before_booking)
+  editMinStayDays.value = formatOptionalInt(item.min_day_stays)
+  editPrice.value = formatPriceInput(item.price)
+  editEnableExtraPrice.value = Boolean(item.enable_extra_price)
+  extraPriceItemIdSeq = 0
+  extraPriceItems.value = mapExtraPriceFromApi(item.extra_price)
 }
 
 function buildSavePayload(galleryIds: number[]): HotelManageUpdatePayload {
@@ -804,9 +958,14 @@ function buildSavePayload(galleryIds: number[]): HotelManageUpdatePayload {
       value: item.value.trim(),
       type: item.type,
     })),
-    price: current?.price ?? null,
-    extra_price: current?.extra_price ?? [],
+    price: parsePrice(editPrice.value),
+    extra_price: editEnableExtraPrice.value ? buildExtraPricePayload() : [],
     service_fee: current?.service_fee ?? [],
+    check_in_time: editCheckInTime.value.trim() || null,
+    check_out_time: editCheckOutTime.value.trim() || null,
+    min_day_before_booking: parseOptionalInt(editMinAdvanceBooking.value),
+    min_day_stays: parseOptionalInt(editMinStayDays.value),
+    enable_extra_price: editEnableExtraPrice.value,
     map_lat: editMapLat.value.trim(),
     map_lng: editMapLng.value.trim(),
     map_zoom: editMapZoom.value.trim(),
@@ -1492,6 +1651,135 @@ watch(activeEditTab, (tab) => {
             </div>
 
             <div
+              v-else-if="activeEditTab === 'pricing'"
+              class="base-edit__pricing"
+            >
+              <section class="base-edit__pricing-block" aria-label="Время заезда и выезда">
+                <div class="base-edit__pricing-row">
+                  <CommonFormField
+                    v-model="editCheckInTime"
+                    label="Время регистрации"
+                    placeholder="Например: 10:00"
+                    no-margin
+                  />
+                  <CommonFormField
+                    v-model="editCheckOutTime"
+                    label="Время выезда"
+                    placeholder="Например: 11:00"
+                    no-margin
+                  />
+                </div>
+
+                <div class="base-edit__pricing-row">
+                  <div class="base-edit__pricing-field">
+                    <CommonFormField
+                      v-model="editMinAdvanceBooking"
+                      label="Минимальное предварительное бронирование"
+                      placeholder="Пример: 3"
+                      digits-only
+                      no-margin
+                    />
+                    <p class="base-edit__pricing-hint">
+                      Оставьте пустым, если вам не нужно использовать опцию минимального количества дней.
+                    </p>
+                  </div>
+                  <div class="base-edit__pricing-field">
+                    <CommonFormField
+                      v-model="editMinStayDays"
+                      label="Минимальные требования к дневному пребыванию"
+                      placeholder="Пример: 2"
+                      digits-only
+                      no-margin
+                    />
+                    <p class="base-edit__pricing-hint">
+                      Оставьте пустым, если вам не нужно устанавливать опцию минимального количества дней пребывания
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="base-edit__pricing-block" aria-label="Ценообразование">
+                <CommonFormField
+                  v-model="editPrice"
+                  label="Стоимость"
+                  placeholder="0"
+                  amount-only
+                  no-margin
+                />
+
+                <label class="base-edit__pricing-toggle">
+                  <input
+                    v-model="editEnableExtraPrice"
+                    type="checkbox"
+                  >
+                  <span class="base-edit__pricing-checkmark" />
+                  <span class="base-edit__pricing-toggle-label">Включить дополнительную стоимость</span>
+                </label>
+
+                <div
+                  v-if="editEnableExtraPrice"
+                  class="base-edit__extra-price"
+                >
+                  <div class="base-edit__extra-price-table">
+                    <div class="base-edit__extra-price-head" aria-hidden="true">
+                      <span class="base-edit__extra-price-head-cell">Имя</span>
+                      <span class="base-edit__extra-price-head-cell">Стоимость</span>
+                      <span class="base-edit__extra-price-head-cell">Тип</span>
+                      <span class="base-edit__extra-price-head-cell base-edit__extra-price-head-cell--action" />
+                    </div>
+
+                    <div
+                      v-for="item in extraPriceItems"
+                      :key="item.id"
+                      class="base-edit__extra-price-row"
+                    >
+                      <CommonFormField
+                        v-model="item.name"
+                        placeholder="Имя"
+                        no-margin
+                      />
+                      <CommonFormField
+                        v-model="item.price"
+                        placeholder="0"
+                        digits-only
+                        no-margin
+                      />
+                      <div class="base-edit__extra-price-type">
+                        <label class="base-edit__extra-price-type-select">
+                          <span class="visually-hidden">Тип дополнительной стоимости</span>
+                          <select v-model="item.type" class="base-edit__select">
+                            <option
+                              v-for="option in extraPriceTypeOptions"
+                              :key="option.value"
+                              :value="option.value"
+                            >
+                              {{ option.label }}
+                            </option>
+                          </select>
+                        </label>
+                        <label class="base-edit__pricing-toggle base-edit__pricing-toggle--compact">
+                          <input
+                            v-model="item.perPerson"
+                            type="checkbox"
+                          >
+                          <span class="base-edit__pricing-checkmark" />
+                          <span class="base-edit__pricing-toggle-label">Стоимость за человека</span>
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        class="base-edit__policy-remove"
+                        @click="removeExtraPriceItem(item.id)"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div
               v-else-if="activeEditTab === 'attributes'"
               class="base-edit__attributes"
             >
@@ -1545,7 +1833,7 @@ watch(activeEditTab, (tab) => {
           </div>
 
           <div
-            v-if="(activeEditTab === 'content' && activeContentTab === 'policy') || (activeEditTab === 'places' && activePlacesTab === 'surrounding')"
+            v-if="(activeEditTab === 'content' && activeContentTab === 'policy') || (activeEditTab === 'places' && activePlacesTab === 'surrounding') || (activeEditTab === 'pricing' && editEnableExtraPrice)"
             class="base-edit__actions"
           >
             <button
@@ -1574,10 +1862,35 @@ watch(activeEditTab, (tab) => {
             </button>
 
             <button
-              v-else
+              v-else-if="activeEditTab === 'places' && activePlacesTab === 'surrounding'"
               type="button"
               class="base-edit__policy-add"
               @click="addSurroundingItem"
+            >
+              <svg
+                class="base-edit__gallery-btn-icon"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
+                <path
+                  d="M12 8v8M8 12h8"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Добавить элемент
+            </button>
+
+            <button
+              v-else
+              type="button"
+              class="base-edit__policy-add"
+              @click="addExtraPriceItem"
             >
               <svg
                 class="base-edit__gallery-btn-icon"
@@ -2613,6 +2926,194 @@ watch(activeEditTab, (tab) => {
   box-sizing: border-box;
 }
 
+.base-edit__section-title {
+  margin: 0;
+  color: #1a2b50;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.base-edit__pricing {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__pricing-block {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__pricing-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px 24px;
+  align-items: start;
+}
+
+.base-edit__pricing-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.base-edit__pricing-hint {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.45);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.base-edit__pricing-toggle {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.base-edit__pricing-toggle--compact {
+  margin-top: 8px;
+}
+
+.base-edit__pricing-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.base-edit__pricing-checkmark {
+  position: relative;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--wh-gray-300);
+  border-radius: 4px;
+  background: var(--wh-white);
+}
+
+.base-edit__pricing-toggle input:checked + .base-edit__pricing-checkmark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--wh-orange-500);
+  transform: translate(-50%, -50%);
+}
+
+.base-edit__pricing-toggle-label {
+  min-width: 0;
+}
+
+.base-edit__extra-price {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__extra-price-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.base-edit__extra-price-head {
+  display: grid;
+  grid-template-columns: minmax(0, 0.45fr) minmax(0, 0.25fr) minmax(0, 0.35fr) 110px;
+  gap: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--wh-gray-400);
+  border-radius: 8px;
+  background: var(--wh-white);
+  box-sizing: border-box;
+}
+
+.base-edit__extra-price-head-cell {
+  color: var(--wh-gray-900);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.base-edit__extra-price-head-cell--action {
+  width: 110px;
+}
+
+.base-edit__extra-price-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.45fr) minmax(0, 0.25fr) minmax(0, 0.35fr) 110px;
+  gap: 16px;
+  align-items: start;
+}
+
+.base-edit__extra-price-type {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.base-edit__extra-price-type-select {
+  display: block;
+  min-width: 0;
+}
+
+.base-edit__select {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: calc(18px * 1.3 + 24px);
+  padding: 12px 14px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 10px;
+  background: var(--wh-white);
+  color: var(--wh-gray-900);
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%231C211C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.base-edit__select:focus {
+  border-color: var(--wh-field-border-active);
+  box-shadow: 0 0 0 3px var(--wh-field-focus-ring);
+}
+
 @media (--wh-tablet) {
   .profile-page {
     height: auto;
@@ -2679,6 +3180,15 @@ watch(activeEditTab, (tab) => {
   }
 
   .base-edit__location-row {
+    grid-template-columns: 1fr;
+  }
+
+  .base-edit__pricing-row {
+    grid-template-columns: 1fr;
+  }
+
+  .base-edit__extra-price-head,
+  .base-edit__extra-price-row {
     grid-template-columns: 1fr;
   }
 
