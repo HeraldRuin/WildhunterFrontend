@@ -83,6 +83,8 @@ const animalAvailabilityStay = ref<{
 const hasSelectedRooms = ref(false)
 const selectedRoomsCount = ref(0)
 const stayAdults = ref(1)
+const selectedAnimalId = ref('')
+const huntHunters = ref(1)
 const didAutoCheckFromSearch = ref(false)
 const stayCheckIn = ref<Date | null>(null)
 const stayCheckOut = ref<Date | null>(null)
@@ -111,7 +113,15 @@ const roomSelectionRef = ref<{
 const roomsExceedGuests = computed(() =>
   hasSelectedRooms.value && selectedRoomsCount.value > stayAdults.value,
 )
+const GUESTS_HUNTERS_MISMATCH_MESSAGE
+  = 'Для бронирования охоты в проживании нужно указать то число охотников, которое вы выбрали'
+const guestsHuntersMismatch = computed(() =>
+  hasSelectedRooms.value
+  && Boolean(selectedAnimalId.value)
+  && stayAdults.value !== huntHunters.value,
+)
 const ROOMS_EXCEED_GUESTS_MESSAGE = 'Количество номеров не может быть больше количества гостей'
+const isBookingBlocked = computed(() => roomsExceedGuests.value || guestsHuntersMismatch.value)
 const isApiMessageOpen = computed(() => Boolean(apiMessage.value))
 const isAnyModalOpen = computed(() =>
   isNoHuntConfirmOpen.value
@@ -167,6 +177,14 @@ function handleRoomSelectionChange(payload: { hasSelectedRooms: boolean, totalRo
   resetHunters()
 }
 
+function handleAnimalChange(animalId: string) {
+  selectedAnimalId.value = animalId
+}
+
+function handleHuntersChange(hunters: number) {
+  huntHunters.value = hunters
+}
+
 function getBookingAdults(stayAdultsCount: number | undefined, hunters: number, hasRooms: boolean) {
   if (hasRooms) {
     return stayAdultsCount ?? datesGuestsRef.value?.getAdults() ?? 1
@@ -184,6 +202,15 @@ function validateRoomsAgainstGuests(adults: number, rooms: { number: number }[])
   }
 
   return true
+}
+
+function validateGuestsMatchHunters(adults: number, hunters: number, hasAnimal: boolean) {
+  if (!hasAnimal || adults === hunters) {
+    return true
+  }
+
+  showApiMessage(GUESTS_HUNTERS_MISMATCH_MESSAGE)
+  return false
 }
 
 function getResponseMessage(error: unknown) {
@@ -445,6 +472,10 @@ async function proceedBook() {
     return
   }
 
+  if (rooms.length > 0 && hasAnimal && !validateGuestsMatchHunters(bookingAdults, hunters, hasAnimal)) {
+    return
+  }
+
   let checkIn = stayCheckIn
   let checkOut = stayCheckOut
   let adults = bookingAdults
@@ -580,6 +611,10 @@ function handleBook() {
     return
   }
 
+  if (hasRooms && animalId && !validateGuestsMatchHunters(bookingAdults, hunters, true)) {
+    return
+  }
+
   if (!hasRooms) {
     isNoRoomConfirmOpen.value = true
     return
@@ -708,7 +743,17 @@ onMounted(() => {
             :stay-check-out="stayCheckOut"
             :loading="isCheckingAnimals"
             @check="handleAnimalsCheck"
+            @animal-change="handleAnimalChange"
+            @hunters-change="handleHuntersChange"
           />
+
+          <p
+            v-if="guestsHuntersMismatch"
+            class="hotel-booking-section__rooms-error"
+            role="alert"
+          >
+            {{ GUESTS_HUNTERS_MISMATCH_MESSAGE }}
+          </p>
 
           <div
             v-if="animalAvailability"
@@ -736,7 +781,7 @@ onMounted(() => {
         <button
           type="button"
           class="hotel-booking-section__book"
-          :disabled="roomsExceedGuests || !(hasSelectedRooms || animalAvailability)"
+          :disabled="isBookingBlocked || !(hasSelectedRooms || animalAvailability)"
           @click="handleBook"
         >
           Забронировать сейчас
@@ -755,7 +800,6 @@ onMounted(() => {
           @click.self="closeNoHuntConfirm"
         >
           <div class="hotel-booking-confirm__card">
-
             <h2 id="hotel-booking-confirm-title" class="hotel-booking-confirm__title">
               Вы уверены, что хотите забронировать номер без охоты?
             </h2>
@@ -790,7 +834,6 @@ onMounted(() => {
           @click.self="closeNoRoomConfirm"
         >
           <div class="hotel-booking-confirm__card">
-
             <h2 id="hotel-no-room-confirm-title" class="hotel-booking-confirm__title">
               Вы уверены, что хотите забронировать охоту без номера?
             </h2>
@@ -825,7 +868,6 @@ onMounted(() => {
           @click.self="closeStayDateWarning"
         >
           <div class="hotel-booking-confirm__card">
-
             <h2 id="hotel-stay-date-warning-title" class="hotel-booking-confirm__title">
               Пожалуйста, выберите дату
             </h2>
@@ -853,7 +895,6 @@ onMounted(() => {
           @click.self="closeAnimalWarning"
         >
           <div class="hotel-booking-confirm__card">
-
             <h2 id="hotel-animal-warning-title" class="hotel-booking-confirm__title">
               {{ animalWarningTitle }}
             </h2>
@@ -881,7 +922,6 @@ onMounted(() => {
           @click.self="closeHuntDateWarning"
         >
           <div class="hotel-booking-confirm__card">
-
             <h2 id="hotel-hunt-date-warning-title" class="hotel-booking-confirm__title">
               Пожалуйста, выберите дату охоты
             </h2>
@@ -909,7 +949,6 @@ onMounted(() => {
           @click.self="closeApiMessage"
         >
           <div class="hotel-booking-confirm__card">
-
             <h2 id="hotel-api-message-title" class="hotel-booking-confirm__title">
               {{ apiMessage }}
             </h2>

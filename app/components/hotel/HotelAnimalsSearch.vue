@@ -17,6 +17,8 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   check: [payload: { huntDate: string, hunters: number, animalId: string }]
+  'animal-change': [animalId: string]
+  'hunters-change': [hunters: number]
 }>()
 
 const maxAdults = 20
@@ -68,6 +70,13 @@ watch(
   },
 )
 const adultsCount = ref(1)
+
+watch(
+  adultsCount,
+  (count) => {
+    emit('hunters-change', count)
+  },
+)
 const animal = ref('')
 
 const isDatesOpen = ref(false)
@@ -155,6 +164,7 @@ watch(
   (items) => {
     if (animal.value && !items.some(item => String(item.id) === animal.value)) {
       animal.value = ''
+      emit('animal-change', '')
     }
   },
   { immediate: true },
@@ -284,6 +294,7 @@ function selectAnimal(item: HotelAnimalItem) {
   animal.value = String(item.id)
   isAnimalOpen.value = false
   hoveredAnimalId.value = null
+  emit('animal-change', animal.value)
 }
 
 function clearDates(event: MouseEvent) {
@@ -302,6 +313,7 @@ function clearAnimal(event: MouseEvent) {
   event.stopPropagation()
   animal.value = ''
   isAnimalOpen.value = false
+  emit('animal-change', '')
 }
 
 function setAnimalHover(id: string | number) {

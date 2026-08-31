@@ -776,6 +776,7 @@ export interface HotelAnimalItem {
   season?: string
   price?: number
   image_url?: string
+  hunters_count?: number
 }
 
 export interface HotelGalleryImage {
