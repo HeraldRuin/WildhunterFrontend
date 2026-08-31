@@ -74,11 +74,15 @@ const monthTitle = computed(() => {
 
 const weekdays = getWeekdayNames()
 
+function normalizeAvailabilityDateKey(value: string) {
+  return value.slice(0, 10)
+}
+
 const availabilityDays = ref<RoomAvailabilityDay[]>([])
 const availabilityByDate = computed(() => {
   const map = new Map<string, RoomAvailabilityDay>()
   for (const day of availabilityDays.value) {
-    map.set(day.start, day)
+    map.set(normalizeAvailabilityDateKey(day.start), day)
   }
   return map
 })
@@ -92,8 +96,6 @@ const periodRange = computed(() => {
   const year = viewDate.value.getFullYear()
   const month = viewDate.value.getMonth()
   const start = new Date(year, month, 1)
-  // API (periodDate + DatePeriod) принимает end как исключающую границу,
-  // как FullCalendar: для августа нужен end = 1 сентября, иначе 31-е не вернётся.
   const end = new Date(year, month + 1, 1)
   return {
     start: formatApiDate(start),
@@ -200,12 +202,49 @@ function shiftMonth(delta: number) {
   )
 }
 
-function onDayClick(canEdit: boolean) {
-  if (!canEdit) {
+const selectedDay = ref<{
+  date: Date
+  event: RoomAvailabilityDay
+} | null>(null)
+
+function buildDefaultDayEvent(date: Date): RoomAvailabilityDay {
+  const room = rooms.value.find(item => String(item.id) === activeTabId.value)
+  const dateKey = formatApiDate(date)
+  const price = Number(room?.price ?? 0)
+  const number = Number(room?.number ?? 0)
+
+  return {
+    id: dateKey,
+    start: dateKey,
+    allDay: true,
+    price,
+    number,
+    active: 1,
+    title: '',
+    extendedProps: {
+      max_number: number,
+    },
+  }
+}
+
+function onDayClick(day: typeof calendarDays.value[number]) {
+  if (isSummaryTab.value || !day.isCurrentMonth) {
     return
   }
 
-  // Редактирование дат — только для конкретного номера (не summary).
+  selectedDay.value = {
+    date: day.date,
+    event: day.event ?? buildDefaultDayEvent(day.date),
+  }
+}
+
+function closeDateModal() {
+  selectedDay.value = null
+}
+
+async function onDateModalSaved() {
+  closeDateModal()
+  await loadAvailability()
 }
 
 async function loadAvailability() {
@@ -271,7 +310,6 @@ function periodOverlapsAvailability(
   startDate: string,
   endDate: string,
 ) {
-  // periodRange.end — исключающая граница
   return startDate < periodRange.value.end && endDate >= periodRange.value.start
 }
 
@@ -422,7 +460,7 @@ onMounted(() => {
               'rooms-availability__cell--editable': day.canEdit,
               'rooms-availability__cell--checkout': day.isCheckoutDay,
             }"
-            @click="onDayClick(day.canEdit)"
+            @click="onDayClick(day)"
           >
             <span class="rooms-availability__day-num">{{ day.date.getDate() }}</span>
 
@@ -479,6 +517,15 @@ onMounted(() => {
         </div>
       </section>
     </div>
+
+    <ProfileRoomAvailabilityDateModal
+      v-if="selectedDay"
+      :day="selectedDay.event"
+      :date="selectedDay.date"
+      :room-id="isSummaryTab ? null : activeTabId"
+      @close="closeDateModal"
+      @saved="onDateModalSaved"
+    />
   </div>
 </template>
 
@@ -575,10 +622,6 @@ onMounted(() => {
   background: var(--wh-white);
   overflow: auto;
   box-sizing: border-box;
-}
-
-.rooms-availability__layout--refreshing {
-  pointer-events: none;
 }
 
 .rooms-availability__calendar {
