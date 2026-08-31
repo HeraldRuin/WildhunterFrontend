@@ -163,6 +163,76 @@ async function handleCollectionExtended() {
   }
 }
 
+function patchCollectionInvitationAdded(bookingCode: string, hunter: UserSearchItem) {
+  const response = historyResponse.value
+  if (!response?.data?.bookings?.items) {
+    return
+  }
+
+  const hunterName = [hunter.first_name, hunter.last_name].filter(Boolean).join(' ')
+    || hunter.nik
+    || hunter.user_name
+    || 'Имя не указано'
+
+  historyResponse.value = {
+    ...response,
+    data: {
+      ...response.data,
+      bookings: {
+        ...response.data.bookings,
+        items: response.data.bookings.items.map((item) => {
+          if (item.code !== bookingCode) {
+            return item
+          }
+
+          const invitations = item.collection.invitations ?? []
+          if (invitations.some(invitation => invitation.hunter_id === hunter.id)) {
+            return item
+          }
+
+          return {
+            ...item,
+            collection: {
+              ...item.collection,
+              invitations: [
+                ...invitations,
+                {
+                  invitation_id: 0,
+                  hunter_id: hunter.id,
+                  user_name: hunter.nik || hunter.user_name || null,
+                  name: hunterName,
+                  email: hunter.email || null,
+                  status: 'pending',
+                  is_accepted: false,
+                  prepayment_paid: false,
+                },
+              ],
+            },
+          }
+        }),
+      },
+    },
+  }
+}
+
+async function handleHunterInvited({ hunter }: { hunter: UserSearchItem }) {
+  const bookingCode = collectionModalState.value?.bookingCode
+  if (!bookingCode) {
+    return
+  }
+
+  patchCollectionInvitationAdded(bookingCode, hunter)
+  await refreshHistory()
+
+  const booking = bookings.value.find(item => item.code === bookingCode)
+  const hasHunter = booking?.collectionInvitations?.some(
+    invitation => invitation.hunterId === hunter.id,
+  )
+  if (!hasHunter) {
+    patchCollectionInvitationAdded(bookingCode, hunter)
+  }
+}
+
 const pendingInvitationsCount = ref(0)
 
 function resolvePendingInvitationsCount(): number | null {
@@ -988,6 +1058,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
     <ProfileCollectionModal
       @extended="handleCollectionExtended"
+      @invited="handleHunterInvited"
       @cancelled="refreshHistory"
       @finished="refreshHistory"
     />

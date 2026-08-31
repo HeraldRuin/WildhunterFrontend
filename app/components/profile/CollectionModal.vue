@@ -8,6 +8,7 @@ const emit = defineEmits<{
   extended: []
   cancelled: []
   finished: []
+  invited: [payload: { hunter: UserSearchItem }]
 }>()
 
 const {
@@ -444,6 +445,7 @@ async function inviteHunter(hunter: UserSearchItem) {
         status: 'pending',
       })
       resetInviteSlots()
+      emit('invited', { hunter })
       notifications.success(response.message || 'Приглашение отправлено')
       reopen()
       return

@@ -272,6 +272,19 @@ export function useCollectionModal() {
     }
   }
 
+  function syncFromBooking(booking: BookingHistoryItem) {
+    if (!state.value) return
+
+    if (
+      state.value.bookingId !== booking.id
+      && state.value.bookingCode !== booking.code
+    ) {
+      return
+    }
+
+    state.value = buildMockState(booking)
+  }
+
   function addParticipant(participant: CollectionParticipant) {
     if (!state.value) return
 
@@ -388,6 +401,7 @@ export function useCollectionModal() {
     reopen,
     markCollectionExtended,
     syncTimerFromBooking,
+    syncFromBooking,
     addParticipant,
     applyInvitationUpdate,
     isDeclinedHunter,
