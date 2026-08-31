@@ -40,9 +40,12 @@ const hotelTitle = 'Хромой кабан-2'
 
 const breadcrumbs = computed(() => [
   { label: 'Главная', to: '/' },
-  { label: 'Отели', to: '/profile/base' },
   {
-    label: `Управление номерами: ${hotelTitle}`,
+    label: hotelTitle,
+    to: hotelId.value ? `/profile/base/${hotelId.value}` : '/profile/base',
+  },
+  {
+    label: 'Управление номерами',
     to: hotelId.value ? { path: '/rooms', query: { hotelId: hotelId.value } } : '/rooms',
   },
   { label: 'Наличие' },
