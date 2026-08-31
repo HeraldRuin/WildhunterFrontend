@@ -121,6 +121,8 @@ const guestsHuntersMismatch = computed(() =>
   && stayAdults.value !== huntHunters.value,
 )
 const ROOMS_EXCEED_GUESTS_MESSAGE = 'Количество номеров не может быть больше количества гостей'
+const INSUFFICIENT_CAPACITY_MESSAGE
+  = 'Вместимость выбранных номеров меньше количества гостей. Увеличьте число номеров или выберите более вместительный вариант'
 const isBookingBlocked = computed(() => roomsExceedGuests.value || guestsHuntersMismatch.value)
 const isApiMessageOpen = computed(() => Boolean(apiMessage.value))
 const isAnyModalOpen = computed(() =>
@@ -193,11 +195,25 @@ function getBookingAdults(stayAdultsCount: number | undefined, hunters: number, 
   return hunters
 }
 
-function validateRoomsAgainstGuests(adults: number, rooms: { number: number }[]) {
+function getSelectedRoomsCapacity(rooms: Array<{ room_id: number, number: number }>) {
+  return rooms.reduce((sum, selection) => {
+    const room = availableRooms.value.find(item => Number(item.id) === selection.room_id)
+    const capacity = room?.capacity ?? 0
+
+    return sum + capacity * selection.number
+  }, 0)
+}
+
+function validateRoomsAgainstGuests(adults: number, rooms: Array<{ room_id: number, number: number }>) {
   const totalRooms = rooms.reduce((sum, room) => sum + room.number, 0)
 
   if (totalRooms > adults) {
     showApiMessage(ROOMS_EXCEED_GUESTS_MESSAGE)
+    return false
+  }
+
+  if (getSelectedRoomsCapacity(rooms) < adults) {
+    showApiMessage(INSUFFICIENT_CAPACITY_MESSAGE)
     return false
   }
 
