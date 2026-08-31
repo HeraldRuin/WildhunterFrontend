@@ -3,11 +3,20 @@ import type { BookingCalculatingData, BookingCalculationLine } from '~/types/api
 
 const TOOLTIP_TEXT = 'За человека в сутки'
 const CALCULATION_NOTIFICATION_GROUP = 'calculation'
+/** Ожидаемые состояния калькуляции — достаточно текста в модалке, без toast */
+const SILENT_CALCULATION_ERROR_CODES = new Set([
+  'no_paid_participants',
+  'no_hunters',
+])
 
 const { isOpen, booking, close } = useCalculationModal()
 const { bookings } = useApi()
 const notifications = useNotifications()
 const notifyOptions = { group: CALCULATION_NOTIFICATION_GROUP }
+
+function shouldNotifyCalculationError(errorCode?: string) {
+  return !errorCode || !SILENT_CALCULATION_ERROR_CODES.has(errorCode)
+}
 
 const isLoading = ref(false)
 const loadError = ref('')
@@ -56,7 +65,10 @@ async function loadCalculation(code: string) {
 
     if (!response.success || !response.data) {
       loadError.value = response.message || 'Не удалось загрузить калькуляцию'
-      notifications.error(loadError.value, notifyOptions)
+      const errorCode = (response as { error_code?: string }).error_code
+      if (shouldNotifyCalculationError(errorCode)) {
+        notifications.error(loadError.value, notifyOptions)
+      }
       return
     }
 
@@ -68,9 +80,11 @@ async function loadCalculation(code: string) {
       return
     }
 
-    const data = (error as { data?: { message?: string } }).data
+    const data = (error as { data?: { message?: string, error_code?: string } }).data
     loadError.value = data?.message || 'Не удалось загрузить калькуляцию'
-    notifications.error(loadError.value, notifyOptions)
+    if (shouldNotifyCalculationError(data?.error_code)) {
+      notifications.error(loadError.value, notifyOptions)
+    }
   }
   finally {
     if (requestId === loadRequestId) {
