@@ -729,7 +729,7 @@ onBeforeUnmount(() => {
 
 .booking-table__stay-grid > div {
   padding: 6px 8px;
-  border: 1px solid var(--wh-gray-400);
+  border: 1px solid var(--wh-gray-200);
   border-radius: 4px;
 }
 
@@ -744,7 +744,7 @@ onBeforeUnmount(() => {
 
 .booking-table__rooms > div {
   padding: 6px 8px;
-  border: 1px solid var(--wh-gray-400);
+  border: 1px solid var(--wh-gray-200);
   border-radius: 4px;
 }
 

@@ -309,6 +309,8 @@ export function mapBookingHistoryItem(
           date: formatHistoryDate(details.start_date_animal),
           animal: details.animal?.title || '—',
           hunters: Number(details.total_hunting) || 0,
+          pricePerHunter: details.animal?.price ?? null,
+          total: details.amount_hunting ?? null,
         }
       : undefined
 

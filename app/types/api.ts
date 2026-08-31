@@ -685,9 +685,11 @@ export interface BookingHistoryItemDto {
     total_guests: number
     start_date_animal: string | null
     total_hunting: number | null
+    amount_hunting?: number | null
     animal: {
       id: number
       title: string
+      price?: number | null
     } | null
     rooms: BookingHistoryRoomDto[]
   }
