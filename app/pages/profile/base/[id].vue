@@ -1288,83 +1288,85 @@ watch(activeEditTab, (tab) => {
                 v-if="activePlacesTab === 'location'"
                 class="base-edit__places-form"
               >
-                <div class="base-edit__location-field">
-                  <CommonFormField
-                    :model-value="editLocationQuery"
-                    label="Локация"
-                    placeholder="Выберите локацию"
-                    autocomplete="off"
-                    :open="isLocationDropdownOpen"
-                    cursor-pointer
-                    no-margin
-                    @update:model-value="onLocationQueryInput"
-                    @focus="openLocationDropdown"
-                    @blur="onLocationBlur"
-                  >
-                    <template #trailing>
-                      <button
-                        type="button"
-                        class="base-edit__location-chevron-btn"
-                        tabindex="-1"
-                        :aria-label="isLocationDropdownOpen ? 'Закрыть список локаций' : 'Открыть список локаций'"
-                        @mousedown.prevent="toggleLocationDropdown"
-                      >
-                        <svg
-                          class="base-edit__location-chevron"
-                          :class="{ 'base-edit__location-chevron--open': isLocationDropdownOpen }"
-                          viewBox="0 0 12 8"
-                          aria-hidden="true"
+                <div class="base-edit__location-row">
+                  <div class="base-edit__location-field">
+                    <CommonFormField
+                      :model-value="editLocationQuery"
+                      label="Локация"
+                      placeholder="Выберите локацию"
+                      autocomplete="off"
+                      :open="isLocationDropdownOpen"
+                      cursor-pointer
+                      no-margin
+                      @update:model-value="onLocationQueryInput"
+                      @focus="openLocationDropdown"
+                      @blur="onLocationBlur"
+                    >
+                      <template #trailing>
+                        <button
+                          type="button"
+                          class="base-edit__location-chevron-btn"
+                          tabindex="-1"
+                          :aria-label="isLocationDropdownOpen ? 'Закрыть список локаций' : 'Открыть список локаций'"
+                          @mousedown.prevent="toggleLocationDropdown"
                         >
-                          <path
-                            d="M1 2 6 6.5 11 2"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                        </svg>
-                      </button>
-                    </template>
-                  </CommonFormField>
+                          <svg
+                            class="base-edit__location-chevron"
+                            :class="{ 'base-edit__location-chevron--open': isLocationDropdownOpen }"
+                            viewBox="0 0 12 8"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M1 2 6 6.5 11 2"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </template>
+                    </CommonFormField>
 
-                  <ul
-                    v-if="isLocationDropdownOpen"
-                    class="base-edit__location-dropdown"
-                    role="listbox"
-                    aria-label="Список локаций"
-                  >
-                    <li
-                      v-if="locationsLoading"
-                      class="base-edit__location-option base-edit__location-option--muted base-edit__location-option--loading"
+                    <ul
+                      v-if="isLocationDropdownOpen"
+                      class="base-edit__location-dropdown"
+                      role="listbox"
+                      aria-label="Список локаций"
                     >
-                      <CommonSpinner variant="ring" size="sm" label="Загрузка локаций" />
-                    </li>
-                    <li v-else-if="locationsError" class="base-edit__location-option base-edit__location-option--error">
-                      {{ locationsError }}
-                    </li>
-                    <li v-else-if="!filteredLocations.length" class="base-edit__location-option base-edit__location-option--muted">
-                      Ничего не найдено
-                    </li>
-                    <li
-                      v-for="item in filteredLocations"
-                      :key="item.id"
-                      role="option"
-                      class="base-edit__location-option"
-                      :class="{ 'base-edit__location-option--active': editLocationId === item.id }"
-                      @mousedown.prevent="selectLocation(item)"
-                    >
-                      {{ item.name }}
-                    </li>
-                  </ul>
+                      <li
+                        v-if="locationsLoading"
+                        class="base-edit__location-option base-edit__location-option--muted base-edit__location-option--loading"
+                      >
+                        <CommonSpinner variant="ring" size="sm" label="Загрузка локаций" />
+                      </li>
+                      <li v-else-if="locationsError" class="base-edit__location-option base-edit__location-option--error">
+                        {{ locationsError }}
+                      </li>
+                      <li v-else-if="!filteredLocations.length" class="base-edit__location-option base-edit__location-option--muted">
+                        Ничего не найдено
+                      </li>
+                      <li
+                        v-for="item in filteredLocations"
+                        :key="item.id"
+                        role="option"
+                        class="base-edit__location-option"
+                        :class="{ 'base-edit__location-option--active': editLocationId === item.id }"
+                        @mousedown.prevent="selectLocation(item)"
+                      >
+                        {{ item.name }}
+                      </li>
+                    </ul>
+                  </div>
+
+                  <CommonFormField
+                    v-model="editAddress"
+                    label="Действительный адрес"
+                    placeholder="Действительный адрес"
+                    no-margin
+                  />
                 </div>
-
-                <CommonFormField
-                  v-model="editAddress"
-                  label="Действительный адрес"
-                  placeholder="Действительный адрес"
-                  no-margin
-                />
 
                 <section class="base-edit__geo" aria-label="Географические координаты">
                   <h3 class="base-edit__geo-title">Географические координаты</h3>
@@ -1878,6 +1880,13 @@ watch(activeEditTab, (tab) => {
   gap: 16px;
   width: 100%;
   min-width: 0;
+}
+
+.base-edit__location-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.25fr) minmax(0, 0.75fr);
+  gap: 16px 24px;
+  align-items: start;
 }
 
 .base-edit__location-field {
@@ -2666,6 +2675,10 @@ watch(activeEditTab, (tab) => {
   }
 
   .base-edit__form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .base-edit__location-row {
     grid-template-columns: 1fr;
   }
 
