@@ -131,6 +131,25 @@ export interface RoomsAvailabilityQuery {
   for_single?: boolean
 }
 
+export interface RoomAvailabilityStorePayload {
+  start_date: string
+  end_date: string
+  active: boolean
+  price?: number
+  number?: number
+  day_of_week_select?: number[]
+  is_instant?: boolean
+}
+
+export interface RoomAvailabilityStoreData {
+  room_id: number
+  updated_days: number
+}
+
+export type RoomAvailabilityStoreResponse =
+  | ApiSuccessResponse<RoomAvailabilityStoreData>
+  | ApiErrorResponse
+
 export function useRoomsApi() {
   const { apiFetch } = useApiClient()
 
@@ -178,6 +197,19 @@ export function useRoomsApi() {
     })
   }
 
+  function storeAvailability(
+    roomId: number | string,
+    payload: RoomAvailabilityStorePayload,
+  ) {
+    return apiFetch<RoomAvailabilityStoreResponse>(
+      `/rooms/${encodeURIComponent(String(roomId))}/availability`,
+      {
+        method: 'POST',
+        body: payload,
+      },
+    )
+  }
+
   function publish(roomId: number | string) {
     return apiFetch<RoomManageVisibilityResponse>(
       `/rooms/${encodeURIComponent(String(roomId))}/publish`,
@@ -211,6 +243,7 @@ export function useRoomsApi() {
     create,
     update,
     getAvailability,
+    storeAvailability,
     publish,
     hide,
     deleteManage,
