@@ -355,10 +355,15 @@ function handleSubmit() {
   })
 }
 
+function setHunters(count: number) {
+  adultsCount.value = clampAdults(count)
+}
+
 defineExpose({
   getSelectedAnimalId: () => animal.value,
   getHunters: () => adultsCount.value,
   getHuntDate: () => (huntDate.value ? formatDisplayDate(startOfDay(huntDate.value)) : ''),
+  setHunters,
 })
 </script>
 

@@ -103,6 +103,7 @@ const animalsSearchRef = ref<{
   getSelectedAnimalId: () => string
   getHunters: () => number
   getHuntDate: () => string
+  setHunters: (count: number) => void
 } | null>(null)
 const roomSelectionRef = ref<{
   getSelectedRooms: () => { room_id: number, number: number }[]
@@ -121,13 +122,49 @@ const isAnyModalOpen = computed(() =>
   || isApiMessageOpen.value,
 )
 
+const DEFAULT_HUNTERS = 1
+
+function applyHuntersCount(hunters: number) {
+  const currentHunters = animalsSearchRef.value?.getHunters()
+
+  if (currentHunters === hunters) {
+    return
+  }
+
+  animalsSearchRef.value?.setHunters(hunters)
+
+  if (animalAvailability.value && animalAvailability.value.hunters !== hunters) {
+    clearAnimalAvailability()
+  }
+}
+
+function syncHuntersFromGuests() {
+  if (!hasSelectedRooms.value) {
+    return
+  }
+
+  applyHuntersCount(stayAdults.value)
+}
+
+function resetHunters() {
+  applyHuntersCount(DEFAULT_HUNTERS)
+}
+
 function handleAdultsChange(adults: number) {
   stayAdults.value = adults
+  syncHuntersFromGuests()
 }
 
 function handleRoomSelectionChange(payload: { hasSelectedRooms: boolean, totalRooms: number }) {
   hasSelectedRooms.value = payload.hasSelectedRooms
   selectedRoomsCount.value = payload.totalRooms
+
+  if (payload.hasSelectedRooms) {
+    syncHuntersFromGuests()
+    return
+  }
+
+  resetHunters()
 }
 
 function getBookingAdults(stayAdultsCount: number | undefined, hunters: number, hasRooms: boolean) {
@@ -301,6 +338,7 @@ async function handleCheck(payload: { checkIn: string, checkOut: string, adults:
   isCheckingAvailability.value = true
   hasSelectedRooms.value = false
   selectedRoomsCount.value = 0
+  resetHunters()
 
   try {
     const response = await hotels.checkAvailability({
@@ -631,7 +669,7 @@ onMounted(() => {
             ref="datesGuestsRef"
             :loading="isCheckingAvailability"
             @check="handleCheck"
-            @clear="availableRooms = []; hasCheckedAvailability = false; hasSelectedRooms = false; selectedRoomsCount = 0"
+            @clear="availableRooms = []; hasCheckedAvailability = false; hasSelectedRooms = false; selectedRoomsCount = 0; resetHunters()"
             @dates-change="handleStayDatesChange"
             @adults-change="handleAdultsChange"
           />
