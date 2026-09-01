@@ -213,7 +213,7 @@ async function removeHotel() {
             :to="{ path: '/rooms', query: { hotelId: String(item.id) } }"
             class="base-hotel-card__btn base-hotel-card__btn--success"
           >
-            Доступные номера
+            Управление номерами
           </NuxtLink>
           <NuxtLink
             :to="`/profile/base/${item.id}`"
