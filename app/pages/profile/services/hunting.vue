@@ -1051,22 +1051,13 @@ onBeforeUnmount(() => {
   }
 
   .hunting-org__animals {
-    flex: none;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px;
-    width: 100%;
-    max-width: none;
-    min-width: 0;
-    padding: 8px;
-    border-right: none;
-    border-bottom: 1px solid var(--wh-gray-200, #ddd);
-    border-radius: 4px 4px 0 0;
+    display: none;
   }
 
-  .hunting-org__animal {
-    width: auto;
-    max-width: 100%;
+  .hunting-org__animals-select {
+    display: block;
+    padding: 12px;
+    border-bottom: 1px solid var(--wh-gray-200, #ddd);
   }
 
   .hunting-org__content {
