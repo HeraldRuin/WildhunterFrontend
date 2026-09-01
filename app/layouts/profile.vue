@@ -99,7 +99,8 @@ watch(
     gap: var(--profile-sidebar-gap);
     height: auto;
     max-height: none;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: visible;
     padding: 8px;
     box-sizing: border-box;
   }
