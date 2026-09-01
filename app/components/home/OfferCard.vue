@@ -7,7 +7,7 @@ import {
   getDefaultStayCheckIn,
   getDefaultStayCheckOut,
 } from '~/utils/date'
-import { getHotelPath } from '~/utils/hotel'
+import { formatHotelPrice, getHotelPath } from '~/utils/hotel'
 import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
 import { formatReviewsCount } from '~/utils/pluralize'
 
@@ -92,7 +92,7 @@ onMounted(() => {
 })
 
 function formatPrice(value: number) {
-  return new Intl.NumberFormat('ru-RU').format(value).replace(/\s/g, '.')
+  return formatHotelPrice(value)
 }
 
 function getErrorMessage(error: unknown) {

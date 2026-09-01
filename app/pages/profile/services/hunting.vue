@@ -2,6 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { OrganisationAnimal, OrganisationPeriod } from '~/api/animals'
 import { formatApiDate, formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
+import { formatHotelPrice } from '~/utils/hotel'
 
 definePageMeta({
   layout: 'profile',
@@ -94,9 +95,7 @@ function formatCost(price: number | null): string {
     return ''
   }
 
-  return new Intl.NumberFormat('ru-RU')
-    .format(Math.round(price))
-    .replace(/\s/g, '.')
+  return formatHotelPrice(price)
 }
 
 function parseAmount(cost: string): number | null {

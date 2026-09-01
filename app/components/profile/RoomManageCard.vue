@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatHotelPriceLabel } from '~/utils/hotel'
 import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
 
 export type RoomManageStatus = 'publish' | 'draft'
@@ -41,10 +42,7 @@ const isTogglingVisibility = ref(false)
 const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
 
-const formattedPrice = computed(() => {
-  const value = new Intl.NumberFormat('ru-RU').format(props.item.price).replace(/\s/g, '.')
-  return `${value} руб`
-})
+const formattedPrice = computed(() => formatHotelPriceLabel(props.item.price))
 
 const statusLabel = computed(() => {
   switch (props.item.status) {
