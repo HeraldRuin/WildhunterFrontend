@@ -2,6 +2,7 @@
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
+import { normalizeRichTextHtml } from '~/utils/html'
 import { createMockHotelDetail, getHotelPath } from '~/utils/hotel'
 import { formatReviewsCount } from '~/utils/pluralize'
 import HotelBookingSection from '~/components/hotel/HotelBookingSection.vue'
@@ -22,6 +23,11 @@ const isHotelLoading = computed(() => hotelPending.value && !hotel.value)
 const hasHotelError = computed(() => !hotelPending.value && !hotel.value)
 const showHotelPlaceholder = computed(() => isHotelLoading.value || hasHotelError.value)
 const displayHotel = computed(() => hotel.value ?? placeholderHotel.value)
+const displayHotelContent = computed(() => {
+  const content = displayHotel.value.content
+
+  return content ? normalizeRichTextHtml(content) : ''
+})
 const { services } = useApi()
 const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
 const { isFavorite: isHotelFavorite, setFavorite, loadFavorites, isLoaded } = useFavoriteHotels()
@@ -258,12 +264,12 @@ function handleRetryHotelLoad() {
           />
 
           <section
-            v-if="displayHotel.content"
+            v-if="displayHotelContent"
             class="hotel-page__description"
           >
             <div
               class="hotel-page__description-content"
-              v-html="displayHotel.content"
+              v-html="displayHotelContent"
             />
           </section>
 
@@ -535,13 +541,30 @@ function handleRetryHotelLoad() {
   color: var(--wh-gray-600);
 }
 
-.hotel-page__description-content :deep(p) {
-  margin: 0 0 14px;
-  font: inherit;
-  letter-spacing: inherit;
+.hotel-page__description-content :deep(*) {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  font-style: normal !important;
+  font-stretch: normal !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+  color: inherit !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  background: none !important;
 }
 
-.hotel-page__description-content :deep(p:last-child) {
+.hotel-page__description-content :deep(p),
+.hotel-page__description-content :deep(div),
+.hotel-page__description-content :deep(li) {
+  margin: 0 0 14px;
+}
+
+.hotel-page__description-content :deep(p:last-child),
+.hotel-page__description-content :deep(div:last-child),
+.hotel-page__description-content :deep(li:last-child) {
   margin-bottom: 0;
 }
 
