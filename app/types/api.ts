@@ -455,6 +455,7 @@ export interface BookingServiceAdditionalCatalog {
   calculation_type: 'individual' | 'per_person' | null
   count: number | null
   price: number
+  is_system?: boolean | number | null
 }
 
 export interface BookingServicesCatalogs {

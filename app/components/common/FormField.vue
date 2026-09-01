@@ -140,7 +140,7 @@ function toDigits(value: string) {
 }
 
 function toAmount(value: string) {
-  const cleaned = value.replace(/[^\d.,]/g, '')
+  const cleaned = value.replace(/[^\d.,\s]/g, '')
   const separatorIndex = cleaned.search(/[.,]/)
 
   if (separatorIndex === -1) {
@@ -373,6 +373,10 @@ function onKeydown(event: KeyboardEvent) {
     if (!/[.,]/.test(current)) {
       return
     }
+  }
+
+  if (props.amountOnly && event.key === ' ') {
+    return
   }
 
   event.preventDefault()

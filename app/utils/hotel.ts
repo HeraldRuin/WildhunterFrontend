@@ -338,7 +338,7 @@ export function normalizeHotelDetail(raw: unknown, params: HotelSlugParams): Hot
 }
 
 export function formatHotelPrice(value: number) {
-  return new Intl.NumberFormat('ru-RU').format(value).replace(/\s/g, '.')
+  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Math.round(value))
 }
 
 export function formatHotelPriceLabel(value: number) {

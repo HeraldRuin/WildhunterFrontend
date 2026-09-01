@@ -49,7 +49,17 @@ export interface SaveAdditionalServicePayload {
   calculation_type: 'individual' | 'per_person' | null
   count: number | null
   price: number
+  is_system?: boolean
 }
+
+export interface SystemServiceCatalogItem {
+  id: number
+  name: string
+}
+
+export type SystemServicesListResponse =
+  | ApiSuccessResponse<SystemServiceCatalogItem[]>
+  | ApiErrorResponse
 
 export function useServicesApi() {
   const { apiFetch } = useApiClient()
@@ -102,6 +112,12 @@ export function useServicesApi() {
     })
   }
 
+  function getSystemServices() {
+    return apiFetch<SystemServicesListResponse>('/services/system', {
+      method: 'GET',
+    })
+  }
+
   function createAdditional(payload: SaveAdditionalServicePayload) {
     return apiFetch<AdditionalServiceResponse>('/services/additionals', {
       method: 'POST',
@@ -138,6 +154,7 @@ export function useServicesApi() {
     getAttributes,
     getAttributeGroups,
     getAdditionals,
+    getSystemServices,
     createAdditional,
     updateAdditional,
     deleteAdditional,
