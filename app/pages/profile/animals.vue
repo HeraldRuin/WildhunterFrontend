@@ -406,7 +406,7 @@ onBeforeUnmount(() => {
       <CommonSelectField
         v-model="selectedAnimalId"
         class="animals-manage__select"
-        placeholder="Выберите животное"
+        placeholder="Добавить животное в базу"
         no-margin
         filled-hover
         :options="selectOptions"
@@ -461,10 +461,9 @@ onBeforeUnmount(() => {
           >
             <div class="animals-manage__table">
               <div class="animals-manage__head">
-                <span class="animals-manage__col animals-manage__col--name">Имя</span>
-                <div class="animals-manage__col animals-manage__col--controls">
-                  <span class="animals-manage__col animals-manage__col--hunters">Минимальное количество охотников</span>
-                </div>
+                <span class="animals-manage__col animals-manage__col--name">Животное</span>
+                <span class="animals-manage__col animals-manage__col--hunters">Мин кол-во охотников</span>
+                <span class="animals-manage__col animals-manage__col--actions-head" aria-hidden="true" />
               </div>
 
               <ul class="animals-manage__list">
@@ -475,38 +474,36 @@ onBeforeUnmount(() => {
                 >
                   <span class="animals-manage__col animals-manage__col--name">{{ animal.title }}</span>
 
-                  <div class="animals-manage__col animals-manage__col--controls">
-                    <div class="animals-manage__col animals-manage__col--hunters">
-                      <input
-                        class="animals-manage__input"
-                        type="text"
-                        inputmode="numeric"
-                        :value="animal.huntersCountInput"
-                        :disabled="busyAnimalId === animal.id || isAdding"
-                        :aria-label="`Минимальное количество охотников: ${animal.title}`"
-                        @keydown="onMinHuntersKeydown"
-                        @input="onMinHuntersInput(animal, $event)"
-                      >
-                      <button
-                        type="button"
-                        class="animals-manage__btn animals-manage__btn--save"
-                        :disabled="busyAnimalId != null || isAdding"
-                        @click="saveAnimal(animal)"
-                      >
-                        Сохранить
-                      </button>
-                    </div>
+                  <div class="animals-manage__col animals-manage__col--hunters">
+                    <input
+                      class="animals-manage__input"
+                      type="text"
+                      inputmode="numeric"
+                      :value="animal.huntersCountInput"
+                      :disabled="busyAnimalId === animal.id || isAdding"
+                      :aria-label="`Минимальное количество охотников: ${animal.title}`"
+                      @keydown="onMinHuntersKeydown"
+                      @input="onMinHuntersInput(animal, $event)"
+                    >
+                  </div>
 
-                    <div class="animals-manage__col animals-manage__col--actions">
-                      <button
-                        type="button"
-                        class="animals-manage__btn animals-manage__btn--delete"
-                        :disabled="busyAnimalId != null || isAdding"
-                        @click="requestRemoveAnimal(animal)"
-                      >
-                        Удалить
-                      </button>
-                    </div>
+                  <div class="animals-manage__col animals-manage__col--actions">
+                    <button
+                      type="button"
+                      class="animals-manage__btn animals-manage__btn--save"
+                      :disabled="busyAnimalId != null || isAdding"
+                      @click="saveAnimal(animal)"
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      class="animals-manage__btn animals-manage__btn--delete"
+                      :disabled="busyAnimalId != null || isAdding"
+                      @click="requestRemoveAnimal(animal)"
+                    >
+                      Удалить
+                    </button>
                   </div>
                 </li>
               </ul>
@@ -717,8 +714,9 @@ onBeforeUnmount(() => {
   min-width: 0;
   grid-template-columns:
     minmax(0, 1fr)
+    max-content
     max-content;
-  column-gap: 12px;
+  column-gap: 16px;
 }
 
 .animals-manage__head,
@@ -729,6 +727,14 @@ onBeforeUnmount(() => {
   align-items: center;
   padding: 14px 20px;
   box-sizing: border-box;
+}
+
+.animals-manage__head .animals-manage__col--hunters {
+  white-space: nowrap;
+}
+
+.animals-manage__col--actions-head {
+  min-width: 0;
 }
 
 .animals-manage__head {
@@ -774,24 +780,14 @@ onBeforeUnmount(() => {
   word-break: break-word;
 }
 
-.animals-manage__col--controls {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 10px;
-  min-width: 0;
-}
-
 .animals-manage__col--hunters {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
-  gap: 10px;
 }
 
 .animals-manage__col--actions {
   display: flex;
-  flex-shrink: 0;
+  gap: 10px;
 }
 
 .animals-manage__input {
@@ -980,10 +976,12 @@ onBeforeUnmount(() => {
     padding: 14px 16px;
   }
 
+  .animals-manage__head .animals-manage__col--actions-head {
+    display: none;
+  }
+
   .animals-manage__head .animals-manage__col--hunters {
-    white-space: normal;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    white-space: nowrap;
   }
 
   .animals-manage__list {
@@ -991,14 +989,23 @@ onBeforeUnmount(() => {
   }
 
   .animals-manage__row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 1fr auto;
     grid-column: auto;
-    grid-template-columns: none;
-    column-gap: 6px;
-    row-gap: 10px;
+    gap: 10px;
     padding: 14px 16px;
+  }
+
+  .animals-manage__row .animals-manage__col--name {
+    grid-column: 1 / -1;
+  }
+
+  .animals-manage__row .animals-manage__col--hunters {
+    grid-column: 1;
+  }
+
+  .animals-manage__row .animals-manage__col--actions {
+    grid-column: 2;
   }
 
   .animals-manage__col--name {
@@ -1012,15 +1019,6 @@ onBeforeUnmount(() => {
     overflow-wrap: anywhere;
     word-break: break-word;
     text-overflow: clip;
-  }
-
-  .animals-manage__col--controls {
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .animals-manage__col--hunters {
-    gap: 6px;
   }
 }
 </style>
