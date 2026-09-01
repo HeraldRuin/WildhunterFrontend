@@ -4,6 +4,7 @@ import type {
   TrophyCostEntityKind,
   TrophyCostItem,
 } from '~/api/animals'
+import { formatHotelPrice } from '~/utils/hotel'
 
 definePageMeta({
   layout: 'profile',
@@ -74,9 +75,7 @@ function formatCost(price: number | null): string {
     return ''
   }
 
-  return new Intl.NumberFormat('ru-RU')
-    .format(Math.round(price))
-    .replace(/\s/g, '.')
+  return formatHotelPrice(price)
 }
 
 function parseAmount(cost: string): number | null {
@@ -768,6 +767,27 @@ onMounted(() => {
     padding: 12px;
     border-bottom: 1px solid var(--wh-gray-200, #ddd);
   }
+
+  .trophy-cost__head,
+  .trophy-cost__row {
+    grid-template-columns:
+      minmax(140px, 1fr)
+      minmax(120px, 160px)
+      auto;
+  }
+
+  .trophy-cost__col--cost {
+    max-width: 160px;
+  }
+
+  .trophy-cost__col--cost :deep(.form-field),
+  .trophy-cost__col--cost :deep(.form-field__control),
+  .trophy-cost__col--cost :deep(.form-field__input) {
+    width: 100%;
+    min-width: 0;
+    max-width: 160px;
+    box-sizing: border-box;
+  }
 }
 
 @media (--wh-mobile) {
@@ -784,19 +804,42 @@ onMounted(() => {
     padding: 0;
   }
 
-  .trophy-cost__head,
-  .trophy-cost__row {
+  .trophy-cost__head {
     grid-template-columns: 1fr;
     gap: 10px;
     padding: 14px 16px;
   }
 
-  .trophy-cost__head {
+  .trophy-cost__row {
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 14px 16px;
+    align-items: center;
+  }
+
+  .trophy-cost__head .trophy-cost__col--cost,
+  .trophy-cost__head .trophy-cost__col--actions {
     display: none;
   }
 
+  .trophy-cost__col--label {
+    grid-column: 1 / -1;
+  }
+
+  .trophy-cost__col--cost {
+    max-width: none;
+    min-width: 0;
+  }
+
+  .trophy-cost__col--cost :deep(.form-field),
+  .trophy-cost__col--cost :deep(.form-field__control),
+  .trophy-cost__col--cost :deep(.form-field__input) {
+    max-width: none;
+  }
+
   .trophy-cost__col--actions {
-    justify-content: flex-start;
+    justify-content: flex-end;
+    flex-shrink: 0;
   }
 }
 </style>
