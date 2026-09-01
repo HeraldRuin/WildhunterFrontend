@@ -755,13 +755,13 @@ onBeforeUnmount(() => {
 
 .hunting-org__animals {
   display: flex;
-  flex: 0 0 600px;
+  flex: 0 1 clamp(220px, 36cqi, 600px);
   flex-direction: column;
   align-items: stretch;
   gap: 4px;
   box-sizing: border-box;
-  width: 600px;
-  max-width: 600px;
+  width: clamp(220px, 36cqi, 600px);
+  max-width: clamp(220px, 36cqi, 600px);
   min-width: 0;
   padding: 8px;
   border-right: 1px solid var(--wh-gray-200, #ddd);
@@ -769,19 +769,10 @@ onBeforeUnmount(() => {
   background: var(--wh-white);
 }
 
-@media (max-width: 1823px) and (min-width: 1541px) {
-  .hunting-org__animals {
-    flex: 0 1 clamp(220px, 38cqi, 600px);
-    width: clamp(220px, 38cqi, 600px);
-    max-width: clamp(220px, 38cqi, 600px);
-  }
-
-  .hunting-org__table {
-    grid-template-columns:
-      minmax(120px, min(200px, 1fr))
-      minmax(120px, min(200px, 1fr))
-      minmax(90px, min(140px, 0.7fr))
-      minmax(180px, 1fr);
+@media (max-width: 1823px) and (min-width: 1025px) {
+  .hunting-org__head,
+  .hunting-org__row {
+    padding-inline: 12px;
   }
 }
 
@@ -867,11 +858,11 @@ onBeforeUnmount(() => {
   width: 100%;
   min-width: 0;
   grid-template-columns:
-    minmax(148px, 200px)
-    minmax(148px, 200px)
-    minmax(110px, 140px)
-    minmax(180px, 1fr);
-  column-gap: 12px;
+    minmax(0, 1.15fr)
+    minmax(0, 1.15fr)
+    minmax(0, 0.85fr)
+    minmax(190px, max-content);
+  column-gap: clamp(8px, 1.2cqi, 12px);
   overflow: visible;
 }
 
@@ -980,7 +971,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-shrink: 0;
   gap: 8px;
+  min-width: 190px;
 }
 
 .hunting-org__btn {
@@ -1045,6 +1038,45 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
+@container hunting-org (max-width: 1180px) {
+  .hunting-org__head,
+  .hunting-org__row {
+    padding-inline: 10px;
+  }
+
+  .hunting-org__table {
+    column-gap: 8px;
+    grid-template-columns:
+      minmax(0, 0.95fr)
+      minmax(0, 0.95fr)
+      minmax(0, 0.7fr)
+      minmax(190px, max-content);
+  }
+}
+
+@media (min-width: 1541px) {
+  @container hunting-org (max-width: 1180px) {
+    .hunting-org__date-icon {
+      display: none;
+    }
+
+    .hunting-org__col--from :deep(.form-field__input--with-trailing),
+    .hunting-org__col--to :deep(.form-field__input--with-trailing) {
+      padding-right: 14px;
+    }
+  }
+}
+
+@container hunting-org (max-width: 980px) {
+  .hunting-org__table {
+    grid-template-columns:
+      minmax(0, 0.85fr)
+      minmax(0, 0.85fr)
+      minmax(0, 0.6fr)
+      minmax(190px, max-content);
+  }
+}
+
 @media (max-width: 1540px) and (min-width: 1025px) {
   .hunting-org {
     flex-direction: column;
@@ -1063,14 +1095,6 @@ onBeforeUnmount(() => {
   .hunting-org__content {
     flex: 1 1 auto;
     min-width: 0;
-  }
-
-  .hunting-org__table {
-    grid-template-columns:
-      minmax(120px, min(200px, 1fr))
-      minmax(120px, min(200px, 1fr))
-      minmax(90px, min(140px, 0.7fr))
-      minmax(180px, 1fr);
   }
 }
 
@@ -1134,14 +1158,6 @@ onBeforeUnmount(() => {
 
   .hunting-org__content {
     min-width: 0;
-  }
-
-  .hunting-org__table {
-    grid-template-columns:
-      minmax(120px, min(200px, 1fr))
-      minmax(120px, min(200px, 1fr))
-      minmax(90px, min(140px, 0.7fr))
-      minmax(180px, 1fr);
   }
 }
 
