@@ -541,6 +541,7 @@ onMounted(() => {
   border: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px;
   overflow: hidden;
+  container-type: inline-size;
 }
 
 .trophy-cost__animals {
@@ -557,6 +558,14 @@ onMounted(() => {
   border-right: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px 0 0 4px;
   background: var(--wh-white);
+}
+
+@media (max-width: 1521px) and (min-width: 1025px) {
+  .trophy-cost__animals {
+    flex: 0 1 clamp(220px, 38cqi, 600px);
+    width: clamp(220px, 38cqi, 600px);
+    max-width: clamp(220px, 38cqi, 600px);
+  }
 }
 
 .trophy-cost__animals-select {
@@ -636,6 +645,14 @@ onMounted(() => {
 }
 
 .trophy-cost__table {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns:
+    minmax(0, 0.9fr)
+    minmax(0, 1.4fr)
+    auto;
+  column-gap: 12px;
   overflow: hidden;
 }
 
@@ -646,16 +663,14 @@ onMounted(() => {
 .trophy-cost__head,
 .trophy-cost__row {
   display: grid;
-  grid-template-columns:
-    minmax(140px, 0.9fr)
-    minmax(160px, 1.4fr)
-    auto;
-  align-items: center;
-  gap: 12px;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   padding: 12px 16px;
+  box-sizing: border-box;
 }
 
 .trophy-cost__head {
+  align-items: center;
   border-bottom: 1px solid var(--wh-gray-200, #ddd);
   background: var(--wh-gray-450, #C8C8C8);
   font-size: 14px;
@@ -664,12 +679,14 @@ onMounted(() => {
 }
 
 .trophy-cost__list {
+  display: contents;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .trophy-cost__row {
+  align-items: center;
   border-bottom: 1px solid var(--wh-gray-200, #ddd);
 }
 
@@ -678,12 +695,21 @@ onMounted(() => {
 }
 
 .trophy-cost__col--label {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.3;
   color: var(--wh-black-text, #1c211c);
 }
 
 .trophy-cost__col--cost {
+  min-width: 0;
+}
+
+.trophy-cost__col--cost :deep(.form-field),
+.trophy-cost__col--cost :deep(.form-field__control),
+.trophy-cost__col--cost :deep(.form-field__input) {
   min-width: 0;
 }
 
@@ -724,6 +750,7 @@ onMounted(() => {
 }
 
 .trophy-cost__empty {
+  grid-column: 1 / -1;
   margin: 0;
   padding: 24px 16px;
   font-size: 14px;
@@ -768,11 +795,10 @@ onMounted(() => {
     border-bottom: 1px solid var(--wh-gray-200, #ddd);
   }
 
-  .trophy-cost__head,
-  .trophy-cost__row {
+  .trophy-cost__table {
     grid-template-columns:
-      minmax(140px, 1fr)
-      minmax(120px, 160px)
+      minmax(0, 1fr)
+      minmax(0, 160px)
       auto;
   }
 
@@ -804,14 +830,27 @@ onMounted(() => {
     padding: 0;
   }
 
-  .trophy-cost__head {
+  .trophy-cost__table {
     grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+
+  .trophy-cost__list {
+    display: block;
+  }
+
+  .trophy-cost__head {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-column: auto;
     gap: 10px;
     padding: 14px 16px;
   }
 
   .trophy-cost__row {
+    display: grid;
     grid-template-columns: 1fr auto;
+    grid-column: auto;
     gap: 10px;
     padding: 14px 16px;
     align-items: center;
