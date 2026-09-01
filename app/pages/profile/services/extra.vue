@@ -1405,8 +1405,8 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__row {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
     gap: 12px;
     padding-inline: 16px;
     width: 100%;
@@ -1415,7 +1415,7 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__col--name {
-    grid-column: 1;
+    grid-column: 1 / -1;
     flex-wrap: wrap;
     align-items: flex-start;
     width: 100%;
@@ -1437,8 +1437,8 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: stretch;
     gap: 4px;
-    width: 100%;
-    max-width: 100%;
+    width: auto;
+    max-width: none;
     min-width: 0;
   }
 
@@ -1459,19 +1459,24 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__col--actions {
-    grid-column: 1;
+    grid-column: 2;
     flex-shrink: 0;
-    justify-content: stretch;
-    flex-wrap: wrap;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
     padding-bottom: 0;
-    width: 100%;
-    max-width: 100%;
+    width: auto;
+    max-width: none;
     min-width: 0;
   }
 
   .extra-services__col--actions--single {
-    justify-content: stretch;
-    width: 100%;
+    justify-content: flex-end;
+    width: auto;
+  }
+
+  .extra-services__col--actions--single .extra-services__btn {
+    flex: 0 0 auto;
+    width: auto;
   }
 }
 
@@ -1547,6 +1552,39 @@ onBeforeUnmount(() => {
     width: 100%;
     max-width: 100%;
     min-height: 0;
+  }
+
+  .extra-services__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .extra-services__col--name {
+    grid-column: 1 / -1;
+  }
+
+  .extra-services__col--cost {
+    grid-column: 1;
+    width: auto;
+    max-width: none;
+  }
+
+  .extra-services__col--actions {
+    grid-column: 2;
+    width: auto;
+    max-width: none;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+
+  .extra-services__col--actions--single {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .extra-services__col--actions--single .extra-services__btn {
+    flex: 0 0 auto;
+    width: auto;
   }
 }
 
@@ -1638,8 +1676,8 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__row {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
     gap: 12px;
     padding: 14px 16px;
     width: 100%;
@@ -1648,7 +1686,7 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__col--name {
-    grid-column: 1;
+    grid-column: 1 / -1;
     flex-wrap: wrap;
     align-items: flex-start;
     width: 100%;
@@ -1670,8 +1708,8 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: stretch;
     gap: 4px;
-    width: 100%;
-    max-width: 100%;
+    width: auto;
+    max-width: none;
     min-width: 0;
   }
 
@@ -1699,19 +1737,24 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__col--actions {
-    grid-column: 1;
+    grid-column: 2;
     flex-shrink: 0;
-    justify-content: stretch;
-    flex-wrap: wrap;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
     padding-bottom: 0;
-    width: 100%;
-    max-width: 100%;
+    width: auto;
+    max-width: none;
     min-width: 0;
   }
 
   .extra-services__col--actions--single {
-    justify-content: stretch;
-    width: 100%;
+    justify-content: flex-end;
+    width: auto;
+  }
+
+  .extra-services__col--actions--single .extra-services__btn {
+    flex: 0 0 auto;
+    width: auto;
   }
 }
 </style>
