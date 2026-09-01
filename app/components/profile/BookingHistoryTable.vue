@@ -309,7 +309,7 @@ onBeforeUnmount(() => {
                   </div>
 
                   <div
-                    v-if="showDetailsButtons && item.accommodation.rooms?.length"
+                    v-if="(showDetailsButtons || showCustomer) && item.accommodation.rooms?.length"
                     class="booking-table__rooms"
                   >
                     <div class="booking-table__stay-grid">
@@ -330,14 +330,18 @@ onBeforeUnmount(() => {
                           <template v-if="roomIndex > 0"><br></template>
                           Забронировано номеров: {{ room.quantity }}
                         </template>
+                        <template v-if="showCustomer && item.accommodation.total != null">
+                          <br>
+                          Общая сумма = {{ formatHotelPriceLabel(item.accommodation.total) }}
+                        </template>
                       </div>
                     </div>
-                    <div>
+                    <div v-if="showDetailsButtons">
                       <template v-if="hasAccommodationTotals(item.accommodation)">
                         <template v-if="item.accommodation.total != null">
                           Общая сумма = {{ formatHotelPriceLabel(item.accommodation.total) }}<br>
                         </template>
-                        <template v-if="item.accommodation.totalPerPerson != null">
+                        <template v-if="!showCustomer && item.accommodation.totalPerPerson != null">
                           На человека = {{ formatHotelPriceLabel(item.accommodation.totalPerPerson) }}
                         </template>
                       </template>
@@ -351,7 +355,7 @@ onBeforeUnmount(() => {
                             <template v-if="room.priceTotal != null">
                               Сумма = {{ formatHotelPriceLabel(room.priceTotal) }}<br>
                             </template>
-                            <template v-if="room.pricePerPerson != null">
+                            <template v-if="!showCustomer && room.pricePerPerson != null">
                               На человека = {{ formatHotelPriceLabel(room.pricePerPerson) }}
                             </template>
                           </template>
@@ -386,7 +390,7 @@ onBeforeUnmount(() => {
                         <template v-if="item.hunt.total != null">
                           Общая сумма = {{ formatHotelPriceLabel(item.hunt.total) }}<br>
                         </template>
-                        <template v-if="item.hunt.totalPerPerson != null">
+                        <template v-if="!showCustomer && item.hunt.totalPerPerson != null">
                           На человека = {{ formatHotelPriceLabel(item.hunt.totalPerPerson) }}
                         </template>
                       </template>
@@ -394,7 +398,7 @@ onBeforeUnmount(() => {
                         <template v-if="item.hunt.priceTotal != null">
                           Сумма = {{ formatHotelPriceLabel(item.hunt.priceTotal) }}<br>
                         </template>
-                        <template v-if="item.hunt.pricePerPerson != null">
+                        <template v-if="!showCustomer && item.hunt.pricePerPerson != null">
                           На человека = {{ formatHotelPriceLabel(item.hunt.pricePerPerson) }}
                         </template>
                       </template>
