@@ -771,7 +771,7 @@ onBeforeUnmount(() => {
               <div class="extra-services__head">
                 <span class="extra-services__col extra-services__col--name">Наименование</span>
                 <span class="extra-services__col extra-services__col--cost">Стоимость, руб</span>
-                <span class="extra-services__col extra-services__col--actions">Действия</span>
+                <span class="extra-services__col extra-services__col--actions" aria-hidden="true" />
               </div>
 
               <div
@@ -900,6 +900,9 @@ onBeforeUnmount(() => {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
   height: 100%;
   max-height: 100%;
   padding: 20px 40px 16px;
@@ -970,9 +973,8 @@ onBeforeUnmount(() => {
 }
 
 .extra-services__nav-action {
-  flex: 0 1 480px;
-  width: 480px;
-  min-width: 220px;
+  flex: 0 1 100%;
+  width: 100%;
   max-width: 480px;
   min-height: 48px;
   display: flex;
@@ -1073,6 +1075,9 @@ onBeforeUnmount(() => {
   flex: 1;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .extra-services__loading {
@@ -1116,8 +1121,7 @@ onBeforeUnmount(() => {
 }
 
 .extra-services__dots--hidden {
-  visibility: hidden;
-  pointer-events: none;
+  display: none;
 }
 
 .extra-services__dot {
@@ -1150,18 +1154,20 @@ onBeforeUnmount(() => {
   min-height: 0;
   min-width: 0;
   width: 100%;
+  max-width: 100%;
   background: var(--wh-white);
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
   overflow: hidden;
-  container-type: inline-size;
-  container-name: extra-services-panel;
 }
 
 .extra-services__body {
   position: relative;
   flex: 1;
   min-height: 120px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .extra-services__body--saving {
@@ -1200,7 +1206,9 @@ onBeforeUnmount(() => {
   min-height: 0;
   min-width: 0;
   width: 100%;
-  overflow: auto;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .extra-services__head,
@@ -1213,6 +1221,9 @@ onBeforeUnmount(() => {
   align-items: end;
   gap: 16px;
   padding: 14px 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .extra-services__head {
@@ -1240,6 +1251,7 @@ onBeforeUnmount(() => {
   align-items: flex-end;
   gap: 12px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .extra-services__col--cost {
@@ -1274,7 +1286,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .extra-services__field--qty {
@@ -1294,7 +1308,7 @@ onBeforeUnmount(() => {
 
 .extra-services__name {
   flex: 1 1 0;
-  min-width: 280px;
+  min-width: 0;
   width: 100%;
 }
 
@@ -1375,21 +1389,33 @@ onBeforeUnmount(() => {
   color: rgba(0, 0, 0, 0.45);
 }
 
-@container extra-services-panel (max-width: 960px) {
+@media (min-width: 1439px) {
+  .extra-services__name {
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 1438px) {
+  .profile-page {
+    overflow-x: hidden;
+  }
+
   .extra-services__head {
     display: none;
   }
 
   .extra-services__row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
     gap: 12px;
+    padding-inline: 16px;
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
   }
 
   .extra-services__col--name {
-    grid-column: 1 / -1;
+    grid-column: 1;
     flex-wrap: wrap;
     align-items: flex-start;
     width: 100%;
@@ -1406,10 +1432,13 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__col--cost {
+    grid-column: 1;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 4px;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
@@ -1430,12 +1459,13 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__col--actions {
+    grid-column: 1;
     flex-shrink: 0;
-    justify-content: flex-end;
-    flex-wrap: nowrap;
+    justify-content: stretch;
+    flex-wrap: wrap;
     padding-bottom: 0;
-    width: auto;
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
@@ -1447,35 +1477,56 @@ onBeforeUnmount(() => {
 
 @media (--wh-tablet) {
   .profile-page {
+    width: 100%;
+    max-width: 100%;
     height: auto;
     max-height: none;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: visible;
     padding: 12px 8px 32px;
+  }
+
+  .extra-services__nav-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .extra-services__nav-action {
+    flex: none;
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
   }
 
   .extra-services__table-area {
     flex: none;
     width: 100%;
+    max-width: 100%;
     min-height: 0;
   }
 
   .extra-services__content {
     flex: none;
     width: 100%;
+    max-width: 100%;
     min-height: 0;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
 
   .extra-services__shell {
     flex: none;
     width: 100%;
+    max-width: 100%;
+    gap: 0;
   }
 
   .extra-services__panel {
     flex: none;
     width: 100%;
+    max-width: 100%;
     min-height: calc(100dvh - 220px);
-    overflow: visible;
+    overflow: hidden;
   }
 
   .extra-services__dots {
@@ -1485,13 +1536,16 @@ onBeforeUnmount(() => {
   .extra-services__scroll {
     flex: none;
     width: 100%;
+    max-width: 100%;
     max-height: none;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .extra-services__body {
     flex: none;
     width: 100%;
+    max-width: 100%;
     min-height: 0;
   }
 }
@@ -1516,14 +1570,16 @@ onBeforeUnmount(() => {
 
   .extra-services__panel {
     width: 100%;
-    min-height: calc(100dvh - 260px);
-    overflow: visible;
     max-width: 100%;
+    min-height: calc(100dvh - 260px);
+    overflow: hidden;
   }
 
   .extra-services__scroll {
     width: 100%;
-    overflow: visible;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .extra-services__body {
@@ -1582,16 +1638,17 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
     gap: 12px;
     padding: 14px 16px;
+    width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
 
   .extra-services__col--name {
-    grid-column: 1 / -1;
+    grid-column: 1;
     flex-wrap: wrap;
     align-items: flex-start;
     width: 100%;
@@ -1608,10 +1665,13 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__col--cost {
+    grid-column: 1;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 4px;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
@@ -1639,12 +1699,13 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__col--actions {
+    grid-column: 1;
     flex-shrink: 0;
-    justify-content: flex-end;
-    flex-wrap: nowrap;
+    justify-content: stretch;
+    flex-wrap: wrap;
     padding-bottom: 0;
-    width: auto;
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
