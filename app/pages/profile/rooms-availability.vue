@@ -148,7 +148,8 @@ function resolveBadgeClass(event?: RoomAvailabilityDay | null) {
 }
 
 function bookingNumberText(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
-  return `Б${booking.booking_number ?? ''}`
+  const prefix = isSummaryTab.value ? 'Бронь' : 'Б'
+  return `${prefix}${booking.booking_number ?? ''}`
 }
 
 function bookingHistoryTo(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
