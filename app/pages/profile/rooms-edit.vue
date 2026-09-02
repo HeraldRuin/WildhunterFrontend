@@ -1852,28 +1852,59 @@ watch(activeEditTab, (tab) => {
   box-sizing: border-box;
 }
 
+@media (max-width: 1400px) and (min-width: 1201px) {
+  .room-edit__attr-body {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1200px) and (min-width: 1025px) {
+  .room-edit__attr-body {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (--wh-tablet) {
   .profile-page {
+    flex: none;
     height: auto;
     max-height: none;
     overflow: visible;
     padding: 12px 8px 32px;
   }
 
+  .room-edit {
+    flex: none;
+    min-height: 0;
+    width: 100%;
+    overflow: visible;
+  }
+
   .room-edit__panel-area {
     flex: none;
     min-height: 0;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .room-edit__panel-shell {
+    flex: none;
+    min-height: 0;
+    width: 100%;
+    overflow: visible;
   }
 
   .room-edit__panel {
     flex: none;
     min-height: calc(100dvh - 220px);
+    width: 100%;
+    overflow: visible;
   }
 
   .room-edit__body {
-    flex: 1;
+    flex: none;
     min-height: 0;
-    overflow: auto;
+    overflow: visible;
   }
 
   .room-edit__attr-dots {
@@ -1887,14 +1918,32 @@ watch(activeEditTab, (tab) => {
 
 @media (--wh-mobile) {
   .profile-page {
+    flex: none;
     height: auto;
     max-height: none;
     overflow: visible;
     padding: 16px 20px 32px;
   }
 
+  .room-edit {
+    flex: none;
+    overflow: visible;
+  }
+
+  .room-edit__panel-area,
+  .room-edit__panel-shell {
+    flex: none;
+    overflow: visible;
+  }
+
   .room-edit__panel {
     min-height: calc(100dvh - 260px);
+    overflow: visible;
+  }
+
+  .room-edit__body {
+    flex: none;
+    overflow: visible;
   }
 
   .profile-page__header {
