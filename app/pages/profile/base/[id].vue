@@ -3114,6 +3114,18 @@ watch(activeEditTab, (tab) => {
   box-shadow: 0 0 0 3px var(--wh-field-focus-ring);
 }
 
+@media (max-width: 1400px) and (min-width: 1201px) {
+  .base-edit__attr-body {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1200px) and (min-width: 1025px) {
+  .base-edit__attr-body {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (--wh-tablet) {
   .profile-page {
     flex: none;
