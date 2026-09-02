@@ -357,57 +357,59 @@ onMounted(() => {
     <div class="rooms-availability__toolbar">
       <CommonPageTitle>Доступные номера</CommonPageTitle>
 
-      <CommonSelectField
-        v-model="activeTabId"
-        class="rooms-availability__select"
-        placeholder="Выберите тип номера"
-        no-margin
-        :options="roomSelectOptions"
-      />
+      <div class="rooms-availability__toolbar-controls">
+        <CommonSelectField
+          v-model="activeTabId"
+          class="rooms-availability__select"
+          placeholder="Выберите тип номера"
+          no-margin
+          :options="roomSelectOptions"
+        />
 
-      <div class="rooms-availability__calendar-header">
-        <h2 class="rooms-availability__month">{{ monthTitle }}</h2>
+        <div class="rooms-availability__calendar-header">
+          <h2 class="rooms-availability__month">{{ monthTitle }}</h2>
 
-        <div class="rooms-availability__nav">
-          <button
-            type="button"
-            class="rooms-availability__nav-btn rooms-availability__nav-btn--today"
-            @click="goToday"
-          >
-            Сегодня
-          </button>
-          <button
-            type="button"
-            class="rooms-availability__nav-btn rooms-availability__nav-btn--arrow"
-            aria-label="Предыдущий месяц"
-            @click="shiftMonth(-1)"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M15 18l-6-6 6-6"
-                stroke="currentColor"
-                stroke-width="2.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            class="rooms-availability__nav-btn rooms-availability__nav-btn--arrow"
-            aria-label="Следующий месяц"
-            @click="shiftMonth(1)"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M9 6l6 6-6 6"
-                stroke="currentColor"
-                stroke-width="2.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
+          <div class="rooms-availability__nav">
+            <button
+              type="button"
+              class="rooms-availability__nav-btn rooms-availability__nav-btn--today"
+              @click="goToday"
+            >
+              Сегодня
+            </button>
+            <button
+              type="button"
+              class="rooms-availability__nav-btn rooms-availability__nav-btn--arrow"
+              aria-label="Предыдущий месяц"
+              @click="shiftMonth(-1)"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M15 18l-6-6 6-6"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="rooms-availability__nav-btn rooms-availability__nav-btn--arrow"
+              aria-label="Следующий месяц"
+              @click="shiftMonth(1)"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M9 6l6 6-6 6"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -542,6 +544,8 @@ onMounted(() => {
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   overflow: hidden;
+  container-type: inline-size;
+  container-name: rooms-availability-page;
 }
 
 .profile-page__header {
@@ -571,7 +575,12 @@ onMounted(() => {
 
 .rooms-availability__toolbar :deep(.page-title) {
   margin: 0;
+  white-space: nowrap;
   justify-self: start;
+}
+
+.rooms-availability__toolbar-controls {
+  display: contents;
 }
 
 .rooms-availability__select {
@@ -582,12 +591,30 @@ onMounted(() => {
 
 .rooms-availability__calendar-header {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 16px;
-  min-width: 0;
+  gap: 8px 16px;
   margin: 0;
   justify-self: end;
+}
+
+.rooms-availability__month {
+  margin: 0;
+  color: var(--wh-gray-900);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-transform: lowercase;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.rooms-availability__nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
 .rooms-availability__status {
@@ -644,22 +671,6 @@ onMounted(() => {
   place-items: center;
   background: rgb(255 255 255 / 55%);
   pointer-events: none;
-}
-
-.rooms-availability__month {
-  margin: 0;
-  color: var(--wh-gray-900);
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.3;
-  text-transform: lowercase;
-}
-
-.rooms-availability__nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
 }
 
 .rooms-availability__nav-btn {
@@ -881,24 +892,38 @@ onMounted(() => {
   }
 }
 
-@media (--wh-narrow) {
+@container rooms-availability-page (max-width: 1180px) {
   .rooms-availability__toolbar {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .rooms-availability__toolbar-controls {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 12px 16px;
+    width: 100%;
+    min-width: 0;
   }
 
   .rooms-availability__select {
-    width: 100%;
-    order: 3;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-self: auto;
   }
 
   .rooms-availability__calendar-header {
-    width: 100%;
-    justify-content: space-between;
-    flex-wrap: wrap;
+    flex: 0 0 auto;
+    margin-left: auto;
+    justify-self: auto;
   }
+}
 
+@media (--wh-narrow) {
   .rooms-availability__grid {
     grid-template-rows: repeat(6, minmax(96px, 1fr));
     min-height: calc(6 * 96px);
