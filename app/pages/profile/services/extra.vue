@@ -390,7 +390,7 @@ type ExtraServicesTab = 'installed' | 'additional'
 
 const serviceTabs: { id: ExtraServicesTab, label: string }[] = [
   { id: 'installed', label: 'Установленные услуги' },
-  { id: 'additional', label: 'Дополнительные услуги' },
+  { id: 'additional', label: 'Свои услуги' },
 ]
 
 const activeTab = ref<ExtraServicesTab>('installed')
