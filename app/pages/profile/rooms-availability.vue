@@ -354,61 +354,63 @@ onMounted(() => {
       <ProfileNotificationsBell />
     </header>
 
-    <div class="rooms-availability__toolbar">
-      <CommonPageTitle>Доступные номера</CommonPageTitle>
+    <div class="rooms-availability__toolbar-shell">
+      <div class="rooms-availability__toolbar">
+        <CommonPageTitle>Доступные номера</CommonPageTitle>
 
-      <div class="rooms-availability__toolbar-controls">
-        <CommonSelectField
-          v-model="activeTabId"
-          class="rooms-availability__select"
-          placeholder="Выберите тип номера"
-          no-margin
-          :options="roomSelectOptions"
-        />
+        <div class="rooms-availability__toolbar-controls">
+          <CommonSelectField
+            v-model="activeTabId"
+            class="rooms-availability__select"
+            placeholder="Выберите тип номера"
+            no-margin
+            :options="roomSelectOptions"
+          />
 
-        <div class="rooms-availability__calendar-header">
-          <h2 class="rooms-availability__month">{{ monthTitle }}</h2>
+          <div class="rooms-availability__calendar-header">
+            <h2 class="rooms-availability__month">{{ monthTitle }}</h2>
 
-          <div class="rooms-availability__nav">
-            <button
-              type="button"
-              class="rooms-availability__nav-btn rooms-availability__nav-btn--today"
-              @click="goToday"
-            >
-              Сегодня
-            </button>
-            <button
-              type="button"
-              class="rooms-availability__nav-btn rooms-availability__nav-btn--arrow"
-              aria-label="Предыдущий месяц"
-              @click="shiftMonth(-1)"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M15 18l-6-6 6-6"
-                  stroke="currentColor"
-                  stroke-width="2.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="rooms-availability__nav-btn rooms-availability__nav-btn--arrow"
-              aria-label="Следующий месяц"
-              @click="shiftMonth(1)"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M9 6l6 6-6 6"
-                  stroke="currentColor"
-                  stroke-width="2.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
+            <div class="rooms-availability__nav">
+              <button
+                type="button"
+                class="rooms-availability__nav-btn rooms-availability__nav-btn--today"
+                @click="goToday"
+              >
+                Сегодня
+              </button>
+              <button
+                type="button"
+                class="rooms-availability__nav-btn rooms-availability__nav-btn--arrow"
+                aria-label="Предыдущий месяц"
+                @click="shiftMonth(-1)"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M15 18l-6-6 6-6"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="rooms-availability__nav-btn rooms-availability__nav-btn--arrow"
+                aria-label="Следующий месяц"
+                @click="shiftMonth(1)"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M9 6l6 6-6 6"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -544,8 +546,6 @@ onMounted(() => {
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   overflow: hidden;
-  container-type: inline-size;
-  container-name: rooms-availability-page;
 }
 
 .profile-page__header {
@@ -562,14 +562,20 @@ onMounted(() => {
   overflow: visible;
 }
 
+.rooms-availability__toolbar-shell {
+  width: 100%;
+  flex-shrink: 0;
+  margin-bottom: 16px;
+  container-type: inline-size;
+  container-name: rooms-availability-toolbar;
+}
+
 .rooms-availability__toolbar {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 16px;
   width: 100%;
-  flex-shrink: 0;
-  margin-bottom: 16px;
   box-sizing: border-box;
 }
 
@@ -644,7 +650,7 @@ onMounted(() => {
   flex-direction: column;
   width: 100%;
   flex: 1 1 0;
-  min-height: 0;
+  min-height: calc(6 * 110px);
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
   background: var(--wh-white);
@@ -878,21 +884,7 @@ onMounted(() => {
   color: #0c5460;
 }
 
-@media (--wh-tablet) {
-  .profile-page {
-    height: auto;
-    max-height: none;
-    overflow: visible;
-    padding: 12px 8px 32px;
-  }
-
-  .rooms-availability__badge {
-    font-size: 10px;
-    padding: 3px 4px;
-  }
-}
-
-@container rooms-availability-page (max-width: 1180px) {
+@container rooms-availability-toolbar (max-width: 1180px) {
   .rooms-availability__toolbar {
     display: flex;
     flex-direction: column;
@@ -923,7 +915,30 @@ onMounted(() => {
   }
 }
 
+@media (--wh-tablet) {
+  .profile-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding: 12px 8px 32px;
+  }
+
+  .rooms-availability__layout {
+    flex: 1 1 auto;
+    min-height: calc(6 * 110px);
+  }
+
+  .rooms-availability__badge {
+    font-size: 10px;
+    padding: 3px 4px;
+  }
+}
+
 @media (--wh-narrow) {
+  .rooms-availability__layout {
+    min-height: calc(6 * 96px);
+  }
+
   .rooms-availability__grid {
     grid-template-rows: repeat(6, minmax(96px, 1fr));
     min-height: calc(6 * 96px);
@@ -948,6 +963,21 @@ onMounted(() => {
     padding: 0;
     background: transparent;
     border-radius: 0;
+  }
+
+  .rooms-availability__toolbar-controls {
+    flex-wrap: wrap;
+  }
+
+  .rooms-availability__select {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .rooms-availability__calendar-header {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
   }
 
   .rooms-availability__badge {
