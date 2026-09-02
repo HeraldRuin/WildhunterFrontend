@@ -46,7 +46,7 @@ const statusFilter = ref<string | undefined>(
 )
 const page = ref(1)
 const timerNow = ref(Date.now())
-const customerModalBooking = ref<BookingHistoryItem | null>(null)
+// const customerModalBooking = ref<BookingHistoryItem | null>(null)
 const invitationModalBooking = ref<BookingHistoryItem | null>(null)
 const collectionInvitationsModalBooking = ref<BookingHistoryItem | null>(null)
 const finishedCollectionModalBooking = ref<BookingHistoryItem | null>(null)
@@ -915,9 +915,9 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   }
 }
 
-function openCustomerModal(booking: BookingHistoryItem) {
-  customerModalBooking.value = booking
-}
+// function openCustomerModal(booking: BookingHistoryItem) {
+//   customerModalBooking.value = booking
+// }
 
 async function handleHunterReplaced(
   { oldHunterId, hunter }: { oldHunterId: number, hunter: UserSearchItem },
@@ -1050,7 +1050,6 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
             :show-hunter-calculation="isHunter"
             :loading-collection-booking-id="collectionLoadingBookingId"
             @action="handleBookingAction"
-            @customer="openCustomerModal"
           />
         </div>
       </Transition>
@@ -1089,11 +1088,11 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
     <CommonConfirmModal />
     <ProfileAddServicesModal />
     <ProfileCalculationModal />
-    <ProfileCustomerModal
+    <!-- <ProfileCustomerModal
       :booking="customerModalBooking"
       @close="customerModalBooking = null"
       @saved="refreshHistory"
-    />
+    /> -->
   </div>
 </template>
 

@@ -15,7 +15,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   action: [payload: { booking: BookingHistoryItem, action: BookingAction }]
-  customer: [booking: BookingHistoryItem]
 }>()
 
 const scrollEl = ref<HTMLElement | null>(null)
@@ -271,14 +270,7 @@ onBeforeUnmount(() => {
               :data-label="showCustomer ? 'Заказчик' : 'Охотн. База'"
             >
               <div class="booking-table__value">
-                <button
-                  v-if="showCustomer"
-                  type="button"
-                  class="booking-table__customer-btn"
-                  @click="emit('customer', item)"
-                >
-                  {{ item.customerName ?? '—' }}
-                </button>
+                <span v-if="showCustomer">{{ item.customerName ?? '—' }}</span>
                 <template v-else>
                   <a
                     v-if="item.baseUrl"
@@ -739,21 +731,6 @@ onBeforeUnmount(() => {
 }
 
 .booking-table__base-link:hover {
-  color: #2f8fc9;
-  text-decoration: underline;
-}
-
-.booking-table__customer-btn {
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: #4aa3d9;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.booking-table__customer-btn:hover {
   color: #2f8fc9;
   text-decoration: underline;
 }
