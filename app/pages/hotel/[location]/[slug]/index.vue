@@ -534,11 +534,12 @@ function handleRetryHotelLoad() {
 
 .hotel-page__description-content {
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
+  font-style: normal;
   line-height: 1.3;
   letter-spacing: -0.05em;
-  color: var(--wh-gray-600);
+  color: rgba(0, 0, 0, 0.8);
 }
 
 .hotel-page__description-content :deep(*) {
