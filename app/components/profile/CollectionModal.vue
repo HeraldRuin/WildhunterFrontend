@@ -4,6 +4,15 @@ import type { CollectionParticipant, CollectionParticipantStatus } from '~/types
 
 type StatsPanelFilter = 'collected' | 'pending' | 'declined'
 
+type CollectionInviteDraft = {
+  inviteQueries: string[]
+  selectedHunters: Array<UserSearchItem | null>
+  visibleInviteFieldCount: number
+}
+
+const inviteDraftsByBookingCode = new Map<string, CollectionInviteDraft>()
+let activeInviteBookingCode: string | null = null
+
 const emit = defineEmits<{
   extended: []
   cancelled: []
@@ -21,6 +30,7 @@ const {
   markCollectionExtended,
   addParticipant,
   isDeclinedHunter,
+  removeDeclinedParticipant,
   liveDeclinedParticipants,
 } = useCollectionModal()
 const { bookings: bookingsApi, user: userApi } = useApi()
@@ -109,6 +119,7 @@ const activeStatsPanel = ref<StatsPanelFilter | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const linkRowRef = ref<HTMLElement | null>(null)
 const footerStatsWrapRef = ref<HTMLElement | null>(null)
+const statsPanelRef = ref<HTMLElement | null>(null)
 const statsPanelLayout = ref<Record<string, string>>({})
 const STATS_PANEL_GAP = 8
 let statsPanelResizeObserver: ResizeObserver | undefined
@@ -157,6 +168,31 @@ const canAddInviteField = computed(() => {
     && visibleInviteFieldCount.value < emptySlotCount.value
 })
 
+const pendingInviteHunters = computed(() => {
+  const occupiedIds = new Set(
+    occupiedParticipants.value
+      .map(participant => participant.id)
+      .filter((id): id is number => id != null),
+  )
+  const seen = new Set<number>()
+  const hunters: UserSearchItem[] = []
+
+  for (const hunter of selectedHunters.value) {
+    if (!hunter || occupiedIds.has(hunter.id) || seen.has(hunter.id)) {
+      continue
+    }
+
+    seen.add(hunter.id)
+    hunters.push(hunter)
+  }
+
+  return hunters
+})
+
+const canInviteAll = computed(() => {
+  return pendingInviteHunters.value.length > 0 && !canExtendCollection.value
+})
+
 const collectionLinkAbsolute = computed(() => {
   const url = state.value?.collectionUrl
   if (!url) return ''
@@ -171,6 +207,47 @@ const collectionLinkAbsolute = computed(() => {
   }
 })
 
+function hasInviteDraftContent(
+  queries: string[],
+  hunters: Array<UserSearchItem | null>,
+) {
+  return queries.some((query, index) => Boolean(query.trim()) || Boolean(hunters[index]))
+}
+
+function saveInviteDraft(bookingCode: string) {
+  if (!hasInviteDraftContent(inviteQueries.value, selectedHunters.value)) {
+    inviteDraftsByBookingCode.delete(bookingCode)
+    return
+  }
+
+  inviteDraftsByBookingCode.set(bookingCode, {
+    inviteQueries: [...inviteQueries.value],
+    selectedHunters: selectedHunters.value.map(hunter =>
+      hunter ? { ...hunter } : null,
+    ),
+    visibleInviteFieldCount: visibleInviteFieldCount.value,
+  })
+}
+
+function restoreInviteDraft(bookingCode: string) {
+  const draft = inviteDraftsByBookingCode.get(bookingCode)
+  if (!draft) return false
+
+  visibleInviteFieldCount.value = draft.visibleInviteFieldCount
+  inviteQueries.value = [...draft.inviteQueries]
+  selectedHunters.value = draft.selectedHunters.map(hunter =>
+    hunter ? { ...hunter } : null,
+  )
+  syncInviteSlots(Math.max(draft.inviteQueries.length, targetInviteFieldCount.value))
+  resetHunterSearch()
+  return true
+}
+
+function clearInviteDraft(bookingCode: string | null | undefined) {
+  if (!bookingCode) return
+  inviteDraftsByBookingCode.delete(bookingCode)
+}
+
 watch(isOpen, (open) => {
   if (timerInterval) {
     clearInterval(timerInterval)
@@ -178,6 +255,11 @@ watch(isOpen, (open) => {
   }
 
   if (!open) {
+    if (activeInviteBookingCode) {
+      saveInviteDraft(activeInviteBookingCode)
+    }
+
+    activeInviteBookingCode = null
     inviteQueries.value = []
     selectedHunters.value = []
     visibleInviteFieldCount.value = INITIAL_EXPANDED_INVITE_FIELDS
@@ -186,10 +268,16 @@ watch(isOpen, (open) => {
     return
   }
 
+  activeInviteBookingCode = state.value?.bookingCode ?? null
   timerNow.value = Date.now()
   timerInterval = setInterval(() => {
     timerNow.value = Date.now()
   }, 1_000)
+
+  if (activeInviteBookingCode && restoreInviteDraft(activeInviteBookingCode)) {
+    return
+  }
+
   initializeInviteFields()
 })
 
@@ -299,11 +387,18 @@ function hunterName(hunter: UserSearchItem) {
 }
 
 function hunterNickname(hunter: UserSearchItem) {
-  return hunter.nik || hunter.user_name || 'ник не задан'
+  return hunter.nik || hunter.user_name || ''
 }
 
 function hunterInputLabel(hunter: UserSearchItem) {
   return hunter.nik || hunter.user_name || hunterName(hunter)
+}
+
+function isSelectedHunterLocked(index: number) {
+  const hunter = selectedHunters.value[index]
+  if (!hunter) return false
+
+  return inviteQueries.value[index]?.trim() === hunterInputLabel(hunter)
 }
 
 function handleInviteInput(index: number) {
@@ -341,6 +436,21 @@ function selectHunter(hunter: UserSearchItem, index: number) {
   resetHunterSearch()
 }
 
+function clearInviteField(index: number) {
+  inviteQueries.value[index] = ''
+  selectedHunters.value[index] = null
+
+  if (activeSearchIndex.value === index) {
+    resetHunterSearch()
+  }
+}
+
+function clearDeclinedParticipant(participant: CollectionParticipant) {
+  if (participant.id) {
+    removeDeclinedParticipant(participant.id)
+  }
+}
+
 async function searchHunters(query: string, index: number) {
   const bookingId = state.value?.bookingId
   if (!bookingId) return
@@ -375,10 +485,10 @@ async function searchHunters(query: string, index: number) {
   }
 }
 
-function handleBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
-    close()
-  }
+function handleBackdropClick() {
+  if (isContentHidden.value) return
+
+  close()
 }
 
 function handleKeydown(event: KeyboardEvent) {
@@ -471,6 +581,7 @@ async function cancelCollection() {
 
     if (response.success) {
       notifications.success(response.message || 'Сбор отменён')
+      clearInviteDraft(bookingCode)
       close()
       emit('cancelled')
       return
@@ -496,6 +607,7 @@ async function finishCollection() {
 
     if (response.success) {
       notifications.success(response.message || 'Сбор завершён')
+      clearInviteDraft(bookingCode)
       close()
       emit('finished')
       return
@@ -553,6 +665,74 @@ function requestHunterInvitation(hunter: UserSearchItem) {
   })
 }
 
+async function inviteAllHunters() {
+  const bookingCode = state.value?.bookingCode
+  if (!bookingCode) return
+
+  const hunters = pendingInviteHunters.value
+  if (!hunters.length) return
+
+  let invitedCount = 0
+
+  for (const hunter of hunters) {
+    try {
+      const response = await bookingsApi.inviteHunter(bookingCode, hunter.id)
+
+      if (!response.success) {
+        notifications.error(response.message || `Не удалось пригласить ${hunterName(hunter)}`)
+        break
+      }
+
+      addParticipant({
+        id: hunter.id,
+        name: hunterName(hunter),
+        email: hunter.email || undefined,
+        status: 'pending',
+      })
+      emit('invited', { hunter })
+      invitedCount += 1
+    }
+    catch (error) {
+      const data = (error as { data?: { message?: string } }).data
+      notifications.error(data?.message || `Не удалось пригласить ${hunterName(hunter)}`)
+      throw error
+    }
+  }
+
+  resetInviteSlots()
+
+  if (invitedCount === hunters.length) {
+    notifications.success(
+      invitedCount === 1
+        ? 'Приглашение отправлено'
+        : `Приглашения отправлены (${invitedCount})`,
+    )
+  }
+  else if (invitedCount > 0) {
+    notifications.success(`Отправлено приглашений: ${invitedCount} из ${hunters.length}`)
+  }
+
+  reopen()
+}
+
+function requestInviteAll() {
+  if (!canInviteAll.value) return
+
+  const hunters = pendingInviteHunters.value
+  hide()
+  openConfirmModal({
+    title: hunters.length === 1
+      ? `Пригласить охотника ${hunterName(hunters[0]!)}?`
+      : `Пригласить всех выбранных охотников (${hunters.length})?`,
+    confirmLabel: 'Пригласить',
+    onConfirm: inviteAllHunters,
+    onCancel: () => {
+      setTimeout(reopen, 200)
+    },
+    transparentBackdrop: true,
+  })
+}
+
 function requestCollectionExtension() {
   if (!canExtendCollection.value) return
 
@@ -602,6 +782,22 @@ function toggleStatsPanel(filter: StatsPanelFilter) {
   activeStatsPanel.value = activeStatsPanel.value === filter ? null : filter
 }
 
+function handleCardClick(event: MouseEvent) {
+  if (!activeStatsPanel.value) return
+
+  const target = event.target
+  if (!(target instanceof Node)) return
+
+  if (
+    statsPanelRef.value?.contains(target)
+    || footerStatsWrapRef.value?.contains(target)
+  ) {
+    return
+  }
+
+  activeStatsPanel.value = null
+}
+
 function updateStatsPanelLayout() {
   if (!activeStatsPanel.value) {
     return
@@ -642,13 +838,19 @@ function updateStatsPanelLayout() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="collection-modal-title"
-        @click="handleBackdropClick"
         @keydown="handleKeydown"
       >
+        <div
+          class="collection-modal__backdrop"
+          aria-hidden="true"
+          @click="handleBackdropClick"
+        />
+
         <div
           v-show="!isContentHidden"
           ref="cardRef"
           class="collection-modal__card"
+          @click="handleCardClick"
         >
           <CommonModalCloseButton @click="close" />
 
@@ -687,70 +889,149 @@ function updateStatsPanelLayout() {
 
           <div class="collection-modal__body">
             <div
-              v-for="participant in sortedOccupiedParticipants"
+              v-for="(participant, index) in sortedOccupiedParticipants"
               :key="participant.id ?? participant.name"
-              class="collection-modal__participant"
+              class="collection-modal__slot-row"
             >
-              <div class="collection-modal__participant-info">
-                <div class="collection-modal__participant-name">
-                  {{ participant.name }}
-                </div>
-                <div
-                  v-if="participant.email"
-                  class="collection-modal__participant-email"
-                >
-                  {{ participant.email }}
+              <span class="collection-modal__field-number">{{ index + 1 }}</span>
+
+              <div class="collection-modal__slot-content">
+                <div class="collection-modal__participant">
+                  <div class="collection-modal__participant-info">
+                    <div class="collection-modal__invite-input-selected-line">
+                      <span class="collection-modal__participant-name">
+                        {{ participant.name }}
+                      </span>
+                      <span
+                        v-if="participant.email"
+                        class="collection-modal__invite-input-email"
+                      >
+                        <svg
+                          class="collection-modal__invite-input-email-icon"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <rect
+                            x="2"
+                            y="3.5"
+                            width="12"
+                            height="9"
+                            rx="1"
+                            stroke="currentColor"
+                            stroke-width="1.2"
+                          />
+                          <path
+                            d="M2.5 4.5 8 9l5.5-4.5"
+                            stroke="currentColor"
+                            stroke-width="1.2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                        {{ participant.email }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <span
+                    class="collection-modal__badge"
+                    :class="participantBadgeClass(participant.status)"
+                  >
+                    <svg
+                      v-if="participant.status === 'confirmed'"
+                      class="collection-modal__badge-icon"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M2 6l3 3 5-5"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                    {{ participantBadgeLabel(participant.status) }}
+                  </span>
                 </div>
               </div>
-
-              <span
-                class="collection-modal__badge"
-                :class="participantBadgeClass(participant.status)"
-              >
-                <svg
-                  v-if="participant.status === 'confirmed'"
-                  class="collection-modal__badge-icon"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M2 6l3 3 5-5"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                {{ participantBadgeLabel(participant.status) }}
-              </span>
             </div>
 
             <div
-              v-for="participant in liveDeclinedParticipants"
+              v-for="(participant, index) in liveDeclinedParticipants"
               :key="`declined-${participant.id ?? participant.name}`"
-              class="collection-modal__invite-field"
+              class="collection-modal__slot-row"
             >
-              <div class="collection-modal__invite-control">
-                <div class="collection-modal__invite-input-wrap">
-                  <input
-                    type="text"
-                    class="collection-modal__invite-input collection-modal__invite-input--declined"
-                    :value="participant.name"
-                    readonly
-                    tabindex="-1"
-                  >
+              <span class="collection-modal__field-number">
+                {{ sortedOccupiedParticipants.length + index + 1 }}
+              </span>
 
-                  <div
-                    v-if="participant.email"
-                    class="collection-modal__selected-email"
-                  >
-                    <span>{{ participant.email }}</span>
-                    <span class="collection-modal__declined-label">
-                      Отказался
-                    </span>
+              <div class="collection-modal__slot-content">
+                <div class="collection-modal__invite-input-wrap">
+                  <div class="collection-modal__invite-input-box">
+                    <div
+                      v-if="participant.email"
+                      class="collection-modal__invite-input collection-modal__invite-input--selected collection-modal__invite-input--with-clear collection-modal__invite-input--declined"
+                    >
+                      <div class="collection-modal__invite-input-selected-line">
+                        <span class="collection-modal__invite-input-name">
+                          {{ participant.name }}
+                        </span>
+                        <span class="collection-modal__invite-input-email">
+                          <svg
+                            class="collection-modal__invite-input-email-icon"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            aria-hidden="true"
+                          >
+                            <rect
+                              x="2"
+                              y="3.5"
+                              width="12"
+                              height="9"
+                              rx="1"
+                              stroke="currentColor"
+                              stroke-width="1.2"
+                            />
+                            <path
+                              d="M2.5 4.5 8 9l5.5-4.5"
+                              stroke="currentColor"
+                              stroke-width="1.2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                          {{ participant.email }}
+                        </span>
+                        <span class="collection-modal__declined-label">
+                          Отказался
+                        </span>
+                      </div>
+                    </div>
+                    <input
+                      v-else
+                      type="text"
+                      class="collection-modal__invite-input collection-modal__invite-input--declined collection-modal__invite-input--with-clear"
+                      :value="participant.name"
+                      readonly
+                      tabindex="-1"
+                    >
+
+                    <button
+                      type="button"
+                      class="collection-modal__invite-input-clear"
+                      @click="clearDeclinedParticipant(participant)"
+                    >
+                      очистить
+                    </button>
                   </div>
                 </div>
               </div>
@@ -759,93 +1040,200 @@ function updateStatsPanelLayout() {
             <div
               v-for="(_, index) in inviteQueries"
               :key="`invite-${index}`"
-              class="collection-modal__invite-field"
+              class="collection-modal__slot-row"
             >
-              <div class="collection-modal__invite-control">
-                <div class="collection-modal__invite-input-wrap">
-                  <input
-                    v-model="inviteQueries[index]"
-                    type="text"
-                    class="collection-modal__invite-input"
-                    placeholder="Ник / Фамилия / email / ID"
-                    autocomplete="off"
-                    :disabled="canExtendCollection"
-                    @focus="handleInviteInput(index)"
-                    @input="handleInviteInput(index)"
-                  >
+              <span class="collection-modal__field-number">
+                {{ sortedOccupiedParticipants.length + liveDeclinedParticipants.length + index + 1 }}
+              </span>
 
+              <div class="collection-modal__slot-content">
+                <div class="collection-modal__invite-control">
                   <div
-                    v-if="activeSearchIndex === index && inviteQueries[index]?.trim()"
-                    class="collection-modal__search-results"
+                    class="collection-modal__invite-input-wrap"
+                    :class="{ 'collection-modal__invite-input-wrap--timer-expired': canExtendCollection }"
                   >
-                    <div v-if="isSearching" class="collection-modal__search-message">
-                      Поиск…
-                    </div>
-                    <div v-else-if="searchError" class="collection-modal__search-message collection-modal__search-message--error">
-                      {{ searchError }}
-                    </div>
-                    <div v-else-if="!searchResults.length" class="collection-modal__search-message">
-                      Охотники не найдены
-                    </div>
-                    <div
-                      v-for="hunter in searchResults"
-                      v-else
-                      :key="hunter.id"
-                      class="collection-modal__search-result"
-                      @click="selectHunter(hunter, index)"
-                    >
-                      <div class="collection-modal__search-result-info">
-                        <div>
-                          ID: {{ hunter.id }} (ник {{ hunterNickname(hunter) }}) {{ hunterName(hunter) }}
-                        </div>
-                        <div v-if="hunter.email" class="collection-modal__search-result-email">
-                          {{ hunter.email }}
+                    <div class="collection-modal__invite-input-box">
+                      <div
+                        v-if="selectedHunters[index]?.email && isSelectedHunterLocked(index)"
+                        class="collection-modal__invite-input collection-modal__invite-input--selected"
+                        :class="{ 'collection-modal__invite-input--with-clear': Boolean(selectedHunters[index]) }"
+                      >
+                        <div class="collection-modal__invite-input-selected-line">
+                          <span class="collection-modal__invite-input-name">
+                            {{ hunterName(selectedHunters[index]!) }}
+                          </span>
+                          <span class="collection-modal__invite-input-email">
+                            <svg
+                              class="collection-modal__invite-input-email-icon"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                              aria-hidden="true"
+                            >
+                              <rect
+                                x="2"
+                                y="3.5"
+                                width="12"
+                                height="9"
+                                rx="1"
+                                stroke="currentColor"
+                                stroke-width="1.2"
+                              />
+                              <path
+                                d="M2.5 4.5 8 9l5.5-4.5"
+                                stroke="currentColor"
+                                stroke-width="1.2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                            {{ selectedHunters[index]?.email }}
+                          </span>
+                          <span
+                            v-if="isDeclinedHunter(selectedHunters[index]!.id)"
+                            class="collection-modal__declined-label"
+                          >
+                            Отказался
+                          </span>
                         </div>
                       </div>
-                      <span
-                        v-if="isDeclinedHunter(hunter.id)"
-                        class="collection-modal__declined-label"
+                      <input
+                        v-else
+                        v-model="inviteQueries[index]"
+                        type="text"
+                        class="collection-modal__invite-input"
+                        :class="{ 'collection-modal__invite-input--with-clear': Boolean(selectedHunters[index]) }"
+                        placeholder="Ник / Фамилия / email / ID"
+                        autocomplete="off"
+                        :disabled="canExtendCollection"
+                        @focus="handleInviteInput(index)"
+                        @input="handleInviteInput(index)"
                       >
-                        Отказался
-                      </span>
+
+                      <button
+                        v-if="selectedHunters[index]"
+                        type="button"
+                        class="collection-modal__invite-input-clear"
+                        @click="clearInviteField(index)"
+                      >
+                        очистить
+                      </button>
+                    </div>
+
+                    <span
+                      v-if="canExtendCollection"
+                      class="collection-modal__invite-input-tooltip"
+                      role="tooltip"
+                    >
+                      Таймер закончен. Продлите сбор
+                    </span>
+
+                    <div
+                      v-if="activeSearchIndex === index && inviteQueries[index]?.trim()"
+                      class="collection-modal__search-results"
+                    >
+                      <div v-if="isSearching" class="collection-modal__search-message">
+                        Поиск…
+                      </div>
+                      <div v-else-if="searchError" class="collection-modal__search-message collection-modal__search-message--error">
+                        {{ searchError }}
+                      </div>
+                      <div v-else-if="!searchResults.length" class="collection-modal__search-message collection-modal__search-message--error">
+                        Охотники не найдены
+                      </div>
+                      <div
+                        v-for="hunter in searchResults"
+                        v-else
+                        :key="hunter.id"
+                        class="collection-modal__search-result"
+                        @click="selectHunter(hunter, index)"
+                      >
+                        <div class="collection-modal__search-result-info">
+                          <div>
+                            ID: {{ hunter.id }} (ник {{ hunterNickname(hunter) || 'не задан' }}) {{ hunterName(hunter) }}
+                          </div>
+                          <div v-if="hunter.email" class="collection-modal__search-result-email">
+                            <svg
+                              class="collection-modal__invite-input-email-icon"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                              aria-hidden="true"
+                            >
+                              <rect
+                                x="2"
+                                y="3.5"
+                                width="12"
+                                height="9"
+                                rx="1"
+                                stroke="currentColor"
+                                stroke-width="1.2"
+                              />
+                              <path
+                                d="M2.5 4.5 8 9l5.5-4.5"
+                                stroke="currentColor"
+                                stroke-width="1.2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                            {{ hunter.email }}
+                          </div>
+                        </div>
+                        <span
+                          v-if="isDeclinedHunter(hunter.id)"
+                          class="collection-modal__declined-label"
+                        >
+                          Отказался
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div
-                    v-if="selectedHunters[index]?.email"
-                    class="collection-modal__selected-email"
+                  <button
+                    v-if="selectedHunters[index]"
+                    type="button"
+                    class="collection-modal__invite-button"
+                    @click="requestHunterInvitation(selectedHunters[index]!)"
                   >
-                    <span>{{ selectedHunters[index]?.email }}</span>
-                    <span
-                      v-if="isDeclinedHunter(selectedHunters[index]!.id)"
-                      class="collection-modal__declined-label"
-                    >
-                      Отказался
-                    </span>
-                  </div>
+                    Пригласить
+                  </button>
                 </div>
-
-                <button
-                  v-if="selectedHunters[index]"
-                  type="button"
-                  class="collection-modal__invite-button"
-                  @click="requestHunterInvitation(selectedHunters[index]!)"
-                >
-                  Пригласить
-                </button>
               </div>
             </div>
 
-            <button
-              v-if="canAddInviteField"
-              type="button"
-              class="collection-modal__add-field-btn"
-              aria-label="Добавить поле для поиска"
-              :disabled="canExtendCollection"
-              @click="addInviteField"
+            <div
+              v-if="inviteQueries.length > 0 || canAddInviteField"
+              class="collection-modal__slot-row collection-modal__slot-row--actions"
             >
-              +
-            </button>
+              <span class="collection-modal__field-number collection-modal__field-number--spacer" aria-hidden="true" />
+
+              <div class="collection-modal__slot-content">
+                <div class="collection-modal__invite-actions">
+              <button
+                v-if="canAddInviteField"
+                type="button"
+                class="collection-modal__add-field-btn"
+                aria-label="Добавить поле для поиска"
+                :disabled="canExtendCollection"
+                @click="addInviteField"
+              >
+                +
+              </button>
+
+              <button
+                type="button"
+                class="collection-modal__invite-all-btn"
+                :disabled="!canInviteAll"
+                @click="requestInviteAll"
+              >
+                Пригласить всех
+              </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <footer class="collection-modal__footer">
@@ -892,7 +1280,7 @@ function updateStatsPanelLayout() {
               </button>
               <button
                 type="button"
-                class="collection-modal__btn"
+                class="collection-modal__btn collection-modal__btn--danger"
                 @click="requestCollectionCancellation"
               >
                 Отменить сбор
@@ -913,6 +1301,7 @@ function updateStatsPanelLayout() {
 
           <div
             v-if="activeStatsPanel"
+            ref="statsPanelRef"
             class="collection-modal__stats-panel"
             :style="statsPanelLayout"
           >
@@ -930,14 +1319,41 @@ function updateStatsPanelLayout() {
                 class="collection-modal__stats-panel-item"
               >
                 <div class="collection-modal__participant-info">
-                  <div class="collection-modal__participant-name">
-                    {{ participant.name }}
-                  </div>
-                  <div
-                    v-if="participant.email"
-                    class="collection-modal__participant-email"
-                  >
-                    {{ participant.email }}
+                  <div class="collection-modal__invite-input-selected-line">
+                    <span class="collection-modal__participant-name">
+                      {{ participant.name }}
+                    </span>
+                    <span
+                      v-if="participant.email"
+                      class="collection-modal__invite-input-email"
+                    >
+                      <svg
+                        class="collection-modal__invite-input-email-icon"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <rect
+                          x="2"
+                          y="3.5"
+                          width="12"
+                          height="9"
+                          rx="1"
+                          stroke="currentColor"
+                          stroke-width="1.2"
+                        />
+                        <path
+                          d="M2.5 4.5 8 9l5.5-4.5"
+                          stroke="currentColor"
+                          stroke-width="1.2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      {{ participant.email }}
+                    </span>
                   </div>
                 </div>
 
@@ -1023,22 +1439,20 @@ function updateStatsPanelLayout() {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  isolation: isolate;
 }
 
-.collection-modal::before {
-  content: '';
+.collection-modal__backdrop {
   position: absolute;
   inset: 0;
-  z-index: -1;
   background: rgba(17, 24, 39, 0.45);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .collection-modal__card {
   position: relative;
+  z-index: 1;
   width: min(100%, 1100px);
   padding: 28px 28px 24px;
   border: 1px solid var(--wh-gray-200);
@@ -1124,16 +1538,62 @@ function updateStatsPanelLayout() {
   margin-bottom: 24px;
 }
 
+.collection-modal__slot-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: start;
+}
+
+.collection-modal__slot-row > .collection-modal__field-number {
+  align-self: start;
+  justify-self: center;
+  margin-top: 10px;
+}
+
+.collection-modal__slot-content {
+  min-width: 0;
+}
+
+.collection-modal__field-number--spacer {
+  visibility: hidden;
+  pointer-events: none;
+  margin-top: 0;
+}
+
 .collection-modal__participant {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px 16px;
-  min-height: 52px;
+  min-height: 48px;
   padding: 10px 14px;
   border-radius: 8px;
   background: var(--wh-gray-100);
+}
+
+.collection-modal__field-number {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 6px;
+  color: var(--wh-black-text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+}
+
+.collection-modal__invite-input-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .collection-modal__participant-info {
@@ -1142,15 +1602,11 @@ function updateStatsPanelLayout() {
 }
 
 .collection-modal__participant-name {
+  flex-shrink: 0;
   font-size: 0.95rem;
   font-weight: 500;
+  line-height: 1.3;
   color: var(--wh-gray-900);
-}
-
-.collection-modal__participant-email {
-  margin-top: 2px;
-  font-size: 0.78rem;
-  color: var(--wh-gray-600);
 }
 
 .collection-modal__badge {
@@ -1195,7 +1651,7 @@ function updateStatsPanelLayout() {
   color: var(--wh-gray-900);
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .collection-modal__invite-input::placeholder {
@@ -1211,6 +1667,7 @@ function updateStatsPanelLayout() {
   background: var(--wh-gray-100);
   color: var(--wh-gray-500);
   cursor: not-allowed;
+  pointer-events: none;
 }
 
 .collection-modal__invite-input--declined {
@@ -1219,20 +1676,107 @@ function updateStatsPanelLayout() {
   cursor: default;
 }
 
-.collection-modal__invite-field {
+.collection-modal__invite-input--with-clear {
+  padding-right: 96px;
+}
+
+.collection-modal__invite-input--selected {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 12px 14px;
+}
+
+.collection-modal__invite-input-selected-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.collection-modal__invite-input-name {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  color: var(--wh-gray-900);
+}
+
+.collection-modal__invite-input-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--wh-gray-600);
+}
+
+.collection-modal__invite-input-email-icon {
+  flex-shrink: 0;
+}
+
+.collection-modal__invite-input-box {
   position: relative;
+}
+
+.collection-modal__invite-input-clear {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  height: min(48px, 100%);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--wh-gray-600);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: color 0.15s ease;
+}
+
+.collection-modal__invite-input-clear:hover {
+  color: var(--wh-orange-500);
+}
+
+.collection-modal__invite-input-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 4;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.collection-modal__invite-input-wrap--timer-expired:hover .collection-modal__invite-input-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.collection-modal__invite-input-wrap--timer-expired {
+  cursor: not-allowed;
 }
 
 .collection-modal__invite-control {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-}
-
-.collection-modal__invite-input-wrap {
-  position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
 }
 
 .collection-modal__selected-email {
@@ -1262,7 +1806,7 @@ function updateStatsPanelLayout() {
   border: 1px solid var(--wh-field-border);
   border-radius: 8px;
   background: var(--wh-white);
-  color: #4aa3d9;
+  color: var(--wh-orange-500);
   font-size: 0.88rem;
   font-weight: 500;
   cursor: pointer;
@@ -1280,7 +1824,6 @@ function updateStatsPanelLayout() {
   justify-content: center;
   width: 48px;
   min-height: 48px;
-  margin-top: 4px;
   padding: 0;
   border: 1px dashed var(--wh-field-border);
   border-radius: 8px;
@@ -1291,6 +1834,38 @@ function updateStatsPanelLayout() {
   line-height: 1;
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.collection-modal__invite-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.collection-modal__invite-all-btn {
+  min-height: 48px;
+  margin-left: auto;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.collection-modal__invite-all-btn:hover:not(:disabled) {
+  background: var(--wh-orange-600);
+}
+
+.collection-modal__invite-all-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .collection-modal__add-field-btn:hover:not(:disabled) {
@@ -1345,6 +1920,9 @@ function updateStatsPanelLayout() {
 }
 
 .collection-modal__search-result-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-top: 3px;
   color: var(--wh-gray-600);
   font-size: 0.75rem;
@@ -1485,7 +2063,7 @@ function updateStatsPanelLayout() {
   padding: 10px 16px;
   border: none;
   border-radius: 8px;
-  background: var(--wh-orange-500);
+  background: var(--wh-green);
   color: var(--wh-white);
   font-size: 0.88rem;
   font-weight: 600;
@@ -1494,16 +2072,24 @@ function updateStatsPanelLayout() {
   transition: background 0.15s ease;
 }
 
-.collection-modal__btn:hover {
-  background: var(--wh-orange-600);
+.collection-modal__btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wh-green) 78%, white);
 }
 
 .collection-modal__btn--accent {
-  background: var(--wh-orange-500);
+  background: var(--wh-green);
 }
 
-.collection-modal__btn--accent:hover {
-  background: var(--wh-orange-600);
+.collection-modal__btn--accent:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wh-green) 78%, white);
+}
+
+.collection-modal__btn--danger {
+  background: var(--wh-field-error);
+}
+
+.collection-modal__btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wh-field-error) 78%, black);
 }
 
 .collection-modal__btn:disabled {

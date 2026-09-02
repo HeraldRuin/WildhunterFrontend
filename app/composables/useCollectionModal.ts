@@ -403,6 +403,14 @@ export function useCollectionModal() {
       || rememberedKeys.has(declinedHunterKey(Number(collection.bookingNumber), hunterId))
   }
 
+  function removeDeclinedParticipant(participantId: number) {
+    if (!participantId) return
+
+    liveDeclinedParticipants.value = liveDeclinedParticipants.value.filter(
+      participant => participant.id !== participantId,
+    )
+  }
+
   return {
     isOpen: readonly(isOpen),
     isContentHidden: readonly(isContentHidden),
@@ -417,6 +425,7 @@ export function useCollectionModal() {
     addParticipant,
     applyInvitationUpdate,
     isDeclinedHunter,
+    removeDeclinedParticipant,
     liveDeclinedParticipants: readonly(liveDeclinedParticipants),
   }
 }

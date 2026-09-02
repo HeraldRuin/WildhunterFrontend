@@ -60,10 +60,10 @@ const emit = defineEmits<{
   height: auto;
   min-height: 36px;
   padding: 8px 14px;
-  border: 1px solid var(--wh-field-border);
+  border: 1px solid var(--wh-black-text);
   border-radius: 8px;
   background: transparent;
-  color: var(--wh-gray-400);
+  color: var(--wh-black-text);
   font-size: 0.88rem;
   font-weight: 500;
   line-height: 1.2;
@@ -82,8 +82,8 @@ const emit = defineEmits<{
 }
 
 .modal-close-button:hover:not(:disabled) {
-  color: var(--wh-black-text);
-  border-color: var(--wh-field-border-active);
+  color: var(--wh-gray-400);
+  border-color: var(--wh-field-border);
 }
 
 .modal-close-button:disabled {
