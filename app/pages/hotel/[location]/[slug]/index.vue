@@ -240,8 +240,8 @@ function handleRetryHotelLoad() {
                     class="hotel-amenities__icon"
                     src="/icons/carbon_checkmark-filled.png"
                     alt=""
-                    width="28"
-                    height="28"
+                    width="18"
+                    height="18"
                     aria-hidden="true"
                   >
                   {{ term.title }}
@@ -444,8 +444,7 @@ function handleRetryHotelLoad() {
 
 .hotel-page__amenities-row {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 24px;
 }
 
@@ -501,6 +500,7 @@ function handleRetryHotelLoad() {
   align-items: center;
   flex-shrink: 0;
   gap: 8px;
+  margin-left: auto;
   padding: 10px 14px;
   border-radius: var(--wh-radius);
   background: var(--wh-green);
@@ -581,13 +581,14 @@ function handleRetryHotelLoad() {
   font-style: normal;
   line-height: 130%;
   letter-spacing: -0.05em;
-  color: var(--wh-gray-600);
+  color: var(--wh-gray-900);
 }
 
 .hotel-amenities {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -596,10 +597,10 @@ function handleRetryHotelLoad() {
 .hotel-amenities__item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   font-family: Inter, system-ui, sans-serif;
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 400;
   font-style: normal;
   line-height: 130%;
   letter-spacing: -0.05em;
@@ -609,9 +610,10 @@ function handleRetryHotelLoad() {
 .hotel-amenities__icon {
   display: block;
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
+  opacity: 0.85;
 }
 
 @media (--wh-tablet) {
@@ -666,16 +668,11 @@ function handleRetryHotelLoad() {
   }
 
   .hotel-page__amenities-row {
-    flex-direction: column;
-    align-items: flex-start;
+    gap: 12px;
   }
 
   .hotel-page__amenities-row .hotel-amenities {
     gap: 8px 12px;
-  }
-
-  .hotel-page__rating {
-    align-self: flex-start;
   }
 
   .hotel-page__booking {

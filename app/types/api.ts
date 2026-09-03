@@ -576,6 +576,8 @@ export interface BookingCheckoutData {
   animal: BookingCheckoutAnimal | null
   total: number
   amount_hunting: number
+  amount_accommodation_per_person?: number | null
+  amount_hunting_per_person?: number | null
   all_total: number
   deposit: number
   total_guests: number

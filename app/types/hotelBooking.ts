@@ -71,6 +71,7 @@ export interface HotelBookingDraft {
   adults: number
   rooms: HotelBookingRoomSelection[]
   accommodationTotal: number
+  accommodationPerPerson: number | null
   huntCheckIn: string
   huntCheckOut: string
   hunters: number
@@ -78,6 +79,7 @@ export interface HotelBookingDraft {
   animalImage: string
   huntDate: string
   organizationFee: number
+  huntingPerPerson: number | null
   trophyFee: number
   bookingNumber: string
   bookingDate: string

@@ -581,6 +581,9 @@ async function proceedBook() {
     adults,
     rooms: selectedRooms,
     accommodationTotal,
+    accommodationPerPerson: adults > 0
+      ? Math.round(accommodationTotal / adults)
+      : null,
     huntCheckIn: huntDateLabel,
     huntCheckOut: huntDateLabel,
     hunters: hasAnimal ? hunters : 0,
@@ -588,6 +591,9 @@ async function proceedBook() {
     animalImage: selectedAnimal?.image_url || '',
     huntDate: huntDateLabel,
     organizationFee: animalAvailabilityTotal.value,
+    huntingPerPerson: hasAnimal && hunters > 0
+      ? Math.round(animalAvailabilityTotal.value / hunters)
+      : null,
     trophyFee: 0,
     bookingNumber: '—',
     bookingDate: formatBookingDate(new Date()),

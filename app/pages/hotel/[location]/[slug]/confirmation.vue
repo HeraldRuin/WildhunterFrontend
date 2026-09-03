@@ -157,11 +157,13 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
     adults: data.total_guests,
     roomLabel,
     accommodationTotal: data.total,
+    accommodationPerPerson: data.amount_accommodation_per_person ?? null,
     animalTitle: data.animal?.title || '',
     animalImage: data.animal?.image_url || '',
     huntDate: formatCheckoutDate(data.start_date_animal || data.check_in),
     hunters: data.total_hunting ?? 0,
     organizationFee: data.amount_hunting,
+    huntingPerPerson: data.amount_hunting_per_person ?? null,
     trophyFee: 0,
     hasAccommodation: data.type === 'hotel' || data.type === 'hotel_animal',
     hasHunt: data.type === 'animal' || data.type === 'hotel_animal',
@@ -187,11 +189,13 @@ function mapDraftToView(data: HotelBookingDraft) {
     adults: data.adults,
     roomLabel,
     accommodationTotal: data.accommodationTotal,
+    accommodationPerPerson: data.accommodationPerPerson,
     animalTitle: data.animalTitle,
     animalImage: data.animalImage,
     huntDate: data.huntDate,
     hunters: data.hunters,
     organizationFee: data.organizationFee,
+    huntingPerPerson: data.huntingPerPerson,
     trophyFee: data.trophyFee,
     hasAccommodation: data.hasAccommodation,
     hasHunt: data.hasHunt,
@@ -390,8 +394,10 @@ async function confirmSaveBooking() {
             <h2 class="booking-confirmation__card-title">Ваше проживание</h2>
 
             <div class="booking-confirmation__card-panel">
+              <p class="booking-confirmation__card-caption">{{ booking.hotelTitle }}</p>
+
               <div class="booking-confirmation__card-content">
-                <div class="booking-confirmation__card-media">
+                <div class="booking-confirmation__card-media booking-confirmation__card-media--large">
                   <div
                     class="booking-confirmation__card-placeholder"
                     :class="{ 'booking-confirmation__card-placeholder--image': booking.hotelImage }"
@@ -404,7 +410,6 @@ async function confirmSaveBooking() {
                       decoding="async"
                     >
                   </div>
-                  <p class="booking-confirmation__card-caption">{{ booking.hotelTitle }}</p>
                 </div>
 
                 <dl class="booking-confirmation__details">
@@ -428,6 +433,13 @@ async function confirmSaveBooking() {
                     <dt>{{ booking.roomLabel }}</dt>
                     <dd>{{ formatHotelPriceLabel(booking.accommodationTotal) }}</dd>
                   </div>
+                  <div
+                    v-if="booking.adults >= 2 && booking.accommodationPerPerson != null"
+                    class="booking-confirmation__detail-row"
+                  >
+                    <dt>Стоимость за человека</dt>
+                    <dd>{{ formatHotelPriceLabel(booking.accommodationPerPerson) }}</dd>
+                  </div>
                   <div class="booking-confirmation__detail-row booking-confirmation__detail-row--total">
                     <dt>Всего:</dt>
                     <dd>{{ formatHotelPriceLabel(booking.accommodationTotal) }}</dd>
@@ -441,8 +453,10 @@ async function confirmSaveBooking() {
             <h2 class="booking-confirmation__card-title">Ваша охота</h2>
 
             <div class="booking-confirmation__card-panel">
+              <p class="booking-confirmation__card-caption">{{ booking.animalTitle }}</p>
+
               <div class="booking-confirmation__card-content">
-                <div class="booking-confirmation__card-media">
+                <div class="booking-confirmation__card-media booking-confirmation__card-media--large">
                   <div
                     class="booking-confirmation__card-placeholder"
                     :class="{ 'booking-confirmation__card-placeholder--image': booking.animalImage }"
@@ -456,7 +470,6 @@ async function confirmSaveBooking() {
                       decoding="async"
                     >
                   </div>
-                  <p class="booking-confirmation__card-caption">{{ booking.animalTitle }}</p>
                 </div>
 
                 <dl class="booking-confirmation__details">
@@ -468,7 +481,14 @@ async function confirmSaveBooking() {
                     <dt>Количество охотников</dt>
                     <dd>{{ booking.hunters }}</dd>
                   </div>
-                  <div class="booking-confirmation__detail-row">
+                  <div
+                    v-if="booking.hunters >= 2 && booking.huntingPerPerson != null"
+                    class="booking-confirmation__detail-row"
+                  >
+                    <dt>Стоимость за человека</dt>
+                    <dd>{{ formatHotelPriceLabel(booking.huntingPerPerson) }}</dd>
+                  </div>
+                  <div class="booking-confirmation__detail-row booking-confirmation__detail-row--total">
                     <dt>Организация охоты</dt>
                     <dd>{{ formatHotelPriceLabel(booking.organizationFee) }}</dd>
                   </div>
@@ -761,6 +781,7 @@ async function confirmSaveBooking() {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   margin-bottom: 32px;
+  align-items: stretch;
 }
 
 .booking-confirmation__cards--single {
@@ -769,7 +790,7 @@ async function confirmSaveBooking() {
 }
 
 .booking-confirmation__cards--single .booking-confirmation__card {
-  width: min(100%, calc((100% - 24px) / 2));
+  width: min(100%, 960px);
 }
 
 .booking-confirmation__card {
@@ -777,6 +798,16 @@ async function confirmSaveBooking() {
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+  height: 100%;
+}
+
+.booking-confirmation__cards:not(.booking-confirmation__cards--single) .booking-confirmation__card-panel {
+  flex: 1;
+}
+
+.booking-confirmation__cards:not(.booking-confirmation__cards--single) .booking-confirmation__card-content {
+  flex: 1;
+  align-items: stretch;
 }
 
 .booking-confirmation__card-title {
@@ -791,6 +822,9 @@ async function confirmSaveBooking() {
 }
 
 .booking-confirmation__card-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   min-height: 256px;
   height: auto;
   padding: 20px;
@@ -811,8 +845,23 @@ async function confirmSaveBooking() {
 }
 
 .booking-confirmation__card-media {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   flex: 0 0 287px;
   width: 287px;
+}
+
+.booking-confirmation__card-media--large {
+  flex: 0 0 380px;
+  width: 380px;
+}
+
+.booking-confirmation__cards:not(.booking-confirmation__cards--single) .booking-confirmation__card-media,
+.booking-confirmation__cards:not(.booking-confirmation__cards--single) .booking-confirmation__card-media--large {
+  flex: 0 0 287px;
+  width: 287px;
+  align-self: stretch;
 }
 
 .booking-confirmation__card-placeholder {
@@ -825,6 +874,13 @@ async function confirmSaveBooking() {
   overflow: hidden;
 }
 
+.booking-confirmation__cards:not(.booking-confirmation__cards--single) .booking-confirmation__card-placeholder {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+
 .booking-confirmation__card-placeholder--image img {
   display: block;
   width: 100%;
@@ -834,7 +890,8 @@ async function confirmSaveBooking() {
 }
 
 .booking-confirmation__card-caption {
-  margin: 8px 0 0;
+  margin: 0;
+  width: 100%;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 600;
   font-style: normal;
@@ -1018,6 +1075,11 @@ async function confirmSaveBooking() {
     width: 180px;
   }
 
+  .booking-confirmation__card-media--large {
+    flex: 0 0 260px;
+    width: 260px;
+  }
+
   .booking-confirmation__card-caption {
     font-size: 16px;
   }
@@ -1054,6 +1116,11 @@ async function confirmSaveBooking() {
   .booking-confirmation__card-media {
     flex: 0 0 140px;
     width: 140px;
+  }
+
+  .booking-confirmation__card-media--large {
+    flex: 0 0 220px;
+    width: 220px;
   }
 
   .booking-confirmation__card-content {
@@ -1181,7 +1248,8 @@ async function confirmSaveBooking() {
     flex-direction: column;
   }
 
-  .booking-confirmation__card-media {
+  .booking-confirmation__card-media,
+  .booking-confirmation__card-media--large {
     width: 100%;
     max-width: none;
     flex: none;
