@@ -71,7 +71,7 @@ function formatHistoryDate(value: string | null | undefined) {
   return parsed ? formatDisplayDate(parsed) : value
 }
 
-function formatRemainingTimer(endAt: string | null | undefined, now: number) {
+export function formatRemainingTimer(endAt: string | null | undefined, now: number) {
   if (!endAt) return undefined
 
   const end = new Date(endAt).getTime()

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { UserSearchItem } from '~/api/user'
 import type { CollectionParticipant, CollectionParticipantStatus } from '~/types/booking'
+import { formatRemainingTimer } from '~/utils/bookingHistory'
 
 type StatsPanelFilter = 'collected' | 'pending' | 'declined'
 
@@ -59,6 +60,20 @@ const canExtendCollection = computed(() => {
 
   const end = new Date(timerEndAt).getTime()
   return Number.isFinite(end) && end <= timerNow.value
+})
+
+const timerLabel = computed(() => {
+  if (!state.value) return ''
+
+  if (state.value.timerEndAt) {
+    return formatRemainingTimer(state.value.timerEndAt, timerNow.value) || '00 мин 00 сек'
+  }
+
+  if (state.value.timerExpired) {
+    return '00 мин 00 сек'
+  }
+
+  return ''
 })
 
 const occupiedParticipants = computed(() => {
@@ -1104,7 +1119,7 @@ function updateStatsPanelLayout() {
                         type="text"
                         class="collection-modal__invite-input"
                         :class="{ 'collection-modal__invite-input--with-clear': Boolean(selectedHunters[index]) }"
-                        placeholder="Ник / Фамилия / email / ID"
+                        placeholder="Ник / Имя / Фамилия / email / ID"
                         autocomplete="off"
                         :disabled="canExtendCollection"
                         @focus="handleInviteInput(index)"
@@ -1273,10 +1288,11 @@ function updateStatsPanelLayout() {
               <button
                 type="button"
                 class="collection-modal__btn collection-modal__btn--accent"
+                :class="{ 'collection-modal__btn--timer': !canExtendCollection && Boolean(timerLabel) }"
                 :disabled="!canExtendCollection"
                 @click="requestCollectionExtension"
               >
-                Продлить сбор
+                {{ canExtendCollection || !timerLabel ? 'Продлить сбор' : timerLabel }}
               </button>
               <button
                 type="button"
@@ -2082,6 +2098,11 @@ function updateStatsPanelLayout() {
 
 .collection-modal__btn--accent:hover:not(:disabled) {
   background: color-mix(in srgb, var(--wh-green) 78%, white);
+}
+
+.collection-modal__btn--timer {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .collection-modal__btn--danger {
