@@ -87,6 +87,23 @@ const reviewsCount = computed(() => {
 })
 const reviewsLabel = computed(() => formatReviewsCount(reviewsCount.value))
 
+const mapLinkTo = computed(() => {
+  const hotelId = hotel.value?.id ?? displayHotel.value.id
+  const locationId = displayHotel.value.location?.id
+
+  if (locationId) {
+    return {
+      path: `/locations/${locationId}/map`,
+      query: hotelId ? { hotel: String(hotelId) } : undefined,
+    }
+  }
+
+  return {
+    path: '/bases/map',
+    query: hotelId ? { hotel: String(hotelId) } : undefined,
+  }
+})
+
 const amenitiesGroup = computed(() => {
   return displayHotel.value.terms.find(group => /услуг/i.test(group.title)) ?? null
 })
@@ -220,6 +237,12 @@ function handleRetryHotelLoad() {
                 />
               </svg>
             </button>
+            <NuxtLink
+              :to="mapLinkTo"
+              class="hotel-page__map-link"
+            >
+              Показать на карте
+            </NuxtLink>
           </div>
 
           <section
@@ -440,6 +463,23 @@ function handleRetryHotelLoad() {
   letter-spacing: -0.05em;
   color: var(--wh-gray-900);
   text-transform: uppercase;
+}
+
+.hotel-page__map-link {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 100%;
+  letter-spacing: -0.05em;
+  color: #d64545;
+  text-decoration: underline;
+  transition: opacity 0.15s ease;
+}
+
+.hotel-page__map-link:hover {
+  opacity: 0.8;
 }
 
 .hotel-page__amenities-row {

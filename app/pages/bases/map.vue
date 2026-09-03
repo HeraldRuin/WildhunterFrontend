@@ -123,6 +123,11 @@ async function loadMapHotels() {
     hotels.value = items
       .map(offerToMapHotel)
       .filter((item): item is MapHotelItem => item != null)
+
+    const hotelId = Number(queryString('hotel'))
+    if (Number.isFinite(hotelId) && hotelId > 0) {
+      hotels.value = hotels.value.filter(item => item.id === hotelId)
+    }
   }
   catch {
   }

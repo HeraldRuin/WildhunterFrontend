@@ -27,6 +27,7 @@ const isGridList = computed(() => listColumns.value === 2)
 const isGridMulti = computed(() => isGridList.value && props.hotels.length > 1)
 
 const isCollapsedGridList = computed(() => isListCollapsed.value && isGridList.value)
+const isCollapsedGridSingle = computed(() => isCollapsedGridList.value && props.hotels.length === 1)
 
 const listEl = ref<HTMLElement | null>(null)
 const listPageCount = ref(1)
@@ -132,7 +133,7 @@ watch(
   { deep: true },
 )
 
-watch([isGridList, isGridMulti, isListCollapsed], () => {
+watch([isGridList, isGridMulti, isCollapsedGridList, isCollapsedGridSingle, isListCollapsed], () => {
   scheduleListPagesUpdate()
 })
 
@@ -222,6 +223,27 @@ function openHotel(id: number) {
     query: searchQueryForHotel(),
   })
 }
+
+const backToHotelTo = computed(() => {
+  const raw = route.query.hotel
+  const value = Array.isArray(raw) ? raw[0] : raw
+  const hotelId = Number(value)
+
+  if (!Number.isFinite(hotelId) || hotelId <= 0) {
+    return null
+  }
+
+  const hotel = props.hotels.find(item => item.id === hotelId)
+
+  if (!hotel?.slug || !hotel.locationSlug) {
+    return null
+  }
+
+  return {
+    path: getHotelPath(hotel.locationSlug, hotel.slug),
+    query: searchQueryForHotel(),
+  }
+})
 
 function resetMapView() {
   selectedId.value = null
@@ -388,6 +410,7 @@ async function searchMeasurePoint() {
             class="bases-map-page__layout"
             :class="{
               'bases-map-page__layout--collapsed': isListCollapsed,
+              'bases-map-page__layout--collapsed-grid-single': isCollapsedGridSingle,
               'bases-map-page__layout--grid': isGridMulti && !isListCollapsed,
               'bases-map-page__layout--grid-single': isGridList && hotels.length === 1 && !isListCollapsed,
             }"
@@ -629,6 +652,7 @@ async function searchMeasurePoint() {
                     'bases-map-page__list--grid-multi': isGridMulti && !isListCollapsed,
                     'bases-map-page__list--collapsed': isListCollapsed,
                     'bases-map-page__list--collapsed-grid': isCollapsedGridList,
+                    'bases-map-page__list--collapsed-grid-single': isCollapsedGridSingle,
                     'bases-map-page__list--state': !hotels.length,
                     'bases-map-page__list--refreshing': loading && hotels.length,
                   }"
@@ -683,7 +707,10 @@ async function searchMeasurePoint() {
             <div class="bases-map-page__main">
               <div
                 class="bases-map-page__main-header"
-                :class="{ 'bases-map-page__main-header--measure': isMeasureMode }"
+                :class="{
+                  'bases-map-page__main-header--measure': isMeasureMode,
+                  'bases-map-page__main-header--with-back': Boolean(backToHotelTo),
+                }"
               >
                 <form
                   v-if="isMeasureMode"
@@ -769,6 +796,14 @@ async function searchMeasurePoint() {
                 <h1 class="bases-map-page__title">
                   {{ hotels.length ? `Базы на карте: ${hotels.length}` : 'Базы на карте' }}
                 </h1>
+
+                <NuxtLink
+                  v-if="backToHotelTo"
+                  :to="backToHotelTo"
+                  class="bases-map-page__back-link"
+                >
+                  Вернуться к базе
+                </NuxtLink>
               </div>
 
               <div class="bases-map-page__map-wrap">
@@ -820,7 +855,7 @@ async function searchMeasurePoint() {
 }
 
 .bases-map-page__panel {
-  padding: 16px;
+  padding: 0;
 }
 
 .bases-map-page__layout {
@@ -852,6 +887,11 @@ async function searchMeasurePoint() {
 .bases-map-page__layout--collapsed:has(.bases-map-page__list-wrap--with-dots) {
 
   grid-template-columns: 138px minmax(0, 1fr);
+}
+
+.bases-map-page__layout--collapsed.bases-map-page__layout--collapsed-grid-single {
+  /* Одна мини-ячейка сетки: (120px - 6px gap) / 2 */
+  grid-template-columns: 57px minmax(0, 1fr);
 }
 
 .bases-map-page__controls-wrap {
@@ -926,7 +966,8 @@ async function searchMeasurePoint() {
   min-height: 40px;
 }
 
-.bases-map-page__main-header--measure {
+.bases-map-page__main-header--measure,
+.bases-map-page__main-header--with-back {
   grid-template-columns: 1fr auto 1fr;
   gap: 12px;
 }
@@ -1044,9 +1085,28 @@ async function searchMeasurePoint() {
   white-space: nowrap;
 }
 
-.bases-map-page__main-header--measure .bases-map-page__title {
+.bases-map-page__main-header--measure .bases-map-page__title,
+.bases-map-page__main-header--with-back .bases-map-page__title {
   grid-column: 2;
   justify-self: center;
+}
+
+.bases-map-page__back-link {
+  grid-column: 3;
+  justify-self: end;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 100%;
+  letter-spacing: -0.05em;
+  color: #d64545;
+  text-decoration: underline;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.bases-map-page__back-link:hover {
+  opacity: 0.8;
 }
 
 .bases-map-page__controls-wrap {
@@ -1198,6 +1258,10 @@ async function searchMeasurePoint() {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   align-items: start;
+}
+
+.bases-map-page__list--collapsed-grid-single {
+  grid-template-columns: 1fr;
 }
 
 .bases-map-page__list--state {

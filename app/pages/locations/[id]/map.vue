@@ -13,6 +13,16 @@ const { location: locationApi } = useApi()
 
 const locationId = computed(() => Number(route.params.id))
 
+const focusedHotelId = computed(() => {
+  const raw = route.query.hotel
+  const value = Array.isArray(raw) ? raw[0] : raw
+  const id = Number(value)
+
+  return Number.isFinite(id) && id > 0 ? id : null
+})
+
+const isSingleHotelMode = computed(() => focusedHotelId.value != null)
+
 function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {
   return nuxtApp.payload.data[key] as T | undefined
     ?? nuxtApp.static.data[key] as T | undefined
@@ -107,9 +117,24 @@ useHead(() => ({
 }))
 
 const hotels = computed<MapHotelItem[]>(() => {
-  return locationHotels.value
+  const items = locationHotels.value
     .map(offerToMapHotel)
     .filter((item): item is MapHotelItem => item != null)
+
+  const hotelId = focusedHotelId.value
+  if (hotelId == null) {
+    return items
+  }
+
+  return items.filter(item => item.id === hotelId)
+})
+
+const heroTitle = computed(() => {
+  if (isSingleHotelMode.value) {
+    return hotels.value[0]?.title || ''
+  }
+
+  return locationName.value || 'Область'
 })
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
@@ -130,7 +155,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
 <template>
   <div class="location-map-page">
     <SearchHero
-      :title="locationName || 'Область'"
+      :title="heroTitle"
       background-image="/images/location-img.jpg"
       hide-search
     />
