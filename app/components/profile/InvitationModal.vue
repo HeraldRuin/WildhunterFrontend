@@ -12,6 +12,7 @@ const emit = defineEmits<{
 }>()
 
 const { user: userApi } = useApi()
+const { user } = useAuth()
 const config = useRuntimeConfig()
 const uploadsOrigin = new URL(config.public.apiBase as string).origin
 
@@ -21,6 +22,14 @@ const participants = computed(() => props.booking?.collectionInvitations ?? [])
 
 const showPaymentStatus = computed(() => {
   return props.booking?.status.code !== 'collection'
+})
+
+const modalTitle = computed(() => {
+  if (props.booking?.status.code === 'prepayment_collection') {
+    return 'Открыт сбор предоплаты для охотников'
+  }
+
+  return 'Открыт сбор для охотников'
 })
 
 const selectedParticipant = ref<BookingInvitationParticipant | null>(null)
@@ -37,6 +46,10 @@ watch(
     clearSelectedUser()
   },
 )
+
+function isCurrentUser(hunterId: number) {
+  return Number(hunterId) === Number(user.value?.id)
+}
 
 function clearSelectedUser() {
   profileRequestId += 1
@@ -84,6 +97,12 @@ function prepaymentStatusLabel(invitation: BookingInvitationParticipant) {
   if (invitation.prepaymentPaid) return 'Оплачено'
   if (invitation.prepaymentPaidStatus === 'unpaid') return 'Не оплачено'
   return 'Ожидается оплата'
+}
+
+function prepaymentStatusClass(invitation: BookingInvitationParticipant) {
+  if (invitation.prepaymentPaid) return 'invitation-modal__payment--paid'
+  if (invitation.prepaymentPaidStatus === 'unpaid') return 'invitation-modal__payment--unpaid'
+  return 'invitation-modal__payment--pending'
 }
 
 function profileFullName(profile: ProfileUser) {
@@ -147,7 +166,7 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
 
           <template v-if="!selectedParticipant">
             <h2 id="invitation-modal-title" class="invitation-modal__title">
-              Открыт сбор для охотников
+              {{ modalTitle }}
             </h2>
 
             <section class="invitation-modal__participants">
@@ -164,6 +183,12 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
 
                 <div class="invitation-modal__participant">
                   <div class="invitation-modal__participant-line">
+                    <span
+                      v-if="isCurrentUser(participant.hunterId)"
+                      class="invitation-modal__self"
+                    >
+                      Вы
+                    </span>
                     <button
                       type="button"
                       class="invitation-modal__participant-name"
@@ -231,6 +256,7 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
                     <span
                       v-if="showPaymentStatus"
                       class="invitation-modal__payment"
+                      :class="prepaymentStatusClass(participant)"
                     >
                       {{ prepaymentStatusLabel(participant) }}
                     </span>
@@ -366,7 +392,7 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
 
 .invitation-modal__card {
   position: relative;
-  width: min(100%, 780px);
+  width: min(100%, 900px);
   padding: 0 20px 20px;
   border-radius: var(--wh-radius);
   background: var(--wh-white);
@@ -436,6 +462,17 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
   flex-wrap: wrap;
   gap: 8px 12px;
   min-width: 0;
+}
+
+.invitation-modal__self {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: #25a447;
+  color: var(--wh-white);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .invitation-modal__participant-name {
@@ -515,6 +552,10 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
   font-size: 0.78rem;
   line-height: 1.2;
   white-space: nowrap;
+}
+
+.invitation-modal__payment--unpaid {
+  color: var(--wh-field-error);
 }
 
 .invitation-modal__empty {

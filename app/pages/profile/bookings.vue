@@ -52,7 +52,6 @@ const page = ref(1)
 const timerNow = ref(Date.now())
 // const customerModalBooking = ref<BookingHistoryItem | null>(null)
 const invitationModalBooking = ref<BookingHistoryItem | null>(null)
-const collectionInvitationsModalBooking = ref<BookingHistoryItem | null>(null)
 const finishedCollectionModalBooking = ref<BookingHistoryItem | null>(null)
 const prepaymentModalBooking = ref<BookingHistoryItem | null>(null)
 const bedSelectionModalBooking = ref<BookingHistoryItem | null>(null)
@@ -896,6 +895,11 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     && FINISHED_COLLECTION_MODAL_STATUSES.has(booking.status.code)
     && (action.id === 'open_collection' || action.id === 'start_collection')
   ) {
+    if (booking.isInvitation && booking.invitationAccepted) {
+      invitationModalBooking.value = booking
+      return
+    }
+
     void openFinishedCollectionModal(booking)
     return
   }
@@ -912,7 +916,7 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
 
   if (action.id === 'open_collection') {
     if (booking.isInvitation && booking.invitationAccepted) {
-      collectionInvitationsModalBooking.value = booking
+      invitationModalBooking.value = booking
       return
     }
 
@@ -921,11 +925,7 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   }
 
   if (action.id === 'open_invitation') {
-    if (booking.invitationAccepted) {
-      collectionInvitationsModalBooking.value = booking
-    } else {
-      invitationModalBooking.value = booking
-    }
+    invitationModalBooking.value = booking
     return
   }
 
@@ -1145,10 +1145,6 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
     <ProfileInvitationModal
       :booking="invitationModalBooking"
       @close="invitationModalBooking = null"
-    />
-    <ProfileCollectionInvitationsModal
-      :booking="collectionInvitationsModalBooking"
-      @close="collectionInvitationsModalBooking = null"
     />
     <ProfileFinishedCollectionModal
       :booking="finishedCollectionModalBooking"
