@@ -44,6 +44,10 @@ const routeStatus = computed(() => {
 const statusFilter = ref<string | undefined>(
   routeStatus.value === 'invitation' ? 'invitation' : undefined,
 )
+/** Статус для API/empty: query надёжнее локального таба при deep-link из уведомлений. */
+const historyStatusFilter = computed(() =>
+  routeStatus.value === 'invitation' ? 'invitation' : statusFilter.value,
+)
 const page = ref(1)
 const timerNow = ref(Date.now())
 // const customerModalBooking = ref<BookingHistoryItem | null>(null)
@@ -91,6 +95,9 @@ const invitationCode = computed(() => {
 function clearBookingIdFilter() {
   const query = { ...route.query }
   delete query.booking_id
+  delete query.status
+  delete query.code
+  delete query.open
   page.value = 1
   void navigateTo({ path: route.path, query })
 }
@@ -113,19 +120,25 @@ const {
   'profile-booking-history',
   () => bookingsApi.history({
     page: page.value,
-    status: statusFilter.value,
+    status: historyStatusFilter.value,
     booking_id: bookingIdFilter.value,
     code: invitationCode.value,
   }),
   {
     lazy: true,
-    watch: [statusFilter, page, bookingIdFilter, invitationCode],
+    watch: [historyStatusFilter, page, bookingIdFilter, invitationCode],
   },
 )
 
 watch(bookingIdFilter, () => {
   page.value = 1
   historyResponse.value = null
+
+  // Deep-link с ?status=invitation при уже открытой вкладке «Мои брони»
+  // (statusFilter сброшен, а query ещё invitation) — подтянуть фильтр из URL.
+  if (routeStatus.value === 'invitation' && statusFilter.value !== 'invitation') {
+    statusFilter.value = 'invitation'
+  }
 })
 
 const {
@@ -142,7 +155,7 @@ const {
 async function refreshHistory() {
   await refreshHistoryRaw()
 
-  if (isHunter.value && statusFilter.value !== 'invitation') {
+  if (isHunter.value && historyStatusFilter.value !== 'invitation') {
     await refreshInvitationsCount()
   }
 
@@ -239,7 +252,7 @@ function resolvePendingInvitationsCount(): number | null {
   const historyItems = historyResponse.value?.data?.bookings?.items
   const fetchItems = invitationsCountResponse.value?.data?.bookings?.items
 
-  if (statusFilter.value === 'invitation') {
+  if (historyStatusFilter.value === 'invitation') {
     if (historyItems) {
       return countPendingInvitations(historyItems)
     }
@@ -296,21 +309,48 @@ function decreasePendingInvitationsCount() {
   pendingInvitationsCount.value = Math.max(0, pendingInvitationsCount.value - 1)
 }
 
-function handleInvitationAccepted() {
-  const bookingCode = invitationModalBooking.value?.code
-  if (bookingCode) {
-    patchInvitationAccepted(bookingCode)
+async function acceptInvitation(booking: BookingHistoryItem) {
+  try {
+    const response = await bookingsApi.acceptInvitation(booking.code)
+
+    if (response.success) {
+      notifications.success(response.message || 'Приглашение принято')
+      patchInvitationAccepted(booking.code)
+      await refreshHistory()
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось принять приглашение')
   }
-  else {
-    decreasePendingInvitationsCount()
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось принять приглашение')
+    throw error
   }
 
-  void refreshHistory()
+  throw new Error('accept_invitation_failed')
 }
 
-function handleInvitationDeclined() {
-  decreasePendingInvitationsCount()
-  void refreshHistory()
+async function declineInvitation(booking: BookingHistoryItem) {
+  try {
+    const response = await bookingsApi.declineInvitation(booking.code)
+
+    if (response.success) {
+      notifications.success(response.message || 'Приглашение отклонено')
+      decreasePendingInvitationsCount()
+      await refreshHistory()
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось отказаться от приглашения')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось отказаться от приглашения')
+    throw error
+  }
+
+  throw new Error('decline_invitation_failed')
 }
 
 const { isBaseAdmin } = useUserRole()
@@ -694,10 +734,28 @@ const emptyText = computed(() => {
     return 'Не удалось загрузить бронирования'
   }
 
-  return statusFilter.value === 'invitation'
+  return historyStatusFilter.value === 'invitation'
     ? 'Нет активных приглашений'
     : 'Список истории бронирований пуст'
 })
+
+function syncStatusFilterToRoute(status: string | undefined) {
+  const nextStatus = status === 'invitation' ? 'invitation' : undefined
+  const currentRouteStatus = routeStatus.value === 'invitation' ? 'invitation' : undefined
+  if (nextStatus === currentRouteStatus) {
+    return
+  }
+
+  const query = { ...route.query }
+  if (nextStatus) {
+    query.status = nextStatus
+  }
+  else {
+    delete query.status
+  }
+
+  void navigateTo({ path: route.path, query }, { replace: true })
+}
 
 watch(statusFilter, (status, previousStatus) => {
   page.value = 1
@@ -706,15 +764,20 @@ watch(statusFilter, (status, previousStatus) => {
   if (previousStatus === 'invitation' && status !== 'invitation' && isHunter.value) {
     void refreshInvitationsCount()
   }
+
+  syncStatusFilterToRoute(status)
 })
 
-watch([historyResponse, invitationsCountResponse, statusFilter], syncPendingInvitationsCount, { immediate: true })
+watch([historyResponse, invitationsCountResponse, historyStatusFilter], syncPendingInvitationsCount, { immediate: true })
 
 const invitationsCount = computed(() => pendingInvitationsCount.value)
 
 watch(routeStatus, (status) => {
-  statusFilter.value = status === 'invitation' ? 'invitation' : undefined
-})
+  const next = status === 'invitation' ? 'invitation' : undefined
+  if (statusFilter.value !== next) {
+    statusFilter.value = next
+  }
+}, { flush: 'sync' })
 
 async function confirmBooking(booking: BookingHistoryItem) {
   try {
@@ -863,6 +926,24 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     } else {
       invitationModalBooking.value = booking
     }
+    return
+  }
+
+  if (action.id === 'accept_invitation') {
+    openConfirmModal({
+      title: 'Вы уверены, что хотите принять приглашение?',
+      confirmLabel: 'Принять',
+      onConfirm: () => acceptInvitation(booking),
+    })
+    return
+  }
+
+  if (action.id === 'decline_invitation') {
+    openConfirmModal({
+      title: 'Вы уверены, что хотите отказаться от приглашения?',
+      confirmLabel: 'Отказаться',
+      onConfirm: () => declineInvitation(booking),
+    })
     return
   }
 
@@ -1064,8 +1145,6 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
     <ProfileInvitationModal
       :booking="invitationModalBooking"
       @close="invitationModalBooking = null"
-      @accepted="handleInvitationAccepted"
-      @declined="handleInvitationDeclined"
     />
     <ProfileCollectionInvitationsModal
       :booking="collectionInvitationsModalBooking"

@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { BookingHistoryItem } from '~/types/booking'
+import type { BookingHistoryItem, BookingInvitationParticipant } from '~/types/booking'
+import type { ProfileUser } from '~/types/user'
+import { formatMemberSince, normalizeUserProfile } from '~/utils/user'
 
 const props = defineProps<{
   booking: BookingHistoryItem | null
@@ -7,20 +9,45 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  accepted: []
-  declined: []
 }>()
 
+const { user: userApi } = useApi()
+const config = useRuntimeConfig()
+const uploadsOrigin = new URL(config.public.apiBase as string).origin
+
 const isOpen = computed(() => Boolean(props.booking))
-const isAccepting = ref(false)
-const isDeclining = ref(false)
-const { bookings: bookingsApi } = useApi()
-const notifications = useNotifications()
-const { open: openConfirmModal } = useConfirmModal()
+
+const participants = computed(() => props.booking?.collectionInvitations ?? [])
+
+const showPaymentStatus = computed(() => {
+  return props.booking?.status.code !== 'collection'
+})
+
+const selectedParticipant = ref<BookingInvitationParticipant | null>(null)
+const selectedProfile = ref<ProfileUser | null>(null)
+const isLoadingProfile = ref(false)
+const profileError = ref('')
+let profileRequestId = 0
 
 useBodyScrollLock(isOpen)
 
+watch(
+  () => props.booking,
+  () => {
+    clearSelectedUser()
+  },
+)
+
+function clearSelectedUser() {
+  profileRequestId += 1
+  selectedParticipant.value = null
+  selectedProfile.value = null
+  isLoadingProfile.value = false
+  profileError.value = ''
+}
+
 function close() {
+  clearSelectedUser()
   emit('close')
 }
 
@@ -31,88 +58,71 @@ function handleBackdropClick(event: MouseEvent) {
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    close()
+  if (event.key !== 'Escape') return
+
+  if (selectedParticipant.value) {
+    clearSelectedUser()
+    return
   }
+
+  close()
 }
 
-function formatDateTime(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date).replace(',', '')
+function invitationStatusLabel(invitation: BookingInvitationParticipant) {
+  if (invitation.isDeclined) return 'Отклонено'
+  if (invitation.isAccepted) return 'Приглашение принято'
+  return 'Ожидает подтверждения'
 }
 
-async function acceptInvitation() {
-  const bookingCode = props.booking?.code
-  if (!bookingCode || isAccepting.value || isDeclining.value) return
+function invitationStatusClass(invitation: BookingInvitationParticipant) {
+  if (invitation.isDeclined) return 'invitation-modal__badge--declined'
+  if (invitation.isAccepted) return 'invitation-modal__badge--accepted'
+  return 'invitation-modal__badge--pending'
+}
 
-  isAccepting.value = true
+function prepaymentStatusLabel(invitation: BookingInvitationParticipant) {
+  if (invitation.prepaymentPaid) return 'Оплачено'
+  if (invitation.prepaymentPaidStatus === 'unpaid') return 'Не оплачено'
+  return 'Ожидается оплата'
+}
+
+function profileFullName(profile: ProfileUser) {
+  return [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Имя не указано'
+}
+
+async function openUserDetails(participant: BookingInvitationParticipant) {
+  if (!participant.hunterId) return
+
+  selectedParticipant.value = participant
+  selectedProfile.value = null
+  profileError.value = ''
+  isLoadingProfile.value = true
+
+  const requestId = ++profileRequestId
 
   try {
-    const response = await bookingsApi.acceptInvitation(bookingCode)
+    const response = await userApi.getUser(participant.hunterId)
 
-    if (response.success) {
-      notifications.success(response.message || 'Приглашение принято')
-      emit('accepted')
-      close()
+    if (requestId !== profileRequestId) return
+
+    if (!response.success) {
+      profileError.value = response.message || 'Не удалось загрузить данные пользователя'
       return
     }
 
-    notifications.error(response.message || 'Не удалось принять приглашение')
-  } catch (error) {
-    const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось принять приглашение')
-  } finally {
-    isAccepting.value = false
+    selectedProfile.value = normalizeUserProfile(response.data, uploadsOrigin)
   }
-}
+  catch (error) {
+    if (requestId !== profileRequestId) return
 
-async function declineInvitation() {
-  const bookingCode = props.booking?.code
-  if (!bookingCode || isAccepting.value || isDeclining.value) return
-
-  isDeclining.value = true
-
-  try {
-    const response = await bookingsApi.declineInvitation(bookingCode)
-
-    if (response.success) {
-      notifications.success(response.message || 'Приглашение отклонено')
-      emit('declined')
-      close()
-      return
+    const data = (error as { data?: { message?: string } }).data
+    profileError.value = data?.message || 'Не удалось загрузить данные пользователя'
+  }
+  finally {
+    if (requestId === profileRequestId) {
+      isLoadingProfile.value = false
     }
-
-    notifications.error(response.message || 'Не удалось отказаться от приглашения')
-  } catch (error) {
-    const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось отказаться от приглашения')
-  } finally {
-    isDeclining.value = false
   }
-}
-
-function requestAcceptInvitation() {
-  openConfirmModal({
-    title: 'Вы уверены, что хотите принять приглашение?',
-    confirmLabel: 'Принять',
-    onConfirm: acceptInvitation,
-  })
-}
-
-function requestDeclineInvitation() {
-  openConfirmModal({
-    title: 'Вы уверены, что хотите отказаться от приглашения?',
-    confirmLabel: 'Отказаться',
-    onConfirm: declineInvitation,
-  })
 }
 </script>
 
@@ -124,53 +134,214 @@ function requestDeclineInvitation() {
         class="invitation-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="invitation-modal-title"
+        :aria-labelledby="selectedParticipant ? 'invitation-modal-user-title' : 'invitation-modal-title'"
         @click="handleBackdropClick"
         @keydown="handleKeydown"
       >
         <div class="invitation-modal__card">
-          <CommonModalCloseButton @click="close" />
+          <CommonModalCloseButton
+            :label="selectedParticipant ? 'Назад' : 'Закрыть'"
+            :aria-label="selectedParticipant ? 'Назад' : 'Закрыть'"
+            @click="selectedParticipant ? clearSelectedUser() : close()"
+          />
 
-          <h2 id="invitation-modal-title" class="invitation-modal__title">
-            Открыт сбор для охотников
-          </h2>
+          <template v-if="!selectedParticipant">
+            <h2 id="invitation-modal-title" class="invitation-modal__title">
+              Открыт сбор для охотников
+            </h2>
 
-          <div class="invitation-modal__actions">
-            <button
-              type="button"
-              class="invitation-modal__action invitation-modal__action--accept"
-              :disabled="isAccepting || isDeclining"
-              @click="requestAcceptInvitation"
-            >
-              {{ isAccepting ? 'Принимаем…' : 'Принять' }}
-            </button>
-            <button
-              type="button"
-              class="invitation-modal__action invitation-modal__action--decline"
-              :disabled="isAccepting || isDeclining"
-              @click="requestDeclineInvitation"
-            >
-              {{ isDeclining ? 'Отказываемся…' : 'Отказаться' }}
-            </button>
-          </div>
+            <section class="invitation-modal__participants">
+              <h3 class="invitation-modal__subtitle">
+                Приглашенные охотники
+              </h3>
 
-          <section class="invitation-modal__participants">
-            <h3 class="invitation-modal__subtitle">
-              Приглашенные охотники
-            </h3>
+              <div
+                v-for="(participant, index) in participants"
+                :key="participant.invitationId || participant.hunterId || index"
+                class="invitation-modal__slot-row"
+              >
+                <span class="invitation-modal__field-number">{{ index + 1 }}</span>
 
-            <div class="invitation-modal__participant">
-              <div class="invitation-modal__participant-main">
-                <span class="invitation-modal__name">{{ booking.customerName || 'Охотник' }}</span>
-                <span class="invitation-modal__badge">
-                  Приглашение принято
-                </span>
-                <span class="invitation-modal__payment">Ожидается оплата</span>
+                <div class="invitation-modal__participant">
+                  <div class="invitation-modal__participant-line">
+                    <button
+                      type="button"
+                      class="invitation-modal__participant-name"
+                      @click="openUserDetails(participant)"
+                    >
+                      {{ participant.name || 'Охотник' }}
+                    </button>
+                    <span
+                      v-if="participant.email"
+                      class="invitation-modal__participant-email"
+                    >
+                      <svg
+                        class="invitation-modal__participant-email-icon"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <rect
+                          x="2"
+                          y="3.5"
+                          width="12"
+                          height="9"
+                          rx="1"
+                          stroke="currentColor"
+                          stroke-width="1.2"
+                        />
+                        <path
+                          d="M2.5 4.5 8 9l5.5-4.5"
+                          stroke="currentColor"
+                          stroke-width="1.2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      {{ participant.email }}
+                    </span>
+                  </div>
+
+                  <div class="invitation-modal__participant-statuses">
+                    <span
+                      class="invitation-modal__badge"
+                      :class="invitationStatusClass(participant)"
+                    >
+                      <svg
+                        v-if="participant.isAccepted"
+                        class="invitation-modal__badge-icon"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M2 6l3 3 5-5"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      {{ invitationStatusLabel(participant) }}
+                    </span>
+                    <span
+                      v-if="showPaymentStatus"
+                      class="invitation-modal__payment"
+                    >
+                      {{ prepaymentStatusLabel(participant) }}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <span class="invitation-modal__date">
-                Приглашен:
-                {{ booking.invitationAcceptedAt ? formatDateTime(booking.invitationAcceptedAt) : booking.date }}
-              </span>
+
+              <p
+                v-if="!participants.length"
+                class="invitation-modal__empty"
+              >
+                Нет приглашённых охотников
+              </p>
+            </section>
+          </template>
+
+          <section
+            v-else
+            class="invitation-modal__user"
+          >
+            <h2 id="invitation-modal-user-title" class="invitation-modal__user-title">
+              Информация о пользователе
+            </h2>
+
+            <div
+              v-if="isLoadingProfile"
+              class="invitation-modal__user-loading"
+            >
+              <CommonSpinner variant="ring" size="md" label="Загрузка пользователя" />
+            </div>
+
+            <p
+              v-else-if="profileError"
+              class="invitation-modal__user-error"
+            >
+              {{ profileError }}
+            </p>
+
+            <div
+              v-else-if="selectedProfile"
+              class="invitation-modal__user-card"
+            >
+              <div class="invitation-modal__user-top">
+                <div
+                  class="invitation-modal__user-avatar"
+                  aria-hidden="true"
+                >
+                  <img
+                    v-if="selectedProfile.avatar"
+                    :src="selectedProfile.avatar"
+                    alt=""
+                    class="invitation-modal__user-avatar-image"
+                  >
+                  <span v-else>
+                    {{ profileFullName(selectedProfile).charAt(0).toUpperCase() || '?' }}
+                  </span>
+                </div>
+
+                <div class="invitation-modal__user-summary">
+                  <div class="invitation-modal__user-name">
+                    {{ profileFullName(selectedProfile) }}
+                  </div>
+                  <div
+                    v-if="selectedParticipant?.userName || selectedProfile.user_name"
+                    class="invitation-modal__user-nickname"
+                  >
+                    Ник:
+                    <span class="invitation-modal__user-nickname-value">
+                      @{{ selectedParticipant?.userName ?? selectedProfile.user_name }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <dl class="invitation-modal__user-fields">
+                <div
+                  v-if="selectedProfile.email"
+                  class="invitation-modal__user-field"
+                >
+                  <dt>Email</dt>
+                  <dd>{{ selectedProfile.email }}</dd>
+                </div>
+                <div
+                  v-if="selectedProfile.phone"
+                  class="invitation-modal__user-field"
+                >
+                  <dt>Телефон</dt>
+                  <dd>{{ selectedProfile.phone }}</dd>
+                </div>
+                <div
+                  v-if="selectedProfile.birthday"
+                  class="invitation-modal__user-field"
+                >
+                  <dt>Дата рождения</dt>
+                  <dd>{{ selectedProfile.birthday }}</dd>
+                </div>
+                <div
+                  v-if="selectedProfile.hunter_billet_number"
+                  class="invitation-modal__user-field"
+                >
+                  <dt>Охотничий билет</dt>
+                  <dd>{{ selectedProfile.hunter_billet_number }}</dd>
+                </div>
+                <div
+                  v-if="selectedProfile.created_at"
+                  class="invitation-modal__user-field"
+                >
+                  <dt>На сайте с</dt>
+                  <dd>{{ formatMemberSince(selectedProfile.created_at) }}</dd>
+                </div>
+              </dl>
             </div>
           </section>
         </div>
@@ -210,98 +381,273 @@ function requestDeclineInvitation() {
   font-weight: 600;
 }
 
-.invitation-modal__actions {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  min-height: 52px;
-  margin-bottom: 20px;
-  padding: 12px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 4px;
-}
-
-.invitation-modal__action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 86px;
-  min-height: 40px;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  color: var(--wh-white);
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.2;
-  cursor: pointer;
-  transition: background 0.15s ease, opacity 0.15s ease;
-}
-
-.invitation-modal__action--accept {
-  background: var(--wh-orange-500);
-}
-
-.invitation-modal__action--accept:hover {
-  background: var(--wh-orange-600);
-}
-
-.invitation-modal__action--decline {
-  background: var(--wh-field-error);
-}
-
-.invitation-modal__action--decline:hover {
-  opacity: 0.85;
-}
-
-.invitation-modal__action:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
 .invitation-modal__subtitle {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   color: var(--wh-gray-900);
   font-size: 0.9rem;
   font-weight: 500;
 }
 
-.invitation-modal__participant {
-  padding: 10px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 4px;
+.invitation-modal__participants {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.invitation-modal__participant-main {
+.invitation-modal__slot-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: start;
+}
+
+.invitation-modal__field-number {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 10px;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 6px;
+  color: var(--wh-black-text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+}
+
+.invitation-modal__participant {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--wh-gray-100);
+}
+
+.invitation-modal__participant-line {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px 12px;
+  min-width: 0;
 }
 
-.invitation-modal__name {
+.invitation-modal__participant-name {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.3;
   color: var(--wh-gray-900);
-  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.invitation-modal__participant-name:hover {
+  color: var(--wh-orange-500);
+}
+
+.invitation-modal__participant-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--wh-gray-600);
+}
+
+.invitation-modal__participant-email-icon {
+  flex-shrink: 0;
+}
+
+.invitation-modal__participant-statuses {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .invitation-modal__badge {
-  padding: 2px 5px;
-  border-radius: 2px;
-  background: var(--wh-green);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
   color: var(--wh-white);
-  font-size: 0.7rem;
+}
+
+.invitation-modal__badge-icon {
+  flex-shrink: 0;
+}
+
+.invitation-modal__badge--accepted {
+  background: var(--wh-green);
+}
+
+.invitation-modal__badge--pending {
+  background: var(--wh-gray-600);
+}
+
+.invitation-modal__badge--declined {
+  background: var(--wh-field-error);
 }
 
 .invitation-modal__payment {
   color: var(--wh-gray-700);
   font-size: 0.78rem;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
-.invitation-modal__date {
-  display: block;
-  margin-top: 4px;
+.invitation-modal__empty {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 6px;
   color: var(--wh-gray-600);
-  font-size: 0.7rem;
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.invitation-modal__user {
+  padding-top: 18px;
+}
+
+.invitation-modal__user-title {
+  margin: 0 0 18px;
+  padding-right: 96px;
+  color: var(--wh-gray-900);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.invitation-modal__user-loading,
+.invitation-modal__user-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  padding: 20px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 8px;
+  color: var(--wh-gray-600);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.invitation-modal__user-error {
+  color: var(--wh-field-error);
+}
+
+.invitation-modal__user-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 8px;
+}
+
+.invitation-modal__user-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.invitation-modal__user-avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--wh-gray-200);
+  color: var(--wh-gray-700);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.invitation-modal__user-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.invitation-modal__user-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.invitation-modal__user-name {
+  color: var(--wh-gray-900);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.invitation-modal__user-nickname {
+  color: var(--wh-gray-600);
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+
+.invitation-modal__user-nickname-value {
+  color: var(--wh-gray-900);
+}
+
+.invitation-modal__user-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.invitation-modal__user-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--wh-gray-100);
+}
+
+.invitation-modal__user-field dt {
+  color: var(--wh-gray-600);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.invitation-modal__user-field dd {
+  margin: 0;
+  color: var(--wh-gray-900);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .invitation-modal-enter-active,
@@ -319,12 +665,8 @@ function requestDeclineInvitation() {
     padding: 12px;
   }
 
-  .invitation-modal__actions {
-    flex-direction: column;
-  }
-
-  .invitation-modal__action {
-    width: 100%;
+  .invitation-modal__user-fields {
+    grid-template-columns: 1fr;
   }
 }
 </style>

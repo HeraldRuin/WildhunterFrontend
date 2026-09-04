@@ -10,6 +10,8 @@ export type BookingActionId =
   | 'cancel_booking'
   | 'confirm_booking'
   | 'open_invitation'
+  | 'accept_invitation'
+  | 'decline_invitation'
   | 'select_seat'
   | 'add_services'
   | 'prepayment'

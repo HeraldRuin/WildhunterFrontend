@@ -175,6 +175,13 @@ function mapActions(
           : action.label,
       variant: ACTION_VARIANT_MAP[action.code] ?? 'success',
     })
+
+    if (action.code === 'open_invitation' && !isAcceptedInvitation) {
+      mapped.push(
+        { id: 'accept_invitation', label: 'Принять', variant: 'success' },
+        { id: 'decline_invitation', label: 'Отказаться', variant: 'danger' },
+      )
+    }
   }
 
   if (isHunter && status === 'finish_bed_collection') {
