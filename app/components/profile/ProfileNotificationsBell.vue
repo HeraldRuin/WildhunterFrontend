@@ -40,6 +40,20 @@ function isInvitationAcceptedNotification(item: InboxNotification): boolean {
   return text.includes('приглашен') && text.includes('принят')
 }
 
+function isInvitationPendingNotification(item: InboxNotification): boolean {
+  if (isInvitationAcceptedNotification(item)) {
+    return false
+  }
+
+  const event = (item.event ?? '').toLowerCase()
+  if (event.includes('invitation')) {
+    return true
+  }
+
+  const text = `${item.title} ${item.message}`.toLowerCase()
+  return text.includes('приглашен') || text.includes('приглашение')
+}
+
 function isCollectionCancelledNotification(item: InboxNotification): boolean {
   const event = (item.event ?? '').toLowerCase()
   if (
@@ -80,12 +94,18 @@ function bookingIdFromLink(link: string): number | undefined {
   return undefined
 }
 
-function bookingsTarget(bookingId?: number, openCollection = false): string {
+function bookingsTarget(
+  bookingId?: number,
+  options: { openCollection?: boolean, asInvitation?: boolean } = {},
+): string {
   const params = new URLSearchParams()
   if (bookingId) {
     params.set('booking_id', String(bookingId))
   }
-  if (openCollection) {
+  if (options.asInvitation) {
+    params.set('status', 'invitation')
+  }
+  if (options.openCollection) {
     params.set('open', 'collection')
   }
 
@@ -98,10 +118,13 @@ function resolveNotificationTarget(item: InboxNotification): string | null {
     return null
   }
 
-  const openCollection = isInvitationAcceptedNotification(item)
+  const targetOptions = {
+    openCollection: isInvitationAcceptedNotification(item),
+    asInvitation: isInvitationPendingNotification(item),
+  }
   const entityId = Number(item.entity_id)
   if (isBookingNotification(item) && Number.isFinite(entityId) && entityId > 0) {
-    return bookingsTarget(entityId, openCollection)
+    return bookingsTarget(entityId, targetOptions)
   }
 
   const link = item.link?.trim()
@@ -111,13 +134,13 @@ function resolveNotificationTarget(item: InboxNotification): string | null {
 
   const bookingId = bookingIdFromLink(link)
   if (bookingId) {
-    return bookingsTarget(bookingId, openCollection)
+    return bookingsTarget(bookingId, targetOptions)
   }
 
   if (isBookingNotification(item)) {
     return bookingsTarget(
       Number.isFinite(entityId) && entityId > 0 ? entityId : undefined,
-      openCollection,
+      targetOptions,
     )
   }
 
