@@ -770,7 +770,7 @@ function participantBadgeLabel(status: CollectionParticipantStatus) {
     case 'pending':
       return 'Ожидает подтверждения'
     case 'declined':
-      return 'Отклонено'
+      return 'Отказался'
     default: {
       const _exhaustive: never = status
       return _exhaustive
@@ -1279,7 +1279,7 @@ function updateStatsPanelLayout() {
                   :class="{ 'collection-modal__footer-stat-link--active': activeStatsPanel === 'declined' }"
                   @click="toggleStatsPanel('declined')"
                 >
-                  Отклонили {{ declinedCount }}
+                  Отказались {{ declinedCount }}
                 </button>
               </div>
             </div>
