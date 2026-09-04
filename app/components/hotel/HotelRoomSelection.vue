@@ -65,7 +65,11 @@ const selectedRoomsSummary = computed(() => {
     total += room.price * quantity
   }
 
-  return { roomsCount, total }
+  const perPerson = props.adults > 0
+    ? Math.round(total / props.adults)
+    : null
+
+  return { roomsCount, total, perPerson }
 })
 
 watch(
@@ -375,9 +379,17 @@ defineExpose({
         <span class="hotel-room-selection__summary-label">Всего номеров:</span>
         <span class="hotel-room-selection__summary-value">{{ selectedRoomsSummary.roomsCount }}</span>
       </div>
-      <div class="hotel-room-selection__summary-item">
-        <span class="hotel-room-selection__summary-label">Общая стоимость:</span>
-        <span class="hotel-room-selection__summary-price">{{ formatHotelPriceLabel(selectedRoomsSummary.total) }}</span>
+      <div class="hotel-room-selection__summary-item hotel-room-selection__summary-item--cost">
+        <span
+          v-if="selectedRoomsSummary.perPerson != null"
+          class="hotel-room-selection__summary-per-person"
+        >
+          {{ formatHotelPriceLabel(selectedRoomsSummary.perPerson) }} / чел.
+        </span>
+        <span class="hotel-room-selection__summary-total">
+          <span class="hotel-room-selection__summary-label">Общая стоимость:</span>
+          <span class="hotel-room-selection__summary-price">{{ formatHotelPriceLabel(selectedRoomsSummary.total) }}</span>
+        </span>
       </div>
     </div>
 
@@ -433,12 +445,31 @@ defineExpose({
   border-left: 1px solid var(--wh-field-border);
 }
 
+.hotel-room-selection__summary-item--cost {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
 .hotel-room-selection__summary-label {
   color: var(--wh-black-text);
 }
 
 .hotel-room-selection__summary-value {
   font-weight: 600;
+}
+
+.hotel-room-selection__summary-per-person {
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--wh-black-text);
+}
+
+.hotel-room-selection__summary-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
 }
 
 .hotel-room-selection__summary-price {

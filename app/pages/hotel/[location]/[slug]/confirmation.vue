@@ -425,11 +425,11 @@ async function confirmSaveBooking() {
                     <dt>Ночи</dt>
                     <dd>{{ booking.nights }}</dd>
                   </div>
-                  <div class="booking-confirmation__detail-row booking-confirmation__detail-row--divider">
+                  <div class="booking-confirmation__detail-row">
                     <dt>Взрослые</dt>
                     <dd>{{ booking.adults }}</dd>
                   </div>
-                  <div class="booking-confirmation__detail-row booking-confirmation__detail-row--divider booking-confirmation__detail-row--room">
+                  <div class="booking-confirmation__detail-row booking-confirmation__detail-row--room">
                     <dt>{{ booking.roomLabel }}</dt>
                     <dd>{{ formatHotelPriceLabel(booking.accommodationTotal) }}</dd>
                   </div>
@@ -915,10 +915,6 @@ async function confirmSaveBooking() {
   padding: 6px 0;
   font-size: 0.875rem;
   line-height: 1.4;
-}
-
-.booking-confirmation__detail-row--divider {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .booking-confirmation__detail-row--room {

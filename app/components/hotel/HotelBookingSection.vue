@@ -790,9 +790,14 @@ onMounted(() => {
                 <span class="hotel-booking-section__animal-summary-label">Всего охотников:</span>
                 <span class="hotel-booking-section__animal-summary-value">{{ animalAvailability.hunters }}</span>
               </div>
-              <div class="hotel-booking-section__animal-summary-item">
-                <span class="hotel-booking-section__animal-summary-label">Общая стоимость:</span>
-                <span class="hotel-booking-section__animal-summary-price">{{ formatHotelPriceLabel(animalAvailabilityTotal) }}</span>
+              <div class="hotel-booking-section__animal-summary-item hotel-booking-section__animal-summary-item--cost">
+                <span class="hotel-booking-section__animal-summary-per-person">
+                  {{ formatHotelPriceLabel(animalAvailability.price) }} / чел.
+                </span>
+                <span class="hotel-booking-section__animal-summary-total">
+                  <span class="hotel-booking-section__animal-summary-label">Общая стоимость:</span>
+                  <span class="hotel-booking-section__animal-summary-price">{{ formatHotelPriceLabel(animalAvailabilityTotal) }}</span>
+                </span>
               </div>
             </div>
           </div>
@@ -1100,12 +1105,31 @@ onMounted(() => {
   border-left: 1px solid var(--wh-field-border);
 }
 
+.hotel-booking-section__animal-summary-item--cost {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
 .hotel-booking-section__animal-summary-label {
   color: var(--wh-black-text);
 }
 
 .hotel-booking-section__animal-summary-value {
   font-weight: 600;
+}
+
+.hotel-booking-section__animal-summary-per-person {
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--wh-black-text);
+}
+
+.hotel-booking-section__animal-summary-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
 }
 
 .hotel-booking-section__animal-summary-price {
