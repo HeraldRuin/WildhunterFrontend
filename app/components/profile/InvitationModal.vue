@@ -468,7 +468,7 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
   flex-shrink: 0;
   padding: 3px 10px;
   border-radius: 4px;
-  background: #25a447;
+  background: var(--wh-orange-500);
   color: var(--wh-white);
   font-size: 0.7rem;
   font-weight: 600;
