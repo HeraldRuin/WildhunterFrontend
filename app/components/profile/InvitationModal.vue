@@ -615,6 +615,7 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
 
 .invitation-modal__user-nickname-value {
   color: var(--wh-gray-900);
+  font-weight: 500;
 }
 
 .invitation-modal__user-fields {
