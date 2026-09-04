@@ -17,6 +17,7 @@ const emit = defineEmits<{
 const { services } = useApi()
 const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
 const { isFavorite: isHotelFavorite, setFavorite, loadFavorites, isLoaded } = useFavoriteHotels()
+const { isBaseAdmin } = useUserRole()
 const notifications = useNotifications()
 
 const isFavoriteLoading = ref(false)
@@ -26,7 +27,7 @@ const tipVisible = ref(false)
 const tipStyle = ref<Record<string, string>>({})
 
 onMounted(() => {
-  if (!isLoaded.value) {
+  if (!isBaseAdmin.value && !isLoaded.value) {
     loadFavorites()
   }
 })
@@ -200,6 +201,7 @@ async function handleFavoriteClick(event: MouseEvent) {
         decoding="async"
       >
       <button
+        v-if="!isBaseAdmin"
         type="button"
         class="map-hotel-card__favorite"
         :class="{ 'map-hotel-card__favorite--active': isFavorite }"

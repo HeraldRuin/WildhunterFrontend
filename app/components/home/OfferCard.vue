@@ -78,6 +78,7 @@ function prefetchTargetPage() {
 const { services } = useApi()
 const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
 const { isFavorite: isHotelFavorite, setFavorite, loadFavorites, isLoaded } = useFavoriteHotels()
+const { isBaseAdmin } = useUserRole()
 const notifications = useNotifications()
 
 const isFavoriteLoading = ref(false)
@@ -86,7 +87,7 @@ const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
 
 onMounted(() => {
-  if (!isLoaded.value) {
+  if (!isBaseAdmin.value && !isLoaded.value) {
     loadFavorites()
   }
 })
@@ -190,6 +191,7 @@ async function handleFavoriteClick(event: MouseEvent) {
         <span>Фото отсутствует</span>
       </div>
       <button
+        v-if="!isBaseAdmin"
         type="button"
         class="offer-card__favorite"
         :class="{ 'offer-card__favorite--active': isFavorite }"

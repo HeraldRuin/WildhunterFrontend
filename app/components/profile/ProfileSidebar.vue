@@ -145,7 +145,9 @@ const navItems = computed<NavItem[]>(() => {
   }
 
   if (isBaseAdmin.value) {
-    return baseNavItems.filter(item => item.to !== '/profile/weapons')
+    return baseNavItems.filter(
+      item => item.to !== '/profile/weapons' && item.to !== '/profile/favorites',
+    )
   }
 
   return baseNavItems

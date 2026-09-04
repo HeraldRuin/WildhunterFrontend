@@ -31,13 +31,14 @@ const displayHotelContent = computed(() => {
 const { services } = useApi()
 const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
 const { isFavorite: isHotelFavorite, setFavorite, loadFavorites, isLoaded } = useFavoriteHotels()
+const { isBaseAdmin } = useUserRole()
 const notifications = useNotifications()
 
 const isFavoriteLoading = ref(false)
 const isFavorite = computed(() => hotel.value ? isHotelFavorite(hotel.value.id) : false)
 
 onMounted(() => {
-  if (!isLoaded.value) {
+  if (!isBaseAdmin.value && !isLoaded.value) {
     loadFavorites()
   }
 })
@@ -218,6 +219,7 @@ function handleRetryHotelLoad() {
           <div class="hotel-page__title-row">
             <h1 class="hotel-page__title">{{ displayHotel.title }}</h1>
             <button
+              v-if="!isBaseAdmin"
               type="button"
               class="hotel-page__favorite"
               :class="{ 'hotel-page__favorite--active': isFavorite }"
