@@ -698,9 +698,9 @@ onBeforeUnmount(() => {
 
 .booking-table th:nth-child(7),
 .booking-table td.booking-table__actions {
-  width: 160px;
-  min-width: 160px;
-  max-width: 160px;
+  width: 188px;
+  min-width: 188px;
+  max-width: 188px;
 }
 
 .booking-table th:nth-child(6),
@@ -876,8 +876,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: 140px;
-  padding: 7px 12px;
+  width: 168px;
+  padding: 7px 14px;
   border-radius: 999px;
   border: 1.5px solid transparent;
   font-size: 0.75rem;
@@ -894,7 +894,7 @@ onBeforeUnmount(() => {
 
 .booking-table__action[aria-busy="true"] {
   width: auto;
-  min-width: 140px;
+  min-width: 168px;
 }
 
 .booking-table__action--danger {
@@ -1030,7 +1030,7 @@ onBeforeUnmount(() => {
   .booking-table__action,
   .booking-table__action[aria-busy="true"] {
     width: 100%;
-    min-width: 140px;
+    min-width: 168px;
     box-sizing: border-box;
   }
 }

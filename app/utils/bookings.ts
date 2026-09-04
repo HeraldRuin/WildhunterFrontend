@@ -190,7 +190,7 @@ export const MOCK_INVITATION_BOOKINGS: BookingHistoryItem[] = [
       subStatus: 'Ожидает ответа',
     },
     actions: [
-      { id: 'open_invitation', label: 'Открыть приглашение', variant: 'primary' },
+      { id: 'open_invitation', label: 'Список приглашенных', variant: 'primary' },
     ],
     isInvitation: true,
   },

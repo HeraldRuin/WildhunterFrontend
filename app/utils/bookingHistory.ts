@@ -60,7 +60,7 @@ const HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
 ]
 
 const INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
-  { id: 'open_collection', label: 'Сбор охотников', variant: 'success' },
+  { id: 'open_collection', label: 'Список приглашенных', variant: 'success' },
   { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
 ]
 
@@ -169,9 +169,13 @@ function mapActions(
         action.code === 'select_place'
           ? 'Выбрать койко-место'
           : action.code === 'open_collection' || action.code === 'start_collection'
-          ? (isAcceptedInvitation || FINISHED_COLLECTION_MODAL_STATUSES.has(status)
+          ? (isAcceptedInvitation
+              ? 'Список приглашенных'
+              : status === 'collection' || FINISHED_COLLECTION_MODAL_STATUSES.has(status)
               ? 'Сбор охотников'
               : 'Собрать охотников')
+          : action.code === 'open_invitation'
+          ? 'Список приглашенных'
           : action.label,
       variant: ACTION_VARIANT_MAP[action.code] ?? 'success',
     })
