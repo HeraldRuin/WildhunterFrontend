@@ -140,3 +140,26 @@ export function isDocumentNumberKeyAllowed(
 export function hunterDocumentMaxLength(kind: HunterDocumentKind) {
   return getRules(kind).maxLength
 }
+
+export function getHunterDocumentParts(value: string, kind: HunterDocumentKind) {
+  return parseHunterDocumentNumber(value, kind)
+}
+
+/** Подпись вида «серия 64 № 0000739» для превью охотничьего билета. */
+export function formatHunterBilletCaption(value: string) {
+  const { series, number } = parseHunterDocumentNumber(value, 'billet')
+
+  if (!series && !number) {
+    return ''
+  }
+
+  if (series && number) {
+    return `серия ${series} № ${number}`
+  }
+
+  if (series) {
+    return `серия ${series}`
+  }
+
+  return `№ ${number}`
+}

@@ -920,6 +920,7 @@ const hasNewWeapon = computed(() =>
     >
       <div class="weapons-form__body">
         <div class="weapons-form__billet">
+          <!--
           <div
             v-if="profile"
             class="weapons-form__billet-row"
@@ -959,6 +960,16 @@ const hasNewWeapon = computed(() =>
             no-margin
             model-value=""
             readonly
+          />
+          -->
+
+          <ProfileHunterBilletPreview
+            v-if="profile"
+            v-model:first-name="profile.first_name"
+            v-model:last-name="profile.last_name"
+            :birthday="profile.birthday"
+            :avatar="profile.avatar"
+            v-model:billet-number="profile.hunter_billet_number"
           />
         </div>
 
@@ -1229,8 +1240,7 @@ const hasNewWeapon = computed(() =>
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: 896px;
-  max-width: 100%;
+  width: 100%;
   height: 31px;
   margin-bottom: 20px;
   padding: 0;
@@ -1248,17 +1258,17 @@ const hasNewWeapon = computed(() =>
 }
 
 .weapons-form {
-  width: 896px;
+  width: 100%;
   max-width: 100%;
 }
 
 .weapons-form__body {
   width: 100%;
-  max-width: 896px;
+  max-width: 100%;
 }
 
 .weapons-form__billet {
-  width: 896px;
+  width: 100%;
   max-width: 100%;
   margin-bottom: 24px;
   padding-bottom: 24px;
