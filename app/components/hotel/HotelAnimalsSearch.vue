@@ -84,11 +84,13 @@ const isHuntersOpen = ref(false)
 const isAnimalOpen = ref(false)
 const activeDatePart = ref<'start' | 'end' | null>('start')
 const hoveredAnimalId = ref<string | null>(null)
+const animalSearchQuery = ref('')
 
 const datesFieldRef = ref<HTMLElement | null>(null)
 const huntersFieldRef = ref<HTMLElement | null>(null)
 const adultsInputRef = ref<HTMLInputElement | null>(null)
 const animalFieldRef = ref<HTMLElement | null>(null)
+const animalSearchRef = ref<HTMLInputElement | null>(null)
 
 const animals = computed(() => props.animals)
 const animalsPending = computed(() => props.animalsPending)
@@ -97,6 +99,18 @@ const animalsReady = computed(() => animals.value.length > 0)
 const selectedAnimal = computed(() =>
   animals.value.find(item => String(item.id) === animal.value),
 )
+
+const filteredAnimals = computed(() => {
+  const list = animals.value
+  const query = animalSearchQuery.value.trim().toLocaleLowerCase('ru')
+  if (!query) {
+    return list
+  }
+
+  return list.filter(item => item.title.toLocaleLowerCase('ru').includes(query))
+})
+
+const showAnimalSearch = computed(() => animals.value.length > 5)
 
 const animalLabel = computed(() => {
   if (animalsPending.value) {
@@ -207,6 +221,7 @@ function closeOtherDropdowns(except?: 'hunters' | 'dates' | 'animal') {
   if (except !== 'animal') {
     isAnimalOpen.value = false
     hoveredAnimalId.value = null
+    animalSearchQuery.value = ''
   }
 }
 
@@ -233,6 +248,24 @@ function toggleAnimalDropdown() {
 
   isAnimalOpen.value = !isAnimalOpen.value
   closeOtherDropdowns(isAnimalOpen.value ? 'animal' : undefined)
+
+  if (isAnimalOpen.value) {
+    animalSearchQuery.value = ''
+    if (showAnimalSearch.value) {
+      void nextTick(() => {
+        animalSearchRef.value?.focus()
+      })
+    }
+  }
+  else {
+    animalSearchQuery.value = ''
+  }
+}
+
+function closeAnimalDropdown() {
+  isAnimalOpen.value = false
+  hoveredAnimalId.value = null
+  animalSearchQuery.value = ''
 }
 
 function toggleDatesDropdown() {
@@ -301,6 +334,7 @@ function selectAnimal(item: HotelAnimalItem) {
   animal.value = String(item.id)
   isAnimalOpen.value = false
   hoveredAnimalId.value = null
+  animalSearchQuery.value = ''
   emit('animal-change', animal.value)
 }
 
@@ -320,6 +354,7 @@ function clearAnimal(event: MouseEvent) {
   event.stopPropagation()
   animal.value = ''
   isAnimalOpen.value = false
+  animalSearchQuery.value = ''
   emit('animal-change', '')
 }
 
@@ -346,8 +381,7 @@ function handleDocumentClick(event: MouseEvent) {
   }
 
   if (!animalFieldRef.value?.contains(event.target as Node)) {
-    isAnimalOpen.value = false
-    hoveredAnimalId.value = null
+    closeAnimalDropdown()
   }
 }
 
@@ -581,34 +615,56 @@ defineExpose({
             />
           </svg>
 
-          <ul
+          <div
             v-if="isAnimalOpen && animalsReady"
             class="hotel-animals-search__dropdown-list"
-            role="listbox"
-            aria-label="Животные"
-            @pointerleave="clearAnimalHover"
-            @mouseleave="clearAnimalHover"
-            @mousemove="setAnimalHoverFromEvent"
-            @pointermove="setAnimalHoverFromEvent"
+            :class="{ 'hotel-animals-search__dropdown-list--with-search': showAnimalSearch }"
           >
-            <li v-for="item in animals" :key="item.id">
-              <button
-                type="button"
-                class="hotel-animals-search__dropdown-option"
-                :data-animal-id="item.id"
-                :class="{
-                  'hotel-animals-search__dropdown-option--active': String(item.id) === animal,
-                  'hotel-animals-search__dropdown-option--hovered': hoveredAnimalId === String(item.id),
-                }"
-                @pointerenter="setAnimalHover(item.id)"
-                @pointerdown="setAnimalHover(item.id)"
-                @click="selectAnimal(item)"
+            <div v-if="showAnimalSearch" class="hotel-animals-search__dropdown-search">
+              <input
+                ref="animalSearchRef"
+                v-model="animalSearchQuery"
+                type="search"
+                class="hotel-animals-search__dropdown-search-input"
+                placeholder="Поиск по животному"
+                aria-label="Поиск животных"
+                autocomplete="off"
+                @keydown.enter.prevent
+                @keydown.escape.stop="closeAnimalDropdown"
               >
-                <span class="hotel-animals-search__dropdown-option-dot" aria-hidden="true" />
-                <span class="hotel-animals-search__dropdown-option-label">{{ item.title }}</span>
-              </button>
-            </li>
-          </ul>
+            </div>
+            <ul
+              class="hotel-animals-search__dropdown-options"
+              :class="{ 'hotel-animals-search__dropdown-options--limited': showAnimalSearch }"
+              role="listbox"
+              aria-label="Животные"
+              @pointerleave="clearAnimalHover"
+              @mouseleave="clearAnimalHover"
+              @mousemove="setAnimalHoverFromEvent"
+              @pointermove="setAnimalHoverFromEvent"
+            >
+              <li v-if="!filteredAnimals.length" class="hotel-animals-search__dropdown-empty">
+                Ничего не найдено
+              </li>
+              <li v-for="item in filteredAnimals" :key="item.id">
+                <button
+                  type="button"
+                  class="hotel-animals-search__dropdown-option"
+                  :data-animal-id="item.id"
+                  :class="{
+                    'hotel-animals-search__dropdown-option--active': String(item.id) === animal,
+                    'hotel-animals-search__dropdown-option--hovered': hoveredAnimalId === String(item.id),
+                  }"
+                  @pointerenter="setAnimalHover(item.id)"
+                  @pointerdown="setAnimalHover(item.id)"
+                  @click="selectAnimal(item)"
+                >
+                  <span class="hotel-animals-search__dropdown-option-dot" aria-hidden="true" />
+                  <span class="hotel-animals-search__dropdown-option-label">{{ item.title }}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -944,6 +1000,69 @@ defineExpose({
   list-style: none;
   border-radius: 0 var(--wh-radius-lg) var(--wh-radius-lg) 0;
   overflow: hidden;
+}
+
+.hotel-animals-search__dropdown-list--with-search {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+}
+
+.hotel-animals-search__dropdown-search {
+  flex-shrink: 0;
+}
+
+.hotel-animals-search__dropdown-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--wh-gray);
+  border-radius: 10px;
+  background: var(--wh-white);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
+  outline: none;
+}
+
+.hotel-animals-search__dropdown-search-input::placeholder {
+  color: rgb(28 33 28 / 45%);
+}
+
+.hotel-animals-search__dropdown-search-input:focus {
+  border-color: var(--wh-orange-500);
+}
+
+.hotel-animals-search__dropdown-search-input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.hotel-animals-search__dropdown-options {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hotel-animals-search__dropdown-options--limited {
+  /* 5 видимых пунктов: padding 12+12 + line-height 1.2 * 1rem */
+  max-height: calc(5 * (24px + 1.2 * 1rem));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.hotel-animals-search__dropdown-empty {
+  padding: 12px 14px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  color: rgb(28 33 28 / 55%);
 }
 
 .hotel-animals-search__stepper-row {
