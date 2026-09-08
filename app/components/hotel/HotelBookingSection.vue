@@ -666,6 +666,10 @@ function closeHuntDateWarning() {
   isHuntDateWarningOpen.value = false
 }
 
+function openHuntDateWarning() {
+  isHuntDateWarningOpen.value = true
+}
+
 function closeStayDateWarning() {
   isStayDateWarningOpen.value = false
 }
@@ -767,6 +771,7 @@ onMounted(() => {
             @check="handleAnimalsCheck"
             @animal-change="handleAnimalChange"
             @hunters-change="handleHuntersChange"
+            @need-hunt-date="openHuntDateWarning"
           />
 
           <p
@@ -950,7 +955,7 @@ onMounted(() => {
         >
           <div class="hotel-booking-confirm__card">
             <h2 id="hotel-hunt-date-warning-title" class="hotel-booking-confirm__title">
-              Пожалуйста, выберите дату охоты
+              Сначала выберите дату охоты
             </h2>
 
             <div class="hotel-booking-confirm__actions">

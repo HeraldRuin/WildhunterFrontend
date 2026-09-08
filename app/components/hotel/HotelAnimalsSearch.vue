@@ -19,6 +19,7 @@ const emit = defineEmits<{
   check: [payload: { huntDate: string, hunters: number, animalId: string }]
   'animal-change': [animalId: string]
   'hunters-change': [hunters: number]
+  'need-hunt-date': []
 }>()
 
 const maxAdults = 20
@@ -95,6 +96,7 @@ const animalSearchRef = ref<HTMLInputElement | null>(null)
 const animals = computed(() => props.animals)
 const animalsPending = computed(() => props.animalsPending)
 const animalsReady = computed(() => animals.value.length > 0)
+const isAnimalLocked = computed(() => !huntDate.value)
 
 const selectedAnimal = computed(() =>
   animals.value.find(item => String(item.id) === animal.value),
@@ -242,6 +244,11 @@ function toggleHuntersDropdown() {
 }
 
 function toggleAnimalDropdown() {
+  if (isAnimalLocked.value) {
+    emit('need-hunt-date')
+    return
+  }
+
   if (animalsPending.value || !animalsReady.value) {
     return
   }
@@ -267,6 +274,19 @@ function closeAnimalDropdown() {
   hoveredAnimalId.value = null
   animalSearchQuery.value = ''
 }
+
+watch(huntDate, (date) => {
+  if (date) {
+    return
+  }
+
+  closeAnimalDropdown()
+
+  if (animal.value) {
+    animal.value = ''
+    emit('animal-change', '')
+  }
+})
 
 function toggleDatesDropdown() {
   if (isDatesOpen.value) {
@@ -356,6 +376,12 @@ function clearAnimal(event: MouseEvent) {
   isAnimalOpen.value = false
   animalSearchQuery.value = ''
   emit('animal-change', '')
+}
+
+function onAnimalFieldClick() {
+  if (isAnimalLocked.value) {
+    emit('need-hunt-date')
+  }
 }
 
 function setAnimalHover(id: string | number) {
@@ -568,6 +594,7 @@ defineExpose({
           ref="animalFieldRef"
           class="hotel-animals-search__field hotel-animals-search__field--animal"
           :class="{ 'hotel-animals-search__field--open': isAnimalOpen }"
+          @click="onAnimalFieldClick"
         >
           <span class="hotel-animals-search__label">Животные</span>
           <button
@@ -580,7 +607,7 @@ defineExpose({
             }"
             :title="animalLabelTitle"
             :disabled="animalsPending || !animalsReady"
-            @click="toggleAnimalDropdown"
+            @click.stop="toggleAnimalDropdown"
           >
             {{ animalLabel }}
           </button>
