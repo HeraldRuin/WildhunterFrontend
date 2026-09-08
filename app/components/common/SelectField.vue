@@ -17,6 +17,9 @@ const props = withDefaults(defineProps<{
   noMargin?: boolean
 
   filledHover?: boolean
+
+  /** Если задан — при пустом списке селект можно открыть и показать этот текст */
+  emptyText?: string
 }>(), {
   label: '',
   placeholder: 'Выберите',
@@ -25,6 +28,7 @@ const props = withDefaults(defineProps<{
   error: '',
   noMargin: false,
   filledHover: false,
+  emptyText: '',
 })
 
 const model = defineModel<string>({ default: '' })
@@ -32,6 +36,10 @@ const model = defineModel<string>({ default: '' })
 const isOpen = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
 const hoveredValue = ref<string | null>(null)
+
+const hasOptions = computed(() => props.options.length > 0)
+const canOpenEmpty = computed(() => !!props.emptyText && !hasOptions.value)
+const isTriggerDisabled = computed(() => props.disabled || (!hasOptions.value && !canOpenEmpty.value))
 
 const selectedLabel = computed(() => {
   const option = props.options.find(item => item.value === model.value)
@@ -45,7 +53,11 @@ const selectedLabel = computed(() => {
 const triggerLabel = computed(() => selectedLabel.value || props.placeholder)
 
 function toggle() {
-  if (props.disabled || !props.options.length) {
+  if (isTriggerDisabled.value) {
+    return
+  }
+
+  if (!hasOptions.value && !canOpenEmpty.value) {
     return
   }
 
@@ -95,7 +107,7 @@ onUnmounted(() => {
       type="button"
       class="select-field__trigger"
       :class="{ 'select-field__trigger--placeholder': !selectedLabel }"
-      :disabled="disabled || !options.length"
+      :disabled="isTriggerDisabled"
       :aria-expanded="isOpen"
       aria-haspopup="listbox"
       @click.stop="toggle"
@@ -114,13 +126,24 @@ onUnmounted(() => {
     </button>
 
     <ul
-      v-if="isOpen && options.length"
+      v-if="isOpen && (hasOptions || canOpenEmpty)"
       class="select-field__list"
       role="listbox"
       :aria-label="label || placeholder"
       @mouseleave="hoveredValue = null"
     >
-      <li v-for="option in options" :key="option.value">
+      <li
+        v-if="!hasOptions && canOpenEmpty"
+        class="select-field__empty"
+        role="presentation"
+      >
+        {{ emptyText }}
+      </li>
+
+      <li
+        v-for="option in options"
+        :key="option.value"
+      >
         <button
           type="button"
           class="select-field__option"
@@ -262,6 +285,19 @@ onUnmounted(() => {
   overflow-x: hidden;
   overflow-y: auto;
   box-shadow: var(--wh-shadow);
+}
+
+.select-field__empty {
+  margin: 0;
+  padding: 12px 14px;
+  font-family: "Inter", sans-serif;
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  color: var(--wh-field-error);
+  text-align: left;
+  user-select: none;
 }
 
 .select-field__option {

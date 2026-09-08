@@ -445,8 +445,7 @@ const installSelectOptions = computed<SelectFieldOption[]>(() =>
 
 const isInstallSelectDisabled = computed(() =>
   isLoading.value
-  || busyServiceId.value != null
-  || !installSelectOptions.value.length,
+  || busyServiceId.value != null,
 )
 
 const emptyStateText = computed(() =>
@@ -709,6 +708,7 @@ onBeforeUnmount(() => {
           v-model="selectedInstalledServiceId"
           class="extra-services__select-add"
           placeholder="Добавить услугу"
+          empty-text="список пуст"
           no-margin
           filled-hover
           :options="installSelectOptions"
@@ -1045,6 +1045,11 @@ onBeforeUnmount(() => {
   max-width: 100%;
   min-width: 0;
   align-self: stretch;
+}
+
+.extra-services__select-add :deep(.select-field__trigger),
+.extra-services__select-add :deep(.select-field__trigger:disabled) {
+  cursor: pointer;
 }
 
 .extra-services__add:hover:not(:disabled) {
