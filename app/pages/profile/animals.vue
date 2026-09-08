@@ -42,8 +42,7 @@ const selectOptions = computed(() =>
 const isSelectDisabled = computed(() =>
   isLoading.value
   || isAdding.value
-  || busyAnimalId.value != null
-  || !selectOptions.value.length,
+  || busyAnimalId.value != null,
 )
 
 function toAnimalRow(item: ManagedAnimal): AnimalRow {
@@ -407,6 +406,7 @@ onBeforeUnmount(() => {
         v-model="selectedAnimalId"
         class="animals-manage__select"
         placeholder="Добавить животное в базу"
+        empty-text="список пуст"
         no-margin
         filled-hover
         :options="selectOptions"
