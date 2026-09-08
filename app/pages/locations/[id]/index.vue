@@ -250,10 +250,17 @@ function handleFiltersReset() {
 
     <section class="location-page__results">
       <div class="container location-page__results-inner">
-        <AppBreadcrumbs
-          :items="breadcrumbs"
-          class="location-page__breadcrumbs"
-        />
+        <div class="location-page__top">
+          <AppBreadcrumbs
+            :items="breadcrumbs"
+            class="location-page__breadcrumbs"
+          />
+
+          <SearchFiltersSortFilter
+            v-model="filters.sort"
+            class="location-page__sort"
+          />
+        </div>
 
         <div
           class="location-page__layout"
@@ -362,8 +369,22 @@ function handleFiltersReset() {
   gap: 28px;
 }
 
+.location-page__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
 .location-page__breadcrumbs {
-  align-self: start;
+  align-self: center;
+  min-width: 0;
+}
+
+.location-page__sort {
+  flex-shrink: 0;
+  width: min(100%, 220px);
 }
 
 .location-page__toolbar {
@@ -449,7 +470,7 @@ function handleFiltersReset() {
 
 .location-page__layout {
   display: grid;
-  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+  grid-template-columns: minmax(282px, 334px) minmax(0, 1fr);
   grid-template-rows: auto auto;
   column-gap: 32px;
   row-gap: 28px;
@@ -534,6 +555,16 @@ function handleFiltersReset() {
 
   .location-page__results-inner {
     gap: 12px;
+  }
+
+  .location-page__top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .location-page__sort {
+    width: 100%;
   }
 
   .location-page__grid {

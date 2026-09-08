@@ -92,6 +92,7 @@ function toggle(value: string) {
 }
 
 .search-filters-rating__option {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -111,6 +112,11 @@ function toggle(value: string) {
 
 .search-filters-rating__option input {
   position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  margin: 0;
   opacity: 0;
   pointer-events: none;
 }

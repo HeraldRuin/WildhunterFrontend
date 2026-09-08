@@ -359,10 +359,17 @@ const breadcrumbs: BreadcrumbItem[] = [
 
     <section class="bases-page__results">
       <div class="container bases-page__results-inner">
-        <AppBreadcrumbs
-          :items="breadcrumbs"
-          class="bases-page__breadcrumbs"
-        />
+        <div class="bases-page__top">
+          <AppBreadcrumbs
+            :items="breadcrumbs"
+            class="bases-page__breadcrumbs"
+          />
+
+          <SearchFiltersSortFilter
+            v-model="filters.sort"
+            class="bases-page__sort"
+          />
+        </div>
 
         <div class="bases-page__toolbar">
           <button
@@ -475,14 +482,29 @@ const breadcrumbs: BreadcrumbItem[] = [
   padding: 80px 0 104px;
 }
 
-.bases-page__results-inner {
+.bases-page__results-inner.container {
   display: flex;
   flex-direction: column;
   gap: 28px;
+  width: min(100% - 32px, 1600px);
+}
+
+.bases-page__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
 }
 
 .bases-page__breadcrumbs {
-  align-self: start;
+  align-self: center;
+  min-width: 0;
+}
+
+.bases-page__sort {
+  flex-shrink: 0;
+  width: min(100%, 220px);
 }
 
 .bases-page__toolbar {
@@ -552,7 +574,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 .bases-page__layout {
   display: grid;
-  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+  grid-template-columns: minmax(282px, 334px) minmax(0, 1fr);
   gap: 32px;
   align-items: start;
 }
@@ -566,7 +588,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 .bases-page__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px 20px;
 }
 
@@ -616,6 +638,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 
   .bases-page__results-inner {
     gap: 12px;
+  }
+
+  .bases-page__top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .bases-page__sort {
+    width: 100%;
   }
 
   .bases-page__grid {

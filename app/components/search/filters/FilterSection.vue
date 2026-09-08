@@ -2,31 +2,47 @@
 const props = withDefaults(defineProps<{
   title: string
   defaultOpen?: boolean
+  alwaysOpen?: boolean
 }>(), {
   defaultOpen: false,
+  alwaysOpen: false,
 })
 
 const emit = defineEmits<{
   open: []
 }>()
 
-const isOpen = ref(props.defaultOpen)
+const isOpen = ref(props.alwaysOpen || props.defaultOpen)
 
 function toggle() {
+  if (props.alwaysOpen) {
+    return
+  }
+
   isOpen.value = !isOpen.value
 
   if (isOpen.value) {
     emit('open')
   }
 }
+
+onMounted(() => {
+  if (isOpen.value) {
+    emit('open')
+  }
+})
 </script>
 
 <template>
   <div
     class="search-filters-section"
-    :class="{ 'search-filters-section--open': isOpen }"
+    :class="{
+      'search-filters-section--open': isOpen,
+      'search-filters-section--static': alwaysOpen,
+    }"
   >
     <button
+      v-if="!alwaysOpen"
       type="button"
       class="search-filters-section__toggle"
       :aria-expanded="isOpen"
@@ -48,6 +64,12 @@ function toggle() {
         />
       </svg>
     </button>
+    <div
+      v-else
+      class="search-filters-section__toggle search-filters-section__toggle--static"
+    >
+      <span class="search-filters-section__title">{{ title }}</span>
+    </div>
 
     <div
       v-show="isOpen"
@@ -77,6 +99,10 @@ function toggle() {
   color: var(--wh-gray-900);
   cursor: pointer;
   text-align: left;
+}
+
+.search-filters-section__toggle--static {
+  cursor: default;
 }
 
 .search-filters-section__title {

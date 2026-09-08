@@ -26,6 +26,7 @@ const emit = defineEmits<{
 const { services: servicesApi } = useApi()
 
 const attributesRequested = ref(false)
+const expandedGroups = ref<Record<number, boolean>>({})
 
 const {
   data: attributeGroups,
@@ -41,8 +42,6 @@ const {
   },
 )
 
-const expandedGroups = ref<Record<number, boolean>>({})
-
 const localFilters = computed({
   get: () => props.modelValue,
   set: value => emit('update:modelValue', value),
@@ -52,10 +51,19 @@ function updateField<K extends keyof SearchFiltersState>(
   field: K,
   value: SearchFiltersState[K],
 ) {
+  const scrollTop = scrollEl.value?.scrollTop ?? 0
+
   localFilters.value = {
     ...localFilters.value,
     [field]: value,
   }
+
+  void nextTick(() => {
+    if (scrollEl.value) {
+      scrollEl.value.scrollTop = Math.min(scrollTop, getListMaxScroll(scrollEl.value))
+    }
+    scheduleListPagesUpdate()
+  })
 }
 
 async function onAmenitiesOpen() {
@@ -92,6 +100,7 @@ function toggleGroupExpand(groupId: number) {
     ...expandedGroups.value,
     [groupId]: !expandedGroups.value[groupId],
   }
+  scheduleListPagesUpdate()
 }
 
 function toggleAmenity(id: string) {
@@ -103,17 +112,190 @@ function toggleAmenity(id: string) {
 }
 
 function handleReset() {
+  const scrollTop = scrollEl.value?.scrollTop ?? 0
+
   emit('update:modelValue', {
     ...DEFAULT_SEARCH_FILTERS,
     priceMin: props.priceBoundMin,
     priceMax: props.priceBoundMax,
   })
   emit('reset')
+
+  void nextTick(() => {
+    if (scrollEl.value) {
+      scrollEl.value.scrollTop = Math.min(scrollTop, getListMaxScroll(scrollEl.value))
+    }
+    scheduleListPagesUpdate()
+  })
 }
+
+const hasActiveFilters = computed(() => {
+  const priceChanged = (
+    localFilters.value.priceMin > props.priceBoundMin
+    || localFilters.value.priceMax < props.priceBoundMax
+  )
+
+  return (
+    priceChanged
+    || localFilters.value.ratings.length > 0
+    || localFilters.value.amenities.length > 0
+    || localFilters.value.hasMeals !== ''
+    || localFilters.value.sort !== DEFAULT_SEARCH_FILTERS.sort
+  )
+})
 
 function closeMobile() {
   emit('update:mobileOpen', false)
 }
+
+const scrollEl = ref<HTMLElement | null>(null)
+const listPageCount = ref(1)
+const listPageIndex = ref(0)
+let listResizeObserver: ResizeObserver | null = null
+
+function getListMaxScroll(el: HTMLElement) {
+  return Math.max(0, el.scrollHeight - el.clientHeight)
+}
+
+function getListPageCount(el: HTMLElement) {
+  const pageSize = el.clientHeight || 1
+  const maxScroll = getListMaxScroll(el)
+
+  if (maxScroll <= 8) {
+    return 1
+  }
+
+  return Math.max(1, Math.ceil((maxScroll + pageSize) / pageSize))
+}
+
+function getListPageIndex(el: HTMLElement, pageCount: number) {
+  if (pageCount <= 1) {
+    return 0
+  }
+
+  const maxScroll = getListMaxScroll(el)
+
+  if (el.scrollTop >= maxScroll - 2) {
+    return pageCount - 1
+  }
+
+  return Math.min(
+    pageCount - 1,
+    Math.round((el.scrollTop / maxScroll) * (pageCount - 1)),
+  )
+}
+
+function updateListPages() {
+  const el = scrollEl.value
+  if (!el) {
+    listPageCount.value = 1
+    listPageIndex.value = 0
+    return
+  }
+
+  const maxScroll = getListMaxScroll(el)
+  if (el.scrollTop > maxScroll) {
+    el.scrollTop = maxScroll
+  }
+
+  const pages = getListPageCount(el)
+  listPageCount.value = pages
+  listPageIndex.value = getListPageIndex(el, pages)
+}
+
+function scheduleListPagesUpdate() {
+  void nextTick(() => {
+    updateListPages()
+    requestAnimationFrame(() => {
+      updateListPages()
+      requestAnimationFrame(updateListPages)
+    })
+  })
+}
+
+function onListScroll() {
+  const el = scrollEl.value
+  if (!el) {
+    return
+  }
+
+  listPageIndex.value = getListPageIndex(el, listPageCount.value)
+}
+
+function scrollListToPage(index: number) {
+  const el = scrollEl.value
+  if (!el || listPageCount.value <= 1) {
+    return
+  }
+
+  const maxScroll = getListMaxScroll(el)
+  const top = Math.round((index / (listPageCount.value - 1)) * maxScroll)
+
+  el.scrollTo({ top, behavior: 'smooth' })
+  listPageIndex.value = index
+}
+
+watch(
+  [
+    () => attributeGroups.value.length,
+    attributesPending,
+    attributesRequested,
+    expandedGroups,
+  ],
+  () => {
+    scheduleListPagesUpdate()
+  },
+  { deep: true },
+)
+
+watch(scrollEl, (el) => {
+  if (!listResizeObserver) {
+    return
+  }
+
+  listResizeObserver.disconnect()
+
+  if (el) {
+    listResizeObserver.observe(el)
+    const content = el.firstElementChild
+    if (content) {
+      listResizeObserver.observe(content)
+    }
+    updateListPages()
+  }
+})
+
+onMounted(() => {
+  void onAmenitiesOpen()
+
+  window.addEventListener('resize', scheduleListPagesUpdate)
+
+  if (import.meta.client && typeof ResizeObserver !== 'undefined') {
+    listResizeObserver = new ResizeObserver(() => {
+      updateListPages()
+    })
+
+    void nextTick(() => {
+      if (scrollEl.value) {
+        listResizeObserver?.observe(scrollEl.value)
+        const content = scrollEl.value.firstElementChild
+        if (content) {
+          listResizeObserver?.observe(content)
+        }
+      }
+      updateListPages()
+    })
+  }
+  else {
+    scheduleListPagesUpdate()
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', scheduleListPagesUpdate)
+  listResizeObserver?.disconnect()
+  listResizeObserver = null
+})
 </script>
 
 <template>
@@ -122,154 +304,189 @@ function closeMobile() {
     :class="{ 'search-filters--mobile-open': mobileOpen }"
     @click.self="closeMobile"
   >
-    <div class="search-filters__panel">
-      <CommonModalCloseButton
-        class="search-filters__modal-close"
-        aria-label="Закрыть фильтры"
-        @click="closeMobile"
-      />
-
-      <div class="search-filters__header">
-        <h2 class="search-filters__title">
-          Фильтры
-        </h2>
+    <div class="search-filters__shell">
+      <div
+        class="search-filters__dots"
+        :class="{ 'search-filters__dots--hidden': listPageCount <= 1 }"
+        role="tablist"
+        aria-label="Страницы фильтров"
+        :aria-hidden="listPageCount <= 1"
+      >
+        <button
+          v-for="page in listPageCount"
+          :key="page"
+          type="button"
+          class="search-filters__dot"
+          :class="{ 'search-filters__dot--active': page - 1 === listPageIndex }"
+          :aria-label="`Страница ${page}`"
+          :aria-current="page - 1 === listPageIndex ? 'true' : undefined"
+          :tabindex="listPageCount > 1 ? 0 : -1"
+          @click="scrollListToPage(page - 1)"
+        />
       </div>
 
-      <SearchFiltersFilterSection
-        class="search-filters__group"
-        title="Сортировка"
-      >
-        <SearchFiltersSortFilter
-          :model-value="localFilters.sort"
-          @update:model-value="updateField('sort', $event)"
+      <div class="search-filters__panel">
+        <CommonModalCloseButton
+          class="search-filters__modal-close"
+          aria-label="Закрыть фильтры"
+          @click="closeMobile"
         />
-      </SearchFiltersFilterSection>
 
-      <SearchFiltersFilterSection
-        class="search-filters__group"
-        title="По стоимости"
-      >
-        <SearchFiltersPriceFilter
-          :bound-min="priceBoundMin"
-          :bound-max="priceBoundMax"
-          :price-min="localFilters.priceMin"
-          :price-max="localFilters.priceMax"
-          @update:price-min="updateField('priceMin', $event)"
-          @update:price-max="updateField('priceMax', $event)"
-        />
-      </SearchFiltersFilterSection>
-
-      <SearchFiltersFilterSection
-        class="search-filters__group"
-        title="Рейтинг"
-      >
-        <SearchFiltersRatingFilter
-          :model-value="localFilters.ratings"
-          :counts="ratingCounts"
-          @update:model-value="updateField('ratings', $event)"
-        />
-      </SearchFiltersFilterSection>
-
-      <SearchFiltersFilterSection
-        class="search-filters__group"
-        title="Услуги на базе"
-        @open="onAmenitiesOpen"
-      >
         <div
-          v-if="attributesPending || !attributesRequested"
-          class="search-filters__loading"
-          aria-live="polite"
+          ref="scrollEl"
+          class="search-filters__body"
+          @scroll.passive="onListScroll"
         >
-          <CommonSpinner variant="ring" size="sm" label="Загрузка атрибутов" />
+          <div class="search-filters__content">
+        <div class="search-filters__header">
+          <h2 class="search-filters__title">
+            Фильтры
+          </h2>
         </div>
 
-        <div
-          v-else
-          class="search-filters__attributes"
+        <SearchFiltersFilterSection
+          class="search-filters__group"
+          title="По стоимости"
+          default-open
         >
-          <SearchFiltersFilterSection
-            v-for="group in attributeGroups"
-            :key="group.id"
-            class="search-filters__attr-group"
-            :title="group.name"
+          <SearchFiltersPriceFilter
+            :bound-min="priceBoundMin"
+            :bound-max="priceBoundMax"
+            :price-min="localFilters.priceMin"
+            :price-max="localFilters.priceMax"
+            @update:price-min="updateField('priceMin', $event)"
+            @update:price-max="updateField('priceMax', $event)"
+          />
+        </SearchFiltersFilterSection>
+
+        <SearchFiltersFilterSection
+          class="search-filters__group"
+          title="Рейтинг"
+          default-open
+        >
+          <SearchFiltersRatingFilter
+            :model-value="localFilters.ratings"
+            :counts="ratingCounts"
+            @update:model-value="updateField('ratings', $event)"
+          />
+        </SearchFiltersFilterSection>
+
+        <SearchFiltersFilterSection
+          class="search-filters__group"
+          title="Услуги на базе"
+          default-open
+          @open="onAmenitiesOpen"
+        >
+          <div
+            v-if="attributesPending || !attributesRequested"
+            class="search-filters__loading"
+            aria-live="polite"
           >
-            <ul class="search-filters__list">
-              <li
-                v-for="term in visibleTerms(group)"
-                :key="term.id"
-              >
-                <label class="search-filters__checkbox">
-                  <input
-                    type="checkbox"
-                    :checked="localFilters.amenities.includes(termId(term))"
-                    @change="toggleAmenity(termId(term))"
-                  >
-                  <span class="search-filters__checkmark" />
-                  <span>{{ termLabel(term) }}</span>
-                </label>
-              </li>
-            </ul>
+            <CommonSpinner variant="ring" size="sm" label="Загрузка атрибутов" />
+          </div>
 
-            <button
-              v-if="hasMoreTerms(group)"
-              type="button"
-              class="search-filters__more"
-              @click="toggleGroupExpand(group.id)"
+          <div
+            v-else
+            class="search-filters__attributes"
+          >
+            <div
+              v-for="group in attributeGroups"
+              :key="group.id"
+              class="search-filters__attr-group"
             >
-              {{ expandedGroups[group.id] ? 'Скрыть' : 'Еще' }}
-              <svg
-                class="search-filters__more-icon"
-                :class="{ 'search-filters__more-icon--open': expandedGroups[group.id] }"
-                viewBox="0 0 12 8"
-                aria-hidden="true"
-              >
-                <path
-                  d="M1 2 6 6.5 11 2"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          </SearchFiltersFilterSection>
-        </div>
-      </SearchFiltersFilterSection>
+              <h3 class="search-filters__attr-title">
+                {{ group.name }}
+              </h3>
 
-      <!-- <SearchFiltersFilterSection
-        class="search-filters__group"
-        title="Питание на базе"
+              <ul class="search-filters__list">
+                <li
+                  v-for="term in visibleTerms(group)"
+                  :key="term.id"
+                >
+                  <label class="search-filters__checkbox">
+                    <input
+                      type="checkbox"
+                      :checked="localFilters.amenities.includes(termId(term))"
+                      @change="toggleAmenity(termId(term))"
+                    >
+                    <span class="search-filters__checkmark" />
+                    <span>{{ termLabel(term) }}</span>
+                  </label>
+                </li>
+              </ul>
+
+              <button
+                v-if="hasMoreTerms(group)"
+                type="button"
+                class="search-filters__more"
+                @click="toggleGroupExpand(group.id)"
+              >
+                {{ expandedGroups[group.id] ? 'Скрыть' : 'Еще' }}
+                <svg
+                  class="search-filters__more-icon"
+                  :class="{ 'search-filters__more-icon--open': expandedGroups[group.id] }"
+                  viewBox="0 0 12 8"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M1 2 6 6.5 11 2"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </SearchFiltersFilterSection>
+
+        <!-- <SearchFiltersFilterSection
+          class="search-filters__group"
+          title="Питание на базе"
+        >
+          <div class="search-filters__radios">
+            <label class="search-filters__radio">
+              <input
+                type="radio"
+                name="meals"
+                value="yes"
+                :checked="localFilters.hasMeals === 'yes'"
+                @change="updateField('hasMeals', 'yes')"
+              >
+              <span class="search-filters__radio-mark" />
+              <span>Есть</span>
+            </label>
+            <label class="search-filters__radio">
+              <input
+                type="radio"
+                name="meals"
+                value="no"
+                :checked="localFilters.hasMeals === 'no'"
+                @change="updateField('hasMeals', 'no')"
+              >
+              <span class="search-filters__radio-mark" />
+              <span>Нет</span>
+            </label>
+          </div>
+        </SearchFiltersFilterSection> -->
+          </div>
+        </div>
+
+      <div
+        v-if="hasActiveFilters"
+        class="search-filters__reset-bar"
       >
-        <div class="search-filters__radios">
-          <label class="search-filters__radio">
-            <input
-              type="radio"
-              name="meals"
-              value="yes"
-              :checked="localFilters.hasMeals === 'yes'"
-              @change="updateField('hasMeals', 'yes')"
-            >
-            <span class="search-filters__radio-mark" />
-            <span>Есть</span>
-          </label>
-          <label class="search-filters__radio">
-            <input
-              type="radio"
-              name="meals"
-              value="no"
-              :checked="localFilters.hasMeals === 'no'"
-              @change="updateField('hasMeals', 'no')"
-            >
-            <span class="search-filters__radio-mark" />
-            <span>Нет</span>
-          </label>
-        </div>
-      </SearchFiltersFilterSection> -->
-
-      <button type="button" class="search-filters__reset" @click="handleReset">
-        Сбросить
-      </button>
+        <button
+          type="button"
+          class="search-filters__reset"
+          @click="handleReset"
+        >
+          Сбросить фильтры
+        </button>
+      </div>
+      </div>
     </div>
   </aside>
 </template>
@@ -279,15 +496,83 @@ function closeMobile() {
   position: relative;
 }
 
+.search-filters__shell {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.search-filters__dots {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 8px;
+  width: 10px;
+  padding: 4px 0;
+  z-index: 2;
+}
+
+.search-filters__dots--hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.search-filters__dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 1px solid rgb(28 33 28 / 25%);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.search-filters__dot--active {
+  border-color: #e8883a;
+  background: #e8883a;
+}
+
+.search-filters__dot:hover:not(.search-filters__dot--active) {
+  border-color: rgb(28 33 28 / 45%);
+}
+
 .search-filters__panel {
   position: relative;
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0;
+  min-width: 0;
+  min-height: 0;
   padding: 24px;
   border: 1px solid #bfbfbf;
   border-radius: var(--wh-radius-lg);
   background: var(--wh-white);
+}
+
+.search-filters__body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 10px;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.search-filters__content {
+  display: block;
+  width: 100%;
 }
 
 .search-filters__header {
@@ -345,12 +630,22 @@ function closeMobile() {
 
 .search-filters__attr-group + .search-filters__attr-group {
   margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #bfbfbf;
 }
 
-.search-filters__attr-group :deep(.search-filters-section__title) {
+.search-filters__attr-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-filters__attr-title {
+  margin: 0;
+  font-family: "Inter", sans-serif;
   font-size: 16px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-gray-900);
 }
 
 .search-filters__label {
@@ -369,8 +664,34 @@ function closeMobile() {
   list-style: none;
 }
 
+.search-filters__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--wh-orange-500);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.search-filters__more-icon {
+  width: 10px;
+  height: 7px;
+  transition: transform 0.2s ease;
+}
+
+.search-filters__more-icon--open {
+  transform: rotate(180deg);
+}
+
 .search-filters__checkbox,
 .search-filters__radio {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -382,6 +703,11 @@ function closeMobile() {
 .search-filters__checkbox input,
 .search-filters__radio input {
   position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  margin: 0;
   opacity: 0;
   pointer-events: none;
 }
@@ -410,43 +736,32 @@ function closeMobile() {
   transform: translate(-50%, -50%);
 }
 
-.search-filters__more {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--wh-orange-500);
-  font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.search-filters__more-icon {
-  width: 10px;
-  height: 7px;
-  transition: transform 0.2s ease;
-}
-
-.search-filters__more-icon--open {
-  transform: rotate(180deg);
-}
-
 .search-filters__radios {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
+.search-filters__reset-bar {
+  flex-shrink: 0;
+  margin-top: auto;
+  margin-inline: -24px;
+  margin-bottom: -24px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #bfbfbf;
+  background: var(--wh-white);
+  border-radius: 0 0 var(--wh-radius-lg) var(--wh-radius-lg);
+}
+
 .search-filters__reset {
-  align-self: flex-start;
-  margin-top: 24px;
-  padding: 0;
-  border: none;
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--wh-orange-500);
+  border-radius: 999px;
+  background: var(--wh-white);
   color: var(--wh-orange-500);
   font: inherit;
   font-size: 0.9375rem;
@@ -454,10 +769,25 @@ function closeMobile() {
   cursor: pointer;
 }
 
+.search-filters__reset:hover {
+  background: color-mix(in srgb, var(--wh-orange-500) 8%, var(--wh-white));
+}
+
 @media (--wh-desktop) {
-  .search-filters__panel {
+  .search-filters {
     position: sticky;
     top: 96px;
+    align-self: start;
+    height: calc(100vh - 112px);
+    height: calc(100dvh - 112px);
+    max-height: calc(100vh - 112px);
+    max-height: calc(100dvh - 112px);
+  }
+
+  .search-filters__panel {
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
   }
 }
 
@@ -481,9 +811,17 @@ function closeMobile() {
     pointer-events: auto;
   }
 
+  .search-filters__shell {
+    width: min(520px, 100%);
+    max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - 48px);
+  }
+
   .search-filters__panel {
-    width: 488px;
-    max-width: 100%;
+    width: auto;
+    max-width: none;
+    max-height: 100%;
+    overflow: hidden;
     box-shadow: var(--wh-shadow);
   }
 
@@ -513,12 +851,25 @@ function closeMobile() {
     pointer-events: auto;
   }
 
+  .search-filters__shell {
+    display: block;
+    height: auto;
+  }
+
+  .search-filters__dots {
+    display: none;
+  }
+
   .search-filters__panel {
     width: auto;
     max-width: none;
     max-height: none;
     overflow: visible;
     box-shadow: none;
+  }
+
+  .search-filters__body {
+    overflow: visible;
   }
 }
 </style>
