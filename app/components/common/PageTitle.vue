@@ -101,8 +101,7 @@ onBeforeUnmount(() => {
 }
 
 .page-title--divider {
-  width: 896px;
-  max-width: 100%;
+  width: 100%;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
@@ -180,10 +179,6 @@ onBeforeUnmount(() => {
 @media (--wh-tablet) {
   .page-title__text {
     font-size: 28px;
-  }
-
-  .page-title--divider {
-    width: 100%;
   }
 }
 

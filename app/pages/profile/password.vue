@@ -504,8 +504,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: 896px;
-  max-width: 100%;
+  width: 100%;
   height: 31px;
   margin-bottom: 20px;
   padding: 0;
@@ -514,7 +513,7 @@ onMounted(() => {
 }
 
 .password-form {
-  max-width: 896px;
+  width: 100%;
 }
 
 .password-form__body {
@@ -561,10 +560,12 @@ onMounted(() => {
 }
 
 .password-form__fields {
-  max-width: 520px;
+  width: 100%;
+  padding-right: 140px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  box-sizing: border-box;
 }
 
 .password-form__new-row {
@@ -573,7 +574,7 @@ onMounted(() => {
 }
 
 .password-form__submit-error {
-  max-width: 520px;
+  width: 100%;
   margin: 0 0 16px;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 0.875rem;
@@ -645,8 +646,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 20px;
-  width: 896px;
-  max-width: 100%;
+  width: 100%;
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid rgba(0, 0, 0, 0.2);
@@ -690,6 +690,10 @@ onMounted(() => {
     padding: 0;
     background: transparent;
     border-radius: 0;
+  }
+
+  .password-form__fields {
+    padding-right: 0;
   }
 
   .password-form__generate {

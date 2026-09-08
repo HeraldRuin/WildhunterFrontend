@@ -340,7 +340,6 @@ watch(favoriteHotelIds, (ids) => {
   justify-content: space-between;
   gap: 16px;
   width: 100%;
-  max-width: 1100px;
   height: 31px;
   margin-bottom: 20px;
   padding: 0;
@@ -350,7 +349,6 @@ watch(favoriteHotelIds, (ids) => {
 
 .profile-page :deep(.page-title--divider) {
   width: 100%;
-  max-width: 1100px;
 }
 
 .favorites-page__state {
@@ -378,7 +376,6 @@ watch(favoriteHotelIds, (ids) => {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px 20px;
   width: 100%;
-  max-width: 1100px;
   margin-top: 24px;
 }
 
