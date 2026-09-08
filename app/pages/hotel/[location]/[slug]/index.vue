@@ -36,6 +36,17 @@ const notifications = useNotifications()
 
 const isFavoriteLoading = ref(false)
 const isFavorite = computed(() => hotel.value ? isHotelFavorite(hotel.value.id) : false)
+const brokenAnimalImageIds = ref(new Set<number>())
+
+watch(() => hotel.value?.id, () => {
+  brokenAnimalImageIds.value = new Set()
+})
+
+function onAnimalImageError(animalId: number) {
+  const next = new Set(brokenAnimalImageIds.value)
+  next.add(animalId)
+  brokenAnimalImageIds.value = next
+}
 
 onMounted(() => {
   if (!isBaseAdmin.value && !isLoaded.value) {
@@ -248,12 +259,45 @@ function handleRetryHotelLoad() {
           </div>
 
           <section
-            v-if="displayHotel.address || amenitiesGroup"
+            v-if="displayHotel.address || amenitiesGroup || !showHotelPlaceholder"
             class="hotel-section hotel-section--amenities"
           >
             <p v-if="displayHotel.address" class="hotel-page__address">
               {{ displayHotel.address }}
             </p>
+
+            <div class="hotel-page__animals">
+              <span class="hotel-page__animals-label">Животные для охоты:</span>
+              <ul
+                v-if="displayHotel.animals.length"
+                class="hotel-amenities hotel-page__animals-list"
+              >
+                <li
+                  v-for="animal in displayHotel.animals"
+                  :key="animal.id"
+                  class="hotel-amenities__item hotel-page__animal-item"
+                >
+                  <!-- <img
+                    v-if="animal.image_url && !brokenAnimalImageIds.has(animal.id)"
+                    class="hotel-page__animal-icon"
+                    :src="animal.image_url"
+                    alt=""
+                    width="48"
+                    height="48"
+                    aria-hidden="true"
+                    @error="onAnimalImageError(animal.id)"
+                  > -->
+                  {{ animal.title }}
+                </li>
+              </ul>
+              <span
+                v-else
+                class="hotel-page__animals-empty"
+              >
+                нет животных для охоты
+              </span>
+            </div>
+
             <div class="hotel-page__amenities-row">
               <ul v-if="amenitiesGroup" class="hotel-amenities">
                 <li
@@ -499,6 +543,42 @@ function handleRetryHotelLoad() {
   min-width: 0;
 }
 
+.hotel-page__animals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.hotel-page__animals-label {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-gray-900);
+}
+
+.hotel-page__animals-empty {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: #e53935;
+}
+
+.hotel-page__animals-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .hotel-page__favorite {
   display: grid;
   place-items: center;
@@ -647,6 +727,23 @@ function handleRetryHotelLoad() {
   line-height: 130%;
   letter-spacing: -0.05em;
   color: var(--wh-green);
+}
+
+.hotel-page__animals .hotel-page__animal-item {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+  font-weight: 600;
+}
+
+.hotel-page__animal-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .hotel-amenities__icon {
