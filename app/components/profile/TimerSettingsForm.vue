@@ -191,7 +191,7 @@ onMounted(() => {
       <ProfileNotificationsBell />
     </header>
 
-    <CommonPageTitle divider>{{ title }}</CommonPageTitle>
+    <CommonPageTitle>{{ title }}</CommonPageTitle>
 
     <p v-if="loadError" class="timer-settings__status timer-settings__status--error">
       {{ loadError }}
@@ -246,8 +246,8 @@ onMounted(() => {
   min-height: 0;
   height: 100%;
   max-height: 100%;
+  width: 100%;
   padding: 20px 40px 16px;
-  max-width: 960px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   overflow: hidden;
@@ -259,17 +259,12 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: 896px;
-  max-width: 100%;
+  width: 100%;
   height: 31px;
   margin-bottom: 20px;
   padding: 0;
   box-sizing: border-box;
   overflow: visible;
-}
-
-.profile-page :deep(.page-title--divider) {
-  flex-shrink: 0;
 }
 
 .timer-settings__panel {

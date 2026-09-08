@@ -53,7 +53,7 @@ async function onLinkClick(to: RouteLocationRaw, event: MouseEvent) {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: var(--wh-gray-400);
 }
 

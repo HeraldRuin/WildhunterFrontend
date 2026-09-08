@@ -122,6 +122,7 @@ onMounted(() => {
         <CommonPageTitle>Управление базой</CommonPageTitle>
 
         <button
+          v-if="!isLoading && hotelsCount === 0"
           type="button"
           class="base-manage__btn base-manage__btn--success"
           @click="addBase"
@@ -174,7 +175,6 @@ onMounted(() => {
   flex-direction: column;
   align-items: stretch;
   width: 100%;
-  max-width: 1100px;
 }
 
 .profile-page__header {

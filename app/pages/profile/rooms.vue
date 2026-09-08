@@ -236,7 +236,6 @@ onMounted(() => {
   justify-content: space-between;
   gap: 16px;
   width: 100%;
-  max-width: 1100px;
   height: 31px;
   margin-bottom: 20px;
   padding: 0;
@@ -250,7 +249,6 @@ onMounted(() => {
   justify-content: space-between;
   gap: 16px;
   width: 100%;
-  max-width: 1100px;
   margin-bottom: 12px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.2);
@@ -316,7 +314,6 @@ onMounted(() => {
   flex-direction: column;
   gap: 30px;
   width: 100%;
-  max-width: 1100px;
 }
 
 .rooms-manage__status {

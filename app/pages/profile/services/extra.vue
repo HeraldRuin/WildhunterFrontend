@@ -41,6 +41,8 @@ const breadcrumbs = [
   { label: 'Услуги' },
 ]
 
+const pageHelpText = 'В этом разделе вы можете добавить услуги, которые будут доступны на вкладке Бронирования'
+
 const calculationTypeOptions: SelectFieldOption[] = [
   { value: 'individual', label: 'Индивидуально' },
   { value: 'per_person', label: 'На человека' },
@@ -679,7 +681,7 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="extra-services__toolbar">
-      <CommonPageTitle>Услуги</CommonPageTitle>
+      <CommonPageTitle :help-text="pageHelpText">Услуги</CommonPageTitle>
     </div>
 
     <div
@@ -938,8 +940,6 @@ onBeforeUnmount(() => {
   gap: 16px;
   width: 100%;
   margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
 }
 
