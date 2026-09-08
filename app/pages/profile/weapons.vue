@@ -967,7 +967,7 @@ const hasNewWeapon = computed(() =>
             v-if="profile"
             v-model:first-name="profile.first_name"
             v-model:last-name="profile.last_name"
-            :birthday="profile.birthday"
+            v-model:birthday="profile.birthday"
             :avatar="profile.avatar"
             v-model:billet-number="profile.hunter_billet_number"
           />

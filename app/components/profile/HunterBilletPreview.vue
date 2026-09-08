@@ -11,31 +11,45 @@ const emit = defineEmits<{
   'update:billetNumber': [value: string]
   'update:firstName': [value: string]
   'update:lastName': [value: string]
+  'update:birthday': [value: string]
 }>()
 
-const fullName = computed(() => {
-  const parts = [props.lastName, props.firstName]
+function fullNameFromProps() {
+  return [props.lastName, props.firstName]
     .map(part => String(part ?? '').trim())
     .filter(Boolean)
+    .join(' ')
+}
 
-  return parts.join(' ')
-})
+const fullNameInput = ref(fullNameFromProps())
 
-const birthdayDisplay = computed(() => String(props.birthday ?? '').trim())
+watch(
+  () => [props.lastName, props.firstName] as const,
+  () => {
+    const fromProps = fullNameFromProps()
+    const normalizedLocal = fullNameInput.value.replace(/\s+/g, ' ').trim()
+
+    if (normalizedLocal !== fromProps) {
+      fullNameInput.value = fromProps
+    }
+  },
+)
 
 function onFullNameInput(event: Event) {
   const value = (event.target as HTMLInputElement).value
-  const trimmed = value.replace(/^\s+/, '')
-  const spaceIndex = trimmed.search(/\s/)
+  fullNameInput.value = value
 
-  if (spaceIndex === -1) {
-    emit('update:lastName', trimmed)
+  const trimmedStart = value.replace(/^\s+/, '')
+  const match = trimmedStart.match(/^(\S+)(?:\s+(.*))?$/)
+
+  if (!match) {
+    emit('update:lastName', '')
     emit('update:firstName', '')
     return
   }
 
-  emit('update:lastName', trimmed.slice(0, spaceIndex))
-  emit('update:firstName', trimmed.slice(spaceIndex + 1).replace(/^\s+/, ''))
+  emit('update:lastName', match[1] ?? '')
+  emit('update:firstName', (match[2] ?? '').trimStart())
 }
 
 function parseBillet(value: string) {
@@ -83,126 +97,14 @@ const avatarSrc = computed(() => {
 })
 
 const identityDocument = ref('')
-const issueDay = ref('')
-const issueYear = ref('')
+const issuingAuthority = ref('')
+const federationSubject = ref('')
+const federationDate = ref('')
+const documentIssueDate = ref('')
+const issueDate = ref('')
 
-function clampDatePart(raw: string, max: number) {
-  if (!raw) {
-    return ''
-  }
-
-  // пока одна цифра — оставляем как есть (кроме 0 для дня можно оставить)
-  if (raw.length === 1) {
-    return raw
-  }
-
-  const numeric = Number.parseInt(raw, 10)
-
-  if (Number.isNaN(numeric)) {
-    return ''
-  }
-
-  if (numeric > max) {
-    return String(max)
-  }
-
-  if (numeric === 0) {
-    return '0'
-  }
-
-  return raw.slice(0, 2)
-}
-
-function canAppendMonthDigit(current: string, digit: string) {
-  const next = `${current}${digit}`
-  const value = Number.parseInt(next, 10)
-
-  if (Number.isNaN(value)) {
-    return false
-  }
-
-  if (next.length === 1) {
-    return value <= 12
-  }
-
-  return value >= 1 && value <= 12
-}
-
-function canAppendDayDigit(current: string, digit: string) {
-  const next = `${current}${digit}`
-  const value = Number.parseInt(next, 10)
-
-  if (Number.isNaN(value)) {
-    return false
-  }
-
-  if (next.length === 1) {
-    return value <= 31
-  }
-
-  return value >= 1 && value <= 31
-}
-
-function sanitizeIssueDay(value: string) {
-  const cleaned = value.replace(/[^\d .]/g, '')
-  let day = ''
-  let separator = ''
-  let month = ''
-
-  for (const char of cleaned) {
-    if (char === ' ' || char === '.') {
-      if (!separator && day.length > 0) {
-        separator = char
-      }
-      continue
-    }
-
-    if (!separator) {
-      if (day.length >= 2) {
-        continue
-      }
-
-      if (!canAppendDayDigit(day, char)) {
-        continue
-      }
-
-      day += char
-      continue
-    }
-
-    if (month.length >= 2) {
-      continue
-    }
-
-    if (!canAppendMonthDigit(month, char)) {
-      continue
-    }
-
-    month += char
-  }
-
-  day = clampDatePart(day, 31)
-  month = clampDatePart(month, 12)
-
-  if (!separator) {
-    return day
-  }
-
-  return `${day}${separator}${month}`
-}
-
-function onIssueDayInput(event: Event) {
-  const input = event.target as HTMLInputElement
-  const next = sanitizeIssueDay(input.value)
-  input.value = next
-  issueDay.value = next
-}
-
-function onIssueYearInput(event: Event) {
-  const input = event.target as HTMLInputElement
-  const next = input.value.replace(/\D/g, '').slice(0, 4)
-  input.value = next
-  issueYear.value = next
+function onBirthdayUpdate(value: string) {
+  emit('update:birthday', value)
 }
 
 function emitBillet(series: string, number: string) {
@@ -267,9 +169,12 @@ function onNumberInput(event: Event) {
             >
           </p>
         </div>
-        <p class="hunter-billet__authority">
-          &nbsp;
-        </p>
+        <input
+          v-model="issuingAuthority"
+          class="hunter-billet__authority-input"
+          type="text"
+          aria-label="Наименование исполнительного органа, выдавшего охотничий билет"
+        >
         <p class="hunter-billet__authority-hint">
           (наименование исполнительного органа субъекта Российской Федерации, выдавшего охотничий билет)
         </p>
@@ -297,7 +202,7 @@ function onNumberInput(event: Event) {
               <input
                 class="hunter-billet__value-input"
                 type="text"
-                :value="fullName"
+                :value="fullNameInput"
                 aria-label="Фамилия, имя, отчество охотника"
                 @input="onFullNameInput"
               >
@@ -306,45 +211,57 @@ function onNumberInput(event: Event) {
               </p>
             </div>
             <div class="hunter-billet__field hunter-billet__field--birthday">
-              <input
-                class="hunter-billet__value-input"
-                type="text"
-                :value="birthdayDisplay"
-                readonly
+              <ProfileHunterBilletDateField
+                :model-value="birthday ?? ''"
                 aria-label="Дата рождения"
-                placeholder=""
-              >
+                @update:model-value="onBirthdayUpdate"
+              />
               <p class="hunter-billet__hint">
                 (дата рождения)
               </p>
             </div>
           </div>
 
-          <div class="hunter-billet__field">
-            <input
-              v-model="identityDocument"
-              class="hunter-billet__value-input"
-              type="text"
-              aria-label="Данные основного документа, удостоверяющего личность охотника"
-            >
-            <p class="hunter-billet__hint">
-              (данные основного документа, удостоверяющего личность охотника)
-            </p>
+          <div class="hunter-billet__meta">
+            <div class="hunter-billet__field hunter-billet__field--grow">
+              <input
+                v-model="identityDocument"
+                class="hunter-billet__value-input"
+                type="text"
+                aria-label="Данные основного документа, удостоверяющего личность охотника"
+              >
+              <p class="hunter-billet__hint">
+                (данные основного документа, удостоверяющего личность охотника)
+              </p>
+            </div>
+            <div class="hunter-billet__field hunter-billet__field--birthday">
+              <ProfileHunterBilletDateField
+                v-model="documentIssueDate"
+                aria-label="Дата выдачи документа"
+              />
+              <p class="hunter-billet__hint">
+                (дата выдачи)
+              </p>
+            </div>
           </div>
 
           <div class="hunter-billet__meta">
             <div class="hunter-billet__field hunter-billet__field--grow">
-              <p class="hunter-billet__value hunter-billet__value--muted">
-                &nbsp;
-              </p>
+              <input
+                v-model="federationSubject"
+                class="hunter-billet__value-input"
+                type="text"
+                aria-label="Субъект Российской Федерации"
+              >
               <p class="hunter-billet__hint">
                 (субъект Российской Федерации)
               </p>
             </div>
             <div class="hunter-billet__field hunter-billet__field--date">
-              <p class="hunter-billet__value hunter-billet__value--muted">
-                &nbsp;
-              </p>
+              <ProfileHunterBilletDateField
+                v-model="federationDate"
+                aria-label="Дата"
+              />
               <p class="hunter-billet__hint">
                 (дата)
               </p>
@@ -356,27 +273,12 @@ function onNumberInput(event: Event) {
       <footer class="hunter-billet__footer">
         <div class="hunter-billet__issue">
           <span>Дата выдачи:</span>
-          <span>«</span>
-          <input
-            class="hunter-billet__issue-input hunter-billet__issue-input--day"
-            type="text"
-            inputmode="text"
-            maxlength="5"
-            :value="issueDay"
-            aria-label="День выдачи"
-            @input="onIssueDayInput"
-          >
-          <span>»</span>
-          <input
-            class="hunter-billet__issue-input hunter-billet__issue-input--year"
-            type="text"
-            inputmode="numeric"
-            maxlength="4"
-            :value="issueYear"
-            aria-label="Год выдачи"
-            @input="onIssueYearInput"
-          >
-          <span>г.</span>
+          <ProfileHunterBilletDateField
+            v-model="issueDate"
+            class="hunter-billet__issue-date"
+            inline
+            aria-label="Дата выдачи билета"
+          />
         </div>
       </footer>
     </div>
@@ -387,6 +289,8 @@ function onNumberInput(event: Event) {
 .hunter-billet {
   --hunter-billet-ink: #5c5c5c;
   --hunter-billet-line: #9a9a9a;
+  --hunter-billet-field-size: 16px;
+  --hunter-billet-field-weight: 600;
   width: 100%;
   max-width: 100%;
   margin-top: 20px;
@@ -470,27 +374,39 @@ function onNumberInput(event: Event) {
   align-items: baseline;
   gap: 6px;
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--hunter-billet-field-size);
+  font-weight: var(--hunter-billet-field-weight);
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+
+.hunter-billet__series-input,
+.hunter-billet__number-input,
+.hunter-billet__authority-input,
+.hunter-billet__value-input {
+  margin: 0;
+  border: none;
+  border-bottom: 1px solid var(--hunter-billet-line);
+  background: transparent;
+  color: var(--hunter-billet-ink);
+  font-family: 'Times New Roman', 'Liberation Serif', 'Noto Serif', Georgia, serif;
+  font-size: var(--hunter-billet-field-size);
+  font-weight: var(--hunter-billet-field-weight);
+  font-style: normal;
+  line-height: 1.25;
+  letter-spacing: normal;
+  text-align: center;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .hunter-billet__series-input {
   width: 2.4ch;
   min-width: 2.4ch;
   max-width: 2.4ch;
-  margin: 0;
   padding: 0 1px;
-  border: none;
-  border-bottom: 1px solid var(--hunter-billet-line);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-weight: 600;
   text-align: center;
-  line-height: 1.2;
-  outline: none;
   box-sizing: content-box;
 }
 
@@ -498,31 +414,26 @@ function onNumberInput(event: Event) {
   width: 7.4ch;
   min-width: 7.4ch;
   max-width: 7.4ch;
-  margin: 0;
   padding: 0 1px;
-  border: none;
-  border-bottom: 1px solid var(--hunter-billet-line);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-weight: 600;
   text-align: center;
-  line-height: 1.2;
-  outline: none;
   box-sizing: content-box;
 }
 
 .hunter-billet__series-input:focus,
-.hunter-billet__number-input:focus {
+.hunter-billet__number-input:focus,
+.hunter-billet__authority-input:focus,
+.hunter-billet__value-input:focus {
   border-bottom-color: var(--hunter-billet-line);
 }
 
-.hunter-billet__authority {
+.hunter-billet__authority-input {
+  display: block;
+  width: 100%;
   min-height: 1.35em;
-  margin: 20px 0 0;
-  border-bottom: 1px solid var(--hunter-billet-line);
-  font-size: 14px;
-  line-height: 1.2;
+  margin-top: 20px;
+  padding: 0 0 3px;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .hunter-billet__authority-hint,
@@ -531,6 +442,7 @@ function onNumberInput(event: Event) {
   color: #8a8a8a;
   font-size: 11px;
   font-style: italic;
+  font-weight: 400;
   line-height: 1.25;
   text-align: center;
 }
@@ -591,7 +503,7 @@ function onNumberInput(event: Event) {
 }
 
 .hunter-billet__field--date {
-  flex: 0 0 140px;
+  flex: 0 0 220px;
 }
 
 .hunter-billet__value {
@@ -599,8 +511,8 @@ function onNumberInput(event: Event) {
   margin: 0;
   padding-bottom: 3px;
   border-bottom: 1px solid var(--hunter-billet-line);
-  font-size: 17px;
-  font-weight: 600;
+  font-size: var(--hunter-billet-field-size);
+  font-weight: var(--hunter-billet-field-weight);
   line-height: 1.25;
   word-break: break-word;
 }
@@ -609,22 +521,8 @@ function onNumberInput(event: Event) {
   display: block;
   width: 100%;
   min-height: 1.35em;
-  margin: 0;
   padding: 0 0 3px;
-  border: none;
-  border-bottom: 1px solid var(--hunter-billet-line);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.25;
-  outline: none;
   box-sizing: border-box;
-}
-
-.hunter-billet__value-input:focus {
-  border-bottom-color: var(--hunter-billet-line);
 }
 
 .hunter-billet__value--muted {
@@ -638,14 +536,11 @@ function onNumberInput(event: Event) {
 }
 
 .hunter-billet__field--birthday {
-  flex: 0 0 120px;
+  flex: 0 0 220px;
 }
 
-.hunter-billet__field--birthday .hunter-billet__value-input {
-  text-align: center;
-}
-
-.hunter-billet__field--birthday .hunter-billet__hint {
+.hunter-billet__field--birthday .hunter-billet__hint,
+.hunter-billet__field--date .hunter-billet__hint {
   text-align: center;
 }
 
@@ -659,55 +554,28 @@ function onNumberInput(event: Event) {
   padding-right: 64px;
 }
 
+.hunter-billet__footer .hunter-billet__issue {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
 .hunter-billet__issue {
   display: inline-flex;
   align-items: baseline;
-  gap: 2px;
-  font-size: 14px;
-  line-height: 1.3;
-  text-align: right;
+  gap: 6px;
+  font-family: 'Times New Roman', 'Liberation Serif', 'Noto Serif', Georgia, serif;
+  font-size: var(--hunter-billet-field-size);
+  font-weight: var(--hunter-billet-field-weight);
+  font-style: normal;
+  line-height: 1.25;
   white-space: nowrap;
 }
 
-.hunter-billet__issue-input {
-  margin: 0;
-  padding: 0 1px 1px;
-  border: none;
-  border-bottom: 1px solid var(--hunter-billet-line);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-weight: 600;
-  text-align: center;
-  line-height: 1.2;
-  outline: none;
-  box-sizing: content-box;
-}
-
-.hunter-billet__issue-input--day {
-  width: 5.2ch;
-  min-width: 5.2ch;
-  max-width: 5.2ch;
-}
-
-.hunter-billet__issue-input--year {
-  width: 4.6ch;
-  min-width: 4.6ch;
-  max-width: 4.6ch;
-  margin-left: 8px;
-  padding-left: 0;
-  padding-right: 0;
-  border: none;
-  border-bottom: 1px solid var(--hunter-billet-line);
-  padding-bottom: 1px;
-}
-
-.hunter-billet__issue-input:focus {
-  border-bottom-color: var(--hunter-billet-line);
-}
-
-.hunter-billet__issue-input--year:focus {
-  border-bottom: 1px solid var(--hunter-billet-line);
+.hunter-billet__issue-date {
+  width: auto;
+  min-width: 0;
+  flex: 0 0 auto;
 }
 
 @media (max-width: 640px) {
@@ -731,11 +599,11 @@ function onNumberInput(event: Event) {
   }
 
   .hunter-billet__series {
-    font-size: 14px;
+    font-size: var(--hunter-billet-field-size);
   }
 
   .hunter-billet__value {
-    font-size: 15px;
+    font-size: var(--hunter-billet-field-size);
   }
 
   .hunter-billet__meta {
