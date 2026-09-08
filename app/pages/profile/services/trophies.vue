@@ -42,6 +42,7 @@ const selectedAnimalId = ref<number | null>(null)
 const isLoading = ref(true)
 const loadError = ref('')
 const busyKey = ref<string | null>(null)
+const collapsedSections = ref(new Set<TrophyCostEntityKind>())
 
 const selectedAnimal = computed(() =>
   animals.value.find(item => item.id === selectedAnimalId.value) ?? null,
@@ -161,6 +162,36 @@ function rowBusyKey(kind: TrophyCostEntityKind, id: number) {
 
 function isRowBusy(kind: TrophyCostEntityKind, id: number) {
   return busyKey.value === rowBusyKey(kind, id)
+}
+
+function isSectionCollapsed(section: TrophyCostEntityKind) {
+  return collapsedSections.value.has(section)
+}
+
+function toggleSection(section: TrophyCostEntityKind) {
+  const next = new Set(collapsedSections.value)
+
+  if (next.has(section)) {
+    next.delete(section)
+  }
+  else {
+    next.add(section)
+  }
+
+  collapsedSections.value = next
+}
+
+const sectionTitles: Record<TrophyCostEntityKind, string> = {
+  trophies: 'тип трофея',
+  fines: 'тип штрафов',
+  preparations: 'тип разделки',
+}
+
+function sectionToggleLabel(section: TrophyCostEntityKind) {
+  const title = sectionTitles[section]
+  return isSectionCollapsed(section)
+    ? `Развернуть ${title}`
+    : `Свернуть ${title}`
 }
 
 async function loadTrophyCost() {
@@ -316,139 +347,193 @@ onMounted(() => {
       </div>
 
       <div class="trophy-cost__content">
-        <div class="trophy-cost__table">
+        <div
+          class="trophy-cost__table"
+          :class="{ 'trophy-cost__table--collapsed': isSectionCollapsed('trophies') }"
+        >
           <div class="trophy-cost__head">
             <span class="trophy-cost__col trophy-cost__col--label">Тип трофея</span>
             <span class="trophy-cost__col trophy-cost__col--cost">Стоимость</span>
-            <span class="trophy-cost__col trophy-cost__col--actions" aria-hidden="true" />
+            <div class="trophy-cost__col trophy-cost__col--actions">
+              <button
+                type="button"
+                class="trophy-cost__toggle"
+                :class="{ 'trophy-cost__toggle--open': !isSectionCollapsed('trophies') }"
+                :aria-expanded="!isSectionCollapsed('trophies')"
+                :aria-label="sectionToggleLabel('trophies')"
+                @click="toggleSection('trophies')"
+              >
+                <svg class="trophy-cost__toggle-icon" viewBox="0 0 12 8" aria-hidden="true">
+                  <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <ul v-if="selectedAnimal?.trophies.length" class="trophy-cost__list">
-            <li
-              v-for="row in selectedAnimal.trophies"
-              :key="`trophy-${row.id}`"
-              class="trophy-cost__row"
-            >
-              <span class="trophy-cost__col trophy-cost__col--label">{{ row.label }}</span>
+          <template v-if="!isSectionCollapsed('trophies')">
+            <ul v-if="selectedAnimal?.trophies.length" class="trophy-cost__list">
+              <li
+                v-for="row in selectedAnimal.trophies"
+                :key="`trophy-${row.id}`"
+                class="trophy-cost__row"
+              >
+                <span class="trophy-cost__col trophy-cost__col--label">{{ row.label }}</span>
 
-              <label class="trophy-cost__col trophy-cost__col--cost">
-                <span class="visually-hidden">Стоимость: {{ row.label }}</span>
-                <CommonFormField
-                  no-margin
-                  amount-only
-                  placeholder="Введите цену"
-                  :model-value="row.cost"
-                  :disabled="isBusy"
-                  @update:model-value="row.cost = $event"
-                />
-              </label>
+                <label class="trophy-cost__col trophy-cost__col--cost">
+                  <span class="visually-hidden">Стоимость: {{ row.label }}</span>
+                  <CommonFormField
+                    no-margin
+                    amount-only
+                    placeholder="Введите цену"
+                    :model-value="row.cost"
+                    :disabled="isBusy"
+                    @update:model-value="row.cost = $event"
+                  />
+                </label>
 
-              <div class="trophy-cost__col trophy-cost__col--actions">
-                <button
-                  type="button"
-                  class="trophy-cost__btn"
-                  :disabled="isBusy"
-                  @click="savePrice('trophies', row)"
-                >
-                  {{ isRowBusy('trophies', row.id) ? 'Сохранение...' : 'Сохранить' }}
-                </button>
-              </div>
-            </li>
-          </ul>
+                <div class="trophy-cost__col trophy-cost__col--actions">
+                  <button
+                    type="button"
+                    class="trophy-cost__btn"
+                    :disabled="isBusy"
+                    @click="savePrice('trophies', row)"
+                  >
+                    {{ isRowBusy('trophies', row.id) ? 'Сохранение...' : 'Сохранить' }}
+                  </button>
+                </div>
+              </li>
+            </ul>
 
-          <p v-else class="trophy-cost__empty">
-            Для этого животного не настроены типы трофеев.
-          </p>
+            <p v-else class="trophy-cost__empty">
+              Для этого животного не настроены типы трофеев.
+            </p>
+          </template>
         </div>
 
-        <div class="trophy-cost__table">
+        <div
+          class="trophy-cost__table"
+          :class="{ 'trophy-cost__table--collapsed': isSectionCollapsed('fines') }"
+        >
           <div class="trophy-cost__head">
             <span class="trophy-cost__col trophy-cost__col--label">Тип штрафов</span>
             <span class="trophy-cost__col trophy-cost__col--cost">Стоимость</span>
-            <span class="trophy-cost__col trophy-cost__col--actions" aria-hidden="true" />
+            <div class="trophy-cost__col trophy-cost__col--actions">
+              <button
+                type="button"
+                class="trophy-cost__toggle"
+                :class="{ 'trophy-cost__toggle--open': !isSectionCollapsed('fines') }"
+                :aria-expanded="!isSectionCollapsed('fines')"
+                :aria-label="sectionToggleLabel('fines')"
+                @click="toggleSection('fines')"
+              >
+                <svg class="trophy-cost__toggle-icon" viewBox="0 0 12 8" aria-hidden="true">
+                  <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <ul v-if="selectedAnimal?.fines.length" class="trophy-cost__list">
-            <li
-              v-for="row in selectedAnimal.fines"
-              :key="`fine-${row.id}`"
-              class="trophy-cost__row"
-            >
-              <span class="trophy-cost__col trophy-cost__col--label">{{ row.label }}</span>
+          <template v-if="!isSectionCollapsed('fines')">
+            <ul v-if="selectedAnimal?.fines.length" class="trophy-cost__list">
+              <li
+                v-for="row in selectedAnimal.fines"
+                :key="`fine-${row.id}`"
+                class="trophy-cost__row"
+              >
+                <span class="trophy-cost__col trophy-cost__col--label">{{ row.label }}</span>
 
-              <label class="trophy-cost__col trophy-cost__col--cost">
-                <span class="visually-hidden">Стоимость: {{ row.label }}</span>
-                <CommonFormField
-                  no-margin
-                  amount-only
-                  placeholder="Введите цену"
-                  :model-value="row.cost"
-                  :disabled="isBusy"
-                  @update:model-value="row.cost = $event"
-                />
-              </label>
+                <label class="trophy-cost__col trophy-cost__col--cost">
+                  <span class="visually-hidden">Стоимость: {{ row.label }}</span>
+                  <CommonFormField
+                    no-margin
+                    amount-only
+                    placeholder="Введите цену"
+                    :model-value="row.cost"
+                    :disabled="isBusy"
+                    @update:model-value="row.cost = $event"
+                  />
+                </label>
 
-              <div class="trophy-cost__col trophy-cost__col--actions">
-                <button
-                  type="button"
-                  class="trophy-cost__btn"
-                  :disabled="isBusy"
-                  @click="savePrice('fines', row)"
-                >
-                  {{ isRowBusy('fines', row.id) ? 'Сохранение...' : 'Сохранить' }}
-                </button>
-              </div>
-            </li>
-          </ul>
+                <div class="trophy-cost__col trophy-cost__col--actions">
+                  <button
+                    type="button"
+                    class="trophy-cost__btn"
+                    :disabled="isBusy"
+                    @click="savePrice('fines', row)"
+                  >
+                    {{ isRowBusy('fines', row.id) ? 'Сохранение...' : 'Сохранить' }}
+                  </button>
+                </div>
+              </li>
+            </ul>
 
-          <p v-else class="trophy-cost__empty">
-            Для этого животного не настроены типы штрафов.
-          </p>
+            <p v-else class="trophy-cost__empty">
+              Для этого животного не настроены типы штрафов.
+            </p>
+          </template>
         </div>
 
-        <div class="trophy-cost__table">
+        <div
+          class="trophy-cost__table"
+          :class="{ 'trophy-cost__table--collapsed': isSectionCollapsed('preparations') }"
+        >
           <div class="trophy-cost__head">
             <span class="trophy-cost__col trophy-cost__col--label">Тип разделки</span>
             <span class="trophy-cost__col trophy-cost__col--cost">Стоимость</span>
-            <span class="trophy-cost__col trophy-cost__col--actions" aria-hidden="true" />
+            <div class="trophy-cost__col trophy-cost__col--actions">
+              <button
+                type="button"
+                class="trophy-cost__toggle"
+                :class="{ 'trophy-cost__toggle--open': !isSectionCollapsed('preparations') }"
+                :aria-expanded="!isSectionCollapsed('preparations')"
+                :aria-label="sectionToggleLabel('preparations')"
+                @click="toggleSection('preparations')"
+              >
+                <svg class="trophy-cost__toggle-icon" viewBox="0 0 12 8" aria-hidden="true">
+                  <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <ul v-if="selectedAnimal?.preparations.length" class="trophy-cost__list">
-            <li
-              v-for="row in selectedAnimal.preparations"
-              :key="`preparation-${row.id}`"
-              class="trophy-cost__row"
-            >
-              <span class="trophy-cost__col trophy-cost__col--label">{{ row.label }}</span>
+          <template v-if="!isSectionCollapsed('preparations')">
+            <ul v-if="selectedAnimal?.preparations.length" class="trophy-cost__list">
+              <li
+                v-for="row in selectedAnimal.preparations"
+                :key="`preparation-${row.id}`"
+                class="trophy-cost__row"
+              >
+                <span class="trophy-cost__col trophy-cost__col--label">{{ row.label }}</span>
 
-              <label class="trophy-cost__col trophy-cost__col--cost">
-                <span class="visually-hidden">Стоимость: {{ row.label }}</span>
-                <CommonFormField
-                  no-margin
-                  amount-only
-                  placeholder="Введите цену"
-                  :model-value="row.cost"
-                  :disabled="isBusy"
-                  @update:model-value="row.cost = $event"
-                />
-              </label>
+                <label class="trophy-cost__col trophy-cost__col--cost">
+                  <span class="visually-hidden">Стоимость: {{ row.label }}</span>
+                  <CommonFormField
+                    no-margin
+                    amount-only
+                    placeholder="Введите цену"
+                    :model-value="row.cost"
+                    :disabled="isBusy"
+                    @update:model-value="row.cost = $event"
+                  />
+                </label>
 
-              <div class="trophy-cost__col trophy-cost__col--actions">
-                <button
-                  type="button"
-                  class="trophy-cost__btn"
-                  :disabled="isBusy"
-                  @click="savePrice('preparations', row)"
-                >
-                  {{ isRowBusy('preparations', row.id) ? 'Сохранение...' : 'Сохранить' }}
-                </button>
-              </div>
-            </li>
-          </ul>
+                <div class="trophy-cost__col trophy-cost__col--actions">
+                  <button
+                    type="button"
+                    class="trophy-cost__btn"
+                    :disabled="isBusy"
+                    @click="savePrice('preparations', row)"
+                  >
+                    {{ isRowBusy('preparations', row.id) ? 'Сохранение...' : 'Сохранить' }}
+                  </button>
+                </div>
+              </li>
+            </ul>
 
-          <p v-else class="trophy-cost__empty">
-            Для этого животного не настроены типы разделки.
-          </p>
+            <p v-else class="trophy-cost__empty">
+              Для этого животного не настроены типы разделки.
+            </p>
+          </template>
         </div>
       </div>
     </section>
@@ -678,6 +763,39 @@ onMounted(() => {
   color: var(--wh-black-text, #1c211c);
 }
 
+.trophy-cost__table--collapsed .trophy-cost__head {
+  border-bottom: none;
+}
+
+.trophy-cost__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--wh-black-text, #1c211c);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.trophy-cost__toggle:hover {
+  background: rgb(28 33 28 / 8%);
+}
+
+.trophy-cost__toggle-icon {
+  width: 12px;
+  height: 8px;
+  transition: transform 0.2s ease;
+}
+
+.trophy-cost__toggle--open .trophy-cost__toggle-icon {
+  transform: rotate(180deg);
+}
+
 .trophy-cost__list {
   display: contents;
   margin: 0;
@@ -841,10 +959,22 @@ onMounted(() => {
 
   .trophy-cost__head {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr auto;
     grid-column: auto;
     gap: 10px;
     padding: 14px 16px;
+  }
+
+  .trophy-cost__head .trophy-cost__col--label {
+    grid-column: auto;
+  }
+
+  .trophy-cost__head .trophy-cost__col--cost {
+    display: none;
+  }
+
+  .trophy-cost__head .trophy-cost__col--actions {
+    display: flex;
   }
 
   .trophy-cost__row {
@@ -856,12 +986,7 @@ onMounted(() => {
     align-items: center;
   }
 
-  .trophy-cost__head .trophy-cost__col--cost,
-  .trophy-cost__head .trophy-cost__col--actions {
-    display: none;
-  }
-
-  .trophy-cost__col--label {
+  .trophy-cost__row .trophy-cost__col--label {
     grid-column: 1 / -1;
   }
 
