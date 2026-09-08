@@ -849,20 +849,26 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  min-height: 0;
   padding: 0 0 20px;
+  overflow: hidden;
 }
 
 .hunting-org__table {
   display: grid;
+  flex: 1 1 0;
   width: 100%;
   min-width: 0;
+  min-height: 0;
+  align-content: start;
   grid-template-columns:
     minmax(0, 1.15fr)
     minmax(0, 1.15fr)
     minmax(0, 0.85fr)
     minmax(190px, max-content);
   column-gap: clamp(8px, 1.2cqi, 12px);
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .hunting-org__head,
@@ -876,11 +882,15 @@ onBeforeUnmount(() => {
 }
 
 .hunting-org__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   border-bottom: 1px solid var(--wh-gray-200, #ddd);
   background: var(--wh-gray-450, #C8C8C8);
   font-size: 14px;
   font-weight: 600;
   color: var(--wh-black-text, #1c211c);
+  box-shadow: 0 1px 0 var(--wh-gray-200, #ddd);
 }
 
 .hunting-org__list {
@@ -1032,6 +1042,7 @@ onBeforeUnmount(() => {
 }
 
 .hunting-org__content :deep(.hunting-org__add) {
+  flex-shrink: 0;
   align-self: flex-start;
   margin-left: 16px;
   min-width: 0;
@@ -1094,6 +1105,7 @@ onBeforeUnmount(() => {
   .hunting-org__content {
     flex: 1 1 auto;
     min-width: 0;
+    min-height: 0;
   }
 }
 
@@ -1157,6 +1169,12 @@ onBeforeUnmount(() => {
 
   .hunting-org__content {
     min-width: 0;
+    overflow: visible;
+  }
+
+  .hunting-org__table {
+    flex: none;
+    overflow: visible;
   }
 }
 
@@ -1176,9 +1194,15 @@ onBeforeUnmount(() => {
     border-radius: 0;
   }
 
+  .hunting-org__content {
+    overflow: visible;
+  }
+
   .hunting-org__table {
+    flex: none;
     grid-template-columns: 1fr;
     column-gap: 0;
+    overflow: visible;
   }
 
   .hunting-org__list {
