@@ -133,8 +133,11 @@ watch(
     )
 
     if (isDefaultRange) {
-      filters.value.priceMin = bounds.min
-      filters.value.priceMax = bounds.max
+      filters.value = {
+        ...filters.value,
+        priceMin: bounds.min,
+        priceMax: bounds.max,
+      }
     }
   },
   { immediate: true },

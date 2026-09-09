@@ -2,13 +2,17 @@
 const props = withDefaults(defineProps<{
   boundMin?: number
   boundMax?: number
+  priceMin: number
+  priceMax: number
 }>(), {
   boundMin: 0,
   boundMax: 15000,
 })
 
-const priceMin = defineModel<number>('priceMin', { required: true })
-const priceMax = defineModel<number>('priceMax', { required: true })
+const emit = defineEmits<{
+  'update:priceMin': [value: number]
+  'update:priceMax': [value: number]
+}>()
 
 const minDraft = ref('')
 const maxDraft = ref('')
@@ -46,40 +50,30 @@ function parsePrice(raw: string) {
   return digits ? Number(digits) : 0
 }
 
-const rangeStyle = computed(() => {
+function toPercent(value: number) {
   const span = max.value - min.value || 1
-  const minPercent = ((priceMin.value - min.value) / span) * 100
-  const maxPercent = ((priceMax.value - min.value) / span) * 100
+  return Math.min(100, Math.max(0, ((value - min.value) / span) * 100))
+}
 
-  return {
-    background: `linear-gradient(
-      to right,
-      #e5e5e5 0%,
-      #e5e5e5 ${minPercent}%,
-      var(--wh-green) ${minPercent}%,
-      var(--wh-green) ${maxPercent}%,
-      #e5e5e5 ${maxPercent}%,
-      #e5e5e5 100%
-    )`,
-  }
-})
+const rangeStartPercent = computed(() => toPercent(props.priceMin))
+const rangeEndPercent = computed(() => toPercent(props.priceMax))
 
 function updateMin(value: number) {
-  priceMin.value = Math.min(Math.max(value, min.value), priceMax.value)
+  emit('update:priceMin', Math.min(Math.max(value, min.value), props.priceMax))
 }
 
 function updateMax(value: number) {
-  priceMax.value = Math.max(Math.min(value, max.value), priceMin.value)
+  emit('update:priceMax', Math.max(Math.min(value, max.value), props.priceMin))
 }
 
 function focusMin() {
   editingMin.value = true
-  minDraft.value = String(priceMin.value)
+  minDraft.value = String(props.priceMin)
 }
 
 function focusMax() {
   editingMax.value = true
-  maxDraft.value = String(priceMax.value)
+  maxDraft.value = String(props.priceMax)
 }
 
 function commitMin() {
@@ -120,7 +114,13 @@ const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
       >
     </div>
 
-    <div class="search-filters-price__range" :style="rangeStyle">
+    <div
+      class="search-filters-price__range"
+      :style="{
+        '--range-start': `${rangeStartPercent}%`,
+        '--range-end': `${rangeEndPercent}%`,
+      }"
+    >
       <input
         :key="`min-${sliderKey}`"
         :value="priceMin"
@@ -189,6 +189,15 @@ const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
   height: 4px;
   margin-inline: 4px;
   border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #e5e5e5 0%,
+    #e5e5e5 var(--range-start, 0%),
+    var(--wh-green) var(--range-start, 0%),
+    var(--wh-green) var(--range-end, 100%),
+    #e5e5e5 var(--range-end, 100%),
+    #e5e5e5 100%
+  );
 }
 
 .search-filters-price__slider {
