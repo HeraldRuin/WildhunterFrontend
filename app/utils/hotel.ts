@@ -369,7 +369,7 @@ export function formatHotelPrice(value: number) {
 }
 
 export function formatHotelPriceLabel(value: number) {
-  return `${formatHotelPrice(value)} руб`
+  return `${formatHotelPrice(value)} руб.`
 }
 
 export function toRelatedOffers(items: BookableItem[]) {
