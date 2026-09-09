@@ -55,17 +55,20 @@ function toPercent(value: number) {
   return Math.min(100, Math.max(0, ((value - min.value) / span) * 100))
 }
 
-const rangeStartPercent = computed(() => toPercent(props.priceMin))
-const rangeEndPercent = computed(() => toPercent(props.priceMax))
+const fillEl = ref<HTMLElement | null>(null)
 
-const fillStyle = computed(() => {
-  const start = rangeStartPercent.value
-  const end = rangeEndPercent.value
-
-  return {
-    left: `${start}%`,
-    width: `${Math.max(0, end - start)}%`,
+watchEffect(() => {
+  const el = fillEl.value
+  if (!el) {
+    return
   }
+
+  const start = toPercent(props.priceMin)
+  const end = toPercent(props.priceMax)
+
+  // Прямая запись: :style у absolute fill иногда не обновляет DOM.
+  el.style.left = `${start}%`
+  el.style.width = `${Math.max(0, end - start)}%`
 })
 
 function updateMin(value: number) {
@@ -126,8 +129,8 @@ const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
 
     <div class="search-filters-price__range">
       <div
+        ref="fillEl"
         class="search-filters-price__fill"
-        :style="fillStyle"
       />
       <input
         :key="`min-${sliderKey}`"
