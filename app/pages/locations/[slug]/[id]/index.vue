@@ -200,6 +200,7 @@ const hasActiveFilters = computed(() => {
     priceChanged
     || filters.value.ratings.length > 0
     || filters.value.amenities.length > 0
+    || filters.value.regions.length > 0
     || filters.value.hasMeals !== ''
     || filters.value.sort !== DEFAULT_SEARCH_FILTERS.sort
   )

@@ -14,6 +14,7 @@ function isSearchFiltersState(value: unknown): value is SearchFiltersState {
     && typeof candidate.priceMax === 'number'
     && Array.isArray(candidate.ratings)
     && Array.isArray(candidate.amenities)
+    && (candidate.regions === undefined || Array.isArray(candidate.regions))
     && (
       candidate.hasMeals === ''
       || candidate.hasMeals === 'yes'
@@ -46,6 +47,7 @@ function readStoredFilters(
       ...parsed,
       ratings: [...parsed.ratings],
       amenities: [...parsed.amenities],
+      regions: Array.isArray(parsed.regions) ? [...parsed.regions] : [],
     }
   }
   catch {

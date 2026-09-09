@@ -13,6 +13,7 @@ export const DEFAULT_SEARCH_FILTERS: SearchFiltersState = {
   priceMax: 15000,
   ratings: [],
   amenities: [],
+  regions: [],
   hasMeals: '',
 }
 

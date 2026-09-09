@@ -159,6 +159,7 @@ const hasActiveFilters = computed(() => {
     priceChanged
     || localFilters.value.ratings.length > 0
     || localFilters.value.amenities.length > 0
+    || localFilters.value.regions.length > 0
     || localFilters.value.hasMeals !== ''
     || localFilters.value.sort !== DEFAULT_SEARCH_FILTERS.sort
   )
@@ -499,6 +500,16 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
+        </SearchFiltersFilterSection>
+
+        <SearchFiltersFilterSection
+          class="search-filters__group"
+          title="Регион охоты (область)"
+        >
+          <SearchFiltersRegionFilter
+            :model-value="localFilters.regions"
+            @update:model-value="updateField('regions', $event)"
+          />
         </SearchFiltersFilterSection>
 
         <!-- <SearchFiltersFilterSection

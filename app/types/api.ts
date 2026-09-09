@@ -766,6 +766,8 @@ export interface SearchFiltersState {
   priceMax: number
   ratings: string[]
   amenities: string[]
+  /** ID локаций (областей) для фильтра «Регион охоты» */
+  regions: string[]
   hasMeals: '' | 'yes' | 'no'
 }
 
