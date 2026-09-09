@@ -246,7 +246,7 @@ async function handleFavoriteClick(event: MouseEvent) {
     <div class="offer-card__body">
       <div class="offer-card__row">
         <h3 class="offer-card__title">{{ item.title }}</h3>
-        <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽ / сутки</p>
+        <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽</p>
       </div>
       <div class="offer-card__meta">
         <p
