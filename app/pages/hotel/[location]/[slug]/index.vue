@@ -734,11 +734,7 @@ function handleRetryHotelLoad() {
 }
 
 .hotel-page__animals .hotel-page__animal-item {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
-  font-weight: 600;
+  color: color-mix(in srgb, var(--wh-orange-500) 75%, var(--wh-gray-600));
 }
 
 .hotel-page__animal-icon {
