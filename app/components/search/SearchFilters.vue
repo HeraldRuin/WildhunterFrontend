@@ -853,7 +853,9 @@ onBeforeUnmount(() => {
 
   .search-filters__shell {
     display: block;
+    width: 100%;
     height: auto;
+    max-height: none;
   }
 
   .search-filters__dots {
@@ -863,13 +865,18 @@ onBeforeUnmount(() => {
   .search-filters__panel {
     width: auto;
     max-width: none;
+    height: auto;
     max-height: none;
     overflow: visible;
     box-shadow: none;
   }
 
   .search-filters__body {
+    flex: none;
+    max-height: none;
     overflow: visible;
+    padding-right: 0;
+    scrollbar-gutter: auto;
   }
 }
 </style>

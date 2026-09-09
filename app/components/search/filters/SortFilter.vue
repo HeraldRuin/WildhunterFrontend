@@ -241,4 +241,16 @@ onUnmounted(() => {
 .search-filters-sort__option--active:focus-visible .search-filters-sort__option-dot {
   background-color: #ffffff;
 }
+
+@media (--wh-mobile) {
+  .search-filters-sort {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .search-filters-sort__control {
+    width: 100%;
+  }
+}
 </style>
