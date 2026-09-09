@@ -85,23 +85,15 @@ const isFavorite = computed(() => isHotelFavorite(props.item.id))
 const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
 
-const animalsPreview = computed(() => {
+const previewAnimals = computed(() => {
   const animals = props.item.animals ?? []
-  if (!animals.length) {
-    return ''
-  }
-
-  const titles = animals
-    .slice(0, 2)
-    .map(animal => animal.title.trim())
-    .filter(Boolean)
-
-  if (!titles.length) {
-    return ''
-  }
-
-  const text = animals.length > 2 ? `${titles.join(', ')}...` : titles.join(', ')
-  return `(${text})`
+  return animals
+    .map(animal => ({
+      id: animal.id,
+      title: animal.title.trim(),
+    }))
+    .filter(animal => animal.title)
+    .slice(0, 7)
 })
 
 onMounted(() => {
@@ -248,13 +240,26 @@ async function handleFavoriteClick(event: MouseEvent) {
         <h3 class="offer-card__title">{{ item.title }}</h3>
         <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽</p>
       </div>
-      <div class="offer-card__meta">
-        <p
-          class="offer-card__animals"
-          :class="{ 'offer-card__animals--empty': !animalsPreview }"
+      <div class="offer-card__animals">
+        <span class="offer-card__animals-label">Животные для охоты:</span>
+        <ul
+          v-if="previewAnimals.length"
+          class="offer-card__animals-list"
         >
-          {{ animalsPreview || 'нет животных для охоты' }}
-        </p>
+          <li
+            v-for="animal in previewAnimals"
+            :key="animal.id"
+            class="offer-card__animal-item"
+          >
+            {{ animal.title }}
+          </li>
+        </ul>
+        <span
+          v-else
+          class="offer-card__animals-empty"
+        >
+          нет животных для охоты
+        </span>
       </div>
       <div class="offer-card__footer">
         <span class="offer-card__more">подробнее</span>
@@ -427,7 +432,7 @@ async function handleFavoriteClick(event: MouseEvent) {
 .offer-card__title {
   margin: 0;
   font-family: "Inter", sans-serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 130%;
   letter-spacing: -0.05em;
@@ -446,28 +451,52 @@ async function handleFavoriteClick(event: MouseEvent) {
   white-space: nowrap;
 }
 
-.offer-card__meta {
+.offer-card__animals {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.offer-card__animals {
-  margin: 0;
-  flex-shrink: 0;
-  max-width: 100%;
+.offer-card__animals-label {
   font-family: "Inter", sans-serif;
   font-size: 12px;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 130%;
   letter-spacing: -0.05em;
-  text-align: right;
+  color: var(--wh-orange-500);
+}
+
+.offer-card__animals-list {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offer-card__animal-item {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 8px;
+  background: var(--wh-white);
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
   color: var(--wh-black-text);
 }
 
-.offer-card__animals--empty {
+.offer-card__animals-empty {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
   color: #e53935;
 }
 
@@ -484,7 +513,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   justify-content: center;
   padding: 8px 16px;
   border-radius: 999px;
-  background: var(--wh-orange-500);
+  background: var(--wh-green);
   font-family: "Inter", sans-serif;
   font-size: 13px;
   font-weight: 600;
@@ -494,7 +523,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   transition: background 0.15s ease;
 }
 
-.offer-card:hover .offer-card__more {
-  background: var(--wh-orange-600);
+.offer-card__more:hover {
+  background: color-mix(in srgb, var(--wh-green) 78%, white);
 }
 </style>
