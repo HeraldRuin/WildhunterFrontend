@@ -208,7 +208,7 @@ async function handleFavoriteClick() {
 }
 
 function handleBook() {
-  void navigateTo(`${getHotelPath(hotelParams.value.locationSlug, hotelParams.value.hotelSlug)}/confirmation`)
+  void navigateTo(`${getHotelPath(hotelParams.value.locationSlug, hotelParams.value.hotelSlug)}confirmation`)
 }
 
 function handleRetryHotelLoad() {

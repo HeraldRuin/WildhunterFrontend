@@ -8,7 +8,7 @@ export interface HotelSlugParams {
 }
 
 export function getHotelPath(locationSlug: string, hotelSlug: string) {
-  return `/hotel/${locationSlug}/${hotelSlug}`
+  return `/hotel/${locationSlug}/${hotelSlug}/`
 }
 
 const DEFAULT_GALLERY = [
