@@ -7,8 +7,6 @@ const PREVIEW_TERMS_LIMIT = 3
 const props = withDefaults(defineProps<{
   modelValue: SearchFiltersState
   mobileOpen?: boolean
-  /** Без внутренней прокрутки: блок растёт по контенту */
-  noScroll?: boolean
   /** Плавающая кнопка сброса (fixed); иначе — внизу блока фильтров */
   floatingReset?: boolean
   priceBoundMin?: number
@@ -16,7 +14,6 @@ const props = withDefaults(defineProps<{
   ratingCounts?: Record<string, number>
 }>(), {
   mobileOpen: false,
-  noScroll: false,
   floatingReset: false,
   priceBoundMin: 0,
   priceBoundMax: 15000,
@@ -57,14 +54,6 @@ function updateField<K extends keyof SearchFiltersState>(
   field: K,
   value: SearchFiltersState[K],
 ) {
-  if (props.noScroll) {
-    localFilters.value = {
-      ...localFilters.value,
-      [field]: value,
-    }
-    return
-  }
-
   const scrollTop = scrollEl.value?.scrollTop ?? 0
 
   localFilters.value = {
@@ -114,9 +103,7 @@ function toggleGroupExpand(groupId: number) {
     ...expandedGroups.value,
     [groupId]: !expandedGroups.value[groupId],
   }
-  if (!props.noScroll) {
-    scheduleListPagesUpdate()
-  }
+  scheduleListPagesUpdate()
 }
 
 function toggleAmenity(id: string) {
@@ -128,7 +115,7 @@ function toggleAmenity(id: string) {
 }
 
 function handleReset() {
-  const scrollTop = props.noScroll ? 0 : (scrollEl.value?.scrollTop ?? 0)
+  const scrollTop = scrollEl.value?.scrollTop ?? 0
 
   emit('update:modelValue', {
     ...DEFAULT_SEARCH_FILTERS,
@@ -136,10 +123,6 @@ function handleReset() {
     priceMax: props.priceBoundMax,
   })
   emit('reset')
-
-  if (props.noScroll) {
-    return
-  }
 
   void nextTick(() => {
     if (scrollEl.value) {
@@ -266,15 +249,13 @@ watch(
     expandedGroups,
   ],
   () => {
-    if (!props.noScroll) {
-      scheduleListPagesUpdate()
-    }
+    scheduleListPagesUpdate()
   },
   { deep: true },
 )
 
 watch(scrollEl, (el) => {
-  if (props.noScroll || !listResizeObserver) {
+  if (!listResizeObserver) {
     return
   }
 
@@ -290,41 +271,8 @@ watch(scrollEl, (el) => {
   }
 })
 
-watch(() => props.noScroll, (disabled) => {
-  if (disabled) {
-    listPageCount.value = 1
-    listPageIndex.value = 0
-    listResizeObserver?.disconnect()
-    window.removeEventListener('resize', scheduleListPagesUpdate)
-    return
-  }
-
-  window.addEventListener('resize', scheduleListPagesUpdate)
-
-  if (import.meta.client && typeof ResizeObserver !== 'undefined' && !listResizeObserver) {
-    listResizeObserver = new ResizeObserver(() => {
-      updateListPages()
-    })
-  }
-
-  scheduleListPagesUpdate()
-  void nextTick(() => {
-    if (scrollEl.value && listResizeObserver) {
-      listResizeObserver.observe(scrollEl.value)
-      const content = scrollEl.value.firstElementChild
-      if (content) {
-        listResizeObserver.observe(content)
-      }
-    }
-  })
-})
-
 onMounted(() => {
   void onAmenitiesOpen()
-
-  if (props.noScroll) {
-    return
-  }
 
   window.addEventListener('resize', scheduleListPagesUpdate)
 
@@ -361,13 +309,11 @@ onBeforeUnmount(() => {
     class="search-filters"
     :class="{
       'search-filters--mobile-open': mobileOpen,
-      'search-filters--no-scroll': noScroll,
     }"
     @click.self="closeMobile"
   >
     <div class="search-filters__shell">
       <div
-        v-if="!noScroll"
         class="search-filters__dots"
         :class="{ 'search-filters__dots--hidden': listPageCount <= 1 }"
         role="tablist"
@@ -435,8 +381,37 @@ onBeforeUnmount(() => {
 
         <SearchFiltersFilterSection
           class="search-filters__group"
+          title="Регион охоты (область)"
+        >
+          <SearchFiltersRegionFilter
+            :model-value="localFilters.regions"
+            @update:model-value="updateField('regions', $event)"
+          />
+        </SearchFiltersFilterSection>
+
+        <SearchFiltersFilterSection
+          class="search-filters__group"
+          title="Дичь"
+        >
+          <SearchFiltersAnimalFilter
+            :model-value="localFilters.animals"
+            @update:model-value="updateField('animals', $event)"
+          />
+        </SearchFiltersFilterSection>
+
+        <SearchFiltersFilterSection
+          class="search-filters__group"
+          title="Способ охоты"
+        >
+          <SearchFiltersHuntingMethodFilter
+            :model-value="localFilters.huntingMethods"
+            @update:model-value="updateField('huntingMethods', $event)"
+          />
+        </SearchFiltersFilterSection>
+
+        <SearchFiltersFilterSection
+          class="search-filters__group"
           title="Услуги на базе"
-          default-open
           @open="onAmenitiesOpen"
         >
           <div
@@ -502,36 +477,6 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-        </SearchFiltersFilterSection>
-
-        <SearchFiltersFilterSection
-          class="search-filters__group"
-          title="Регион охоты (область)"
-        >
-          <SearchFiltersRegionFilter
-            :model-value="localFilters.regions"
-            @update:model-value="updateField('regions', $event)"
-          />
-        </SearchFiltersFilterSection>
-
-        <SearchFiltersFilterSection
-          class="search-filters__group"
-          title="Дичь"
-        >
-          <SearchFiltersAnimalFilter
-            :model-value="localFilters.animals"
-            @update:model-value="updateField('animals', $event)"
-          />
-        </SearchFiltersFilterSection>
-
-        <SearchFiltersFilterSection
-          class="search-filters__group"
-          title="Способ охоты"
-        >
-          <SearchFiltersHuntingMethodFilter
-            :model-value="localFilters.huntingMethods"
-            @update:model-value="updateField('huntingMethods', $event)"
-          />
         </SearchFiltersFilterSection>
 
         <!-- <SearchFiltersFilterSection
@@ -869,7 +814,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--wh-orange-500);
   border-radius: 999px;
   background: var(--wh-white);
-  color: var(--wh-orange-500);
+  color: var(--wh-gray-900);
   font: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
@@ -895,22 +840,6 @@ onBeforeUnmount(() => {
     height: 100%;
     max-height: 100%;
     overflow: hidden;
-  }
-
-  .search-filters--no-scroll {
-    height: auto;
-    max-height: none;
-  }
-
-  .search-filters--no-scroll .search-filters__panel {
-    height: auto;
-    max-height: none;
-    overflow: visible;
-  }
-
-  .search-filters--no-scroll .search-filters__body {
-    flex: none;
-    overflow: visible;
   }
 }
 
@@ -946,20 +875,6 @@ onBeforeUnmount(() => {
     max-height: 100%;
     overflow: hidden;
     box-shadow: var(--wh-shadow);
-  }
-
-  .search-filters--no-scroll .search-filters__shell {
-    max-height: none;
-  }
-
-  .search-filters--no-scroll .search-filters__panel {
-    max-height: none;
-    overflow: visible;
-  }
-
-  .search-filters--no-scroll .search-filters__body {
-    flex: none;
-    overflow: visible;
   }
 
   :deep(.search-filters__modal-close) {
@@ -1031,7 +946,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--wh-orange-500);
   border-radius: 999px;
   background: var(--wh-white);
-  color: var(--wh-orange-500);
+  color: var(--wh-gray-900);
   font-family: inherit;
   font-size: 0.9375rem;
   font-weight: 600;

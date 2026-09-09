@@ -448,6 +448,7 @@ const breadcrumbs: BreadcrumbItem[] = [
           <SearchFilters
             v-model="filters"
             v-model:mobile-open="mobileFiltersOpen"
+            floating-reset
             :price-bound-min="priceBounds.min"
             :price-bound-max="priceBounds.max"
             :rating-counts="ratingCounts"
