@@ -86,6 +86,25 @@ const isFavorite = computed(() => isHotelFavorite(props.item.id))
 const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
 
+const animalsPreview = computed(() => {
+  const animals = props.item.animals ?? []
+  if (!animals.length) {
+    return ''
+  }
+
+  const titles = animals
+    .slice(0, 2)
+    .map(animal => animal.title.trim())
+    .filter(Boolean)
+
+  if (!titles.length) {
+    return ''
+  }
+
+  const text = animals.length > 2 ? `${titles.join(', ')}...` : titles.join(', ')
+  return `(${text})`
+})
+
 onMounted(() => {
   if (!isBaseAdmin.value && !isLoaded.value) {
     loadFavorites()
@@ -225,15 +244,32 @@ async function handleFavoriteClick(event: MouseEvent) {
         <h3 class="offer-card__title">{{ item.title }}</h3>
         <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽ / ночь</p>
       </div>
-      <p class="offer-card__location">{{ item.location }}</p>
+      <div class="offer-card__meta">
+        <p class="offer-card__location">{{ item.location }}</p>
+        <p
+          class="offer-card__animals"
+          :class="{ 'offer-card__animals--empty': !animalsPreview }"
+        >
+          {{ animalsPreview || 'нет животных для охоты' }}
+        </p>
+      </div>
+      <div class="offer-card__footer">
+        <span class="offer-card__more">подробнее</span>
+      </div>
     </div>
   </NuxtLink>
 </template>
 
 <style scoped>
 .offer-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
   color: inherit;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: var(--wh-radius);
+  background: #ffffff;
 }
 
 .offer-card__media {
@@ -241,7 +277,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   overflow: hidden;
   width: 100%;
   aspect-ratio: 288 / 300;
-  border-radius: var(--wh-radius);
+  border-radius: 0;
   background: var(--wh-gray-100);
 }
 
@@ -360,7 +396,10 @@ async function handleFavoriteClick(event: MouseEvent) {
 }
 
 .offer-card__body {
-  padding-top: 14px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 14px 16px 16px;
 }
 
 .offer-card__row {
@@ -393,12 +432,65 @@ async function handleFavoriteClick(event: MouseEvent) {
 }
 
 .offer-card__location {
-  margin: 6px 0 0;
+  margin: 0;
+  min-width: 0;
   font-family: "Inter", sans-serif;
   font-size: 16px;
   font-weight: 400;
   line-height: 130%;
   letter-spacing: -0.05em;
   color: var(--wh-black-text);
+}
+
+.offer-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.offer-card__animals {
+  margin: 0;
+  flex-shrink: 0;
+  max-width: 55%;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  text-align: right;
+  color: var(--wh-black-text);
+}
+
+.offer-card__animals--empty {
+  color: #e53935;
+}
+
+.offer-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.offer-card__more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--wh-orange-500);
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: #ffffff;
+  transition: background 0.15s ease;
+}
+
+.offer-card:hover .offer-card__more {
+  background: var(--wh-orange-600);
 }
 </style>

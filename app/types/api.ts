@@ -54,6 +54,7 @@ export interface OfferItem {
   is_featured?: boolean
   map_lat?: number
   map_lng?: number
+  animals?: Array<{ id: number, title: string }>
 }
 
 export interface BookableItem {
@@ -107,6 +108,7 @@ export interface HotelOffer {
   is_in_wishList?: boolean
   map_lat?: number | string | null
   map_lng?: number | string | null
+  animals?: Array<{ id: number, title: string }>
 }
 
 export interface HotelSearchPagination {

@@ -27,6 +27,14 @@ function parseCoord(value: number | string | null | undefined): number | undefin
 
 export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
   const price = Number(offer.price) || 0
+  const animals = Array.isArray(offer.animals)
+    ? offer.animals
+      .map((animal, index) => ({
+        id: Number(animal.id ?? index + 1),
+        title: String(animal.title ?? '').trim(),
+      }))
+      .filter(animal => animal.title && Number.isFinite(animal.id))
+    : []
 
   return {
     id: offer.id,
@@ -43,6 +51,7 @@ export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
     is_featured: Boolean(offer.is_featured),
     map_lat: parseCoord(offer.map_lat),
     map_lng: parseCoord(offer.map_lng),
+    animals,
   }
 }
 
