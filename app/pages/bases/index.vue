@@ -14,6 +14,7 @@ import {
   DEFAULT_SEARCH_FILTERS,
   matchesFoodFilter,
   matchesReviewRatingFilter,
+  sortOfferItems,
 } from '~/utils/search'
 
 definePageMeta({
@@ -245,7 +246,7 @@ const ratingCounts = computed(() => {
 })
 
 const filteredCatalogItems = computed(() => {
-  return searchResult.value.items.filter((item) => {
+  const filtered = searchResult.value.items.filter((item) => {
     if (isCatalogMode.value) {
       if (item.price < filters.value.priceMin || item.price > filters.value.priceMax) {
         return false
@@ -265,6 +266,12 @@ const filteredCatalogItems = computed(() => {
 
     return true
   })
+
+  if (isCatalogMode.value) {
+    return sortOfferItems(filtered, filters.value.sort)
+  }
+
+  return filtered
 })
 
 const totalPages = computed(() => {
@@ -504,7 +511,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 .bases-page__sort {
   flex-shrink: 0;
-  width: min(100%, 220px);
 }
 
 .bases-page__toolbar {

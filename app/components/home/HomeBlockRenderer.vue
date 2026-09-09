@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BookableItem, LocationItem } from '~/types/api'
+import { getLocationPath } from '~/utils/location'
 
 const props = defineProps<{
   block: {
@@ -78,7 +79,7 @@ const featuredItems = computed(() => (model.value.list_item as Array<Record<stri
         <NuxtLink
           v-for="location in locations"
           :key="location.id"
-          :to="`/locations/${location.id}`"
+          :to="getLocationPath(location.slug, location.id)"
           class="region-card"
         >
           <img

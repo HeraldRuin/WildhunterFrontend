@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { SearchSortOption } from '~/types/api'
+import { SEARCH_SORT_OPTIONS } from '~/utils/search'
 
 const model = defineModel<SearchSortOption>({ required: true })
 
-const options: Array<{ value: SearchSortOption, label: string }> = [
-  { value: 'recommended', label: 'Рекомендуемые' }
-]
+const options = SEARCH_SORT_OPTIONS
 
 const isOpen = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
@@ -50,58 +49,89 @@ onUnmounted(() => {
     class="search-filters-sort"
     :class="{ 'search-filters-sort--open': isOpen }"
   >
-    <button
-      id="search-sort"
-      type="button"
-      class="search-filters-sort__trigger"
-      :aria-expanded="isOpen"
-      aria-haspopup="listbox"
-      @click="toggle"
+    <label
+      class="search-filters-sort__label"
+      for="search-sort"
     >
-      <span class="search-filters-sort__value">{{ selectedLabel }}</span>
-      <svg class="search-filters-sort__chevron" viewBox="0 0 12 8" aria-hidden="true">
-        <path
-          d="M1 2 6 6.5 11 2"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
+      Сортировать по:
+    </label>
 
-    <ul
-      v-if="isOpen"
-      class="search-filters-sort__list"
-      role="listbox"
-      aria-label="Сортировка"
-      @mouseleave="hoveredValue = null"
-    >
-      <li v-for="option in options" :key="option.value">
-        <button
-          type="button"
-          class="search-filters-sort__option"
-          role="option"
-          :aria-selected="option.value === model"
-          :class="{
-            'search-filters-sort__option--active': option.value === model,
-            'search-filters-sort__option--hovered': hoveredValue === option.value,
-          }"
-          @mouseenter="hoveredValue = option.value"
-          @click="select(option.value)"
-        >
-          <span class="search-filters-sort__option-dot" aria-hidden="true" />
-          <span class="search-filters-sort__option-label">{{ option.label }}</span>
-        </button>
-      </li>
-    </ul>
+    <div class="search-filters-sort__control">
+      <button
+        id="search-sort"
+        type="button"
+        class="search-filters-sort__trigger"
+        :aria-expanded="isOpen"
+        aria-haspopup="listbox"
+        @click="toggle"
+      >
+        <span class="search-filters-sort__value">{{ selectedLabel }}</span>
+        <svg class="search-filters-sort__chevron" viewBox="0 0 12 8" aria-hidden="true">
+          <path
+            d="M1 2 6 6.5 11 2"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+
+      <ul
+        v-if="isOpen"
+        class="search-filters-sort__list"
+        role="listbox"
+        aria-label="Сортировка"
+        @mouseleave="hoveredValue = null"
+      >
+        <li v-for="option in options" :key="option.value">
+          <button
+            type="button"
+            class="search-filters-sort__option"
+            role="option"
+            :aria-selected="option.value === model"
+            :class="{
+              'search-filters-sort__option--active': option.value === model,
+              'search-filters-sort__option--hovered': hoveredValue === option.value,
+            }"
+            @mouseenter="hoveredValue = option.value"
+            @click="select(option.value)"
+          >
+            <span class="search-filters-sort__option-dot" aria-hidden="true" />
+            <span class="search-filters-sort__option-label">{{ option.label }}</span>
+          </button>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .search-filters-sort {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-filters-sort__label {
+  flex-shrink: 0;
+  margin: 0;
+  color: var(--wh-gray-600);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.search-filters-sort__control {
   position: relative;
+  flex: 0 0 auto;
+  width: 340px;
+  max-width: 100%;
 }
 
 .search-filters-sort__trigger {
@@ -146,9 +176,12 @@ onUnmounted(() => {
 .search-filters-sort__list {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
   right: 0;
+  left: auto;
   z-index: 50;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(100vw - 32px, 420px);
   margin: 0;
   padding: 6px 8px;
   list-style: none;
@@ -189,6 +222,7 @@ onUnmounted(() => {
 
 .search-filters-sort__option-label {
   min-width: 0;
+  white-space: nowrap;
 }
 
 .search-filters-sort__option:hover,

@@ -4,6 +4,7 @@ import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
 import { normalizeRichTextHtml } from '~/utils/html'
 import { createMockHotelDetail, getHotelPath } from '~/utils/hotel'
+import { getLocationMapPath, getLocationPath } from '~/utils/location'
 import { formatReviewsCount } from '~/utils/pluralize'
 import HotelBookingSection from '~/components/hotel/HotelBookingSection.vue'
 
@@ -66,7 +67,9 @@ const breadcrumbs = computed(() => {
   if (location?.name) {
     items.push({
       label: location.name,
-      ...(location.id ? { to: `/locations/${location.id}` } : {}),
+      ...(location.id
+        ? { to: getLocationPath(location.slug || hotelParams.value.locationSlug, location.id) }
+        : {}),
     })
   }
 
@@ -102,10 +105,11 @@ const reviewsLabel = computed(() => formatReviewsCount(reviewsCount.value))
 const mapLinkTo = computed(() => {
   const hotelId = hotel.value?.id ?? displayHotel.value.id
   const locationId = displayHotel.value.location?.id
+  const locationSlug = displayHotel.value.location?.slug || hotelParams.value.locationSlug
 
   if (locationId) {
     return {
-      path: `/locations/${locationId}/map`,
+      path: getLocationMapPath(locationSlug, locationId),
       query: hotelId ? { hotel: String(hotelId) } : undefined,
     }
   }

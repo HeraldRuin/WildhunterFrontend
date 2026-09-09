@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { getLocationPath } from '~/utils/location'
+
 defineProps<{
   regions: Array<{
     id: number
     title: string
+    slug: string
     image: string
   }>
 }>()
@@ -17,7 +20,7 @@ defineProps<{
         <NuxtLink
           v-for="region in regions"
           :key="region.id"
-          :to="`/locations/${region.id}`"
+          :to="getLocationPath(region.slug, region.id)"
           class="region-card"
         >
           <img :src="region.image" :alt="region.title" loading="lazy">

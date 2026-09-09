@@ -4,6 +4,7 @@ import type {
   HotelSearchPrice,
   OfferItem,
   SearchFiltersState,
+  SearchSortOption,
 } from '~/types/api'
 
 export const DEFAULT_SEARCH_FILTERS: SearchFiltersState = {
@@ -14,6 +15,13 @@ export const DEFAULT_SEARCH_FILTERS: SearchFiltersState = {
   amenities: [],
   hasMeals: '',
 }
+
+export const SEARCH_SORT_OPTIONS: Array<{ value: SearchSortOption, label: string }> = [
+  { value: 'recommended', label: 'Рекомендуемые' },
+  { value: 'price_asc', label: 'Стоимость (от низкой к высокой)' },
+  { value: 'price_desc', label: 'Стоимость (от высокой к низкой)' },
+  { value: 'rating', label: 'Рейтинг (от высокого к низкому)' },
+]
 
 export function toSearchTermIds(amenities: string[]): number[] {
   return amenities
@@ -85,7 +93,47 @@ export function buildHotelSearchBody(options: {
     body.term_ids = termIds
   }
 
+  if (options.filters.sort) {
+    body.sort = options.filters.sort
+  }
+
   return body
+}
+
+export function sortOfferItems<T extends Pick<OfferItem, 'id' | 'price' | 'rating'> & { is_featured?: boolean }>(
+  items: T[],
+  sort: SearchSortOption,
+): T[] {
+  const sorted = [...items]
+
+  sorted.sort((left, right) => {
+    switch (sort) {
+      case 'price_asc': {
+        const byPrice = left.price - right.price
+        return byPrice !== 0 ? byPrice : left.id - right.id
+      }
+      case 'price_desc': {
+        const byPrice = right.price - left.price
+        return byPrice !== 0 ? byPrice : right.id - left.id
+      }
+      case 'rating': {
+        const byRating = right.rating - left.rating
+        return byRating !== 0 ? byRating : right.id - left.id
+      }
+      case 'recommended': {
+        const leftFeatured = left.is_featured ? 1 : 0
+        const rightFeatured = right.is_featured ? 1 : 0
+        const byFeatured = rightFeatured - leftFeatured
+        return byFeatured !== 0 ? byFeatured : right.id - left.id
+      }
+      default: {
+        const _exhaustive: never = sort
+        return _exhaustive
+      }
+    }
+  })
+
+  return sorted
 }
 
 export const MOCK_SEARCH_ITEMS: BookableItem[] = [

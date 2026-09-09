@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { LocationItem, OfferItem, SearchFiltersState } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
+import { getLocationMapPath } from '~/utils/location'
 import {
   countOffersByReviewRating,
   DEFAULT_SEARCH_FILTERS,
   matchesFoodFilter,
   matchesReviewRatingFilter,
+  sortOfferItems,
 } from '~/utils/search'
 
 definePageMeta({
@@ -17,6 +19,7 @@ const route = useRoute()
 const { location: locationApi, hotels: hotelsApi } = useApi()
 
 const locationId = computed(() => Number(route.params.id))
+const locationSlug = computed(() => String(route.params.slug || ''))
 const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
 
 function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {
@@ -148,7 +151,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
 ])
 
 const filteredOffers = computed(() => {
-  return locationHotels.value.filter((item) => {
+  const filtered = locationHotels.value.filter((item) => {
     if (item.price < filters.value.priceMin || item.price > filters.value.priceMax) {
       return false
     }
@@ -166,6 +169,8 @@ const filteredOffers = computed(() => {
 
     return true
   })
+
+  return sortOfferItems(filtered, filters.value.sort)
 })
 
 const ratingCounts = computed(() => countOffersByReviewRating(
@@ -293,7 +298,7 @@ function handleFiltersReset() {
 
             <NuxtLink
               v-if="countReady"
-              :to="`/locations/${locationId}/map`"
+              :to="getLocationMapPath(locationSlug, locationId)"
               class="location-page__toolbar-link location-page__map-link"
             >
               Показать на карте
@@ -363,10 +368,11 @@ function handleFiltersReset() {
   padding: 80px 0 104px;
 }
 
-.location-page__results-inner {
+.location-page__results-inner.container {
   display: flex;
   flex-direction: column;
   gap: 28px;
+  width: min(100% - 32px, 1600px);
 }
 
 .location-page__top {
@@ -384,7 +390,6 @@ function handleFiltersReset() {
 
 .location-page__sort {
   flex-shrink: 0;
-  width: min(100%, 220px);
 }
 
 .location-page__toolbar {
@@ -493,7 +498,7 @@ function handleFiltersReset() {
 
 .location-page__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px 20px;
 }
 

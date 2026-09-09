@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { LocationItem, OfferItem } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
+import { getLocationPath } from '~/utils/location'
 import { offerToMapHotel, type MapHotelItem } from '~/utils/map'
 
 definePageMeta({
@@ -12,6 +13,7 @@ const route = useRoute()
 const { location: locationApi } = useApi()
 
 const locationId = computed(() => Number(route.params.id))
+const locationSlug = computed(() => String(route.params.slug || ''))
 
 const focusedHotelId = computed(() => {
   const raw = route.query.hotel
@@ -145,7 +147,9 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     { label: 'Главная', to: '/' },
     {
       label: name,
-      to: Number.isFinite(id) && id > 0 ? `/locations/${id}` : undefined,
+      to: Number.isFinite(id) && id > 0
+        ? getLocationPath(locationSlug.value, id)
+        : undefined,
     },
     { label: 'Карта' },
   ]

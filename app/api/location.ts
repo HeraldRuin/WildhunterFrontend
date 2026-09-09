@@ -16,6 +16,7 @@ export function mapLocationOfferToItem(location: LocationOffer): LocationItem {
   return {
     id: location.id,
     title: location.name,
+    slug: location.slug,
     image: location.image_url || DEFAULT_LOCATION_IMAGE,
     bases_count: location.hotel_count,
   }

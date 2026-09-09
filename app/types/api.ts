@@ -51,6 +51,7 @@ export interface OfferItem {
   reviews: number
   rating: number
   has_food?: boolean
+  is_featured?: boolean
   map_lat?: number
   map_lng?: number
 }
@@ -78,6 +79,7 @@ export interface BookableItem {
 export interface LocationItem {
   id: number
   title: string
+  slug?: string
   image: string
   bases_count: number
   content?: string
@@ -101,6 +103,7 @@ export interface HotelOffer {
   price?: number | string
   review_count?: number
   has_food?: boolean
+  is_featured?: boolean
   is_in_wishList?: boolean
   map_lat?: number | string | null
   map_lng?: number | string | null
@@ -202,6 +205,8 @@ export interface HotelSearchPrice {
   max?: number
 }
 
+export type SearchSortOption = 'recommended' | 'price_asc' | 'price_desc' | 'rating'
+
 export interface HotelSearchBody {
   location_id?: number
   animal_id?: number
@@ -212,6 +217,7 @@ export interface HotelSearchBody {
   term_ids?: number[]
   price?: HotelSearchPrice
   star_rate?: string[]
+  sort?: SearchSortOption
 }
 
 export interface HotelRoomAvailabilityRequest {
@@ -751,8 +757,6 @@ export interface SearchResultData {
 export interface SearchApiResponse extends ApiResponse<SearchResultData> {
   data: SearchResultData
 }
-
-export type SearchSortOption = 'recommended' | 'price_asc' | 'price_desc' | 'rating'
 
 export interface SearchFiltersState {
   sort: SearchSortOption
