@@ -85,7 +85,9 @@ const isFavorite = computed(() => isHotelFavorite(props.item.id))
 const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
 
-const previewAnimals = computed(() => {
+const ANIMALS_PREVIEW_LIMIT = 4
+
+const allAnimals = computed(() => {
   const animals = props.item.animals ?? []
   return animals
     .map(animal => ({
@@ -93,8 +95,10 @@ const previewAnimals = computed(() => {
       title: animal.title.trim(),
     }))
     .filter(animal => animal.title)
-    .slice(0, 7)
 })
+
+const previewAnimals = computed(() => allAnimals.value.slice(0, ANIMALS_PREVIEW_LIMIT))
+const hasMoreAnimals = computed(() => allAnimals.value.length > ANIMALS_PREVIEW_LIMIT)
 
 onMounted(() => {
   if (!isBaseAdmin.value && !isLoaded.value) {
@@ -252,6 +256,13 @@ async function handleFavoriteClick(event: MouseEvent) {
             class="offer-card__animal-item"
           >
             {{ animal.title }}
+          </li>
+          <li
+            v-if="hasMoreAnimals"
+            class="offer-card__animal-item offer-card__animal-item--more"
+            aria-hidden="true"
+          >
+            ...
           </li>
         </ul>
         <span
@@ -489,6 +500,13 @@ async function handleFavoriteClick(event: MouseEvent) {
   line-height: 1.35;
   letter-spacing: -0.02em;
   color: var(--wh-black-text);
+}
+
+.offer-card__animal-item--more {
+  padding: 4px 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .offer-card__animals-empty {
