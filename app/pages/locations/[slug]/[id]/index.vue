@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { LocationItem, OfferItem, SearchFiltersState } from '~/types/api'
+import type { LocationItem, OfferItem } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { getLocationMapPath } from '~/utils/location'
 import {
@@ -114,11 +114,14 @@ useHead(() => ({
     : 'Область — WH',
 }))
 
-const filters = ref<SearchFiltersState>({
-  ...DEFAULT_SEARCH_FILTERS,
-  priceMin: DEFAULT_PRICE_BOUNDS.min,
-  priceMax: DEFAULT_PRICE_BOUNDS.max,
-})
+const { filters, clearPersistedFilters } = usePersistedSearchFilters(
+  `location-search-filters-${locationId.value}`,
+  () => ({
+    ...DEFAULT_SEARCH_FILTERS,
+    priceMin: DEFAULT_PRICE_BOUNDS.min,
+    priceMax: DEFAULT_PRICE_BOUNDS.max,
+  }),
+)
 
 watch(
   priceBounds,
@@ -240,11 +243,11 @@ function handlePageChange(page: number) {
 
 function handleFiltersReset() {
   currentPage.value = 1
-  filters.value = {
+  clearPersistedFilters({
     ...DEFAULT_SEARCH_FILTERS,
     priceMin: priceBounds.value.min,
     priceMax: priceBounds.value.max,
-  }
+  })
 }
 </script>
 

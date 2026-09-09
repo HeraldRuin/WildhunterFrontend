@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { HotelSearchBody, OfferItem, SearchFiltersState } from '~/types/api'
+import type { HotelSearchBody, OfferItem } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { mapHotelOfferToItem } from '~/api/hotels'
 import {
@@ -66,11 +66,14 @@ const { data: priceBounds } = useAsyncData(
   },
 )
 
-const filters = ref<SearchFiltersState>({
-  ...DEFAULT_SEARCH_FILTERS,
-  priceMin: DEFAULT_PRICE_BOUNDS.min,
-  priceMax: DEFAULT_PRICE_BOUNDS.max,
-})
+const { filters, clearPersistedFilters } = usePersistedSearchFilters(
+  'bases-search-filters',
+  () => ({
+    ...DEFAULT_SEARCH_FILTERS,
+    priceMin: DEFAULT_PRICE_BOUNDS.min,
+    priceMax: DEFAULT_PRICE_BOUNDS.max,
+  }),
+)
 
 watch(
   priceBounds,
@@ -372,6 +375,11 @@ function handlePageChange(page: number) {
 
 function handleFiltersReset() {
   currentPage.value = 1
+  clearPersistedFilters({
+    ...DEFAULT_SEARCH_FILTERS,
+    priceMin: priceBounds.value.min,
+    priceMax: priceBounds.value.max,
+  })
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
