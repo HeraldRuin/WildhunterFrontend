@@ -3,8 +3,12 @@ const props = defineProps<{
   firstName?: string | null
   lastName?: string | null
   birthday?: string | null
-  avatar?: string | null
   billetNumber?: string | null
+  billetError?: string
+  savingBillet?: boolean
+  showBilletAction?: boolean
+  billetActionLabel?: string
+  billetSavingLabel?: string
 }>()
 
 const emit = defineEmits<{
@@ -12,6 +16,9 @@ const emit = defineEmits<{
   'update:firstName': [value: string]
   'update:lastName': [value: string]
   'update:birthday': [value: string]
+  'save-billet': []
+  'clear-billet-error': []
+  'billet-keydown': [event: KeyboardEvent]
 }>()
 
 function fullNameFromProps() {
@@ -35,8 +42,7 @@ watch(
   },
 )
 
-function onFullNameInput(event: Event) {
-  const value = (event.target as HTMLInputElement).value
+function onFullNameModelUpdate(value: string) {
   fullNameInput.value = value
 
   const trimmedStart = value.replace(/^\s+/, '')
@@ -55,7 +61,6 @@ function onFullNameInput(event: Event) {
 function parseBillet(value: string) {
   const trimmed = String(value ?? '').trim()
 
-  // Явный формат независимых полей: "12 № 0000739", " № 56", "12 №"
   const marked = trimmed.match(/^(\d{0,2})\s*№\s*(\d{0,7})$/)
   if (marked) {
     return {
@@ -64,7 +69,6 @@ function parseBillet(value: string) {
     }
   }
 
-  // Старый формат с пробелом: "12 0000739"
   const spaced = trimmed.match(/^(\d{1,2})\s+(\d{1,7})$/)
   if (spaced) {
     return {
@@ -73,7 +77,6 @@ function parseBillet(value: string) {
     }
   }
 
-  // Одни цифры без разделителя — это номер, не серия
   if (/^\d{1,7}$/.test(trimmed)) {
     return {
       series: '',
@@ -91,37 +94,27 @@ const seriesDigits = computed(() => parseBillet(String(props.billetNumber ?? '')
 
 const billetNumberPart = computed(() => parseBillet(String(props.billetNumber ?? '')).number)
 
-const avatarSrc = computed(() => {
-  const src = String(props.avatar ?? '').trim()
-  return src || null
-})
-
 const identityDocument = ref('')
 const issuingAuthority = ref('')
 const federationSubject = ref('')
-const federationDate = ref('')
-const documentIssueDate = ref('')
 const issueDate = ref('')
 
-function onBirthdayUpdate(value: string) {
-  emit('update:birthday', value)
+function onBilletNumberUpdate(value: string) {
+  emit('update:billetNumber', value)
+  emit('clear-billet-error')
 }
 
 function emitBillet(series: string, number: string) {
   emit('update:billetNumber', `${series} № ${number}`)
 }
 
-function onSeriesInput(event: Event) {
-  const target = event.target as HTMLInputElement
-  const nextSeries = target.value.replace(/\D/g, '').slice(0, 2)
-  target.value = nextSeries
+function onSeriesModelUpdate(value: string) {
+  const nextSeries = value.replace(/\D/g, '').slice(0, 2)
   emitBillet(nextSeries, billetNumberPart.value)
 }
 
-function onNumberInput(event: Event) {
-  const target = event.target as HTMLInputElement
-  const nextNumber = target.value.replace(/\D/g, '').slice(0, 7)
-  target.value = nextNumber
+function onNumberModelUpdate(value: string) {
+  const nextNumber = value.replace(/\D/g, '').slice(0, 7)
   emitBillet(seriesDigits.value, nextNumber)
 }
 </script>
@@ -132,141 +125,101 @@ function onNumberInput(event: Event) {
     aria-label="Превью охотничьего билета"
   >
     <div class="hunter-billet__frame">
-      <div
-        class="hunter-billet__watermark"
-        aria-hidden="true"
-      >
-        <img
-          src="/images/rf-coat-of-arms.svg"
-          alt=""
-          class="hunter-billet__watermark-img"
-        >
-      </div>
-
       <header class="hunter-billet__header">
-        <div class="hunter-billet__title-row">
-          <h2 class="hunter-billet__title">Охотничий билет</h2>
-          <p class="hunter-billet__series">
-            <span>серия</span>
-            <input
-              class="hunter-billet__series-input"
-              type="text"
-              inputmode="numeric"
-              maxlength="2"
-              :value="seriesDigits"
-              aria-label="Серия охотничьего билета"
-              @input="onSeriesInput"
-            >
-            <span>№</span>
-            <input
-              class="hunter-billet__number-input"
-              type="text"
-              inputmode="numeric"
-              maxlength="7"
-              :value="billetNumberPart"
-              aria-label="Номер охотничьего билета"
-              @input="onNumberInput"
-            >
-          </p>
-        </div>
-        <input
-          v-model="issuingAuthority"
-          class="hunter-billet__authority-input"
-          type="text"
-          aria-label="Наименование исполнительного органа, выдавшего охотничий билет"
-        >
-        <p class="hunter-billet__authority-hint">
-          (наименование исполнительного органа субъекта Российской Федерации, выдавшего охотничий билет)
-        </p>
+        <h2 class="hunter-billet__title">Охотничий билет</h2>
       </header>
 
-      <div class="hunter-billet__body">
-        <div class="hunter-billet__photo">
-          <img
-            v-if="avatarSrc"
-            :src="avatarSrc"
-            alt=""
-            class="hunter-billet__photo-img"
-          >
-          <span
-            v-else
-            class="hunter-billet__photo-placeholder"
-          >
-            Место для фото
-          </span>
+      <div class="hunter-billet__system">
+        <div class="hunter-billet__system-col hunter-billet__system-col--meta">
+          <div class="hunter-billet__top-fields">
+            <CommonFormField
+              no-margin
+              digits-only
+              :max-length="2"
+              label="Серия"
+              :model-value="seriesDigits"
+              placeholder="00"
+              @update:model-value="onSeriesModelUpdate"
+            />
+            <CommonFormField
+              no-margin
+              digits-only
+              :max-length="7"
+              label="Номер"
+              :model-value="billetNumberPart"
+              placeholder="0000000"
+              @update:model-value="onNumberModelUpdate"
+            />
+          </div>
+
+          <!--
+          <div class="hunter-billet__billet-row">
+            <CommonFormField
+              id="hunter-billet"
+              label="Номер охот. билета"
+              placeholder="Например, А-12345678"
+              no-margin
+              document-number-kind="billet"
+              :model-value="billetNumber ?? ''"
+              :error="billetError"
+              :disabled="savingBillet"
+              @update:model-value="onBilletNumberUpdate"
+              @keydown="emit('billet-keydown', $event)"
+            />
+            <CommonSpinner
+              v-if="savingBillet"
+              class="hunter-billet__billet-spinner"
+              variant="ring"
+              :size="18"
+              :label="billetSavingLabel || 'Сохранение номера билета'"
+            />
+            <button
+              v-else-if="showBilletAction"
+              type="button"
+              class="hunter-billet__billet-action"
+              @click="emit('save-billet')"
+            >
+              {{ billetActionLabel || 'Сохранить' }}
+            </button>
+          </div>
+          -->
+
+          <CommonFormField
+            no-margin
+            label="Исполнительный орган"
+            v-model="issuingAuthority"
+            placeholder="Наименование исполнительного органа"
+          />
+
+          <CommonFormField
+            no-margin
+            label="Субъект РФ"
+            v-model="federationSubject"
+            placeholder="Субъект Российской Федерации"
+          />
         </div>
 
-        <div class="hunter-billet__fields">
-          <div class="hunter-billet__meta hunter-billet__meta--name">
-            <div class="hunter-billet__field hunter-billet__field--grow">
-              <input
-                class="hunter-billet__value-input"
-                type="text"
-                :value="fullNameInput"
-                aria-label="Фамилия, имя, отчество охотника"
-                @input="onFullNameInput"
-              >
-              <p class="hunter-billet__hint">
-                (фамилия, имя, отчество (при наличии) охотника)
-              </p>
-            </div>
-            <div class="hunter-billet__field hunter-billet__field--birthday">
-              <ProfileHunterBilletDateField
-                :model-value="birthday ?? ''"
-                aria-label="Дата рождения"
-                @update:model-value="onBirthdayUpdate"
-              />
-              <p class="hunter-billet__hint">
-                (дата рождения)
-              </p>
-            </div>
-          </div>
-
-          <div class="hunter-billet__meta">
-            <div class="hunter-billet__field hunter-billet__field--grow">
-              <input
-                v-model="identityDocument"
-                class="hunter-billet__value-input"
-                type="text"
-                aria-label="Данные основного документа, удостоверяющего личность охотника"
-              >
-              <p class="hunter-billet__hint">
-                (данные основного документа, удостоверяющего личность охотника)
-              </p>
-            </div>
-            <div class="hunter-billet__field hunter-billet__field--birthday">
-              <ProfileHunterBilletDateField
-                v-model="documentIssueDate"
-                aria-label="Дата выдачи документа"
-              />
-              <p class="hunter-billet__hint">
-                (дата выдачи)
-              </p>
-            </div>
-          </div>
-
-          <div class="hunter-billet__meta">
-            <div class="hunter-billet__field hunter-billet__field--grow">
-              <input
-                v-model="federationSubject"
-                class="hunter-billet__value-input"
-                type="text"
-                aria-label="Субъект Российской Федерации"
-              >
-              <p class="hunter-billet__hint">
-                (субъект Российской Федерации)
-              </p>
-            </div>
-            <div class="hunter-billet__field hunter-billet__field--date">
-              <ProfileHunterBilletDateField
-                v-model="federationDate"
-                aria-label="Дата"
-              />
-              <p class="hunter-billet__hint">
-                (дата)
-              </p>
-            </div>
-          </div>
+        <div class="hunter-billet__system-col hunter-billet__system-col--user">
+          <CommonFormField
+            no-margin
+            label="ФИО"
+            :model-value="fullNameInput"
+            placeholder="Фамилия, имя, отчество"
+            @update:model-value="onFullNameModelUpdate"
+          />
+          <CommonFormField
+            no-margin
+            label="Дата рождения"
+            placeholder="дд.мм.гггг"
+            :model-value="birthday ?? ''"
+            @update:model-value="emit('update:birthday', $event)"
+          />
+          <CommonFormField
+            no-margin
+            label="Документ, удостоверяющий личность"
+            v-model="identityDocument"
+            placeholder="Серия и номер документа"
+          />
         </div>
       </div>
 
@@ -291,22 +244,24 @@ function onNumberInput(event: Event) {
   --hunter-billet-line: #9a9a9a;
   --hunter-billet-field-size: 16px;
   --hunter-billet-field-weight: 600;
+  --hunter-billet-doc-font: 'Times New Roman', 'Liberation Serif', 'Noto Serif', Georgia, serif;
   width: 100%;
   max-width: 100%;
-  margin-top: 20px;
-  color: var(--hunter-billet-ink);
-  font-family: 'Times New Roman', 'Liberation Serif', 'Noto Serif', Georgia, serif;
+  margin-top: 0;
 }
 
 .hunter-billet__frame {
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 440px;
+  min-height: 200px;
+  height: auto;
   padding: 18px 22px 16px;
   border: none;
   outline: 1px solid var(--hunter-billet-line);
   outline-offset: 3px;
+  color: var(--hunter-billet-ink);
+  font-family: var(--hunter-billet-doc-font);
   background:
     repeating-linear-gradient(
       115deg,
@@ -320,48 +275,24 @@ function onNumberInput(event: Event) {
     ),
     linear-gradient(180deg, #f4f6f2 0%, #eef2ec 100%);
   box-sizing: border-box;
-  overflow: hidden;
-}
-
-.hunter-billet__watermark {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.hunter-billet__watermark-img {
-  width: min(72%, 380px);
-  height: auto;
-  opacity: 0.08;
-  user-select: none;
 }
 
 .hunter-billet__header,
-.hunter-billet__body,
+.hunter-billet__system,
 .hunter-billet__footer {
   position: relative;
   z-index: 1;
 }
 
 .hunter-billet__header {
-  margin-bottom: 28px;
+  margin-bottom: 20px;
   text-align: center;
-}
-
-.hunter-billet__title-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px 24px;
 }
 
 .hunter-billet__title {
   margin: 0;
+  color: var(--hunter-billet-ink);
+  font-family: var(--hunter-billet-doc-font);
   font-size: 24px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -369,179 +300,73 @@ function onNumberInput(event: Event) {
   line-height: 1.15;
 }
 
-.hunter-billet__series {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  margin: 0;
-  font-size: var(--hunter-billet-field-size);
-  font-weight: var(--hunter-billet-field-weight);
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.hunter-billet__series-input,
-.hunter-billet__number-input,
-.hunter-billet__authority-input,
-.hunter-billet__value-input {
-  margin: 0;
-  border: none;
-  border-bottom: 1px solid var(--hunter-billet-line);
-  background: transparent;
-  color: var(--hunter-billet-ink);
-  font-family: 'Times New Roman', 'Liberation Serif', 'Noto Serif', Georgia, serif;
-  font-size: var(--hunter-billet-field-size);
-  font-weight: var(--hunter-billet-field-weight);
-  font-style: normal;
-  line-height: 1.25;
-  letter-spacing: normal;
-  text-align: center;
-  outline: none;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.hunter-billet__series-input {
-  width: 2.4ch;
-  min-width: 2.4ch;
-  max-width: 2.4ch;
-  padding: 0 1px;
-  text-align: center;
-  box-sizing: content-box;
-}
-
-.hunter-billet__number-input {
-  width: 7.4ch;
-  min-width: 7.4ch;
-  max-width: 7.4ch;
-  padding: 0 1px;
-  text-align: center;
-  box-sizing: content-box;
-}
-
-.hunter-billet__series-input:focus,
-.hunter-billet__number-input:focus,
-.hunter-billet__authority-input:focus,
-.hunter-billet__value-input:focus {
-  border-bottom-color: var(--hunter-billet-line);
-}
-
-.hunter-billet__authority-input {
-  display: block;
-  width: 100%;
-  min-height: 1.35em;
-  margin-top: 20px;
-  padding: 0 0 3px;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-.hunter-billet__authority-hint,
-.hunter-billet__hint {
-  margin: 3px 0 0;
-  color: #8a8a8a;
-  font-size: 11px;
-  font-style: italic;
-  font-weight: 400;
-  line-height: 1.25;
-  text-align: center;
-}
-
-.hunter-billet__body {
+.hunter-billet__top-fields {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
-  flex: 1 1 auto;
-  min-height: 0;
-  margin-bottom: 18px;
-}
-
-.hunter-billet__photo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 180px;
-  height: 208px;
-  border: 1px solid var(--hunter-billet-line);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.55);
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.hunter-billet__photo-img {
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 12px;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: inherit;
+  min-width: 0;
 }
 
-.hunter-billet__photo-placeholder {
-  padding: 8px;
-  color: #8a8a8a;
-  font-size: 13px;
-  font-style: italic;
-  text-align: center;
-  line-height: 1.3;
+.hunter-billet__system {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px 24px;
+  align-items: start;
+  width: 100%;
+  margin-bottom: 24px;
+  min-width: 0;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  color: var(--wh-gray-900);
 }
 
-.hunter-billet__fields {
+.hunter-billet__system-col {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  min-width: 0;
-  padding-top: 6px;
-}
-
-.hunter-billet__field {
+  gap: 14px;
   min-width: 0;
 }
 
-.hunter-billet__field--grow {
-  flex: 1 1 auto;
-}
-
-.hunter-billet__field--date {
-  flex: 0 0 220px;
-}
-
-.hunter-billet__value {
-  min-height: 1.35em;
-  margin: 0;
-  padding-bottom: 3px;
-  border-bottom: 1px solid var(--hunter-billet-line);
-  font-size: var(--hunter-billet-field-size);
-  font-weight: var(--hunter-billet-field-weight);
-  line-height: 1.25;
-  word-break: break-word;
-}
-
-.hunter-billet__value-input {
-  display: block;
+.hunter-billet__system :deep(.form-field) {
   width: 100%;
-  min-height: 1.35em;
-  padding: 0 0 3px;
-  box-sizing: border-box;
+  max-width: 100%;
 }
 
-.hunter-billet__value--muted {
-  font-weight: 400;
-}
-
-.hunter-billet__meta {
+.hunter-billet__billet-row {
   display: flex;
-  gap: 16px;
   align-items: flex-end;
+  gap: 16px;
+  width: 100%;
 }
 
-.hunter-billet__field--birthday {
-  flex: 0 0 220px;
+.hunter-billet__billet-row :deep(.form-field) {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.hunter-billet__field--birthday .hunter-billet__hint,
-.hunter-billet__field--date .hunter-billet__hint {
-  text-align: center;
+.hunter-billet__billet-action {
+  flex-shrink: 0;
+  margin-bottom: 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--wh-orange-text);
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 120%;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.hunter-billet__billet-action:hover {
+  color: var(--wh-orange-600);
+}
+
+.hunter-billet__billet-spinner {
+  flex-shrink: 0;
+  margin-bottom: 14px;
+  margin-left: 8px;
 }
 
 .hunter-billet__footer {
@@ -552,22 +377,15 @@ function onNumberInput(event: Event) {
   margin-top: auto;
   margin-bottom: 12px;
   padding-right: 64px;
-}
-
-.hunter-billet__footer .hunter-billet__issue {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
+  font-family: var(--hunter-billet-doc-font);
 }
 
 .hunter-billet__issue {
   display: inline-flex;
   align-items: baseline;
   gap: 6px;
-  font-family: 'Times New Roman', 'Liberation Serif', 'Noto Serif', Georgia, serif;
   font-size: var(--hunter-billet-field-size);
   font-weight: var(--hunter-billet-field-weight);
-  font-style: normal;
   line-height: 1.25;
   white-space: nowrap;
 }
@@ -579,41 +397,20 @@ function onNumberInput(event: Event) {
 }
 
 @media (max-width: 640px) {
-  .hunter-billet__frame {
-    height: auto;
-    min-height: 440px;
-    padding: 14px 14px 12px;
-  }
-
-  .hunter-billet__body {
+  .hunter-billet__system {
     grid-template-columns: 1fr;
   }
 
-  .hunter-billet__photo {
-    width: 112px;
-    height: 148px;
+  .hunter-billet__frame {
+    padding: 14px 14px 12px;
   }
 
   .hunter-billet__title {
     font-size: 18px;
   }
 
-  .hunter-billet__series {
-    font-size: var(--hunter-billet-field-size);
-  }
-
-  .hunter-billet__value {
-    font-size: var(--hunter-billet-field-size);
-  }
-
-  .hunter-billet__meta {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .hunter-billet__field--date,
-  .hunter-billet__field--birthday {
-    flex-basis: auto;
+  .hunter-billet__billet-row {
+    flex-wrap: wrap;
   }
 }
 </style>

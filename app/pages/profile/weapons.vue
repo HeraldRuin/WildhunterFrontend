@@ -920,56 +920,27 @@ const hasNewWeapon = computed(() =>
     >
       <div class="weapons-form__body">
         <div class="weapons-form__billet">
-          <!--
-          <div
-            v-if="profile"
-            class="weapons-form__billet-row"
-          >
-            <CommonFormField
-              id="hunter-billet"
-              label="Номер охот. билета"
-              placeholder="Например, А-12345678"
-              no-margin
-              document-number-kind="billet"
-              v-model="profile.hunter_billet_number"
-              :error="getFieldError('hunter_billet_number')"
-              :disabled="savingHunterBillet"
-              @update:model-value="clearFieldError('hunter_billet_number')"
-              @keydown="onHunterBilletKeydown"
-            />
-            <CommonSpinner
-              v-if="savingHunterBillet"
-              class="weapons-form__billet-spinner"
-              variant="ring"
-              :size="18"
-              :label="hunterBilletSnapshot ? 'Обновление номера билета' : 'Сохранение номера билета'"
-            />
-            <button
-              v-else-if="showHunterBilletAction"
-              type="button"
-              class="weapons-form__billet-action"
-              @click="saveHunterBillet"
-            >
-              {{ hunterBilletActionLabel }}
-            </button>
-          </div>
-          <CommonFormField
-            v-else
-            label="Номер охот. билета"
-            placeholder="Введите номер охотничьего билета"
-            no-margin
-            model-value=""
-            readonly
-          />
-          -->
-
           <ProfileHunterBilletPreview
             v-if="profile"
             v-model:first-name="profile.first_name"
             v-model:last-name="profile.last_name"
             v-model:birthday="profile.birthday"
-            :avatar="profile.avatar"
             v-model:billet-number="profile.hunter_billet_number"
+            :billet-error="getFieldError('hunter_billet_number')"
+            :saving-billet="savingHunterBillet"
+            :show-billet-action="showHunterBilletAction"
+            :billet-action-label="hunterBilletActionLabel"
+            :billet-saving-label="hunterBilletSnapshot ? 'Обновление номера билета' : 'Сохранение номера билета'"
+            @save-billet="saveHunterBillet"
+            @clear-billet-error="clearFieldError('hunter_billet_number')"
+            @billet-keydown="onHunterBilletKeydown"
+          />
+          <CommonFormField
+            v-else
+            placeholder="Введите номер охотничьего билета"
+            no-margin
+            model-value=""
+            readonly
           />
         </div>
 
