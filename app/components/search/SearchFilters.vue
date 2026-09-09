@@ -9,12 +9,15 @@ const props = withDefaults(defineProps<{
   mobileOpen?: boolean
   /** Без внутренней прокрутки: блок растёт по контенту */
   noScroll?: boolean
+  /** Плавающая кнопка сброса (fixed); иначе — внизу блока фильтров */
+  floatingReset?: boolean
   priceBoundMin?: number
   priceBoundMax?: number
   ratingCounts?: Record<string, number>
 }>(), {
   mobileOpen: false,
   noScroll: false,
+  floatingReset: false,
   priceBoundMin: 0,
   priceBoundMax: 15000,
   ratingCounts: () => ({}),
@@ -530,12 +533,24 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
+        <div
+          v-if="hasActiveFilters && !floatingReset"
+          class="search-filters__reset-bar"
+        >
+          <button
+            type="button"
+            class="search-filters__reset"
+            @click="handleReset"
+          >
+            Сбросить фильтры
+          </button>
+        </div>
       </div>
     </div>
 
     <Teleport to="body">
       <button
-        v-if="hasActiveFilters"
+        v-if="hasActiveFilters && floatingReset"
         type="button"
         class="search-filters-fab"
         @click="handleReset"
@@ -620,9 +635,13 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding-right: 10px;
-  scrollbar-gutter: stable;
   overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.search-filters__body::-webkit-scrollbar {
+  display: none;
 }
 
 .search-filters__content {
@@ -797,6 +816,36 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
+.search-filters__reset-bar {
+  flex-shrink: 0;
+  margin-top: auto;
+  margin-inline: -24px;
+  margin-bottom: -24px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #bfbfbf;
+  background: var(--wh-white);
+  border-radius: 0 0 var(--wh-radius-lg) var(--wh-radius-lg);
+}
+
+.search-filters__reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--wh-orange-500);
+  border-radius: 999px;
+  background: var(--wh-white);
+  color: var(--wh-orange-500);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-filters__reset:hover {
+  background: color-mix(in srgb, var(--wh-orange-500) 8%, var(--wh-white));
+}
 
 @media (--wh-desktop) {
   .search-filters {
@@ -829,8 +878,6 @@ onBeforeUnmount(() => {
   .search-filters--no-scroll .search-filters__body {
     flex: none;
     overflow: visible;
-    padding-right: 0;
-    scrollbar-gutter: auto;
   }
 }
 
@@ -880,8 +927,6 @@ onBeforeUnmount(() => {
   .search-filters--no-scroll .search-filters__body {
     flex: none;
     overflow: visible;
-    padding-right: 0;
-    scrollbar-gutter: auto;
   }
 
   :deep(.search-filters__modal-close) {
@@ -934,8 +979,6 @@ onBeforeUnmount(() => {
     flex: none;
     max-height: none;
     overflow: visible;
-    padding-right: 0;
-    scrollbar-gutter: auto;
   }
 }
 </style>
@@ -944,7 +987,7 @@ onBeforeUnmount(() => {
 /* Teleport to body — без scoped, иначе fixed-стили могут не примениться */
 .search-filters-fab {
   position: fixed;
-  right: max(24px, env(safe-area-inset-right, 0px));
+  left: max(24px, env(safe-area-inset-left, 0px));
   bottom: max(24px, env(safe-area-inset-bottom, 0px));
   z-index: 1000;
   display: inline-flex;
@@ -970,7 +1013,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 640px) {
   .search-filters-fab {
-    right: max(12px, env(safe-area-inset-right, 0px));
+    left: max(12px, env(safe-area-inset-left, 0px));
     bottom: max(16px, env(safe-area-inset-bottom, 0px));
     min-width: 0;
     padding-inline: 16px;
