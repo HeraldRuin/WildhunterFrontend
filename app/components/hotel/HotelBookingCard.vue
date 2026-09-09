@@ -20,7 +20,7 @@ function handleBook() {
     <div class="hotel-booking__price-row">
       <p class="hotel-booking__price">
         {{ formatHotelPrice(hotel.sale_price ?? hotel.price) }} ₽
-        <span>/ ночь</span>
+        <span>/ сутки</span>
       </p>
     </div>
 

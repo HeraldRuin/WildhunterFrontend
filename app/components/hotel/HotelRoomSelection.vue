@@ -151,14 +151,10 @@ function nightsLabel(count: number) {
   const mod100 = count % 100
 
   if (mod10 === 1 && mod100 !== 11) {
-    return `${count} ночь`
+    return `${count} сутки`
   }
 
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
-    return `${count} ночи`
-  }
-
-  return `${count} ночей`
+  return `${count} суток`
 }
 
 function quantityOptions(max: number, price: number) {
