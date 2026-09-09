@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import type { LocationItem, OfferItem } from '~/types/api'
+import type { HotelSearchBody, LocationItem, OfferItem } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
+import { formatApiDate, getDefaultStayCheckIn, getDefaultStayCheckOut } from '~/utils/date'
 import { getLocationMapPath } from '~/utils/location'
 import {
   countOffersByReviewRating,
   DEFAULT_SEARCH_FILTERS,
+  matchesAnimalsFilter,
   matchesFoodFilter,
   matchesReviewRatingFilter,
   sortOfferItems,
+  toSearchTermIds,
 } from '~/utils/search'
 
 definePageMeta({
@@ -16,7 +19,7 @@ definePageMeta({
 })
 
 const route = useRoute()
-const { location: locationApi, hotels: hotelsApi } = useApi()
+const { location: locationApi, hotels: hotelsApi, search: searchApi } = useApi()
 
 const locationId = computed(() => Number(route.params.id))
 const locationSlug = computed(() => String(route.params.slug || ''))
@@ -32,6 +35,85 @@ const { data: homeLocations } = useNuxtData<LocationItem[]>('home-location-offer
 const cachedLocationName = computed(() => {
   return homeLocations.value?.find(item => item.id === locationId.value)?.title ?? ''
 })
+
+const { data: priceBounds } = useAsyncData(
+  'hotel-price-range',
+  () => hotelsApi.getPriceRangeBounds(),
+  {
+    lazy: true,
+    default: () => ({ ...DEFAULT_PRICE_BOUNDS }),
+    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
+  },
+)
+
+const { filters, clearPersistedFilters } = usePersistedSearchFilters(
+  `location-search-filters-${locationId.value}`,
+  () => ({
+    ...DEFAULT_SEARCH_FILTERS,
+    priceMin: DEFAULT_PRICE_BOUNDS.min,
+    priceMax: DEFAULT_PRICE_BOUNDS.max,
+  }),
+)
+
+watch(
+  priceBounds,
+  (bounds) => {
+    if (!bounds) {
+      return
+    }
+
+    const isDefaultRange = (
+      filters.value.priceMin === DEFAULT_PRICE_BOUNDS.min
+      && filters.value.priceMax === DEFAULT_PRICE_BOUNDS.max
+    )
+
+    if (isDefaultRange) {
+      filters.value = {
+        ...filters.value,
+        priceMin: bounds.min,
+        priceMax: bounds.max,
+      }
+    }
+  },
+  { immediate: true },
+)
+
+async function fetchAmenityMatchedHotelIds(
+  id: number,
+  amenities: string[],
+): Promise<Set<number>> {
+  const termIds = toSearchTermIds(amenities)
+
+  if (!termIds.length) {
+    return new Set()
+  }
+
+  const body: HotelSearchBody = {
+    location_id: id,
+    check_in: formatApiDate(getDefaultStayCheckIn()),
+    check_out: formatApiDate(getDefaultStayCheckOut()),
+    term_ids: termIds,
+  }
+
+  const first = await searchApi.searchHotels(1, body)
+
+  if (!first.success) {
+    return new Set()
+  }
+
+  const ids = first.data.items.map(item => item.id)
+  const lastPage = Math.max(1, first.data.pagination.last_page)
+
+  for (let page = 2; page <= lastPage; page += 1) {
+    const response = await searchApi.searchHotels(page, body)
+
+    if (response.success) {
+      ids.push(...response.data.items.map(item => item.id))
+    }
+  }
+
+  return new Set(ids)
+}
 
 const { data: locationHotels, pending: hotelsPending } = useAsyncData(
   () => `location-hotels-${route.params.id}`,
@@ -53,6 +135,63 @@ const { data: locationHotels, pending: hotelsPending } = useAsyncData(
     watch: [locationId],
     getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
   },
+)
+
+const amenityMatchedHotelIds = ref<Set<number> | null>(null)
+const amenitiesPending = ref(false)
+let amenityLoadId = 0
+
+watch(
+  () => [locationId.value, filters.value.amenities] as const,
+  async ([id, amenities]) => {
+    if (!amenities.length) {
+      amenityMatchedHotelIds.value = null
+      amenitiesPending.value = false
+      return
+    }
+
+    if (!Number.isFinite(id) || id <= 0) {
+      amenityMatchedHotelIds.value = new Set()
+      return
+    }
+
+    const loadId = ++amenityLoadId
+    amenityMatchedHotelIds.value = new Set()
+    amenitiesPending.value = true
+
+    try {
+      const ids = await fetchAmenityMatchedHotelIds(id, amenities)
+
+      if (loadId === amenityLoadId) {
+        amenityMatchedHotelIds.value = ids
+      }
+    }
+    catch {
+      if (loadId === amenityLoadId) {
+        amenityMatchedHotelIds.value = new Set()
+      }
+    }
+    finally {
+      if (loadId === amenityLoadId) {
+        amenitiesPending.value = false
+      }
+    }
+  },
+  { immediate: true, deep: true },
+)
+
+const isResultsPending = computed(() => hotelsPending.value || amenitiesPending.value)
+
+const mobileFiltersOpen = ref(false)
+const currentPage = ref(Number(route.query.page) || 1)
+const perPage = 6
+
+watch(
+  filters,
+  () => {
+    currentPage.value = 1
+  },
+  { deep: true },
 )
 
 const { data: fetchedLocationName } = useAsyncData(
@@ -98,57 +237,11 @@ const locationName = computed(() => {
   return fetchedLocationName.value || ''
 })
 
-const { data: priceBounds } = useAsyncData(
-  'hotel-price-range',
-  () => hotelsApi.getPriceRangeBounds(),
-  {
-    lazy: true,
-    default: () => ({ ...DEFAULT_PRICE_BOUNDS }),
-    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
-  },
-)
-
 useHead(() => ({
   title: locationName.value
     ? `${locationName.value} — WH`
     : 'Область — WH',
 }))
-
-const { filters, clearPersistedFilters } = usePersistedSearchFilters(
-  `location-search-filters-${locationId.value}`,
-  () => ({
-    ...DEFAULT_SEARCH_FILTERS,
-    priceMin: DEFAULT_PRICE_BOUNDS.min,
-    priceMax: DEFAULT_PRICE_BOUNDS.max,
-  }),
-)
-
-watch(
-  priceBounds,
-  (bounds) => {
-    if (!bounds) {
-      return
-    }
-
-    const isDefaultRange = (
-      filters.value.priceMin === DEFAULT_PRICE_BOUNDS.min
-      && filters.value.priceMax === DEFAULT_PRICE_BOUNDS.max
-    )
-
-    if (isDefaultRange) {
-      filters.value = {
-        ...filters.value,
-        priceMin: bounds.min,
-        priceMax: bounds.max,
-      }
-    }
-  },
-  { immediate: true },
-)
-
-const mobileFiltersOpen = ref(false)
-const currentPage = ref(Number(route.query.page) || 1)
-const perPage = 6
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
   { label: 'Главная', to: '/' },
@@ -158,6 +251,10 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
 
 const filteredOffers = computed(() => {
   const filtered = locationHotels.value.filter((item) => {
+    if (amenityMatchedHotelIds.value && !amenityMatchedHotelIds.value.has(item.id)) {
+      return false
+    }
+
     if (item.price < filters.value.priceMin || item.price > filters.value.priceMax) {
       return false
     }
@@ -170,6 +267,10 @@ const filteredOffers = computed(() => {
     }
 
     if (!matchesFoodFilter(item.has_food, filters.value.hasMeals)) {
+      return false
+    }
+
+    if (!matchesAnimalsFilter(item.animals, filters.value.animals)) {
       return false
     }
 
@@ -187,7 +288,7 @@ const ratingCounts = computed(() => countOffersByReviewRating(
 
 const totalCount = computed(() => filteredOffers.value.length)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / perPage)))
-const countReady = computed(() => !hotelsPending.value && totalCount.value > 0)
+const countReady = computed(() => !isResultsPending.value && totalCount.value > 0)
 
 const hasActiveFilters = computed(() => {
   const bounds = priceBounds.value
@@ -327,7 +428,7 @@ function handleFiltersReset() {
 
           <div class="location-page__main">
             <div
-              v-if="hotelsPending && !locationHotels.length"
+              v-if="isResultsPending"
               class="location-page__state location-page__state--loading"
             >
               <CommonSpinner

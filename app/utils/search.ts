@@ -277,6 +277,18 @@ export function matchesReviewRatingFilter(score: number, selected: string[]): bo
   })
 }
 
+export function matchesAnimalsFilter(
+  animals: Array<{ id: number }> | undefined,
+  selected: string[],
+): boolean {
+  if (!selected.length) {
+    return true
+  }
+
+  const ids = new Set((animals ?? []).map(animal => String(animal.id)))
+  return selected.some(id => ids.has(id))
+}
+
 export function matchesFoodFilter(
   hasFood: boolean | undefined,
   hasMeals: SearchFiltersState['hasMeals'],
