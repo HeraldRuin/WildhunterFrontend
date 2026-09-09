@@ -7,11 +7,14 @@ const PREVIEW_TERMS_LIMIT = 3
 const props = withDefaults(defineProps<{
   modelValue: SearchFiltersState
   mobileOpen?: boolean
+  /** Без внутренней прокрутки: блок растёт по контенту */
+  noScroll?: boolean
   priceBoundMin?: number
   priceBoundMax?: number
   ratingCounts?: Record<string, number>
 }>(), {
   mobileOpen: false,
+  noScroll: false,
   priceBoundMin: 0,
   priceBoundMax: 15000,
   ratingCounts: () => ({}),
@@ -51,6 +54,14 @@ function updateField<K extends keyof SearchFiltersState>(
   field: K,
   value: SearchFiltersState[K],
 ) {
+  if (props.noScroll) {
+    localFilters.value = {
+      ...localFilters.value,
+      [field]: value,
+    }
+    return
+  }
+
   const scrollTop = scrollEl.value?.scrollTop ?? 0
 
   localFilters.value = {
@@ -100,7 +111,9 @@ function toggleGroupExpand(groupId: number) {
     ...expandedGroups.value,
     [groupId]: !expandedGroups.value[groupId],
   }
-  scheduleListPagesUpdate()
+  if (!props.noScroll) {
+    scheduleListPagesUpdate()
+  }
 }
 
 function toggleAmenity(id: string) {
@@ -112,7 +125,7 @@ function toggleAmenity(id: string) {
 }
 
 function handleReset() {
-  const scrollTop = scrollEl.value?.scrollTop ?? 0
+  const scrollTop = props.noScroll ? 0 : (scrollEl.value?.scrollTop ?? 0)
 
   emit('update:modelValue', {
     ...DEFAULT_SEARCH_FILTERS,
@@ -120,6 +133,10 @@ function handleReset() {
     priceMax: props.priceBoundMax,
   })
   emit('reset')
+
+  if (props.noScroll) {
+    return
+  }
 
   void nextTick(() => {
     if (scrollEl.value) {
@@ -243,13 +260,15 @@ watch(
     expandedGroups,
   ],
   () => {
-    scheduleListPagesUpdate()
+    if (!props.noScroll) {
+      scheduleListPagesUpdate()
+    }
   },
   { deep: true },
 )
 
 watch(scrollEl, (el) => {
-  if (!listResizeObserver) {
+  if (props.noScroll || !listResizeObserver) {
     return
   }
 
@@ -265,8 +284,41 @@ watch(scrollEl, (el) => {
   }
 })
 
+watch(() => props.noScroll, (disabled) => {
+  if (disabled) {
+    listPageCount.value = 1
+    listPageIndex.value = 0
+    listResizeObserver?.disconnect()
+    window.removeEventListener('resize', scheduleListPagesUpdate)
+    return
+  }
+
+  window.addEventListener('resize', scheduleListPagesUpdate)
+
+  if (import.meta.client && typeof ResizeObserver !== 'undefined' && !listResizeObserver) {
+    listResizeObserver = new ResizeObserver(() => {
+      updateListPages()
+    })
+  }
+
+  scheduleListPagesUpdate()
+  void nextTick(() => {
+    if (scrollEl.value && listResizeObserver) {
+      listResizeObserver.observe(scrollEl.value)
+      const content = scrollEl.value.firstElementChild
+      if (content) {
+        listResizeObserver.observe(content)
+      }
+    }
+  })
+})
+
 onMounted(() => {
   void onAmenitiesOpen()
+
+  if (props.noScroll) {
+    return
+  }
 
   window.addEventListener('resize', scheduleListPagesUpdate)
 
@@ -301,11 +353,15 @@ onBeforeUnmount(() => {
 <template>
   <aside
     class="search-filters"
-    :class="{ 'search-filters--mobile-open': mobileOpen }"
+    :class="{
+      'search-filters--mobile-open': mobileOpen,
+      'search-filters--no-scroll': noScroll,
+    }"
     @click.self="closeMobile"
   >
     <div class="search-filters__shell">
       <div
+        v-if="!noScroll"
         class="search-filters__dots"
         :class="{ 'search-filters__dots--hidden': listPageCount <= 1 }"
         role="tablist"
@@ -474,20 +530,19 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-      <div
-        v-if="hasActiveFilters"
-        class="search-filters__reset-bar"
-      >
-        <button
-          type="button"
-          class="search-filters__reset"
-          @click="handleReset"
-        >
-          Сбросить фильтры
-        </button>
-      </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <button
+        v-if="hasActiveFilters"
+        type="button"
+        class="search-filters-fab"
+        @click="handleReset"
+      >
+        Сбросить фильтры
+      </button>
+    </Teleport>
   </aside>
 </template>
 
@@ -742,36 +797,6 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
-.search-filters__reset-bar {
-  flex-shrink: 0;
-  margin-top: auto;
-  margin-inline: -24px;
-  margin-bottom: -24px;
-  padding: 16px 24px 24px;
-  border-top: 1px solid #bfbfbf;
-  background: var(--wh-white);
-  border-radius: 0 0 var(--wh-radius-lg) var(--wh-radius-lg);
-}
-
-.search-filters__reset {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--wh-orange-500);
-  border-radius: 999px;
-  background: var(--wh-white);
-  color: var(--wh-orange-500);
-  font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.search-filters__reset:hover {
-  background: color-mix(in srgb, var(--wh-orange-500) 8%, var(--wh-white));
-}
 
 @media (--wh-desktop) {
   .search-filters {
@@ -788,6 +813,24 @@ onBeforeUnmount(() => {
     height: 100%;
     max-height: 100%;
     overflow: hidden;
+  }
+
+  .search-filters--no-scroll {
+    height: auto;
+    max-height: none;
+  }
+
+  .search-filters--no-scroll .search-filters__panel {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .search-filters--no-scroll .search-filters__body {
+    flex: none;
+    overflow: visible;
+    padding-right: 0;
+    scrollbar-gutter: auto;
   }
 }
 
@@ -823,6 +866,22 @@ onBeforeUnmount(() => {
     max-height: 100%;
     overflow: hidden;
     box-shadow: var(--wh-shadow);
+  }
+
+  .search-filters--no-scroll .search-filters__shell {
+    max-height: none;
+  }
+
+  .search-filters--no-scroll .search-filters__panel {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .search-filters--no-scroll .search-filters__body {
+    flex: none;
+    overflow: visible;
+    padding-right: 0;
+    scrollbar-gutter: auto;
   }
 
   :deep(.search-filters__modal-close) {
@@ -877,6 +936,44 @@ onBeforeUnmount(() => {
     overflow: visible;
     padding-right: 0;
     scrollbar-gutter: auto;
+  }
+}
+</style>
+
+<style>
+/* Teleport to body — без scoped, иначе fixed-стили могут не примениться */
+.search-filters-fab {
+  position: fixed;
+  right: max(24px, env(safe-area-inset-right, 0px));
+  bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+  padding: 12px 20px;
+  border: 1px solid var(--wh-orange-500);
+  border-radius: 999px;
+  background: var(--wh-white);
+  color: var(--wh-orange-500);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.2);
+}
+
+.search-filters-fab:hover {
+  background: color-mix(in srgb, var(--wh-orange-500) 8%, var(--wh-white));
+}
+
+@media (max-width: 640px) {
+  .search-filters-fab {
+    right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    min-width: 0;
+    padding-inline: 16px;
   }
 }
 </style>
