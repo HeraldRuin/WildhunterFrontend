@@ -9,7 +9,6 @@ import {
 } from '~/utils/date'
 import { formatHotelPrice, getHotelPath } from '~/utils/hotel'
 import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
-import { formatReviewsCount } from '~/utils/pluralize'
 
 const props = defineProps<{
   item: OfferItem
@@ -230,22 +229,26 @@ async function handleFavoriteClick(event: MouseEvent) {
           />
         </svg>
       </button>
-      <div v-if="item.reviews > 0 || item.rating > 0" class="offer-card__rating">
-        <span class="offer-card__reviews">{{ formatReviewsCount(item.reviews) }}</span>
-        <template v-if="item.rating > 0">
+      <div
+        v-if="item.location || item.rating > 0"
+        class="offer-card__rating"
+      >
+        <div v-if="item.rating > 0" class="offer-card__score-row">
           <span class="offer-card__star">★</span>
           <span class="offer-card__score">{{ item.rating.toFixed(1).replace('.', ',') }}</span>
-        </template>
+        </div>
+        <p v-if="item.location" class="offer-card__location-badge">
+          {{ item.location }}
+        </p>
       </div>
     </div>
 
     <div class="offer-card__body">
       <div class="offer-card__row">
         <h3 class="offer-card__title">{{ item.title }}</h3>
-        <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽ / ночь</p>
+        <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽ / сутки</p>
       </div>
       <div class="offer-card__meta">
-        <p class="offer-card__location">{{ item.location }}</p>
         <p
           class="offer-card__animals"
           :class="{ 'offer-card__animals--empty': !animalsPreview }"
@@ -364,25 +367,24 @@ async function handleFavoriteClick(event: MouseEvent) {
   position: absolute;
   right: 14px;
   bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: calc(100% - 28px);
+}
+
+.offer-card__score-row {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0;
-}
-
-.offer-card__reviews {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.2;
-  letter-spacing: -0.05em;
-  color: rgb(255 255 255 / 80%);
-  text-shadow: 0 1px 3px rgb(0 0 0 / 35%);
 }
 
 .offer-card__star {
   color: #f2c100;
   font-size: 0.875rem;
+  line-height: 1.3;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 35%);
 }
 
 .offer-card__score {
@@ -392,6 +394,19 @@ async function handleFavoriteClick(event: MouseEvent) {
   line-height: 1.3;
   letter-spacing: -0.05em;
   color: #ffffff;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+}
+
+.offer-card__location-badge {
+  margin: 0;
+  max-width: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.05em;
+  text-align: right;
+  color: rgb(255 255 255 / 90%);
   text-shadow: 0 1px 3px rgb(0 0 0 / 35%);
 }
 
@@ -431,21 +446,10 @@ async function handleFavoriteClick(event: MouseEvent) {
   white-space: nowrap;
 }
 
-.offer-card__location {
-  margin: 0;
-  min-width: 0;
-  font-family: "Inter", sans-serif;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 130%;
-  letter-spacing: -0.05em;
-  color: var(--wh-black-text);
-}
-
 .offer-card__meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   margin-top: 6px;
 }
@@ -453,7 +457,7 @@ async function handleFavoriteClick(event: MouseEvent) {
 .offer-card__animals {
   margin: 0;
   flex-shrink: 0;
-  max-width: 55%;
+  max-width: 100%;
   font-family: "Inter", sans-serif;
   font-size: 12px;
   font-weight: 400;
