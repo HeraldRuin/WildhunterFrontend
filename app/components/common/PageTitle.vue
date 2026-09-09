@@ -60,6 +60,7 @@ onBeforeUnmount(() => {
       <slot />
     </h1>
 
+    <!-- временно скрыт значок справки
     <div
       ref="helpWrapRef"
       class="page-title__help"
@@ -89,6 +90,7 @@ onBeforeUnmount(() => {
         </p>
       </div>
     </div>
+    -->
   </div>
 </template>
 

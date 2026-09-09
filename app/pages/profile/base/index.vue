@@ -154,7 +154,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <p v-else class="base-hotels__empty">Нет отелей</p>
+      <p v-else class="base-hotels__empty">У вас нет ни одной закрепленной базы</p>
     </div>
 
     <CommonConfirmModal />
