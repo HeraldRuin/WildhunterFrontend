@@ -14,8 +14,17 @@ export const DEFAULT_SEARCH_FILTERS: SearchFiltersState = {
   ratings: [],
   amenities: [],
   regions: [],
+  animals: [],
+  huntingMethods: [],
   hasMeals: '',
 }
+
+export const HUNTING_METHOD_OPTIONS: Array<{ value: string, label: string }> = [
+  { value: 'driven', label: 'Загонная' },
+  { value: 'approach', label: 'С подхода' },
+  { value: 'tower', label: 'С вышки' },
+  { value: 'enclosure', label: 'Вольерная' },
+]
 
 export const SEARCH_SORT_OPTIONS: Array<{ value: SearchSortOption, label: string }> = [
   { value: 'recommended', label: 'Рекомендуемые' },

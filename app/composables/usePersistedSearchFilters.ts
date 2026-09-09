@@ -15,6 +15,8 @@ function isSearchFiltersState(value: unknown): value is SearchFiltersState {
     && Array.isArray(candidate.ratings)
     && Array.isArray(candidate.amenities)
     && (candidate.regions === undefined || Array.isArray(candidate.regions))
+    && (candidate.animals === undefined || Array.isArray(candidate.animals))
+    && (candidate.huntingMethods === undefined || Array.isArray(candidate.huntingMethods))
     && (
       candidate.hasMeals === ''
       || candidate.hasMeals === 'yes'
@@ -48,6 +50,8 @@ function readStoredFilters(
       ratings: [...parsed.ratings],
       amenities: [...parsed.amenities],
       regions: Array.isArray(parsed.regions) ? [...parsed.regions] : [],
+      animals: Array.isArray(parsed.animals) ? [...parsed.animals] : [],
+      huntingMethods: Array.isArray(parsed.huntingMethods) ? [...parsed.huntingMethods] : [],
     }
   }
   catch {

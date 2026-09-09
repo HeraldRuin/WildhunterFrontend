@@ -160,6 +160,8 @@ const hasActiveFilters = computed(() => {
     || localFilters.value.ratings.length > 0
     || localFilters.value.amenities.length > 0
     || localFilters.value.regions.length > 0
+    || localFilters.value.animals.length > 0
+    || localFilters.value.huntingMethods.length > 0
     || localFilters.value.hasMeals !== ''
     || localFilters.value.sort !== DEFAULT_SEARCH_FILTERS.sort
   )
@@ -509,6 +511,26 @@ onBeforeUnmount(() => {
           <SearchFiltersRegionFilter
             :model-value="localFilters.regions"
             @update:model-value="updateField('regions', $event)"
+          />
+        </SearchFiltersFilterSection>
+
+        <SearchFiltersFilterSection
+          class="search-filters__group"
+          title="Дичь"
+        >
+          <SearchFiltersAnimalFilter
+            :model-value="localFilters.animals"
+            @update:model-value="updateField('animals', $event)"
+          />
+        </SearchFiltersFilterSection>
+
+        <SearchFiltersFilterSection
+          class="search-filters__group"
+          title="Способ охоты"
+        >
+          <SearchFiltersHuntingMethodFilter
+            :model-value="localFilters.huntingMethods"
+            @update:model-value="updateField('huntingMethods', $event)"
           />
         </SearchFiltersFilterSection>
 

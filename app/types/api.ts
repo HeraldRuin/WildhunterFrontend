@@ -768,6 +768,10 @@ export interface SearchFiltersState {
   amenities: string[]
   /** ID локаций (областей) для фильтра «Регион охоты» */
   regions: string[]
+  /** ID животных для фильтра «Дичь» */
+  animals: string[]
+  /** Значения фильтра «Способ охоты» */
+  huntingMethods: string[]
   hasMeals: '' | 'yes' | 'no'
 }
 
