@@ -95,6 +95,32 @@ function parseTerms(raw: unknown): HotelTermGroup[] {
   }).filter(group => group.terms.length)
 }
 
+function parseAnimalPeriods(raw: unknown): HotelAnimalItem['periods'] {
+  if (!Array.isArray(raw)) {
+    return undefined
+  }
+
+  const periods = raw.map((item, index) => {
+    const period = item as Record<string, unknown>
+    const startDate = String(period.start_date ?? '').trim()
+    const endDate = String(period.end_date ?? '').trim()
+    const price = Number(period.price)
+
+    if (!startDate || !endDate || !Number.isFinite(price)) {
+      return null
+    }
+
+    return {
+      id: Number(period.id ?? index + 1),
+      start_date: startDate,
+      end_date: endDate,
+      price,
+    }
+  }).filter((period): period is NonNullable<typeof period> => period != null)
+
+  return periods.length ? periods : undefined
+}
+
 function parseAnimals(raw: unknown): HotelAnimalItem[] {
   if (!Array.isArray(raw)) {
     return []
@@ -113,6 +139,7 @@ function parseAnimals(raw: unknown): HotelAnimalItem[] {
       hunters_count: animal.hunters_count != null
         ? Math.max(1, Number(animal.hunters_count) || 1)
         : undefined,
+      periods: parseAnimalPeriods(animal.periods),
     }
   }).filter(animal => animal.title && Number.isFinite(animal.id))
 }

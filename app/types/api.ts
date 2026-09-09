@@ -781,6 +781,13 @@ export interface HotelTermGroup {
   terms: HotelTermItem[]
 }
 
+export interface HotelAnimalPeriod {
+  id: number
+  start_date: string
+  end_date: string
+  price: number
+}
+
 export interface HotelAnimalItem {
   id: number
   title: string
@@ -788,6 +795,7 @@ export interface HotelAnimalItem {
   price?: number
   image_url?: string
   hunters_count?: number
+  periods?: HotelAnimalPeriod[]
 }
 
 export interface HotelGalleryImage {

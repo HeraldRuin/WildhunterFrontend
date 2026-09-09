@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { HotelAnimalItem } from '~/types/api'
-import { formatDisplayDate, startOfDay } from '~/utils/date'
+import { formatApiDate, formatDisplayDate, startOfDay } from '~/utils/date'
+import { formatHotelPrice } from '~/utils/hotel'
 
 const props = withDefaults(defineProps<{
   animals?: HotelAnimalItem[]
@@ -98,6 +99,23 @@ const animalsPending = computed(() => props.animalsPending)
 const animalsReady = computed(() => animals.value.length > 0)
 const isAnimalLocked = computed(() => !huntDate.value)
 
+function getAnimalPriceForHuntDate(item: HotelAnimalItem): number | null {
+  if (!huntDate.value || !item.periods?.length) {
+    return null
+  }
+
+  const day = formatApiDate(huntDate.value)
+  const period = item.periods.find(entry =>
+    day >= entry.start_date && day <= entry.end_date,
+  )
+
+  if (!period || !Number.isFinite(period.price)) {
+    return null
+  }
+
+  return period.price
+}
+
 const selectedAnimal = computed(() =>
   animals.value.find(item => String(item.id) === animal.value),
 )
@@ -105,11 +123,18 @@ const selectedAnimal = computed(() =>
 const filteredAnimals = computed(() => {
   const list = animals.value
   const query = animalSearchQuery.value.trim().toLocaleLowerCase('ru')
-  if (!query) {
-    return list
-  }
+  const filtered = query
+    ? list.filter(item => item.title.toLocaleLowerCase('ru').includes(query))
+    : list
 
-  return list.filter(item => item.title.toLocaleLowerCase('ru').includes(query))
+  return filtered.map((item) => {
+    const price = getAnimalPriceForHuntDate(item)
+
+    return {
+      ...item,
+      periodPriceLabel: price != null ? `${formatHotelPrice(price)} ₽` : null,
+    }
+  })
 })
 
 const showAnimalSearch = computed(() => animals.value.length > 5)
@@ -688,6 +713,12 @@ defineExpose({
                 >
                   <span class="hotel-animals-search__dropdown-option-dot" aria-hidden="true" />
                   <span class="hotel-animals-search__dropdown-option-label">{{ item.title }}</span>
+                  <span
+                    v-if="item.periodPriceLabel"
+                    class="hotel-animals-search__dropdown-option-price"
+                  >
+                    {{ item.periodPriceLabel }}
+                  </span>
                 </button>
               </li>
             </ul>
@@ -1200,6 +1231,18 @@ defineExpose({
   height: 6px;
   border-radius: 50%;
   background: transparent;
+}
+
+.hotel-animals-search__dropdown-option-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hotel-animals-search__dropdown-option-price {
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .hotel-animals-search__dropdown-option--active .hotel-animals-search__dropdown-option-dot {

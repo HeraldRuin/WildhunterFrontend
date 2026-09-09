@@ -51,7 +51,19 @@ function getCachedHotelData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtAp
   }
 
   const hotel = cached as { animals?: unknown }
-  if (Array.isArray(hotel.animals) && hotel.animals.length === 0) {
+  if (!Array.isArray(hotel.animals) || hotel.animals.length === 0) {
+    return undefined
+  }
+
+  const animalsMissingPeriods = hotel.animals.some((item) => {
+    if (!item || typeof item !== 'object') {
+      return true
+    }
+
+    return !('periods' in item)
+  })
+
+  if (animalsMissingPeriods) {
     return undefined
   }
 
