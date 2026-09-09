@@ -11,7 +11,7 @@ const { canScrollPrev, canScrollNext } = useSliderScrollState(trackRef, offers)
 
 function getCardWidth(track: HTMLElement) {
   const styles = getComputedStyle(track)
-  return Number.parseFloat(styles.getPropertyValue('--best-offers-card-width')) || 288
+  return Number.parseFloat(styles.getPropertyValue('--best-offers-card-width')) || 360
 }
 
 function getTrackGap(track: HTMLElement) {
@@ -124,7 +124,7 @@ function prefetchBasesPage() {
 }
 
 .best-offers__track {
-  --best-offers-card-width: 288px;
+  --best-offers-card-width: 360px;
   --best-offers-card-height: 300px;
 
   display: grid;
