@@ -127,6 +127,21 @@ const backgroundStyle = computed(() => {
   display: none;
 }
 
+@media (max-width: 1197px) {
+  .search-top {
+    height: 445px;
+  }
+
+  .search-top__inner {
+    gap: 20px;
+    padding: 140px 16px 36px;
+  }
+
+  .search-top--compact .search-top__inner {
+    padding-bottom: 48px;
+  }
+}
+
 @media (--wh-tablet) {
   .search-top {
     height: 445px;

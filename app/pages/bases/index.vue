@@ -667,7 +667,27 @@ const breadcrumbs: BreadcrumbItem[] = [
   color: var(--wh-gray-900);
 }
 
+@media (max-width: 1257px) {
+  .bases-page__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (--wh-tablet) {
+  .bases-page__top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .bases-page__breadcrumbs {
+    align-self: flex-start;
+  }
+
+  .bases-page__sort {
+    width: 100%;
+  }
+
   .bases-page__layout {
     grid-template-columns: 1fr;
   }

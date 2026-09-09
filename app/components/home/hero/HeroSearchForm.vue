@@ -1433,7 +1433,7 @@ onUnmounted(() => {
   background: var(--wh-orange-500);
 }
 
-@media (--wh-tablet) {
+@media (max-width: 1197px) {
   .hero-search,
   .hero-search.hero-search--split {
     display: grid;
