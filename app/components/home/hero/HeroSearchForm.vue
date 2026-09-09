@@ -1551,8 +1551,8 @@ onUnmounted(() => {
   }
 
   .hero-search__field--animals .hero-search__dropdown-list {
-    top: auto;
-    bottom: calc(100% + 4px);
+    top: calc(100% + 4px);
+    bottom: auto;
     border-radius: var(--wh-radius-lg);
   }
 
@@ -1597,6 +1597,17 @@ onUnmounted(() => {
     height: auto;
     margin-top: 0;
     border-radius: var(--wh-radius-lg);
+  }
+}
+
+@media (max-width: 420px) {
+  .hero-search__field--guests .hero-search__guest-btn {
+    display: none;
+  }
+
+  .hero-search__field--guests .hero-search__guest-stepper {
+    justify-content: flex-end;
+    gap: 0;
   }
 }
 </style>
