@@ -160,8 +160,6 @@ const filteredLocations = computed(() => {
   return list.filter(item => item.name.toLocaleLowerCase('ru').includes(query))
 })
 
-const showLocationSearch = computed(() => (locations.value?.length ?? 0) > 5)
-
 const selectedAnimal = computed(() =>
   animals.value?.find(item => String(item.id) === animal.value),
 )
@@ -187,8 +185,6 @@ const filteredAnimals = computed(() => {
 
   return list.filter(item => item.title.toLocaleLowerCase('ru').includes(query))
 })
-
-const showAnimalSearch = computed(() => (animals.value?.length ?? 0) > 5)
 
 function formatAdultsLabel(count: number) {
   const mod10 = count % 10
@@ -267,11 +263,9 @@ function toggleLocationDropdown() {
 
   if (isLocationOpen.value) {
     locationSearchQuery.value = ''
-    if (showLocationSearch.value) {
-      void nextTick(() => {
-        locationSearchRef.value?.focus()
-      })
-    }
+    void nextTick(() => {
+      locationSearchRef.value?.focus()
+    })
   }
   else {
     locationSearchQuery.value = ''
@@ -289,11 +283,9 @@ function toggleAnimalDropdown() {
 
   if (isAnimalOpen.value) {
     animalSearchQuery.value = ''
-    if (showAnimalSearch.value) {
-      void nextTick(() => {
-        animalSearchRef.value?.focus()
-      })
-    }
+    void nextTick(() => {
+      animalSearchRef.value?.focus()
+    })
   }
   else {
     animalSearchQuery.value = ''
@@ -477,6 +469,22 @@ function clearAnimal(event: MouseEvent) {
   animalSearchQuery.value = ''
 }
 
+function clearLocationSearch(event: MouseEvent) {
+  event.stopPropagation()
+  locationSearchQuery.value = ''
+  void nextTick(() => {
+    locationSearchRef.value?.focus()
+  })
+}
+
+function clearAnimalSearch(event: MouseEvent) {
+  event.stopPropagation()
+  animalSearchQuery.value = ''
+  void nextTick(() => {
+    animalSearchRef.value?.focus()
+  })
+}
+
 function clearGuests(event: MouseEvent) {
   event.stopPropagation()
   adultsCount.value = 1
@@ -561,10 +569,9 @@ onUnmounted(() => {
 
       <div
         v-if="isLocationOpen && locations?.length"
-        class="hero-search__dropdown-list"
-        :class="{ 'hero-search__dropdown-list--with-search': showLocationSearch }"
+        class="hero-search__dropdown-list hero-search__dropdown-list--with-search"
       >
-        <div v-if="showLocationSearch" class="hero-search__dropdown-search">
+        <div class="hero-search__dropdown-search">
           <input
             ref="locationSearchRef"
             v-model="locationSearchQuery"
@@ -576,10 +583,20 @@ onUnmounted(() => {
             @keydown.enter.prevent
             @keydown.escape.stop="closeLocationDropdown"
           >
+          <button
+            v-if="locationSearchQuery"
+            type="button"
+            class="hero-search__dropdown-search-clear"
+            aria-label="Очистить поиск"
+            @click.stop="clearLocationSearch"
+          >
+            <svg viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </button>
         </div>
         <ul
-          class="hero-search__dropdown-options"
-          :class="{ 'hero-search__dropdown-options--limited': showLocationSearch }"
+          class="hero-search__dropdown-options hero-search__dropdown-options--limited"
           role="listbox"
           aria-label="Локация"
           @pointerleave="clearLocationHover"
@@ -644,10 +661,9 @@ onUnmounted(() => {
 
       <div
         v-if="isAnimalOpen && animals?.length"
-        class="hero-search__dropdown-list"
-        :class="{ 'hero-search__dropdown-list--with-search': showAnimalSearch }"
+        class="hero-search__dropdown-list hero-search__dropdown-list--with-search"
       >
-        <div v-if="showAnimalSearch" class="hero-search__dropdown-search">
+        <div class="hero-search__dropdown-search">
           <input
             ref="animalSearchRef"
             v-model="animalSearchQuery"
@@ -659,10 +675,20 @@ onUnmounted(() => {
             @keydown.enter.prevent
             @keydown.escape.stop="closeAnimalDropdown"
           >
+          <button
+            v-if="animalSearchQuery"
+            type="button"
+            class="hero-search__dropdown-search-clear"
+            aria-label="Очистить поиск"
+            @click.stop="clearAnimalSearch"
+          >
+            <svg viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </button>
         </div>
         <ul
-          class="hero-search__dropdown-options"
-          :class="{ 'hero-search__dropdown-options--limited': showAnimalSearch }"
+          class="hero-search__dropdown-options hero-search__dropdown-options--limited"
           role="listbox"
           aria-label="Животные"
           @pointerleave="clearAnimalHover"
@@ -1102,13 +1128,14 @@ onUnmounted(() => {
 }
 
 .hero-search__dropdown-search {
+  position: relative;
   flex-shrink: 0;
 }
 
 .hero-search__dropdown-search-input {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 12px;
+  padding: 10px 36px 10px 12px;
   border: 1px solid var(--wh-gray);
   border-radius: 10px;
   background: var(--wh-white);
@@ -1130,7 +1157,34 @@ onUnmounted(() => {
 }
 
 .hero-search__dropdown-search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.hero-search__dropdown-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #1c211c;
   cursor: pointer;
+  transform: translateY(-50%);
+  transition: opacity 0.15s ease;
+}
+
+.hero-search__dropdown-search-clear svg {
+  width: 12px;
+  height: 12px;
+}
+
+.hero-search__dropdown-search-clear:hover {
+  opacity: 0.6;
 }
 
 .hero-search__dropdown-options {
