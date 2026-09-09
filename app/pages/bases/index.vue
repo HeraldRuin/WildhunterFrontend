@@ -507,6 +507,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 .bases-page__breadcrumbs {
   align-self: center;
   min-width: 0;
+  /* Как у SearchFilters: колонка точек 10px + gap 12px */
+  margin-left: 22px;
 }
 
 .bases-page__sort {
