@@ -80,40 +80,51 @@ function goTo(page: number) {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 28px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .pagination__page,
 .pagination__ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
   margin: 0;
   padding: 0;
-  border: none;
-  background: transparent;
+  border-radius: 8px;
   font-family: inherit;
-  font-size: 1rem;
-  line-height: 1.2;
-  color: #c8c8c8;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .pagination__page {
+  border: 1px solid #dddddd;
+  background: #ffffff;
+  color: #c8c8c8;
   cursor: pointer;
-  font-weight: 500;
-  transition: color 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.pagination__page:hover {
-  color: var(--wh-black-text);
+.pagination__page:hover:not(.pagination__page--active) {
+  border-color: #1c211c;
+  color: #1c211c;
 }
 
 .pagination__page--active {
-  color: var(--wh-black-text);
+  border-color: #1c211c;
+  color: #1c211c;
   font-weight: 700;
   cursor: default;
 }
 
 .pagination__ellipsis {
-  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: #c8c8c8;
   user-select: none;
 }
 </style>

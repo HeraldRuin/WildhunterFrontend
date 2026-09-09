@@ -16,6 +16,7 @@ import {
   matchesReviewRatingFilter,
   sortOfferItems,
 } from '~/utils/search'
+import { pluralizeRu } from '~/utils/pluralize'
 
 definePageMeta({
   layout: 'home',
@@ -300,6 +301,22 @@ const totalCount = computed(() => {
   return searchResult.value.total
 })
 
+const resultsSummary = computed(() => {
+  const total = totalCount.value
+  const visible = offerItems.value.length
+
+  if (!total || !visible) {
+    return ''
+  }
+
+  const page = Math.min(currentPage.value, totalPages.value)
+  const from = (page - 1) * CATALOG_PER_PAGE + 1
+  const to = from + visible - 1
+  const hotelsLabel = pluralizeRu(total, ['отеля', 'отелей', 'отелей'])
+
+  return `Показаны ${from} – ${to} из ${hotelsLabel}`
+})
+
 watch(totalPages, (pages) => {
   if (currentPage.value > pages) {
     currentPage.value = pages
@@ -460,6 +477,13 @@ const breadcrumbs: BreadcrumbItem[] = [
               />
             </div>
 
+            <p
+              v-show="!isResultsLoading && resultsSummary"
+              class="bases-page__summary"
+            >
+              {{ resultsSummary }}
+            </p>
+
             <CommonPagination
               v-show="!isResultsLoading && offerItems.length > 0"
               :current-page="currentPage"
@@ -598,6 +622,16 @@ const breadcrumbs: BreadcrumbItem[] = [
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px 20px;
+}
+
+.bases-page__summary {
+  margin: 0;
+  text-align: center;
+  font-family: "Inter", sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--wh-gray-600);
 }
 
 .bases-page__state {
