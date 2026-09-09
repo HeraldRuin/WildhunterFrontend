@@ -561,7 +561,7 @@ function handleRetryHotelLoad() {
   font-weight: 600;
   line-height: 130%;
   letter-spacing: -0.05em;
-  color: var(--wh-gray-900);
+  color: var(--wh-orange-500);
 }
 
 .hotel-page__animals-empty {
