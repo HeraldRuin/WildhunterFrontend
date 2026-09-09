@@ -382,7 +382,7 @@ function handleFiltersReset() {
   display: flex;
   flex-direction: column;
   gap: 28px;
-  width: min(100% - 32px, 1600px);
+  width: min(100% - 32px, 1800px);
 }
 
 .location-page__top {
