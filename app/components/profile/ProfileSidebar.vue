@@ -6,7 +6,6 @@ interface NavItem {
   labelShort?: string
   to: string
   iconSrc: string
-  showChevron?: boolean
 
   navigateOnOpen?: boolean
   children?: Array<{ label: string, to: string }>
@@ -30,11 +29,6 @@ const baseNavItems: NavItem[] = [
   { label: 'Избранное', to: '/profile/favorites', iconSrc: '/icons/favorites.svg' },
 ]
 
-const baseNavChildren = [
-  { label: 'Управление номерами', to: '/rooms' },
-  { label: 'Доступные номера', to: '/rooms/availability' },
-]
-
 const servicesNavChildren = [
   { label: 'Организация охоты', to: '/profile/services/hunting' },
   { label: 'Трофеи и штрафы', to: '/profile/services/trophies' },
@@ -47,20 +41,29 @@ const timerNavChildren = [
   { label: 'Таймер предоплаты', to: '/profile/timers/prepayment' },
 ]
 
-const settingsSubNavItems: NavItem[] = [
+const baseAdminExtraNavItems: NavItem[] = [
   {
     label: 'Управление базой',
     labelShort: 'База',
     to: '/profile/base',
     iconSrc: '/icons/base-building.svg',
-    navigateOnOpen: true,
-    children: baseNavChildren,
+  },
+  {
+    label: 'Управление номерами',
+    labelShort: 'Номера',
+    to: '/rooms',
+    iconSrc: '/icons/rooms-manage.svg',
+  },
+  {
+    label: 'Доступные номера',
+    labelShort: 'Доступность',
+    to: '/rooms/availability',
+    iconSrc: '/icons/rooms-availability.svg',
   },
   {
     label: 'Животные',
     to: '/profile/animals',
     iconSrc: '/icons/animal-face.svg',
-    showChevron: false,
   },
   {
     label: 'Услуги',
@@ -76,36 +79,14 @@ const settingsSubNavItems: NavItem[] = [
   },
 ]
 
-const settingsSectionPaths = [
-  ...settingsSubNavItems.map(item => item.to),
-  ...baseNavChildren.map(item => item.to),
-  ...servicesNavChildren.map(item => item.to),
-  ...timerNavChildren.map(item => item.to),
-]
-
-const isSettingsRoute = computed(() =>
-  settingsSectionPaths.some(path => route.path === path || route.path.startsWith(`${path}/`)),
-)
-
-const settingsMenuOpen = ref(false)
 const openSubmenus = ref<Record<string, boolean>>({})
 
 const isCompactSidebar = ref(false)
 
 watch(
-  isSettingsRoute,
-  (onSettingsRoute) => {
-    if (onSettingsRoute) {
-      settingsMenuOpen.value = true
-    }
-  },
-  { immediate: true },
-)
-
-watch(
   () => route.path,
   (path) => {
-    for (const item of settingsSubNavItems) {
+    for (const item of baseAdminExtraNavItems) {
       if (!item.children?.length) {
         continue
       }
@@ -127,44 +108,28 @@ watch(
   { immediate: true },
 )
 
-const showSettingsMenu = computed(() => isBaseAdmin.value && settingsMenuOpen.value)
-
 const compactDrilldownItem = computed(() => {
-  if (!isCompactSidebar.value || !showSettingsMenu.value) {
+  if (!isCompactSidebar.value || !isBaseAdmin.value) {
     return null
   }
 
-  return settingsSubNavItems.find(item =>
+  return baseAdminExtraNavItems.find(item =>
     Boolean(item.children?.length) && isSubmenuOpen(item.to),
   ) ?? null
 })
 
 const navItems = computed<NavItem[]>(() => {
-  if (showSettingsMenu.value) {
-    return settingsSubNavItems
-  }
-
   if (isBaseAdmin.value) {
-    return baseNavItems.filter(
-      item => item.to !== '/profile/weapons' && item.to !== '/profile/favorites',
-    )
+    return [
+      ...baseNavItems.filter(
+        item => item.to !== '/profile/weapons' && item.to !== '/profile/favorites',
+      ),
+      ...baseAdminExtraNavItems,
+    ]
   }
 
   return baseNavItems
 })
-
-function openSettingsMenu() {
-  settingsMenuOpen.value = true
-}
-
-async function closeSettingsMenu() {
-  settingsMenuOpen.value = false
-  openSubmenus.value = {}
-
-  if (isSettingsRoute.value) {
-    await navigateTo('/profile')
-  }
-}
 
 function isSubmenuOpen(to: string) {
   return Boolean(openSubmenus.value[to])
@@ -197,13 +162,8 @@ async function handleParentNavClick(item: NavItem) {
   toggleSubmenu(item.to)
 }
 
-async function handleSettingsBack() {
-  if (compactDrilldownItem.value) {
-    openSubmenus.value = {}
-    return
-  }
-
-  await closeSettingsMenu()
+function handleDrilldownBack() {
+  openSubmenus.value = {}
 }
 
 let compactMedia: MediaQueryList | null = null
@@ -257,7 +217,7 @@ const memberSince = computed(() => formatMemberSince(profile.value?.created_at ?
 
 const allNavPaths = computed(() => [
   ...baseNavItems.map(item => item.to),
-  ...settingsSubNavItems.flatMap(item => [
+  ...baseAdminExtraNavItems.flatMap(item => [
     item.to,
     ...(item.children?.map(child => child.to) ?? []),
   ]),
@@ -345,10 +305,10 @@ async function goHome(event: MouseEvent) {
         :class="{ 'profile-sidebar__nav--drilldown': Boolean(compactDrilldownItem) }"
       >
         <button
-          v-if="showSettingsMenu"
+          v-if="compactDrilldownItem"
           type="button"
           class="profile-sidebar__nav-link profile-sidebar__nav-link--back"
-          @click="handleSettingsBack"
+          @click="handleDrilldownBack"
         >
           <span class="profile-sidebar__nav-icon" aria-hidden="true">←</span>
           <span class="profile-sidebar__nav-text">Назад</span>
@@ -370,7 +330,7 @@ async function goHome(event: MouseEvent) {
         <template v-else>
           <template v-for="item in navItems" :key="item.to">
             <button
-              v-if="showSettingsMenu && item.children?.length"
+              v-if="item.children?.length"
               type="button"
               class="profile-sidebar__nav-link"
               :class="{
@@ -416,7 +376,6 @@ async function goHome(event: MouseEvent) {
               :class="{
                 'profile-sidebar__nav-link--active': isActive(item.to),
                 'profile-sidebar__nav-link--compact': Boolean(item.labelShort),
-                'profile-sidebar__nav-link--open': showSettingsMenu && isActive(item.to),
               }"
             >
               <span class="profile-sidebar__nav-icon" aria-hidden="true">
@@ -436,24 +395,9 @@ async function goHome(event: MouseEvent) {
                   {{ item.label }}
                 </template>
               </span>
-              <svg
-                v-if="showSettingsMenu && item.showChevron !== false"
-                class="profile-sidebar__chevron"
-                viewBox="0 0 12 8"
-                aria-hidden="true"
-              >
-                <path
-                  d="M1 2 6 6.5 11 2"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
             </NuxtLink>
 
-            <template v-if="showSettingsMenu && item.children?.length && isSubmenuOpen(item.to)">
+            <template v-if="item.children?.length && isSubmenuOpen(item.to)">
               <NuxtLink
                 v-for="child in item.children"
                 :key="child.to"
@@ -466,33 +410,6 @@ async function goHome(event: MouseEvent) {
             </template>
           </template>
         </template>
-
-        <button
-          v-if="isBaseAdmin && !showSettingsMenu"
-          type="button"
-          class="profile-sidebar__nav-link"
-          @click="openSettingsMenu"
-        >
-          <span class="profile-sidebar__nav-icon" aria-hidden="true">
-            <img
-              src="/icons/lets-icons_setting-fill.png"
-              alt=""
-              width="24"
-              height="24"
-            >
-          </span>
-          <span class="profile-sidebar__nav-text">Настройки</span>
-          <svg class="profile-sidebar__chevron" viewBox="0 0 12 8" aria-hidden="true">
-            <path
-              d="M1 2 6 6.5 11 2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
       </nav>
 
       <div class="profile-sidebar__footer">
