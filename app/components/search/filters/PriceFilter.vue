@@ -58,6 +58,16 @@ function toPercent(value: number) {
 const rangeStartPercent = computed(() => toPercent(props.priceMin))
 const rangeEndPercent = computed(() => toPercent(props.priceMax))
 
+const fillStyle = computed(() => {
+  const start = rangeStartPercent.value
+  const end = rangeEndPercent.value
+
+  return {
+    left: `${start}%`,
+    width: `${Math.max(0, end - start)}%`,
+  }
+})
+
 function updateMin(value: number) {
   emit('update:priceMin', Math.min(Math.max(value, min.value), props.priceMax))
 }
@@ -114,13 +124,11 @@ const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
       >
     </div>
 
-    <div
-      class="search-filters-price__range"
-      :style="{
-        '--range-start': `${rangeStartPercent}%`,
-        '--range-end': `${rangeEndPercent}%`,
-      }"
-    >
+    <div class="search-filters-price__range">
+      <div
+        class="search-filters-price__fill"
+        :style="fillStyle"
+      />
       <input
         :key="`min-${sliderKey}`"
         :value="priceMin"
@@ -189,15 +197,16 @@ const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
   height: 4px;
   margin-inline: 4px;
   border-radius: 999px;
-  background: linear-gradient(
-    to right,
-    #e5e5e5 0%,
-    #e5e5e5 var(--range-start, 0%),
-    var(--wh-green) var(--range-start, 0%),
-    var(--wh-green) var(--range-end, 100%),
-    #e5e5e5 var(--range-end, 100%),
-    #e5e5e5 100%
-  );
+  background: #e5e5e5;
+}
+
+.search-filters-price__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: var(--wh-green);
+  pointer-events: none;
 }
 
 .search-filters-price__slider {
@@ -228,6 +237,10 @@ const sliderKey = computed(() => `${min.value}-${max.value}-${step.value}`)
 
 .search-filters-price__slider::-moz-range-track {
   height: 4px;
+  background: transparent;
+}
+
+.search-filters-price__slider::-moz-range-progress {
   background: transparent;
 }
 
