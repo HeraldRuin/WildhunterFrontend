@@ -551,7 +551,7 @@ function handleRetryHotelLoad() {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
@@ -577,7 +577,7 @@ function handleRetryHotelLoad() {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -734,7 +734,19 @@ function handleRetryHotelLoad() {
 }
 
 .hotel-page__animals .hotel-page__animal-item {
-  color: color-mix(in srgb, var(--wh-orange-500) 75%, var(--wh-gray-600));
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 8px;
+  background: var(--wh-white);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--wh-black-text);
 }
 
 .hotel-page__animal-icon {
