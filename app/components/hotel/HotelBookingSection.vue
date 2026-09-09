@@ -72,7 +72,6 @@ const isHuntDateWarningOpen = ref(false)
 const isStayDateWarningOpen = ref(false)
 const apiMessage = ref('')
 const animalAvailability = ref<{
-  hunters: number
   price: number
 } | null>(null)
 
@@ -94,7 +93,15 @@ const animalAvailabilityTotal = computed(() => {
     return 0
   }
 
-  return animalAvailability.value.price * animalAvailability.value.hunters
+  return animalAvailability.value.price
+})
+
+const animalAvailabilityPerPerson = computed(() => {
+  if (!animalAvailability.value || huntHunters.value <= 0) {
+    return null
+  }
+
+  return Math.round(animalAvailability.value.price / huntHunters.value)
 })
 const datesGuestsRef = ref<{
   getAdults: () => number
@@ -144,10 +151,6 @@ function applyHuntersCount(hunters: number) {
   }
 
   animalsSearchRef.value?.setHunters(hunters)
-
-  if (animalAvailability.value && animalAvailability.value.hunters !== hunters) {
-    clearAnimalAvailability()
-  }
 }
 
 function syncHuntersFromGuests() {
@@ -443,8 +446,8 @@ async function handleAnimalsCheck(payload: {
     })
 
     if (response.success && response.data?.available) {
+      huntHunters.value = payload.hunters
       animalAvailability.value = {
-        hunters: payload.hunters,
         price: Number(response.data.price) || 0,
       }
       animalAvailabilityStay.value = stayCheckIn.value && stayCheckOut.value
@@ -793,11 +796,14 @@ onMounted(() => {
             <div class="hotel-booking-section__animal-summary">
               <div class="hotel-booking-section__animal-summary-item">
                 <span class="hotel-booking-section__animal-summary-label">Всего охотников:</span>
-                <span class="hotel-booking-section__animal-summary-value">{{ animalAvailability.hunters }}</span>
+                <span class="hotel-booking-section__animal-summary-value">{{ huntHunters }}</span>
               </div>
               <div class="hotel-booking-section__animal-summary-item hotel-booking-section__animal-summary-item--cost">
-                <span class="hotel-booking-section__animal-summary-per-person">
-                  {{ formatHotelPriceLabel(animalAvailability.price) }} / чел.
+                <span
+                  v-if="animalAvailabilityPerPerson != null"
+                  class="hotel-booking-section__animal-summary-per-person"
+                >
+                  {{ formatHotelPriceLabel(animalAvailabilityPerPerson) }} / чел.
                 </span>
                 <span class="hotel-booking-section__animal-summary-total">
                   <span class="hotel-booking-section__animal-summary-label">Общая стоимость:</span>
