@@ -28,6 +28,10 @@ export interface YmapsMap {
   setCenter: (center: YmapsCoords, zoom?: number, options?: Record<string, unknown>) => void
   setBounds: (bounds: [YmapsCoords, YmapsCoords], options?: Record<string, unknown>) => void
   panTo: (center: YmapsCoords | YmapsCoords[], options?: Record<string, unknown>) => Promise<void>
+  behaviors: {
+    enable: (behaviors: string | string[]) => void
+    disable: (behaviors: string | string[]) => void
+  }
   destroy: () => void
 }
 

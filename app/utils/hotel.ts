@@ -11,6 +11,15 @@ export function getHotelPath(locationSlug: string, hotelSlug: string) {
   return `/hotel/${locationSlug}/${hotelSlug}/`
 }
 
+function parseHotelCoord(value: unknown): number | undefined {
+  if (value == null || value === '') {
+    return undefined
+  }
+
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
 const DEFAULT_GALLERY = [
   'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200',
   'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
@@ -341,8 +350,8 @@ export function normalizeHotelDetail(raw: unknown, params: HotelSlugParams): Hot
           slug: params.locationSlug,
         },
     gallery: buildGallery(data, image),
-    map_lat: data.map_lat ? Number(data.map_lat) : undefined,
-    map_lng: data.map_lng ? Number(data.map_lng) : undefined,
+    map_lat: parseHotelCoord(data.map_lat),
+    map_lng: parseHotelCoord(data.map_lng),
     review_score: reviewScore
       ? {
           score_total: Number(reviewScore.score_total ?? starRate ?? 0),

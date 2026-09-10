@@ -37,6 +37,9 @@ const props = withDefaults(defineProps<{
   fitVersion?: number
   measureMode?: boolean
   measureOriginPoint?: { lat: number, lng: number, key?: number } | null
+  showZoomControl?: boolean
+  scrollWheelZoom?: boolean
+  dragging?: boolean
 }>(), {
   lat: DEFAULT_MAP_CENTER.lat,
   lng: DEFAULT_MAP_CENTER.lng,
@@ -46,6 +49,9 @@ const props = withDefaults(defineProps<{
   fitVersion: 0,
   measureMode: false,
   measureOriginPoint: null,
+  showZoomControl: true,
+  scrollWheelZoom: true,
+  dragging: true,
 })
 
 const emit = defineEmits<{
@@ -719,11 +725,19 @@ onMounted(async () => {
     map = new ymapsApi.Map(mapEl.value, {
       center: [DEFAULT_MAP_CENTER.lat, DEFAULT_MAP_CENTER.lng],
       zoom: DEFAULT_MAP_CENTER.zoom,
-      controls: ['zoomControl'],
+      controls: props.showZoomControl ? ['zoomControl'] : [],
     }, {
       autoFitToViewport: 'always',
       yandexMapDisablePoiInteractivity: true,
     }) as YmapsMap & { getCenter: () => YmapsCoords }
+
+    if (!props.scrollWheelZoom) {
+      map.behaviors.disable('scrollZoom')
+    }
+
+    if (!props.dragging) {
+      map.behaviors.disable(['drag', 'multiTouch'])
+    }
 
     map.events.add('click', onMapClick)
     map.events.add('actionbegin', onMapActionBegin)

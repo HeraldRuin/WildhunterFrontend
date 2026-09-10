@@ -5,6 +5,7 @@ import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModa
 import { normalizeRichTextHtml } from '~/utils/html'
 import { createMockHotelDetail, getHotelPath } from '~/utils/hotel'
 import { getLocationMapPath, getLocationPath } from '~/utils/location'
+import type { BasesMapMarker } from '~/utils/map'
 import { formatReviewsCount } from '~/utils/pluralize'
 import HotelBookingSection from '~/components/hotel/HotelBookingSection.vue'
 
@@ -118,6 +119,53 @@ const mapLinkTo = computed(() => {
     path: '/bases/map',
     query: hotelId ? { hotel: String(hotelId) } : undefined,
   }
+})
+
+function toMapPoint(latRaw: unknown, lngRaw: unknown) {
+  const lat = Number(latRaw)
+  const lng = Number(lngRaw)
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null
+  }
+
+  return { lat, lng }
+}
+
+const hotelMapPoint = computed(() => {
+  if (showHotelPlaceholder.value || !hotel.value) {
+    return null
+  }
+
+  return toMapPoint(hotel.value.map_lat, hotel.value.map_lng)
+})
+
+const hotelMapMarkers = computed<BasesMapMarker[]>(() => {
+  const point = hotelMapPoint.value
+  if (!point || !hotel.value) {
+    return []
+  }
+
+  return [{
+    id: hotel.value.id,
+    title: hotel.value.title,
+    lat: point.lat,
+    lng: point.lng,
+  }]
+})
+
+const hotelMapAddress = computed(() => {
+  const address = hotel.value?.address?.trim()
+  return address || ''
+})
+
+const hotelMapCoordsLabel = computed(() => {
+  const point = hotelMapPoint.value
+  if (!point) {
+    return ''
+  }
+
+  return `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`
 })
 
 const amenitiesGroup = computed(() => {
@@ -382,7 +430,40 @@ function handleRetryHotelLoad() {
       </div>
     </div>
 
-    <HomeBlocksCommunityBlock />
+    <section
+      v-if="hotelMapPoint"
+      class="hotel-page__map"
+      aria-label="Расположение базы на карте"
+    >
+      <SearchBasesMap
+        :lat="hotelMapPoint.lat"
+        :lng="hotelMapPoint.lng"
+        :zoom="12"
+        :markers="hotelMapMarkers"
+        :active-id="displayHotel.id"
+        :show-zoom-control="false"
+        :scroll-wheel-zoom="false"
+        :dragging="false"
+      />
+
+      <div
+        v-if="hotelMapAddress || hotelMapCoordsLabel"
+        class="hotel-page__map-info"
+      >
+        <p
+          v-if="hotelMapAddress"
+          class="hotel-page__map-info-address"
+        >
+          {{ hotelMapAddress }}
+        </p>
+        <p
+          v-if="hotelMapCoordsLabel"
+          class="hotel-page__map-info-coords"
+        >
+          {{ hotelMapCoordsLabel }}
+        </p>
+      </div>
+    </section>
     <LayoutAppFooter />
   </div>
 </template>
@@ -699,6 +780,53 @@ function handleRetryHotelLoad() {
   margin-top: 40px;
 }
 
+.hotel-page__map {
+  position: relative;
+  width: 100%;
+  height: min(70vh, 560px);
+  min-height: 400px;
+}
+
+.hotel-page__map-info {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 14px 16px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: var(--wh-radius);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--wh-shadow);
+  pointer-events: none;
+}
+
+.hotel-page__map-info-address,
+.hotel-page__map-info-coords {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  color: var(--wh-gray-900);
+}
+
+.hotel-page__map-info-address {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.hotel-page__map-info-coords {
+  margin-top: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--wh-gray-600);
+}
+
+.hotel-page__map-info-address + .hotel-page__map-info-coords {
+  margin-top: 8px;
+}
+
 .hotel-page__address {
   margin: -16px 0 18px;
   font-family: Inter, system-ui, sans-serif;
@@ -829,6 +957,18 @@ function handleRetryHotelLoad() {
   .hotel-page__booking {
     width: calc(100% + 32px);
     margin-inline: -16px;
+  }
+
+  .hotel-page__map-info {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+    padding: 12px 14px;
+  }
+
+  .hotel-page__map-info-address {
+    font-size: 0.875rem;
   }
 }
 </style>

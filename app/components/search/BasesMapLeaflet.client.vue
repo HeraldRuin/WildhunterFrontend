@@ -28,6 +28,9 @@ const props = withDefaults(defineProps<{
   measureMode?: boolean
 
   measureOriginPoint?: { lat: number, lng: number, key?: number } | null
+  showZoomControl?: boolean
+  scrollWheelZoom?: boolean
+  dragging?: boolean
 }>(), {
   lat: DEFAULT_MAP_CENTER.lat,
   lng: DEFAULT_MAP_CENTER.lng,
@@ -37,6 +40,9 @@ const props = withDefaults(defineProps<{
   fitVersion: 0,
   measureMode: false,
   measureOriginPoint: null,
+  showZoomControl: true,
+  scrollWheelZoom: true,
+  dragging: true,
 })
 
 const emit = defineEmits<{
@@ -546,7 +552,13 @@ onMounted(async () => {
   }
 
   map = L.map(mapEl.value, {
-    scrollWheelZoom: true,
+    scrollWheelZoom: props.scrollWheelZoom,
+    zoomControl: props.showZoomControl,
+    dragging: props.dragging,
+    touchZoom: props.dragging,
+    doubleClickZoom: props.scrollWheelZoom,
+    boxZoom: props.dragging,
+    keyboard: props.dragging,
   }).setView([DEFAULT_MAP_CENTER.lat, DEFAULT_MAP_CENTER.lng], DEFAULT_MAP_CENTER.zoom)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
