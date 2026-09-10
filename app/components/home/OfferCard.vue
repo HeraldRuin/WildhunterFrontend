@@ -9,6 +9,7 @@ import {
 } from '~/utils/date'
 import { formatHotelPrice, getHotelPath } from '~/utils/hotel'
 import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
+import { packItemsByWidth } from '~/utils/packItems'
 
 const props = defineProps<{
   item: OfferItem
@@ -86,6 +87,18 @@ const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
 
 const ANIMALS_PREVIEW_LIMIT = 4
+const ANIMALS_GAP_PX = 8
+
+type AnimalPreview = {
+  id: number
+  title: string
+}
+
+const animalsRowRef = ref<HTMLElement | null>(null)
+const animalsLabelRef = ref<HTMLElement | null>(null)
+const packedAnimals = ref<AnimalPreview[] | null>(null)
+let animalsResizeObserver: ResizeObserver | null = null
+let measureCanvas: HTMLCanvasElement | null = null
 
 const allAnimals = computed(() => {
   const animals = props.item.animals ?? []
@@ -99,11 +112,96 @@ const allAnimals = computed(() => {
 
 const previewAnimals = computed(() => allAnimals.value.slice(0, ANIMALS_PREVIEW_LIMIT))
 const hasMoreAnimals = computed(() => allAnimals.value.length > ANIMALS_PREVIEW_LIMIT)
+const displayAnimals = computed(() => packedAnimals.value ?? previewAnimals.value)
+
+function getMeasureCanvas(): HTMLCanvasElement {
+  if (!measureCanvas) {
+    measureCanvas = document.createElement('canvas')
+  }
+  return measureCanvas
+}
+
+function measureChipWidth(title: string): number {
+  if (typeof document === 'undefined') {
+    return title.length * 7 + 18
+  }
+
+  const canvas = getMeasureCanvas()
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    return title.length * 7 + 18
+  }
+
+  // Совпадает с .offer-card__animal-item: 12px / 500, letter-spacing -0.02em
+  ctx.font = '500 12px Inter, sans-serif'
+  const textWidth = ctx.measureText(title).width
+  const letterSpacing = title.length * 12 * -0.02
+  // padding 8+8 + border 1+1 + небольшой запас на погрешность шрифта
+  return Math.ceil(textWidth + letterSpacing + 18) + 1
+}
+
+function repackAnimals() {
+  const row = animalsRowRef.value
+  const label = animalsLabelRef.value
+  const animals = previewAnimals.value
+
+  if (!row || !animals.length) {
+    packedAnimals.value = null
+    return
+  }
+
+  const containerWidth = row.clientWidth
+  if (containerWidth <= 0) {
+    return
+  }
+
+  const packed = packItemsByWidth(
+    animals,
+    animal => measureChipWidth(animal.title),
+    containerWidth,
+    {
+      gap: ANIMALS_GAP_PX,
+      firstLineOffset: label?.offsetWidth ?? 0,
+    },
+  )
+
+  const sameOrder = packed.every((animal, index) => animal.id === animals[index]?.id)
+  packedAnimals.value = sameOrder ? animals : packed
+}
+
+function setupAnimalsPacking() {
+  animalsResizeObserver?.disconnect()
+  animalsResizeObserver = null
+
+  const row = animalsRowRef.value
+  if (!row || typeof ResizeObserver === 'undefined') {
+    repackAnimals()
+    return
+  }
+
+  animalsResizeObserver = new ResizeObserver(() => {
+    repackAnimals()
+  })
+  animalsResizeObserver.observe(row)
+  repackAnimals()
+}
+
+watch(previewAnimals, () => {
+  packedAnimals.value = null
+  nextTick(repackAnimals)
+})
 
 onMounted(() => {
   if (!isBaseAdmin.value && !isLoaded.value) {
     loadFavorites()
   }
+
+  nextTick(setupAnimalsPacking)
+})
+
+onBeforeUnmount(() => {
+  animalsResizeObserver?.disconnect()
+  animalsResizeObserver = null
 })
 
 function formatPrice(value: number) {
@@ -244,14 +342,20 @@ async function handleFavoriteClick(event: MouseEvent) {
         <h3 class="offer-card__title">{{ item.title }}</h3>
         <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽</p>
       </div>
-      <div class="offer-card__animals">
-        <span class="offer-card__animals-label">Животные для охоты:</span>
+      <div
+        ref="animalsRowRef"
+        class="offer-card__animals"
+      >
+        <span
+          ref="animalsLabelRef"
+          class="offer-card__animals-label"
+        >Животные для охоты:</span>
         <ul
-          v-if="previewAnimals.length"
+          v-if="displayAnimals.length"
           class="offer-card__animals-list"
         >
           <li
-            v-for="animal in previewAnimals"
+            v-for="animal in displayAnimals"
             :key="animal.id"
             class="offer-card__animal-item"
           >
