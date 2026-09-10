@@ -577,7 +577,7 @@ onUnmounted(() => {
             v-model="locationSearchQuery"
             type="search"
             class="hero-search__dropdown-search-input"
-            placeholder="Поиск по локации"
+            placeholder="Поиск локации"
             aria-label="Поиск локации"
             autocomplete="off"
             @keydown.enter.prevent
@@ -669,7 +669,7 @@ onUnmounted(() => {
             v-model="animalSearchQuery"
             type="search"
             class="hero-search__dropdown-search-input"
-            placeholder="Поиск по животному"
+            placeholder="Поиск животного"
             aria-label="Поиск животных"
             autocomplete="off"
             @keydown.enter.prevent

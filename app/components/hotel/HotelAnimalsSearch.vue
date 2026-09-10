@@ -678,7 +678,7 @@ defineExpose({
                 v-model="animalSearchQuery"
                 type="search"
                 class="hotel-animals-search__dropdown-search-input"
-                placeholder="Поиск по животному"
+                placeholder="Поиск животного"
                 aria-label="Поиск животных"
                 autocomplete="off"
                 @keydown.enter.prevent
