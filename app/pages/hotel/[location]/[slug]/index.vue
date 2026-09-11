@@ -450,18 +450,28 @@ function handleRetryHotelLoad() {
         v-if="hotelMapAddress || hotelMapCoordsLabel"
         class="hotel-page__map-info"
       >
-        <p
+        <div
           v-if="hotelMapAddress"
-          class="hotel-page__map-info-address"
+          class="hotel-page__map-info-section"
         >
-          {{ hotelMapAddress }}
-        </p>
-        <p
+          <p class="hotel-page__map-info-label">
+            Адрес
+          </p>
+          <p class="hotel-page__map-info-address">
+            {{ hotelMapAddress }}
+          </p>
+        </div>
+        <div
           v-if="hotelMapCoordsLabel"
-          class="hotel-page__map-info-coords"
+          class="hotel-page__map-info-section"
         >
-          {{ hotelMapCoordsLabel }}
-        </p>
+          <p class="hotel-page__map-info-label">
+            Координаты
+          </p>
+          <p class="hotel-page__map-info-coords">
+            {{ hotelMapCoordsLabel }}
+          </p>
+        </div>
       </div>
     </section>
     <LayoutAppFooter />
@@ -787,11 +797,19 @@ function handleRetryHotelLoad() {
   min-height: 400px;
 }
 
+.hotel-page__map :deep(.bases-map-wrap),
+.hotel-page__map :deep(.bases-map) {
+  border-radius: 0;
+}
+
 .hotel-page__map-info {
   position: absolute;
   top: 16px;
   right: 16px;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   max-width: min(420px, calc(100% - 32px));
   padding: 14px 16px;
   border: 1px solid var(--wh-gray-200);
@@ -801,8 +819,13 @@ function handleRetryHotelLoad() {
   pointer-events: none;
 }
 
+.hotel-page__map-info-section {
+  min-width: 0;
+}
+
 .hotel-page__map-info-address,
-.hotel-page__map-info-coords {
+.hotel-page__map-info-coords,
+.hotel-page__map-info-label {
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
   letter-spacing: -0.02em;
@@ -815,16 +838,22 @@ function handleRetryHotelLoad() {
   line-height: 1.35;
 }
 
-.hotel-page__map-info-coords {
-  margin-top: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.3;
+.hotel-page__map-info-label {
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
   color: var(--wh-gray-600);
 }
 
-.hotel-page__map-info-address + .hotel-page__map-info-coords {
-  margin-top: 8px;
+.hotel-page__map-info-coords {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--wh-gray-900);
+  white-space: nowrap;
 }
 
 .hotel-page__address {
@@ -969,6 +998,10 @@ function handleRetryHotelLoad() {
 
   .hotel-page__map-info-address {
     font-size: 0.875rem;
+  }
+
+  .hotel-page__map-info-coords {
+    white-space: normal;
   }
 }
 </style>
