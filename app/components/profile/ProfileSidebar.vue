@@ -16,18 +16,18 @@ const { user, logout } = useAuth()
 const { profile } = useProfile()
 const { isBaseAdmin } = useUserRole()
 
+const hunterProfileNavItem: NavItem = {
+  label: 'Мой профиль',
+  to: '/profile',
+  iconSrc: '/icons/user-profile.svg',
+  navigateOnOpen: true,
+  children: [
+    { label: 'Изменить пароль', to: '/profile/password' },
+  ],
+}
+
 const baseNavItems: NavItem[] = [
   { label: 'Бронирования', to: '/profile/bookings', iconSrc: '/icons/iconoir_clock-solid.png' },
-  // временно скрыто
-  // {
-  //   label: 'Мой профиль',
-  //   to: '/profile',
-  //   iconSrc: '/icons/user-profile.svg',
-  //   navigateOnOpen: true,
-  //   children: [
-  //     { label: 'Изменить пароль', to: '/profile/password' },
-  //   ],
-  // },
   {
     label: 'Лицензия на оружие',
     labelShort: 'Оружие',
@@ -101,7 +101,11 @@ const navItems = computed<NavItem[]>(() => {
     ]
   }
 
-  return baseNavItems
+  return [
+    ...baseNavItems.slice(0, 1),
+    hunterProfileNavItem,
+    ...baseNavItems.slice(1),
+  ]
 })
 
 function isSubmenuOpen(to: string) {
@@ -117,9 +121,9 @@ function isOnExpandableNavItem(path: string, item: NavItem) {
     return true
   }
 
-  // `/profile` — префикс почти всех пунктов меню, поэтому только точное совпадение
+  // `/profile` — префикс почти всех пунктов меню, поэтому не раскрываем по самому родителю
   if (item.to === '/profile') {
-    return path === '/profile' || path === '/profile/'
+    return false
   }
 
   return path === item.to || path.startsWith(`${item.to}/`)
@@ -167,11 +171,21 @@ function toggleSubmenu(to: string) {
 
 async function handleParentNavClick(item: NavItem) {
   if (item.navigateOnOpen) {
-    if (isCompactSidebar.value) {
-      openSubmenus.value = { [item.to]: true }
+    if (isSubmenuOpen(item.to)) {
+      openSubmenus.value[item.to] = false
+      return
     }
-    else {
-      openSubmenus.value[item.to] = true
+
+    const onParentPage = route.path === item.to || route.path === `${item.to}/`
+
+    if (onParentPage) {
+      if (isCompactSidebar.value) {
+        openSubmenus.value = { [item.to]: true }
+      }
+      else {
+        openSubmenus.value[item.to] = true
+      }
+      return
     }
 
     await navigateTo(item.to)
