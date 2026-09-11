@@ -1,3 +1,4 @@
+import { chtoVzyatNaOkhotuSpisokContent } from '~/content/blog/chto-vzyat-na-okhotu-spisok'
 import { kogdaZakanchivaetsyaSezonOkhoty2026Content } from '~/content/blog/kogda-zakanchivaetsya-sezon-okhoty-2026'
 
 export type BlogPost = {
@@ -7,6 +8,8 @@ export type BlogPost = {
   date: string
   image: string
   content?: string
+  /** Заголовок и дата уже внутри HTML-контента (не дублировать сверху) */
+  embeddedHeader?: boolean
 }
 
 export const blogPosts: BlogPost[] = [
@@ -21,8 +24,11 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'chto-vzyat-na-okhotu-spisok',
     title: 'Что взять на охоту',
+    pageTitle: 'Что взять на охоту: полный список',
     date: '10.06.2026 г.',
     image: '/images/blog/chto-vzyat-na-okhotu.jpg',
+    content: chtoVzyatNaOkhotuSpisokContent,
+    embeddedHeader: true,
   },
   {
     slug: 'kogda-nachinaetsya-okhotnichiy-sezon-2026-goda-v-rossii',

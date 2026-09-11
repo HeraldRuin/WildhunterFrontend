@@ -43,8 +43,10 @@ useHead({
 
     <main class="blog-article__main">
       <div class="container blog-article__content">
-        <h1>{{ pageTitle }}</h1>
-        <p class="blog-article__date">{{ post.date }}</p>
+        <template v-if="!post.embeddedHeader">
+          <h1>{{ pageTitle }}</h1>
+          <p class="blog-article__date">{{ post.date }}</p>
+        </template>
         <img
           v-if="!post.content"
           class="blog-article__image"
@@ -140,6 +142,26 @@ useHead({
   margin: 0 0 18px;
 }
 
+.blog-article__body :deep(.blog-inline-title) {
+  margin: 0 0 12px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  text-align: left;
+}
+
+.blog-article__body :deep(.blog-inline-date) {
+  margin: 0 0 24px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: left;
+  color: #111;
+}
+
 .blog-article__body :deep(a) {
   color: #1a5fb4;
   text-decoration: underline;
@@ -181,6 +203,22 @@ useHead({
   margin: 40px 0 24px;
 }
 
+.blog-article__body :deep(.blog-split:first-child) {
+  margin-top: 0;
+}
+
+.blog-article__body :deep(.blog-split--reverse) {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+}
+
+.blog-article__body :deep(.blog-split--reverse .blog-split__media) {
+  order: 2;
+}
+
+.blog-article__body :deep(.blog-split--reverse .blog-split__text) {
+  order: 1;
+}
+
 .blog-article__body :deep(.blog-split__image) {
   display: block;
   width: 100%;
@@ -188,6 +226,10 @@ useHead({
   margin: 0 0 8px;
   object-fit: cover;
   aspect-ratio: 4 / 5;
+}
+
+.blog-article__body :deep(.blog-split__image--wide) {
+  aspect-ratio: 16 / 9;
 }
 
 .blog-article__body :deep(.blog-table-wrap) {
@@ -306,6 +348,60 @@ useHead({
   font-weight: 400;
 }
 
+.blog-article__body :deep(.blog-join) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 24px 40px;
+  align-items: center;
+  width: 100vw;
+  max-width: 100vw;
+  margin: 48px calc(50% - 50vw) 0;
+  padding: 40px max(24px, calc((100vw - 1100px) / 2 + 16px));
+  background: #f2f0eb;
+}
+
+.blog-article__body :deep(.blog-join__title) {
+  margin: 0 0 12px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.blog-article__body :deep(.blog-join__copy p) {
+  margin: 0;
+}
+
+.blog-article__body :deep(.blog-join__socials) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.blog-article__body :deep(.blog-join__social) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--social-color, #111);
+  border-radius: 999px;
+  color: var(--social-color, #111);
+  text-decoration: none;
+}
+
+.blog-article__body :deep(.blog-join__social:hover) {
+  background: color-mix(in srgb, var(--social-color, #111) 12%, transparent);
+}
+
+.blog-article__body :deep(.blog-join__social svg) {
+  width: 20px;
+  height: 20px;
+}
+
 .blog-article__body :deep(.blog-contacts) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -359,6 +455,7 @@ useHead({
   }
 
   .blog-article__body :deep(.blog-faq__head),
+  .blog-article__body :deep(.blog-join),
   .blog-article__body :deep(.blog-contacts) {
     grid-template-columns: 1fr;
   }
@@ -366,6 +463,15 @@ useHead({
   .blog-article__body :deep(.blog-faq__lead),
   .blog-article__body :deep(.blog-contacts__info) {
     text-align: left;
+  }
+
+  .blog-article__body :deep(.blog-join__socials) {
+    justify-content: flex-start;
+  }
+
+  .blog-article__body :deep(.blog-split--reverse .blog-split__media),
+  .blog-article__body :deep(.blog-split--reverse .blog-split__text) {
+    order: initial;
   }
 }
 
@@ -395,6 +501,7 @@ useHead({
     font-size: 16px;
   }
 
+  .blog-article__body :deep(.blog-join),
   .blog-article__body :deep(.blog-contacts) {
     padding-block: 28px;
   }
