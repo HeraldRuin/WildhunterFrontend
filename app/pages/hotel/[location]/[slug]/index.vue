@@ -664,11 +664,11 @@ function handleRetryHotelLoad() {
   color: #e53935;
 }
 
-.hotel-page__animals-list {
+.hotel-page__animals .hotel-page__animals-list {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -792,14 +792,17 @@ function handleRetryHotelLoad() {
 
 .hotel-page__map {
   position: relative;
-  width: 100%;
+  width: min(100% - 32px, 1800px);
   height: min(70vh, 560px);
   min-height: 400px;
+  margin: 0 auto 48px;
+  overflow: hidden;
+  border-radius: var(--wh-radius);
 }
 
 .hotel-page__map :deep(.bases-map-wrap),
 .hotel-page__map :deep(.bases-map) {
-  border-radius: 0;
+  border-radius: var(--wh-radius);
 }
 
 .hotel-page__map-info {
