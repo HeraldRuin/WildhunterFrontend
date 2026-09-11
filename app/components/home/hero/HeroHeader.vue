@@ -119,6 +119,7 @@ onUnmounted(() => {
           :key="item.to"
           :to="item.to"
           class="hero-header__menu hero-header__menu--desktop"
+          :class="{ 'hero-header__menu--blog': item.to === '/blog' }"
         >
           {{ item.label }}
         </NuxtLink>
@@ -289,6 +290,12 @@ onUnmounted(() => {
   flex-shrink: 0;
   margin-top: 12px;
   margin-left: 20px;
+}
+
+@media (max-width: 1105px) {
+  .hero-header__socials {
+    display: none;
+  }
 }
 
 .hero-header__notifications {
@@ -493,6 +500,10 @@ onUnmounted(() => {
     padding: 0 0 4px;
   }
 
+  .hero-header__menu--blog {
+    display: none;
+  }
+
   .hero-header__right {
     gap: 12px;
   }
@@ -563,10 +574,6 @@ onUnmounted(() => {
     justify-content: flex-end;
     flex-wrap: nowrap;
     gap: 8px;
-  }
-
-  .hero-header__socials {
-    display: none;
   }
 
   .hero-header__actions {
