@@ -318,9 +318,9 @@ const resultsSummary = computed(() => {
   const page = Math.min(currentPage.value, totalPages.value)
   const from = (page - 1) * CATALOG_PER_PAGE + 1
   const to = from + visible - 1
-  const hotelsLabel = pluralizeRu(total, ['отеля', 'отелей', 'отелей'])
+  const basesLabel = pluralizeRu(total, ['база', 'базы', 'баз'])
 
-  return `Показаны ${from} – ${to} из ${hotelsLabel}`
+  return `Показаны ${from} – ${to} из ${basesLabel}`
 })
 
 watch(totalPages, (pages) => {
