@@ -448,6 +448,7 @@ function onNumberModelUpdate(value: string) {
   height: auto;
   padding: 18px 22px 16px;
   border: none;
+  border-radius: 16px;
   outline: 1px solid var(--hunter-billet-line);
   outline-offset: 3px;
   color: var(--hunter-billet-ink);
