@@ -526,7 +526,7 @@ onBeforeUnmount(() => {
                   v-else-if="showCustomer && isHuntingFinishedCollection(item)"
                   class="booking-table__payment-summary"
                 >
-                  <div>Остаток базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</div>
+                  <div>Остаток базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб.</div>
                 </div>
               </div>
             </td>
@@ -859,6 +859,10 @@ onBeforeUnmount(() => {
   font-size: 0.68rem;
   font-weight: 600;
   line-height: 1.2;
+}
+
+.booking-table__status-meta--collected + .booking-table__status-meta--substatus {
+  margin-top: 12px;
 }
 
 .booking-table__status-meta--collected {
