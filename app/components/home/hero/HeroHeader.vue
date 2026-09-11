@@ -577,7 +577,7 @@ onUnmounted(() => {
   }
 
   .hero-header__actions {
-    gap: 8px;
+    gap: 16px;
     margin-left: 0;
   }
 
