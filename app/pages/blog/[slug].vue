@@ -232,6 +232,17 @@ useHead({
   aspect-ratio: 16 / 9;
 }
 
+.blog-article__body :deep(.blog-split__image--sign) {
+  aspect-ratio: auto;
+  object-fit: contain;
+  background: #000;
+}
+
+.blog-article__body :deep(.blog-split--table-sign) {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+  align-items: center;
+}
+
 .blog-article__body :deep(.blog-table-wrap) {
   overflow-x: auto;
   margin: 0 0 20px;

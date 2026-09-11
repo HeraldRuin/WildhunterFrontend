@@ -1,4 +1,5 @@
 import { chtoVzyatNaOkhotuSpisokContent } from '~/content/blog/chto-vzyat-na-okhotu-spisok'
+import { kogdaNachinaetsyaOkhotnichiySezon2026Content } from '~/content/blog/kogda-nachinaetsya-okhotnichiy-sezon-2026'
 import { kogdaZakanchivaetsyaSezonOkhoty2026Content } from '~/content/blog/kogda-zakanchivaetsya-sezon-okhoty-2026'
 
 export type BlogPost = {
@@ -35,6 +36,7 @@ export const blogPosts: BlogPost[] = [
     title: 'Когда начинается охотничий сезон 2026 года в России',
     date: '06.06.2026 г.',
     image: '/images/blog/kogda-nachinaetsya.jpg',
+    content: kogdaNachinaetsyaOkhotnichiySezon2026Content,
   },
   {
     slug: 'kak-stat-okhotnikom-polnoe-rukovodstvo',
