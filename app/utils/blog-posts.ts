@@ -1,4 +1,5 @@
 import { chtoVzyatNaOkhotuSpisokContent } from '~/content/blog/chto-vzyat-na-okhotu-spisok'
+import { kakStatOkhotnikomPolnoeRukovodstvoContent } from '~/content/blog/kak-stat-okhotnikom-polnoe-rukovodstvo'
 import { kogdaNachinaetsyaOkhotnichiySezon2026Content } from '~/content/blog/kogda-nachinaetsya-okhotnichiy-sezon-2026'
 import { kogdaZakanchivaetsyaSezonOkhoty2026Content } from '~/content/blog/kogda-zakanchivaetsya-sezon-okhoty-2026'
 
@@ -41,8 +42,11 @@ export const blogPosts: BlogPost[] = [
   {
     slug: 'kak-stat-okhotnikom-polnoe-rukovodstvo',
     title: 'Как стать охотником: полное руководство',
+    pageTitle: 'Как стать охотником: полное руководство',
     date: '02.06.2026 г.',
     image: '/images/blog/kak-stat-okhotnikom.jpg',
+    content: kakStatOkhotnikomPolnoeRukovodstvoContent,
+    embeddedHeader: true,
   },
   {
     slug: 'okhota-na-kosulyu-pravila-sposoby-sekrety',

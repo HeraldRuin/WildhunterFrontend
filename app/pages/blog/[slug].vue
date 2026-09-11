@@ -243,6 +243,31 @@ useHead({
   align-items: center;
 }
 
+.blog-article__body :deep(.blog-steps) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px 32px;
+  margin: 28px 0 36px;
+  align-items: start;
+}
+
+.blog-article__body :deep(.blog-steps__image) {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 16px 0 0;
+  object-fit: cover;
+}
+
+.blog-article__body :deep(.blog-links-image) {
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  margin: 0 auto 24px;
+  object-fit: cover;
+}
+
 .blog-article__body :deep(.blog-table-wrap) {
   overflow-x: auto;
   margin: 0 0 20px;
@@ -459,6 +484,11 @@ useHead({
   .blog-article__body :deep(.blog-split) {
     grid-template-columns: 1fr;
     gap: 28px;
+  }
+
+  .blog-article__body :deep(.blog-steps) {
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 
   .blog-article__body :deep(.blog-split__image) {
