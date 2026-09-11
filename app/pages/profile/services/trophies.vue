@@ -733,10 +733,12 @@ onMounted(() => {
   display: grid;
   width: 100%;
   min-width: 0;
+  /* Третья колонка — под кнопку «Сохранить»; иначе при collapse
+     остаётся только шеврон, auto сжимается и «Стоимость» уезжает вправо. */
   grid-template-columns:
     minmax(0, 0.9fr)
     minmax(0, 1.4fr)
-    auto;
+    minmax(118px, auto);
   column-gap: 12px;
   overflow: hidden;
 }
@@ -928,7 +930,7 @@ onMounted(() => {
     grid-template-columns:
       minmax(0, 1fr)
       minmax(0, 160px)
-      auto;
+      minmax(118px, auto);
   }
 
   .trophy-cost__col--cost {
