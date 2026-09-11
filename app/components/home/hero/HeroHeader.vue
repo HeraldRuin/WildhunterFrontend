@@ -294,6 +294,7 @@ onUnmounted(() => {
 
 .hero-header__notifications {
   flex-shrink: 0;
+  margin-top: 8px;
 }
 
 .hero-header__burger {
