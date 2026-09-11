@@ -136,7 +136,6 @@ onUnmounted(() => {
 
     <div class="hero-header__right">
       <LayoutAppSocialLinks
-        v-if="!showProfileChrome"
         variant="header"
         class="hero-header__socials"
       />
