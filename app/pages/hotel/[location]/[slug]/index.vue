@@ -832,7 +832,8 @@ function handleRetryHotelLoad() {
   color: var(--wh-gray-900);
 }
 
-.hotel-page__map-info-address {
+.hotel-page__map-info-address,
+.hotel-page__map-info-coords {
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.35;
@@ -849,10 +850,6 @@ function handleRetryHotelLoad() {
 }
 
 .hotel-page__map-info-coords {
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.3;
-  color: var(--wh-gray-900);
   white-space: nowrap;
 }
 
@@ -996,7 +993,8 @@ function handleRetryHotelLoad() {
     padding: 12px 14px;
   }
 
-  .hotel-page__map-info-address {
+  .hotel-page__map-info-address,
+  .hotel-page__map-info-coords {
     font-size: 0.875rem;
   }
 
