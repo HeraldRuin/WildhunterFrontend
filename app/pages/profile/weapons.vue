@@ -373,10 +373,13 @@ function applyHunterBilletFromApi(value: string | HunterBilletData | HunterBille
   }
 
   patchCachedProfile({
-    hunter_billet_number: billet.number,
-    hunter_billet_issuing_authority: billet.issuingAuthority,
-    hunter_billet_rf_subject: billet.rfSubject,
-    hunter_billet_issue_date: billet.issueDate,
+    hunter_billet_number: billet.number || String(profile.value.hunter_billet_number ?? '').trim(),
+    hunter_billet_issuing_authority: billet.issuingAuthority
+      || String(profile.value.hunter_billet_issuing_authority ?? '').trim(),
+    hunter_billet_rf_subject: billet.rfSubject
+      || String(profile.value.hunter_billet_rf_subject ?? '').trim(),
+    hunter_billet_issue_date: billet.issueDate
+      || String(profile.value.hunter_billet_issue_date ?? '').trim(),
   })
   syncHunterBilletSnapshot()
 }
@@ -969,12 +972,31 @@ async function saveHunterBillet() {
     : ''
 
   try {
+    // Сначала документ личности через POST /user.
+    if (identityDirty || (billetDirty && identityDocument)) {
+      const response = await saveProfile({
+        email: profile.value.email,
+        identity_document: identityDocument,
+      })
+
+      if (!('success' in response) || !response.success) {
+        if (!applyValidationErrors(response)) {
+          submitError.value = 'Не удалось сохранить документ, удостоверяющий личность'
+        }
+        return
+      }
+
+      clearFieldError('identity_document')
+      patchCachedProfile({ identity_document: identityDocument })
+    }
+
     if (billetDirty) {
       const response = await weaponsApi.saveUserWeapon({
         hunter_billet_number: billet.number,
         hunter_billet_issuing_authority: billet.issuingAuthority,
         hunter_billet_rf_subject: billet.rfSubject,
         hunter_billet_issue_date: issueDateApi,
+        identity_document: identityDocument || undefined,
       })
 
       if (!('success' in response) || !response.success) {
@@ -992,23 +1014,6 @@ async function saveHunterBillet() {
       clearFieldError('hunter_billet_issue_date')
       applyHunterBilletFromApi(billet)
       await loadUserWeapons({ force: true, silent: true })
-    }
-
-    if (identityDirty) {
-      const response = await saveProfile({
-        email: profile.value.email,
-        identity_document: identityDocument,
-      })
-
-      if (!('success' in response) || !response.success) {
-        if (!applyValidationErrors(response)) {
-          submitError.value = 'Не удалось сохранить документ, удостоверяющий личность'
-        }
-        return
-      }
-
-      clearFieldError('identity_document')
-      patchCachedProfile({ identity_document: identityDocument })
     }
 
     submitError.value = ''

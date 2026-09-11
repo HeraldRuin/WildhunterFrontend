@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatBirthdayDate, maskDotDateInput, parseBirthdayDate } from '~/utils/date'
+import { getHunterDocumentParts, normalizeHunterDocumentNumber } from '~/utils/hunterDocuments'
 
 const props = defineProps<{
   firstName?: string | null
@@ -73,34 +74,28 @@ function onFullNameModelUpdate(value: string) {
 }
 
 function parseBillet(value: string) {
-  const trimmed = String(value ?? '').trim()
+  const raw = String(value ?? '').trim()
 
-  const marked = trimmed.match(/^(\d{0,2})\s*№\s*(\d{0,7})$/)
-  if (marked) {
+  if (!raw) {
+    return { series: '', number: '' }
+  }
+
+  // Как в старом поле «Номер охот. билета»: буквенная серия + номер.
+  const parts = getHunterDocumentParts(raw, 'billet')
+
+  if (parts.series) {
     return {
-      series: marked[1] ?? '',
-      number: marked[2] ?? '',
+      series: parts.series,
+      number: parts.number,
     }
   }
 
-  const spaced = trimmed.match(/^(\d{1,2})\s+(\d{1,7})$/)
-  if (spaced) {
-    return {
-      series: spaced[1] ?? '',
-      number: spaced[2] ?? '',
-    }
-  }
-
-  if (/^\d{1,7}$/.test(trimmed)) {
-    return {
-      series: '',
-      number: trimmed,
-    }
-  }
+  // Цифровой билет: первые 2 знака — серия, остальное — номер.
+  const digits = raw.replace(/\D/g, '')
 
   return {
-    series: '',
-    number: '',
+    series: digits.slice(0, 2),
+    number: digits.slice(2),
   }
 }
 
@@ -188,7 +183,19 @@ function onBilletNumberUpdate(value: string) {
 }
 
 function emitBillet(series: string, number: string) {
-  emit('update:billetNumber', `${series} № ${number}`)
+  const nextSeries = String(series ?? '')
+    .replace(/[^0-9A-Za-zА-Яа-яЁё]/g, '')
+    .toUpperCase()
+    .slice(0, 2)
+  const nextNumber = String(number ?? '').replace(/\D/g, '').slice(0, 11)
+  const combined = `${nextSeries}${nextNumber}`
+
+  emit(
+    'update:billetNumber',
+    nextSeries && /[A-ZА-ЯЁ]/.test(nextSeries)
+      ? normalizeHunterDocumentNumber(combined, 'billet')
+      : combined,
+  )
   emit('clear-billet-error', 'hunter_billet_number')
 }
 
@@ -263,12 +270,15 @@ onBeforeUnmount(() => {
 })
 
 function onSeriesModelUpdate(value: string) {
-  const nextSeries = value.replace(/\D/g, '').slice(0, 2)
+  const nextSeries = value
+    .replace(/[^0-9A-Za-zА-Яа-яЁё]/g, '')
+    .toUpperCase()
+    .slice(0, 2)
   emitBillet(nextSeries, billetNumberPart.value)
 }
 
 function onNumberModelUpdate(value: string) {
-  const nextNumber = value.replace(/\D/g, '').slice(0, 7)
+  const nextNumber = value.replace(/\D/g, '').slice(0, 11)
   emitBillet(seriesDigits.value, nextNumber)
 }
 </script>
@@ -291,7 +301,6 @@ function onNumberModelUpdate(value: string) {
           <div class="hunter-billet__top-fields">
             <CommonFormField
               no-margin
-              digits-only
               :max-length="2"
               label="Серия"
               :model-value="seriesDigits"
@@ -303,7 +312,7 @@ function onNumberModelUpdate(value: string) {
             <CommonFormField
               no-margin
               digits-only
-              :max-length="7"
+              :max-length="11"
               label="Номер"
               :model-value="billetNumberPart"
               placeholder="0000000"
