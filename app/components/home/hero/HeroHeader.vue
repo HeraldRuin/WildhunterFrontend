@@ -17,6 +17,7 @@ const isLogoNavigating = ref(false)
 const allMenuItems = [
   { label: 'Для охотников', to: '/hunters' },
   { label: 'Для охотохозяйств', to: '/hunting-farms' },
+  { label: 'Блог', to: '/blog' },
 ]
 
 const isProfileLayout = computed(() => route.meta.layout === 'profile')
@@ -134,30 +135,38 @@ onUnmounted(() => {
     </NuxtLink>
 
     <div class="hero-header__right">
-      <ProfileNotificationsBell
-        v-if="showProfileChrome"
-        class="hero-header__notifications"
+      <LayoutAppSocialLinks
+        v-if="!showProfileChrome"
+        variant="header"
+        class="hero-header__socials"
       />
 
-      <CommonAuthUserMenu class="hero-header__user-menu" />
+      <div class="hero-header__actions">
+        <ProfileNotificationsBell
+          v-if="showProfileChrome"
+          class="hero-header__notifications"
+        />
 
-      <button
-        v-if="!isAuthenticated"
-        type="button"
-        class="hero-header__register hero-header__register--desktop"
-        @click="openRegisterModal"
-      >
-        Регистрация
-      </button>
+        <CommonAuthUserMenu class="hero-header__user-menu" />
 
-      <button
-        v-if="!isAuthenticated"
-        type="button"
-        class="hero-header__login"
-        @click="openLoginModal"
-      >
-        Вход
-      </button>
+        <button
+          v-if="!isAuthenticated"
+          type="button"
+          class="hero-header__register hero-header__register--desktop"
+          @click="openRegisterModal"
+        >
+          Регистрация
+        </button>
+
+        <button
+          v-if="!isAuthenticated"
+          type="button"
+          class="hero-header__login"
+          @click="openLoginModal"
+        >
+          Вход
+        </button>
+      </div>
     </div>
 
     <ul
@@ -226,8 +235,28 @@ onUnmounted(() => {
   gap: 28px;
 }
 
-.hero-header__right {
+.hero-header__left {
   justify-content: flex-end;
+  padding-top: 12px;
+  padding-right: 80px;
+}
+
+.hero-header--profile .hero-header__left {
+  justify-content: flex-start;
+  padding-top: 0;
+  padding-right: 0;
+}
+
+.hero-header__right {
+  justify-content: flex-start;
+  gap: 16px;
+}
+
+.hero-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: auto;
 }
 
 .hero-header__profile-chrome {
@@ -255,6 +284,12 @@ onUnmounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--wh-gray-900);
+}
+
+.hero-header__socials {
+  flex-shrink: 0;
+  margin-top: 12px;
+  margin-left: 20px;
 }
 
 .hero-header__notifications {
@@ -441,7 +476,7 @@ onUnmounted(() => {
 
   .hero-header__left {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-end;
     gap: 8px;
   }
 
@@ -459,6 +494,10 @@ onUnmounted(() => {
   }
 
   .hero-header__right {
+    gap: 12px;
+  }
+
+  .hero-header__actions {
     gap: 16px;
   }
 
@@ -504,6 +543,8 @@ onUnmounted(() => {
     align-items: center;
     justify-content: flex-start;
     gap: 0;
+    padding-top: 0;
+    padding-right: 0;
   }
 
   .hero-header__profile-chrome {
@@ -522,6 +563,15 @@ onUnmounted(() => {
     justify-content: flex-end;
     flex-wrap: nowrap;
     gap: 8px;
+  }
+
+  .hero-header__socials {
+    display: none;
+  }
+
+  .hero-header__actions {
+    gap: 8px;
+    margin-left: 0;
   }
 
   .hero-header__logo {

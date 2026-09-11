@@ -1,5 +1,11 @@
 <script setup lang="ts">
-const socials = [
+const props = withDefaults(defineProps<{
+  variant?: 'footer' | 'header'
+}>(), {
+  variant: 'footer',
+})
+
+const footerSocials = [
   {
     label: 'Telegram',
     href: 'https://t.me/wild_hunter_ru',
@@ -26,10 +32,49 @@ const socials = [
     color: '#1c211c',
   },
 ] as const
+
+const headerSocials = [
+  {
+    label: 'Telegram',
+    href: 'https://t.me/wild_hunter_ru',
+    color: '#1c211c',
+  },
+  {
+    label: 'VK',
+    href: 'https://vk.ru/wild_hunter_ru',
+    color: '#1c211c',
+  },
+  {
+    label: 'WhatsApp',
+    href: 'https://wa.me/74994509596',
+    color: '#1c211c',
+  },
+  {
+    label: 'Email',
+    href: 'mailto:wh.online@yandex.ru',
+    color: '#1c211c',
+  },
+  {
+    label: 'Phone',
+    href: 'tel:8-499-450-95-96',
+    color: '#1c211c',
+  },
+] as const
+
+const socials = computed(() =>
+  props.variant === 'header' ? headerSocials : footerSocials,
+)
+
+function isExternalHref(href: string) {
+  return href.startsWith('http://') || href.startsWith('https://')
+}
 </script>
 
 <template>
-  <div class="app-social-links">
+  <div
+    class="app-social-links"
+    :class="`app-social-links--${variant}`"
+  >
     <a
       v-for="social in socials"
       :key="social.label"
@@ -37,8 +82,8 @@ const socials = [
       :href="social.href"
       :aria-label="social.label"
       :style="{ '--social-color': social.color }"
-      target="_blank"
-      rel="noopener noreferrer nofollow"
+      :target="isExternalHref(social.href) ? '_blank' : undefined"
+      :rel="isExternalHref(social.href) ? 'noopener noreferrer nofollow' : undefined"
     >
       <svg
         v-if="social.label === 'Telegram'"
@@ -82,6 +127,16 @@ const socials = [
         <path
           fill="#fff"
           d="M12.696 15.74V6.554l8.645 4.61-8.644 4.578z"
+        />
+      </svg>
+      <svg
+        v-else-if="social.label === 'Phone'"
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+      >
+        <path
+          fill="currentColor"
+          d="M18.9 13.38C17.5333 13.38 16.2111 13.18 14.9778 12.82C14.5889 12.7 14.1556 12.79 13.8556 13.06L12.1111 15.03C8.96667 13.68 6.02222 11.13 4.45556 8.2L6.62222 6.54C6.92222 6.26 7.01111 5.87 6.88889 5.52C6.47778 4.41 6.26667 3.22 6.26667 1.99C6.26667 1.45 5.76667 1 5.16667 1H1.32222C0.722222 1 0 1.24 0 1.99C0 11.28 8.58889 19 18.9 19C19.6889 19 20 18.37 20 17.82V14.37C20 13.83 19.5 13.38 18.9 13.38Z"
         />
       </svg>
       <svg
@@ -130,5 +185,22 @@ const socials = [
   width: 20px;
   height: 20px;
   overflow: visible;
+}
+
+.app-social-links--header {
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.app-social-links--header .app-social-links__item {
+  width: 32px;
+  height: 32px;
+  border-color: var(--wh-black-text);
+  color: var(--wh-black-text);
+}
+
+.app-social-links--header .app-social-links__item svg {
+  width: 16px;
+  height: 16px;
 }
 </style>
