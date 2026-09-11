@@ -64,6 +64,143 @@ export function formatBirthdayDate(date: Date) {
   return `${day}.${month}.${year}`
 }
 
+/** Маска дд.мм.гггг: автоточка, день ≤ 31, месяц ≤ 12 */
+export function maskDotDateInput(value: string) {
+  const cleaned = String(value ?? '').replace(/[^\d.]/g, '')
+  let day = ''
+  let hasDayDot = false
+  let month = ''
+  let hasMonthDot = false
+  let year = ''
+
+  function canAppend(current: string, digit: string, max: number) {
+    const next = `${current}${digit}`
+    const numeric = Number.parseInt(next, 10)
+
+    if (Number.isNaN(numeric)) {
+      return false
+    }
+
+    if (next.length === 1) {
+      return numeric <= max
+    }
+
+    return numeric >= 1 && numeric <= max
+  }
+
+  function clampPart(raw: string, max: number) {
+    if (!raw) {
+      return ''
+    }
+
+    if (raw.length === 1) {
+      return raw
+    }
+
+    const numeric = Number.parseInt(raw, 10)
+
+    if (Number.isNaN(numeric)) {
+      return ''
+    }
+
+    if (numeric > max) {
+      return String(max)
+    }
+
+    if (numeric === 0) {
+      return '0'
+    }
+
+    return raw.slice(0, 2)
+  }
+
+  for (const char of cleaned) {
+    if (char === '.') {
+      if (day.length > 0 && !hasDayDot) {
+        hasDayDot = true
+        if (day.length === 1) {
+          day = `0${day}`
+        }
+      } else if (hasDayDot && month.length > 0 && !hasMonthDot) {
+        hasMonthDot = true
+        if (month.length === 1) {
+          month = `0${month}`
+        }
+      }
+      continue
+    }
+
+    if (!hasDayDot) {
+      if (day.length >= 2) {
+        hasDayDot = true
+        if (!canAppend(month, char, 12)) {
+          continue
+        }
+        month += char
+        if (month.length === 1 && month >= '2') {
+          month = `0${month}`
+          hasMonthDot = true
+        } else if (month.length === 2) {
+          hasMonthDot = true
+        }
+        continue
+      }
+
+      if (!canAppend(day, char, 31)) {
+        continue
+      }
+
+      day += char
+
+      if (day.length === 2) {
+        hasDayDot = true
+      }
+      continue
+    }
+
+    if (!hasMonthDot) {
+      if (month.length >= 2) {
+        hasMonthDot = true
+        if (year.length < 4) {
+          year += char
+        }
+        continue
+      }
+
+      if (!canAppend(month, char, 12)) {
+        continue
+      }
+
+      month += char
+
+      if (month.length === 1 && month >= '2') {
+        month = `0${month}`
+        hasMonthDot = true
+      } else if (month.length === 2) {
+        hasMonthDot = true
+      }
+      continue
+    }
+
+    if (year.length < 4) {
+      year += char
+    }
+  }
+
+  day = clampPart(day, 31)
+  month = clampPart(month, 12)
+
+  if (!hasDayDot && !month && !year) {
+    return day
+  }
+
+  if (!hasMonthDot && !year) {
+    return `${day}.${month}`
+  }
+
+  return `${day}.${month}.${year}`
+}
+
 export function parseBirthdayDate(value: string) {
   const trimmed = value.trim()
 
