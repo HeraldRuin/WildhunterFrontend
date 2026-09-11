@@ -37,6 +37,16 @@ const breadcrumbs = [
   { label: 'Главная', to: '/' },
   { label: 'История бронирования' },
 ]
+
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Бронирования',
+  divider: true,
+})
+
+
 const routeStatus = computed(() => {
   const status = route.query.status
   return Array.isArray(status) ? status[0] : status
@@ -1077,14 +1087,6 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 <template>
   <div class="bookings-page">
-    <header class="bookings-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
-    <CommonPageTitle divider>Бронирования</CommonPageTitle>
-
     <button
       v-if="bookingIdFilter"
       type="button"
@@ -1187,25 +1189,6 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
   overflow: hidden;
 }
 
-.bookings-page__header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-.bookings-page :deep(.page-title--divider) {
-  flex-shrink: 0;
-  width: 100%;
-}
-
 .bookings-page :deep(.booking-history-tabs) {
   flex-shrink: 0;
 }
@@ -1292,10 +1275,6 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
   .bookings-page__content {
     flex: none;
     min-height: 0;
-  }
-
-  .bookings-page__header {
-    width: 100%;
   }
 }
 

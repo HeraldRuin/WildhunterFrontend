@@ -24,6 +24,13 @@ const breadcrumbs = [
   { label: 'Животные' },
 ]
 
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Управление животными',
+})
+
 const animals = ref<AnimalRow[]>([])
 const available = ref<AvailableAnimal[]>([])
 const selectedAnimalId = ref('')
@@ -31,6 +38,7 @@ const isLoading = ref(true)
 const loadError = ref('')
 const isAdding = ref(false)
 const busyAnimalId = ref<number | null>(null)
+const isSavingAll = ref(false)
 
 const selectOptions = computed(() =>
   available.value.map(item => ({
@@ -42,7 +50,12 @@ const selectOptions = computed(() =>
 const isSelectDisabled = computed(() =>
   isLoading.value
   || isAdding.value
-  || busyAnimalId.value != null,
+  || busyAnimalId.value != null
+  || isSavingAll.value,
+)
+
+const isListBusy = computed(() =>
+  busyAnimalId.value != null || isAdding.value || isSavingAll.value,
 )
 
 function toAnimalRow(item: ManagedAnimal): AnimalRow {
@@ -101,7 +114,7 @@ async function loadManage() {
 }
 
 async function addAnimal(animalId: number) {
-  if (isAdding.value || busyAnimalId.value != null || isLoading.value) {
+  if (isAdding.value || busyAnimalId.value != null || isSavingAll.value || isLoading.value) {
     return
   }
 
@@ -169,7 +182,7 @@ function onMinHuntersInput(animal: AnimalRow, event: Event) {
 }
 
 async function saveAnimal(animal: AnimalRow) {
-  if (isLoading.value || isAdding.value || busyAnimalId.value != null) {
+  if (isLoading.value || isAdding.value || busyAnimalId.value != null || isSavingAll.value) {
     return
   }
 
@@ -206,8 +219,63 @@ async function saveAnimal(animal: AnimalRow) {
   }
 }
 
+async function saveAllAnimals() {
+  if (isLoading.value || isListBusy.value || !animals.value.length) {
+    return
+  }
+
+  for (const animal of animals.value) {
+    const huntersCount = Number(animal.huntersCountInput)
+
+    if (!Number.isInteger(huntersCount) || huntersCount < 1) {
+      notifications.error(`Укажите целое число охотников не меньше 1 для «${animal.title}»`)
+      return
+    }
+  }
+
+  const toSave = animals.value.filter(
+    animal => Number(animal.huntersCountInput) !== animal.hunters_count,
+  )
+
+  if (!toSave.length) {
+    notifications.success('Изменений нет')
+    return
+  }
+
+  isSavingAll.value = true
+
+  try {
+    for (const animal of toSave) {
+      const huntersCount = Number(animal.huntersCountInput)
+      const response = await animalsApi.updateManageHuntersCount(animal.id, {
+        hunters_count: huntersCount,
+      })
+
+      if (!('success' in response) || !response.success) {
+        notifications.error(
+          extractErrorMessage(response, `Не удалось сохранить «${animal.title}»`),
+        )
+        return
+      }
+
+      animal.hunters_count = response.data.hunters_count
+      animal.huntersCountInput = String(response.data.hunters_count)
+      animal.title = response.data.title
+    }
+
+    notifications.success('Количество охотников сохранено')
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    notifications.error(extractErrorMessage(data, 'Не удалось сохранить количество охотников'))
+  }
+  finally {
+    isSavingAll.value = false
+  }
+}
+
 function requestRemoveAnimal(animal: AnimalRow) {
-  if (isLoading.value || isAdding.value || busyAnimalId.value != null) {
+  if (isLoading.value || isListBusy.value) {
     return
   }
 
@@ -219,7 +287,7 @@ function requestRemoveAnimal(animal: AnimalRow) {
 }
 
 async function removeAnimal(animal: AnimalRow) {
-  if (isLoading.value || isAdding.value || busyAnimalId.value != null) {
+  if (isLoading.value || isListBusy.value) {
     return
   }
 
@@ -393,15 +461,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
     <div class="animals-manage__toolbar">
-      <CommonPageTitle>Управление животными</CommonPageTitle>
-
       <CommonSelectField
         v-model="selectedAnimalId"
         class="animals-manage__select"
@@ -412,6 +472,16 @@ onBeforeUnmount(() => {
         :options="selectOptions"
         :disabled="isSelectDisabled"
       />
+
+      <button
+        v-if="!isLoading && !loadError && animals.length"
+        type="button"
+        class="animals-manage__btn animals-manage__btn--save animals-manage__btn--save-all"
+        :disabled="isListBusy"
+        @click="saveAllAnimals"
+      >
+        {{ isSavingAll ? 'Сохранение...' : 'Сохранить все' }}
+      </button>
     </div>
 
     <p v-if="loadError" class="animals-manage__status animals-manage__status--error">
@@ -480,7 +550,7 @@ onBeforeUnmount(() => {
                       type="text"
                       inputmode="numeric"
                       :value="animal.huntersCountInput"
-                      :disabled="busyAnimalId === animal.id || isAdding"
+                      :disabled="isListBusy"
                       :aria-label="`Минимальное количество охотников: ${animal.title}`"
                       @keydown="onMinHuntersKeydown"
                       @input="onMinHuntersInput(animal, $event)"
@@ -488,18 +558,20 @@ onBeforeUnmount(() => {
                   </div>
 
                   <div class="animals-manage__col animals-manage__col--actions">
+                    <!--
                     <button
                       type="button"
                       class="animals-manage__btn animals-manage__btn--save"
-                      :disabled="busyAnimalId != null || isAdding"
+                      :disabled="isListBusy"
                       @click="saveAnimal(animal)"
                     >
                       Сохранить
                     </button>
+                    -->
                     <button
                       type="button"
                       class="animals-manage__btn animals-manage__btn--delete"
-                      :disabled="busyAnimalId != null || isAdding"
+                      :disabled="isListBusy"
                       @click="requestRemoveAnimal(animal)"
                     >
                       Удалить
@@ -511,6 +583,7 @@ onBeforeUnmount(() => {
           </div>
         </section>
       </div>
+
     </div>
 
     <CommonConfirmModal />
@@ -534,24 +607,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.profile-page :deep(.page-title) {
-  width: 100%;
-}
-
-.profile-page__header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
 .animals-manage__toolbar {
   display: flex;
   flex-wrap: nowrap;
@@ -561,17 +616,8 @@ onBeforeUnmount(() => {
   gap: 16px;
   width: 100%;
   max-width: 100%;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  margin-bottom: 16px;
   box-sizing: border-box;
-}
-
-.animals-manage__toolbar :deep(.page-title) {
-  margin: 0;
-  flex: 1 1 auto;
-  min-width: 0;
-  white-space: nowrap;
 }
 
 .animals-manage__select {
@@ -585,10 +631,6 @@ onBeforeUnmount(() => {
   .animals-manage__toolbar {
     flex-wrap: wrap;
     align-items: flex-start;
-  }
-
-  .animals-manage__toolbar :deep(.page-title) {
-    min-width: max-content;
   }
 
   .animals-manage__select {
@@ -716,7 +758,7 @@ onBeforeUnmount(() => {
     minmax(0, 1fr)
     max-content
     max-content;
-  column-gap: 16px;
+  column-gap: 10px;
 }
 
 .animals-manage__head,
@@ -783,6 +825,7 @@ onBeforeUnmount(() => {
 .animals-manage__col--hunters {
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .animals-manage__col--actions {
@@ -843,6 +886,11 @@ onBeforeUnmount(() => {
   background: var(--wh-green);
 }
 
+.animals-manage__btn--save-all {
+  padding: 10px 28px;
+  font-size: 14px;
+}
+
 .animals-manage__btn--delete {
   border-color: #dc3545;
   background: #dc3545;
@@ -870,18 +918,10 @@ onBeforeUnmount(() => {
     padding: 12px 8px 32px;
   }
 
-  .profile-page__header {
-    width: 100%;
-  }
-
   .animals-manage__toolbar {
     flex-wrap: wrap;
     align-items: flex-start;
     width: 100%;
-  }
-
-  .animals-manage__toolbar :deep(.page-title) {
-    min-width: max-content;
   }
 
   .animals-manage__select {
@@ -931,22 +971,9 @@ onBeforeUnmount(() => {
     padding: 16px 20px 32px;
   }
 
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
-  }
-
   .animals-manage__toolbar {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .animals-manage__toolbar :deep(.page-title) {
-    min-width: 0;
-    white-space: normal;
   }
 
   .animals-manage__select {
@@ -1002,6 +1029,7 @@ onBeforeUnmount(() => {
 
   .animals-manage__row .animals-manage__col--hunters {
     grid-column: 1;
+    justify-content: flex-start;
   }
 
   .animals-manage__row .animals-manage__col--actions {

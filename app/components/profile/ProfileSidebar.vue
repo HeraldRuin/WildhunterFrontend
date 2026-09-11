@@ -18,14 +18,22 @@ const { isBaseAdmin } = useUserRole()
 
 const baseNavItems: NavItem[] = [
   { label: 'Бронирования', to: '/profile/bookings', iconSrc: '/icons/iconoir_clock-solid.png' },
-  { label: 'Мой профиль', to: '/profile', iconSrc: '/icons/user-profile.svg' },
+  // временно скрыто
+  // {
+  //   label: 'Мой профиль',
+  //   to: '/profile',
+  //   iconSrc: '/icons/user-profile.svg',
+  //   navigateOnOpen: true,
+  //   children: [
+  //     { label: 'Изменить пароль', to: '/profile/password' },
+  //   ],
+  // },
   {
     label: 'Лицензия на оружие',
     labelShort: 'Оружие',
     to: '/profile/weapons',
     iconSrc: '/icons/material-symbols_license-rounded.png',
   },
-  { label: 'Изменить пароль', to: '/profile/password', iconSrc: '/icons/boxicons_pencil-filled.png' },
   { label: 'Избранное', to: '/profile/favorites', iconSrc: '/icons/favorites.svg' },
 ]
 
@@ -83,41 +91,6 @@ const openSubmenus = ref<Record<string, boolean>>({})
 
 const isCompactSidebar = ref(false)
 
-watch(
-  () => route.path,
-  (path) => {
-    for (const item of baseAdminExtraNavItems) {
-      if (!item.children?.length) {
-        continue
-      }
-
-      const onItemRoute = path === item.to
-        || path.startsWith(`${item.to}/`)
-        || item.children.some(child => path === child.to || path.startsWith(`${child.to}/`))
-
-      if (onItemRoute) {
-        if (isCompactSidebar.value) {
-          openSubmenus.value = { [item.to]: true }
-        }
-        else {
-          openSubmenus.value[item.to] = true
-        }
-      }
-    }
-  },
-  { immediate: true },
-)
-
-const compactDrilldownItem = computed(() => {
-  if (!isCompactSidebar.value || !isBaseAdmin.value) {
-    return null
-  }
-
-  return baseAdminExtraNavItems.find(item =>
-    Boolean(item.children?.length) && isSubmenuOpen(item.to),
-  ) ?? null
-})
-
 const navItems = computed<NavItem[]>(() => {
   if (isBaseAdmin.value) {
     return [
@@ -134,6 +107,52 @@ const navItems = computed<NavItem[]>(() => {
 function isSubmenuOpen(to: string) {
   return Boolean(openSubmenus.value[to])
 }
+
+function isOnExpandableNavItem(path: string, item: NavItem) {
+  if (!item.children?.length) {
+    return false
+  }
+
+  if (item.children.some(child => path === child.to || path.startsWith(`${child.to}/`))) {
+    return true
+  }
+
+  // `/profile` — префикс почти всех пунктов меню, поэтому только точное совпадение
+  if (item.to === '/profile') {
+    return path === '/profile' || path === '/profile/'
+  }
+
+  return path === item.to || path.startsWith(`${item.to}/`)
+}
+
+watch(
+  () => route.path,
+  (path) => {
+    for (const item of navItems.value) {
+      if (!isOnExpandableNavItem(path, item)) {
+        continue
+      }
+
+      if (isCompactSidebar.value) {
+        openSubmenus.value = { [item.to]: true }
+      }
+      else {
+        openSubmenus.value[item.to] = true
+      }
+    }
+  },
+  { immediate: true },
+)
+
+const compactDrilldownItem = computed(() => {
+  if (!isCompactSidebar.value) {
+    return null
+  }
+
+  return navItems.value.find(item =>
+    Boolean(item.children?.length) && isSubmenuOpen(item.to),
+  ) ?? null
+})
 
 function toggleSubmenu(to: string) {
   const willOpen = !openSubmenus.value[to]
@@ -216,7 +235,10 @@ const roleName = computed(() => profile.value?.role_name || user.value?.role_nam
 const memberSince = computed(() => formatMemberSince(profile.value?.created_at ?? user.value?.created_at ?? ''))
 
 const allNavPaths = computed(() => [
-  ...baseNavItems.map(item => item.to),
+  ...baseNavItems.flatMap(item => [
+    item.to,
+    ...(item.children?.map(child => child.to) ?? []),
+  ]),
   ...baseAdminExtraNavItems.flatMap(item => [
     item.to,
     ...(item.children?.map(child => child.to) ?? []),
@@ -412,6 +434,7 @@ async function goHome(event: MouseEvent) {
         </template>
       </nav>
 
+      <!-- временно скрыто
       <div class="profile-sidebar__footer">
         <NuxtLink
           to="/"
@@ -429,20 +452,22 @@ async function goHome(event: MouseEvent) {
           Выйти
         </button>
       </div>
+      -->
     </div>
   </aside>
 </template>
 
 <style scoped>
 .profile-sidebar {
-  position: fixed;
+  position: absolute;
   top: var(--profile-sidebar-gap, 16px);
+  bottom: var(--profile-sidebar-gap, 16px);
   left: var(--profile-sidebar-gap, 16px);
   z-index: 40;
   display: flex;
   flex-direction: column;
   width: var(--profile-sidebar-width, 280px);
-  height: calc(100vh - var(--profile-sidebar-gap, 16px) * 2);
+  height: auto;
   padding: 32px 24px 24px;
   border-radius: var(--wh-radius-lg);
   background: var(--wh-green);
@@ -594,9 +619,33 @@ async function goHome(event: MouseEvent) {
 }
 
 .profile-sidebar__nav-link--nested {
-  padding-left: 48px;
-  font-size: 16px;
+  position: relative;
+  min-height: 40px;
+  padding: 8px 14px 8px 56px;
+  font-size: 15px;
   font-weight: 400;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.profile-sidebar__nav-link--nested::before {
+  content: '';
+  position: absolute;
+  left: 26px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  transform: translateY(-50%);
+}
+
+.profile-sidebar__nav-link--nested:hover,
+.profile-sidebar__nav-link--nested.profile-sidebar__nav-link--active {
+  color: var(--wh-white);
+}
+
+.profile-sidebar__nav-link--nested.profile-sidebar__nav-link--active::before {
+  background: var(--wh-white);
 }
 
 .profile-sidebar__nav-icon {
@@ -658,6 +707,7 @@ async function goHome(event: MouseEvent) {
   .profile-sidebar {
     position: relative;
     top: auto;
+    bottom: auto;
     left: auto;
     z-index: 1;
     width: 100%;
@@ -755,13 +805,26 @@ async function goHome(event: MouseEvent) {
   }
 
   .profile-sidebar__nav-link--back,
-  .profile-sidebar__nav-link--nested,
   .profile-sidebar__nav-link--drilldown {
     margin-bottom: 0;
     min-height: 36px;
     padding: 6px 10px;
     font-size: 14px;
     font-weight: 500;
+  }
+
+  .profile-sidebar__nav-link--nested {
+    margin-bottom: 0;
+    min-height: 32px;
+    padding: 6px 10px 6px 44px;
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  .profile-sidebar__nav-link--nested::before {
+    left: 20px;
+    width: 5px;
+    height: 5px;
   }
 
   .profile-sidebar__nav--drilldown .profile-sidebar__nav-link {
@@ -865,13 +928,20 @@ async function goHome(event: MouseEvent) {
   }
 
   .profile-sidebar__nav-link--back,
-  .profile-sidebar__nav-link--nested,
   .profile-sidebar__nav-link--drilldown {
     margin-bottom: 0;
     min-height: 48px;
     padding: 12px 14px;
     font-size: 16px;
     font-weight: 500;
+  }
+
+  .profile-sidebar__nav-link--nested {
+    margin-bottom: 0;
+    min-height: 40px;
+    padding: 8px 14px 8px 56px;
+    font-size: 15px;
+    font-weight: 400;
   }
 
   .profile-sidebar__nav--drilldown .profile-sidebar__nav-link {

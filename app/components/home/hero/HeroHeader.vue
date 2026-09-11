@@ -2,6 +2,11 @@
 const { open: openLoginModal } = useLoginModal()
 const { open: openRegisterModal } = useRegisterModal()
 const { isAuthenticated } = useAuth()
+const {
+  breadcrumbs: profileBreadcrumbs,
+  title: profileTitle,
+  isActive: isProfileHeaderActive,
+} = useProfileHeader()
 
 const route = useRoute()
 const menuRef = ref<HTMLElement | null>(null)
@@ -9,10 +14,23 @@ const isMenuOpen = ref(false)
 const hoveredKey = ref<string | null>(null)
 const isLogoNavigating = ref(false)
 
-const menuItems = [
+const allMenuItems = [
   { label: 'Для охотников', to: '/hunters' },
   { label: 'Для охотохозяйств', to: '/hunting-farms' },
 ]
+
+const isProfileLayout = computed(() => route.meta.layout === 'profile')
+
+const menuItems = computed(() => {
+  if (isProfileLayout.value) {
+    return []
+  }
+
+  return allMenuItems
+})
+
+const showNavMenu = computed(() => menuItems.value.length > 0)
+const showProfileChrome = computed(() => isProfileLayout.value && isProfileHeaderActive.value)
 
 function isCompactViewport() {
   return window.matchMedia('(max-width: 1024px)').matches
@@ -52,34 +70,58 @@ onUnmounted(() => {
   <header
     ref="menuRef"
     class="hero-header"
-    :class="{ 'hero-header--menu-open': isMenuOpen }"
+    :class="{
+      'hero-header--menu-open': isMenuOpen,
+      'hero-header--profile': showProfileChrome,
+    }"
   >
     <div class="hero-header__left">
-      <button
-        type="button"
-        class="hero-header__burger"
-        :class="{ 'hero-header__burger--open': isMenuOpen }"
-        :aria-expanded="isMenuOpen"
-        aria-haspopup="menu"
-        aria-label="Меню"
-        @click.stop="toggleMenu"
-      >
-        <img
-          src="/icons/material-symbols_menu-rounded.png"
-          alt=""
-          width="34"
-          height="34"
-          aria-hidden="true"
+      <template v-if="showProfileChrome">
+        <div class="hero-header__profile-chrome">
+          <AppBreadcrumbs
+            v-if="profileBreadcrumbs.length"
+            class="hero-header__breadcrumbs"
+            :items="profileBreadcrumbs"
+          />
+          <!-- временно скрыто название раздела
+          <h1
+            v-if="profileTitle"
+            class="hero-header__profile-title"
+          >
+            {{ profileTitle }}
+          </h1>
+          -->
+        </div>
+      </template>
+
+      <template v-else>
+        <button
+          v-if="showNavMenu"
+          type="button"
+          class="hero-header__burger"
+          :class="{ 'hero-header__burger--open': isMenuOpen }"
+          :aria-expanded="isMenuOpen"
+          aria-haspopup="menu"
+          aria-label="Меню"
+          @click.stop="toggleMenu"
         >
-      </button>
-      <NuxtLink
-        v-for="item in menuItems"
-        :key="item.to"
-        :to="item.to"
-        class="hero-header__menu hero-header__menu--desktop"
-      >
-        {{ item.label }}
-      </NuxtLink>
+          <img
+            src="/icons/material-symbols_menu-rounded.png"
+            alt=""
+            width="34"
+            height="34"
+            aria-hidden="true"
+          >
+        </button>
+        <NuxtLink
+          v-for="item in menuItems"
+          :key="item.to"
+          :to="item.to"
+          class="hero-header__menu hero-header__menu--desktop"
+        >
+          {{ item.label }}
+        </NuxtLink>
+      </template>
     </div>
 
     <NuxtLink
@@ -92,6 +134,11 @@ onUnmounted(() => {
     </NuxtLink>
 
     <div class="hero-header__right">
+      <ProfileNotificationsBell
+        v-if="showProfileChrome"
+        class="hero-header__notifications"
+      />
+
       <CommonAuthUserMenu class="hero-header__user-menu" />
 
       <button
@@ -114,7 +161,7 @@ onUnmounted(() => {
     </div>
 
     <ul
-      v-if="isMenuOpen"
+      v-if="showNavMenu && isMenuOpen"
       class="hero-header__dropdown-list"
       role="menu"
       @mouseleave="hoveredKey = null"
@@ -181,6 +228,37 @@ onUnmounted(() => {
 
 .hero-header__right {
   justify-content: flex-end;
+}
+
+.hero-header__profile-chrome {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hero-header__breadcrumbs {
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.hero-header__profile-title {
+  margin: 0;
+  overflow: hidden;
+  font-family: "UNCAGE", sans-serif;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wh-gray-900);
+}
+
+.hero-header__notifications {
+  flex-shrink: 0;
 }
 
 .hero-header__burger {
@@ -367,6 +445,15 @@ onUnmounted(() => {
     gap: 8px;
   }
 
+  .hero-header--profile .hero-header__left {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .hero-header__profile-title {
+    font-size: 20px;
+  }
+
   .hero-header__menu {
     padding: 0 0 4px;
   }
@@ -419,10 +506,22 @@ onUnmounted(() => {
     gap: 0;
   }
 
+  .hero-header__profile-chrome {
+    gap: 2px;
+  }
+
+  .hero-header__breadcrumbs {
+    font-size: 0.75rem;
+  }
+
+  .hero-header__profile-title {
+    font-size: 16px;
+  }
+
   .hero-header__right {
     justify-content: flex-end;
     flex-wrap: nowrap;
-    gap: 0;
+    gap: 8px;
   }
 
   .hero-header__logo {

@@ -43,6 +43,14 @@ const breadcrumbs = [
 
 const pageHelpText = 'В этом разделе вы можете добавить услуги, которые будут доступны на вкладке Бронирования'
 
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Услуги',
+  helpText: pageHelpText,
+})
+
 const calculationTypeOptions: SelectFieldOption[] = [
   { value: 'individual', label: 'Индивидуально' },
   { value: 'per_person', label: 'На человека' },
@@ -674,16 +682,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
-    <div class="extra-services__toolbar">
-      <CommonPageTitle :help-text="pageHelpText">Услуги</CommonPageTitle>
-    </div>
-
     <div
       v-if="!loadError && !isLoading"
       class="extra-services__nav-row"
@@ -914,41 +912,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.profile-page :deep(.page-title) {
-  width: 100%;
-}
-
-.profile-page__header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-.extra-services__toolbar {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  margin-bottom: 20px;
-  box-sizing: border-box;
-}
-
-.extra-services__toolbar :deep(.page-title) {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-}
-
 .extra-services__nav-row {
   display: flex;
   flex-wrap: wrap;
@@ -1024,11 +987,10 @@ onBeforeUnmount(() => {
 .extra-services__add {
   flex-shrink: 0;
   width: auto;
-  min-height: 48px;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 10px;
-  background: var(--wh-orange-500);
+  padding: 10px 28px;
+  border: 1.5px solid var(--wh-green);
+  border-radius: 999px;
+  background: var(--wh-green);
   color: var(--wh-white);
   font: inherit;
   font-size: 14px;
@@ -1037,7 +999,7 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   cursor: pointer;
   box-sizing: border-box;
-  transition: background 0.15s ease;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .extra-services__select-add {
@@ -1053,11 +1015,13 @@ onBeforeUnmount(() => {
 }
 
 .extra-services__add:hover:not(:disabled) {
-  background: var(--wh-orange-600);
+  border-color: var(--wh-green);
+  background: var(--wh-green);
+  opacity: 0.92;
 }
 
-.extra-services__add:active {
-  opacity: 0.95;
+.extra-services__add:active:not(:disabled) {
+  opacity: 0.9;
 }
 
 .extra-services__add:disabled {
@@ -1636,19 +1600,6 @@ onBeforeUnmount(() => {
     align-items: flex-start;
     min-height: 0;
     padding-top: 160px;
-  }
-
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
-  }
-
-  .extra-services__toolbar {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .extra-services__nav-row {

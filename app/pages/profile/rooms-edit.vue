@@ -259,6 +259,19 @@ const breadcrumbs = computed(() => {
   return items
 })
 
+const { setProfileHeader } = useProfileHeader()
+
+watch(
+  [pageTitle, breadcrumbs],
+  ([title, items]) => {
+    setProfileHeader({
+      breadcrumbs: items,
+      title,
+    })
+  },
+  { immediate: true },
+)
+
 useHead({
   title: () => `${pageTitle.value} — WH`,
 })
@@ -876,16 +889,6 @@ watch(activeEditTab, (tab) => {
 <template>
   <div v-if="ready" class="profile-page">
     <div class="room-edit">
-      <header class="profile-page__header">
-        <AppBreadcrumbs :items="breadcrumbs" />
-
-        <ProfileNotificationsBell />
-      </header>
-
-      <div class="room-edit__title-row">
-        <CommonPageTitle>{{ pageTitle }}</CommonPageTitle>
-      </div>
-
       <div
         v-if="showForm && !loadError && !isLoading"
         class="room-edit__nav-row"
@@ -1271,33 +1274,6 @@ watch(activeEditTab, (tab) => {
   align-items: stretch;
   min-height: 0;
   max-width: 100%;
-}
-
-.profile-page__header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-.room-edit__title-row {
-  flex-shrink: 0;
-  width: 100%;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
-}
-
-.room-edit__title-row :deep(.page-title) {
-  margin: 0;
 }
 
 .room-edit__panel-area {
@@ -1944,14 +1920,6 @@ watch(activeEditTab, (tab) => {
   .room-edit__body {
     flex: none;
     overflow: visible;
-  }
-
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
   }
 
   .room-edit__nav {

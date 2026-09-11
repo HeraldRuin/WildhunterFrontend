@@ -11,6 +11,20 @@ const props = withDefaults(defineProps<{
   breadcrumbs: () => [],
 })
 
+const { setProfileHeader } = useProfileHeader()
+
+watch(
+  () => [props.title, props.breadcrumbs] as const,
+  ([title, breadcrumbs]) => {
+    setProfileHeader({
+      breadcrumbs,
+      title,
+    })
+  },
+  { immediate: true, deep: true },
+)
+
+
 const { settings: settingsApi } = useApi()
 const notifications = useNotifications()
 
@@ -185,14 +199,6 @@ onMounted(() => {
 
 <template>
   <div class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
-    <CommonPageTitle>{{ title }}</CommonPageTitle>
-
     <p v-if="loadError" class="timer-settings__status timer-settings__status--error">
       {{ loadError }}
     </p>
@@ -251,20 +257,6 @@ onMounted(() => {
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   overflow: hidden;
-}
-
-.profile-page__header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
 }
 
 .timer-settings__panel {
@@ -335,10 +327,6 @@ onMounted(() => {
     padding: 12px 8px 32px;
   }
 
-  .profile-page__header {
-    width: 100%;
-  }
-
   .timer-settings__panel {
     flex: none;
     padding: 20px;
@@ -351,14 +339,6 @@ onMounted(() => {
     max-height: none;
     overflow: visible;
     padding: 16px 20px 32px;
-  }
-
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
   }
 }
 </style>

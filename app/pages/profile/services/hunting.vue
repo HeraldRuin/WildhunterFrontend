@@ -42,6 +42,14 @@ const breadcrumbs = [
   { label: 'Организация охоты' },
 ]
 
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Организация охоты',
+  divider: true,
+})
+
 const animals = ref<HuntingAnimal[]>([])
 const selectedAnimalId = ref<number | null>(null)
 const isLoading = ref(true)
@@ -460,14 +468,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
-    <CommonPageTitle divider>Организация охоты</CommonPageTitle>
-
     <div class="hunting-org__body">
       <p v-if="loadError" class="hunting-org__status hunting-org__status--error">
         {{ loadError }}
@@ -481,7 +481,19 @@ onBeforeUnmount(() => {
         <CommonSpinner variant="ring" size="lg" label="Загрузка организации охоты" />
       </div>
 
-      <section v-else class="hunting-org">
+      <template v-else>
+      <div class="hunting-org__toolbar">
+        <button
+          type="button"
+          class="hunting-org__add"
+          :disabled="!selectedAnimal || isBusy"
+          @click="addPeriod"
+        >
+          Добавить период
+        </button>
+      </div>
+
+      <section class="hunting-org">
       <nav class="hunting-org__animals" aria-label="Животные">
         <button
           v-for="animal in animals"
@@ -654,19 +666,9 @@ onBeforeUnmount(() => {
 
           <p v-else class="hunting-org__empty">Нет периодов</p>
         </div>
-
-        <CommonSaveButton
-          type="button"
-          class="hunting-org__add"
-          width="auto"
-          mobile-width="100%"
-          :disabled="!selectedAnimal || isBusy"
-          @click="addPeriod"
-        >
-          Добавить период
-        </CommonSaveButton>
       </div>
     </section>
+      </template>
     </div>
 
     <CommonConfirmModal />
@@ -688,25 +690,6 @@ onBeforeUnmount(() => {
   max-width: 100%;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   overflow: hidden;
-}
-
-.profile-page :deep(.page-title--divider) {
-  flex-shrink: 0;
-  width: 100%;
-}
-
-.profile-page__header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
 }
 
 .hunting-org__status {
@@ -750,6 +733,17 @@ onBeforeUnmount(() => {
   border: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px;
   overflow: hidden;
+}
+
+.hunting-org__toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .hunting-org__animals {
@@ -1041,11 +1035,32 @@ onBeforeUnmount(() => {
   display: none;
 }
 
-.hunting-org__content :deep(.hunting-org__add) {
+.hunting-org__add {
   flex-shrink: 0;
-  align-self: flex-start;
-  margin-left: 16px;
+  width: auto;
   min-width: 0;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--wh-green);
+  color: var(--wh-white);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.hunting-org__add:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.hunting-org__add:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 @container hunting-org (max-width: 1180px) {
@@ -1133,10 +1148,6 @@ onBeforeUnmount(() => {
     padding: 12px 8px 32px;
   }
 
-  .profile-page__header {
-    width: 100%;
-  }
-
   .hunting-org__body {
     flex: none;
     min-height: 0;
@@ -1184,14 +1195,6 @@ onBeforeUnmount(() => {
     max-height: none;
     overflow: visible;
     padding: 16px 20px 32px;
-  }
-
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
   }
 
   .hunting-org__content {
@@ -1254,9 +1257,8 @@ onBeforeUnmount(() => {
     flex-wrap: wrap;
   }
 
-  .hunting-org__content :deep(.hunting-org__add) {
-    margin-left: 16px;
-    margin-right: 16px;
+  .hunting-org__add {
+    width: 100%;
   }
 }
 </style>

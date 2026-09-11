@@ -17,6 +17,15 @@ const breadcrumbs = [
   { label: 'Изменить пароль' },
 ]
 
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Изменить пароль',
+  divider: true,
+})
+
+
 const currentPassword = ref(readCachedPasswordSync())
 const newPassword = ref('')
 const confirmPassword = ref('')
@@ -320,14 +329,6 @@ onMounted(() => {
 
 <template>
   <div class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
-    <CommonPageTitle divider>Изменить пароль</CommonPageTitle>
-
     <form
       class="password-form"
       :class="{ 'password-form--submitting': isSubmitting }"
@@ -499,19 +500,6 @@ onMounted(() => {
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
 }
 
-.profile-page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
 .password-form {
   width: 100%;
 }
@@ -673,7 +661,6 @@ onMounted(() => {
     padding: 12px 8px 32px;
   }
 
-  .profile-page__header,
   .password-form__actions {
     width: 100%;
   }
@@ -682,14 +669,6 @@ onMounted(() => {
 @media (--wh-mobile) {
   .profile-page {
     padding: 16px 20px 32px;
-  }
-
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
   }
 
   .password-form__fields {

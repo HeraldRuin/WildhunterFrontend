@@ -37,6 +37,15 @@ const breadcrumbs = [
   { label: 'Трофеи и штрафы' },
 ]
 
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Стоимость трофея',
+  divider: true,
+})
+
+
 const animals = ref<TrophyAnimal[]>([])
 const selectedAnimalId = ref<number | null>(null)
 const isLoading = ref(true)
@@ -291,14 +300,6 @@ onMounted(() => {
 
 <template>
   <div class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
-    <CommonPageTitle divider>Стоимость трофея</CommonPageTitle>
-
     <div class="trophy-cost__body">
       <p v-if="loadError" class="trophy-cost__status trophy-cost__status--error">
         {{ loadError }}
@@ -347,6 +348,7 @@ onMounted(() => {
       </div>
 
       <div class="trophy-cost__content">
+        <div class="trophy-cost__scroll">
         <div
           class="trophy-cost__table"
           :class="{ 'trophy-cost__table--collapsed': isSectionCollapsed('trophies') }"
@@ -535,6 +537,7 @@ onMounted(() => {
             </p>
           </template>
         </div>
+        </div>
       </div>
     </section>
     </div>
@@ -554,25 +557,6 @@ onMounted(() => {
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   overflow: hidden;
-}
-
-.profile-page :deep(.page-title--divider) {
-  flex-shrink: 0;
-  width: 100%;
-}
-
-.profile-page__header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
 }
 
 .visually-hidden {
@@ -613,7 +597,9 @@ onMounted(() => {
 }
 
 .trophy-cost {
-  display: flex;
+  display: grid;
+  grid-template-columns: 600px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   flex: 1 1 0;
   align-items: stretch;
   gap: 0;
@@ -631,25 +617,27 @@ onMounted(() => {
 
 .trophy-cost__animals {
   display: flex;
-  flex: 0 0 600px;
+  grid-column: 1;
+  grid-row: 1;
   flex-direction: column;
   align-items: stretch;
   gap: 4px;
   box-sizing: border-box;
-  width: 600px;
-  max-width: 600px;
+  width: 100%;
+  max-width: none;
   min-width: 0;
+  min-height: 0;
   padding: 8px;
   border-right: 1px solid var(--wh-gray-200, #ddd);
   border-radius: 4px 0 0 4px;
   background: var(--wh-white);
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 @media (max-width: 1521px) and (min-width: 1025px) {
-  .trophy-cost__animals {
-    flex: 0 1 clamp(220px, 38cqi, 600px);
-    width: clamp(220px, 38cqi, 600px);
-    max-width: clamp(220px, 38cqi, 600px);
+  .trophy-cost {
+    grid-template-columns: clamp(220px, 38cqi, 600px) minmax(0, 1fr);
   }
 }
 
@@ -723,10 +711,22 @@ onMounted(() => {
 
 .trophy-cost__content {
   display: flex;
-  flex: 1 1 0;
+  grid-column: 2;
+  grid-row: 1;
   flex-direction: column;
   gap: 0;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trophy-cost__scroll {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .trophy-cost__table {
@@ -890,6 +890,8 @@ onMounted(() => {
 
   .trophy-cost {
     flex: none;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
   }
 
   .trophy-cost__loading {
@@ -899,18 +901,27 @@ onMounted(() => {
     padding-top: 160px;
   }
 
-  .trophy-cost {
-    flex-direction: column;
-  }
-
   .trophy-cost__animals {
     display: none;
   }
 
   .trophy-cost__animals-select {
     display: block;
+    grid-column: 1;
+    grid-row: 1;
     padding: 12px;
     border-bottom: 1px solid var(--wh-gray-200, #ddd);
+  }
+
+  .trophy-cost__content {
+    grid-column: 1;
+    grid-row: 2;
+    overflow: visible;
+  }
+
+  .trophy-cost__scroll {
+    flex: none;
+    overflow: visible;
   }
 
   .trophy-cost__table {
@@ -940,12 +951,6 @@ onMounted(() => {
     max-height: none;
     overflow: visible;
     padding: 16px 20px 32px;
-  }
-
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
   }
 
   .trophy-cost__table {

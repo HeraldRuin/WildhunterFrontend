@@ -51,6 +51,20 @@ const breadcrumbs = computed(() => [
   { label: 'Наличие' },
 ])
 
+const { setProfileHeader } = useProfileHeader()
+
+watch(
+  breadcrumbs,
+  (items) => {
+    setProfileHeader({
+      breadcrumbs: items,
+      title: 'Доступные номера',
+    })
+  },
+  { immediate: true },
+)
+
+
 const rooms = ref<ManagedRoom[]>([])
 const resolvedHotelId = ref<number | null>(null)
 const roomSelectOptions = computed(() => [
@@ -348,16 +362,8 @@ onMounted(() => {
 
 <template>
   <div v-if="ready" class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
     <div class="rooms-availability__toolbar-shell">
       <div class="rooms-availability__toolbar">
-        <CommonPageTitle>Доступные номера</CommonPageTitle>
-
         <div class="rooms-availability__toolbar-controls">
           <CommonSelectField
             v-model="activeTabId"
@@ -548,20 +554,6 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.profile-page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  flex-shrink: 0;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
 .rooms-availability__toolbar-shell {
   width: 100%;
   flex-shrink: 0;
@@ -572,17 +564,11 @@ onMounted(() => {
 
 .rooms-availability__toolbar {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 16px;
   width: 100%;
   box-sizing: border-box;
-}
-
-.rooms-availability__toolbar :deep(.page-title) {
-  margin: 0;
-  white-space: nowrap;
-  justify-self: start;
 }
 
 .rooms-availability__toolbar-controls {
@@ -592,7 +578,7 @@ onMounted(() => {
 .rooms-availability__select {
   width: 420px;
   max-width: 100%;
-  justify-self: center;
+  justify-self: start;
 }
 
 .rooms-availability__calendar-header {
@@ -955,14 +941,6 @@ onMounted(() => {
     max-height: none;
     overflow: visible;
     padding: 16px 20px 32px;
-  }
-
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
   }
 
   .rooms-availability__toolbar-controls {

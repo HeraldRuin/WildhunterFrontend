@@ -36,6 +36,14 @@ const breadcrumbs = [
   { label: 'Управление номерами' },
 ]
 
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Управление номерами',
+})
+
+
 const route = useRoute()
 
 const rooms = ref<RoomManageItem[]>([])
@@ -105,14 +113,6 @@ function addRoom() {
   })
 }
 
-function openAvailability() {
-  const hotelId = route.query.hotelId
-  void navigateTo({
-    path: '/rooms/availability',
-    query: typeof hotelId === 'string' && hotelId ? { hotelId } : undefined,
-  })
-}
-
 function onVisibilityChanged(id: number, status: RoomManageItem['status']) {
   const room = rooms.value.find(item => item.id === id)
   if (!room) {
@@ -156,15 +156,7 @@ onMounted(() => {
 
 <template>
   <div v-if="ready" class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
     <div class="rooms-manage__toolbar">
-      <CommonPageTitle>Управление номерами</CommonPageTitle>
-
       <div class="rooms-manage__actions">
         <button
           type="button"
@@ -172,26 +164,6 @@ onMounted(() => {
           @click="addRoom"
         >
           + Добавить Номер
-        </button>
-
-        <button
-          type="button"
-          class="rooms-manage__btn rooms-manage__btn--primary"
-          @click="openAvailability"
-        >
-          <svg
-            class="rooms-manage__btn-icon"
-            width="14"
-            height="14"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden="true"
-          >
-            <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />
-            <path d="M2.25 8.25h15.5" stroke="currentColor" stroke-width="1.5" />
-            <path d="M6.5 2.25v3.25M13.5 2.25v3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          Доступные номера
         </button>
       </div>
     </div>
@@ -230,35 +202,15 @@ onMounted(() => {
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
 }
 
-.profile-page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
 .rooms-manage__toolbar {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   width: 100%;
   margin-bottom: 12px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
-}
-
-.rooms-manage__toolbar :deep(.page-title) {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
 }
 
 .rooms-manage__actions {
@@ -288,25 +240,10 @@ onMounted(() => {
   transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.rooms-manage__btn-icon {
-  flex-shrink: 0;
-}
-
 .rooms-manage__btn--success {
   border-color: var(--wh-green);
   background: var(--wh-green);
   color: var(--wh-white);
-}
-
-.rooms-manage__btn--primary {
-  border-color: var(--wh-orange-500);
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
-}
-
-.rooms-manage__btn--primary:hover {
-  border-color: var(--wh-orange-600);
-  background: var(--wh-orange-600);
 }
 
 .rooms-manage__list {
@@ -345,10 +282,6 @@ onMounted(() => {
     padding: 12px 8px 32px;
   }
 
-  .profile-page__header {
-    width: 100%;
-  }
-
   .rooms-manage__toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -362,14 +295,6 @@ onMounted(() => {
 @media (--wh-mobile) {
   .profile-page {
     padding: 16px 20px 32px;
-  }
-
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
   }
 
   .rooms-manage__btn {

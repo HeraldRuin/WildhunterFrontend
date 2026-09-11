@@ -1,11 +1,17 @@
 <template>
   <div class="profile-layout">
-    <ProfileSidebar />
-    <div
-      class="profile-layout__content"
-      :class="{ 'profile-layout__content--scroll-lock': profileScrollLock }"
-    >
-      <slot />
+    <div class="profile-layout__header">
+      <HomeHeroHeader />
+    </div>
+
+    <div class="profile-layout__body">
+      <ProfileSidebar />
+      <div
+        class="profile-layout__content"
+        :class="{ 'profile-layout__content--scroll-lock': profileScrollLock }"
+      >
+        <slot />
+      </div>
     </div>
   </div>
 </template>
@@ -38,12 +44,15 @@ const profileScrollLock = computed(() => {
   )
 })
 
+const { clearProfileHeader } = useProfileHeader()
+
 onMounted(() => {
   loadProfile()
   document.documentElement.classList.add('profile-layout-active')
 })
 
 onBeforeUnmount(() => {
+  clearProfileHeader()
   document.documentElement.classList.remove('profile-layout-active')
 })
 
@@ -67,11 +76,39 @@ watch(
 .profile-layout {
   --profile-sidebar-width: 340px;
   --profile-sidebar-gap: 16px;
+  --profile-header-height: 112px;
 
+  display: flex;
+  flex-direction: column;
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
   background: var(--wh-gray-100);
+}
+
+.profile-layout__header {
+  position: relative;
+  z-index: 50;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 12px;
+}
+
+.profile-layout__header :deep(.hero-header) {
+  width: min(100%, calc(100vw - 2 * clamp(12px, 1.5vw + 4px, 80px)));
+  border: 1px solid var(--wh-gray-400);
+  border-top: none;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--wh-shadow);
+}
+
+.profile-layout__body {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 .profile-layout__content {
@@ -93,9 +130,8 @@ watch(
 @media (--wh-tablet) {
   .profile-layout {
     --profile-sidebar-gap: 8px;
+    --profile-header-height: 100px;
 
-    display: flex;
-    flex-direction: column;
     gap: var(--profile-sidebar-gap);
     height: auto;
     max-height: none;
@@ -103,6 +139,22 @@ watch(
     overflow-y: visible;
     padding: 8px;
     box-sizing: border-box;
+  }
+
+  .profile-layout__header {
+    padding: 0;
+  }
+
+  .profile-layout__header :deep(.hero-header) {
+    width: 100%;
+  }
+
+  .profile-layout__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--profile-sidebar-gap);
+    flex: none;
+    min-height: 0;
   }
 
   .profile-layout__content {
@@ -119,6 +171,19 @@ watch(
 }
 
 @media (--wh-mobile) {
+  .profile-layout {
+    --profile-header-height: 86px;
+  }
+
+  .profile-layout__header :deep(.hero-header) {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
+    border-left: none;
+    border-right: none;
+    border-radius: 0 0 12px 12px;
+  }
+
   .profile-layout__content {
     border-radius: var(--wh-radius-lg);
     background: var(--wh-white);

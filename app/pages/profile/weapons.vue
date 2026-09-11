@@ -198,6 +198,14 @@ const breadcrumbs = [
   { label: 'Лицензия на оружие' },
 ]
 
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Лицензия на оружие',
+  divider: true,
+})
+
 async function loadWeaponTypes() {
   weaponTypesLoading.value = true
   weaponTypesError.value = ''
@@ -897,14 +905,6 @@ const hasNewWeapon = computed(() =>
 
 <template>
   <div class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
-    <CommonPageTitle divider>Лицензия на оружие</CommonPageTitle>
-
     <p
       v-if="error && !profile"
       class="profile-page__status profile-page__status--error"
@@ -1204,19 +1204,6 @@ const hasNewWeapon = computed(() =>
 .profile-page {
   padding: 20px 40px 16px;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-}
-
-.profile-page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
 }
 
 .profile-page__status {
@@ -1647,21 +1634,9 @@ const hasNewWeapon = computed(() =>
   .profile-page {
     padding: 12px 8px 32px;
   }
-
-  .profile-page__header {
-    width: 100%;
-  }
 }
 
 @media (--wh-mobile) {
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
-  }
-
   .weapons-form__list {
     grid-template-columns: 1fr;
   }

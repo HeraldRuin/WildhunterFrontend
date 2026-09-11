@@ -57,6 +57,14 @@ const breadcrumbs = [
   { label: 'Мой профиль' },
 ]
 
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Настройки',
+  divider: true,
+})
+
 const isFormLoading = computed(() => pending.value && !profile.value)
 const showForm = computed(() => Boolean(profile.value) || pending.value)
 
@@ -495,14 +503,6 @@ async function handleSubmit() {
 
 <template>
   <div class="profile-page">
-    <header class="profile-page__header">
-      <AppBreadcrumbs :items="breadcrumbs" />
-
-      <ProfileNotificationsBell />
-    </header>
-
-    <CommonPageTitle divider>Настройки</CommonPageTitle>
-
     <p v-if="error && !showForm" class="profile-page__status profile-page__status--error">{{ error }}</p>
 
     <form
@@ -791,19 +791,6 @@ async function handleSubmit() {
 .profile-page {
   padding: 20px 40px 16px;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-}
-
-.profile-page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
 }
 
 .profile-page__status {
@@ -1211,7 +1198,6 @@ async function handleSubmit() {
     padding: 12px 8px 32px;
   }
 
-  .profile-page__header,
   .profile-form__section,
   .profile-form__submit-error,
   .profile-form__actions {

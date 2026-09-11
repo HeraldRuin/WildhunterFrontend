@@ -15,12 +15,27 @@ const displayName = computed(() => {
   return fullName || user.value.email
 })
 
-const navItems = [
+const route = useRoute()
+
+const allNavItems = [
   { label: 'Бронирования', to: '/profile/bookings' },
   { label: 'Мой профиль', to: '/profile' },
   { label: 'Изменить пароль', to: '/profile/password' },
   { label: 'Избранное', to: '/profile/favorites' },
 ]
+
+const navItems = computed(() => {
+  const path = route.path
+  const isProfileSection = path === '/profile' || path.startsWith('/profile/')
+
+  if (!isProfileSection) {
+    return allNavItems
+  }
+
+  return allNavItems.filter(
+    item => item.to !== '/profile/bookings',
+  )
+})
 
 function toggleMenu() {
   isOpen.value = !isOpen.value

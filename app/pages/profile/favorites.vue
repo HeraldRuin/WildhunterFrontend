@@ -22,6 +22,14 @@ const breadcrumbs = [
   { label: 'Избранное' },
 ]
 
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Избранное',
+  divider: true,
+})
+
 const favoriteOffers = ref<OfferItem[]>([])
 const isPageLoading = ref(true)
 const scrollEl = ref<HTMLElement | null>(null)
@@ -185,16 +193,6 @@ watch(favoriteHotelIds, (ids) => {
 
 <template>
   <div class="profile-page">
-    <div class="profile-page__fixed">
-      <header class="profile-page__header">
-        <AppBreadcrumbs :items="breadcrumbs" />
-
-        <ProfileNotificationsBell />
-      </header>
-
-      <CommonPageTitle divider>Избранное</CommonPageTitle>
-    </div>
-
     <div class="profile-page__scroll">
       <div
         v-if="isPageLoading"
@@ -210,7 +208,7 @@ watch(favoriteHotelIds, (ids) => {
         v-else-if="!favoriteOffers.length"
         class="favorites-page__empty"
       >
-        В избранном пока нет баз. Добавляйте понравившиеся отели на главной или в каталоге.
+        В избранном пока пусто. Добавляйте понравившиеся базы на главной или в каталоге.
       </p>
 
       <div
@@ -265,11 +263,6 @@ watch(favoriteHotelIds, (ids) => {
   padding-left: 20px;
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-}
-
-.profile-page__fixed {
-  flex-shrink: 0;
-  background: var(--wh-gray-100);
 }
 
 .profile-page__scroll {
@@ -332,23 +325,6 @@ watch(favoriteHotelIds, (ids) => {
   min-width: 0;
   overflow-y: auto;
   padding-bottom: 48px;
-}
-
-.profile-page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-.profile-page :deep(.page-title--divider) {
-  width: 100%;
 }
 
 .favorites-page__state {

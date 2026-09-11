@@ -18,6 +18,14 @@ const breadcrumbs = [
   { label: 'Управление базой' },
 ]
 
+const { setProfileHeader } = useProfileHeader()
+
+setProfileHeader({
+  breadcrumbs,
+  title: 'Управление базой',
+})
+
+
 const hotels = ref<BaseHotelItem[]>([])
 const isLoading = ref(true)
 const loadError = ref('')
@@ -100,10 +108,6 @@ async function loadHotels() {
   }
 }
 
-function addBase() {
-  void navigateTo('/profile/base/new')
-}
-
 onMounted(() => {
   void loadHotels()
 })
@@ -112,20 +116,11 @@ onMounted(() => {
 <template>
   <div class="profile-page">
     <div class="base-manage">
-      <header class="profile-page__header">
-        <AppBreadcrumbs :items="breadcrumbs" />
-
-        <ProfileNotificationsBell />
-      </header>
-
       <div class="base-manage__toolbar">
-        <CommonPageTitle>Управление базой</CommonPageTitle>
-
         <button
-          v-if="!isLoading && hotelsCount === 0"
           type="button"
           class="base-manage__btn base-manage__btn--success"
-          @click="addBase"
+          disabled
         >
           + Добавить базу
         </button>
@@ -177,35 +172,15 @@ onMounted(() => {
   width: 100%;
 }
 
-.profile-page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
 .base-manage__toolbar {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   width: 100%;
   margin-bottom: 12px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
-}
-
-.base-manage__toolbar :deep(.page-title) {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
 }
 
 .base-manage__btn {
@@ -233,6 +208,11 @@ onMounted(() => {
   border-color: var(--wh-green);
   background: var(--wh-green);
   color: var(--wh-white);
+}
+
+.base-manage__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .base-hotels,
@@ -275,14 +255,6 @@ onMounted(() => {
 @media (--wh-mobile) {
   .profile-page {
     padding: 16px 20px 32px;
-  }
-
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
   }
 }
 </style>

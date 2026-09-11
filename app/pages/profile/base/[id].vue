@@ -18,7 +18,7 @@ const { hotels: hotelsApi, media: mediaApi, services: servicesApi, location: loc
 const isCreateMode = computed(() => route.params.id === 'new')
 const hotelId = computed(() => Number(route.params.id))
 
-type BaseHotelEditTab = 'content' | 'places' | 'pricing' | 'attributes'
+type BaseHotelEditTab = 'content' | 'places' | 'pricing' | 'attributes' | 'jaeger'
 type ContentSubTab = 'content' | 'policy'
 type PlacesSubTab = 'location' | 'surrounding'
 
@@ -33,6 +33,7 @@ const editTabs: { id: BaseHotelEditTab, label: string }[] = [
   { id: 'places', label: 'Места' },
   { id: 'pricing', label: 'Ценообразование' },
   { id: 'attributes', label: 'Атрибуты' },
+  { id: 'jaeger', label: 'Егерь' },
 ]
 
 const contentSubTabs: { id: ContentSubTab, label: string }[] = [
@@ -119,6 +120,7 @@ const editCheckInTime = ref('')
 const editCheckOutTime = ref('')
 const editMinAdvanceBooking = ref('')
 const editMinStayDays = ref('')
+const editMaxHuntsPerDay = ref('')
 const editPrice = ref('')
 const editEnableExtraPrice = ref(false)
 const extraPriceItems = ref<ExtraPriceFormItem[]>([])
@@ -459,6 +461,19 @@ const breadcrumbs = computed(() => {
   return items
 })
 
+const { setProfileHeader } = useProfileHeader()
+
+watch(
+  [pageTitle, breadcrumbs],
+  ([title, items]) => {
+    setProfileHeader({
+      breadcrumbs: items,
+      title,
+    })
+  },
+  { immediate: true },
+)
+
 const showForm = computed(() => isCreateMode.value || Boolean(hotel.value))
 
 useHead({
@@ -780,6 +795,7 @@ function resetForm() {
   editCheckOutTime.value = ''
   editMinAdvanceBooking.value = ''
   editMinStayDays.value = ''
+  editMaxHuntsPerDay.value = ''
   editPrice.value = ''
   editEnableExtraPrice.value = false
   extraPriceItems.value = []
@@ -926,6 +942,7 @@ function fillFormFromHotel(item: ManagedHotelDetail) {
   editCheckOutTime.value = item.check_out_time ?? ''
   editMinAdvanceBooking.value = formatOptionalInt(item.min_day_before_booking)
   editMinStayDays.value = formatOptionalInt(item.min_day_stays)
+  editMaxHuntsPerDay.value = formatOptionalInt(item.max_hunts_per_day)
   editPrice.value = formatPriceInput(item.price)
   editEnableExtraPrice.value = Boolean(item.enable_extra_price)
   extraPriceItemIdSeq = 0
@@ -965,6 +982,7 @@ function buildSavePayload(galleryIds: number[]): HotelManageUpdatePayload {
     check_out_time: editCheckOutTime.value.trim() || null,
     min_day_before_booking: parseOptionalInt(editMinAdvanceBooking.value),
     min_day_stays: parseOptionalInt(editMinStayDays.value),
+    max_hunts_per_day: parseOptionalInt(editMaxHuntsPerDay.value) ?? 0,
     enable_extra_price: editEnableExtraPrice.value,
     map_lat: editMapLat.value.trim(),
     map_lng: editMapLng.value.trim(),
@@ -1143,16 +1161,6 @@ watch(activeEditTab, (tab) => {
 <template>
   <div class="profile-page">
     <div class="base-edit">
-      <header class="profile-page__header">
-        <AppBreadcrumbs :items="breadcrumbs" />
-
-        <ProfileNotificationsBell />
-      </header>
-
-      <div class="base-edit__title-row">
-        <CommonPageTitle>{{ pageTitle }}</CommonPageTitle>
-      </div>
-
       <div
         v-if="showForm && !loadError && !isLoading"
         class="base-edit__nav-row"
@@ -1830,6 +1838,19 @@ watch(activeEditTab, (tab) => {
                 </section>
               </div>
             </div>
+
+            <div
+              v-else-if="activeEditTab === 'jaeger'"
+              class="base-edit__jaeger"
+            >
+              <CommonFormField
+                v-model="editMaxHuntsPerDay"
+                label="Укажите количество егерей к этой базе"
+                placeholder="0"
+                digits-only
+                no-margin
+              />
+            </div>
           </div>
 
           <div
@@ -1942,33 +1963,6 @@ watch(activeEditTab, (tab) => {
   min-height: 0;
   max-width: 100%;
   overflow: hidden;
-}
-
-.profile-page__header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  height: 31px;
-  margin-bottom: 20px;
-  padding: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-.base-edit__title-row {
-  flex-shrink: 0;
-  width: 100%;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-  box-sizing: border-box;
-}
-
-.base-edit__title-row :deep(.page-title) {
-  margin: 0;
 }
 
 .base-edit__panel-area {
@@ -2945,6 +2939,15 @@ watch(activeEditTab, (tab) => {
   min-width: 0;
 }
 
+.base-edit__jaeger {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 420px;
+  min-width: 0;
+}
+
 .base-edit__pricing-block {
   display: flex;
   flex-direction: column;
@@ -3210,14 +3213,6 @@ watch(activeEditTab, (tab) => {
   .base-edit__body {
     flex: none;
     overflow: visible;
-  }
-
-  .profile-page__header {
-    height: auto;
-    min-height: 31px;
-    padding: 0;
-    background: transparent;
-    border-radius: 0;
   }
 
   .base-edit__nav {

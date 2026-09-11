@@ -124,6 +124,7 @@ export interface ManagedHotelDetail {
   check_out_time?: string | null
   min_day_before_booking?: number | string | null
   min_day_stays?: number | string | null
+  max_hunts_per_day?: number | string | null
   enable_extra_price?: boolean | number | null
   enable_service_fee?: boolean | number | null
   address: string | null
@@ -169,6 +170,7 @@ export interface HotelManageUpdatePayload {
   check_out_time?: string | null
   min_day_before_booking?: number | null
   min_day_stays?: number | null
+  max_hunts_per_day?: number | null
   enable_extra_price?: boolean
   enable_service_fee?: boolean
   map_lat?: string | number | null
