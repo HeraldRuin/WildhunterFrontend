@@ -54,7 +54,8 @@ async function onLinkClick(to: RouteLocationRaw, event: MouseEvent) {
   flex-wrap: wrap;
   gap: 8px;
   font-size: 1rem;
-  color: var(--wh-gray-400);
+  font-weight: 500;
+  color: var(--wh-gray-600);
 }
 
 .app-breadcrumbs a {
