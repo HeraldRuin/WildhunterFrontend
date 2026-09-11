@@ -4,6 +4,13 @@ const WEAPONS_LIST_CACHE_PREFIX = 'wh_user_weapons_list'
 const WEAPONS_COUNT_CACHE_PREFIX = 'wh_user_weapons_count'
 const HUNTER_BILLET_CACHE_PREFIX = 'wh_user_hunter_billet'
 
+export interface HunterBilletCache {
+  number: string
+  issuingAuthority: string
+  rfSubject: string
+  issueDate: string
+}
+
 function listKey(userId: number | string) {
   return `${WEAPONS_LIST_CACHE_PREFIX}:${userId}`
 }
@@ -107,20 +114,59 @@ export function readUserWeaponsCountCache(userId: number): number {
   return Math.min(count, 40)
 }
 
-export function readHunterBilletCache(userId: number): string | null {
-  const raw = readJson<string>(billetKey(userId))
+function normalizeBilletCache(raw: unknown): HunterBilletCache | null {
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim()
+    return trimmed
+      ? {
+          number: trimmed,
+          issuingAuthority: '',
+          rfSubject: '',
+          issueDate: '',
+        }
+      : null
+  }
 
-  if (typeof raw !== 'string') {
+  if (!raw || typeof raw !== 'object') {
     return null
   }
 
-  const trimmed = raw.trim()
+  const source = raw as Record<string, unknown>
+  const billet: HunterBilletCache = {
+    number: String(source.number ?? source.hunter_billet_number ?? '').trim(),
+    issuingAuthority: String(source.issuingAuthority ?? source.hunter_billet_issuing_authority ?? '').trim(),
+    rfSubject: String(source.rfSubject ?? source.hunter_billet_rf_subject ?? '').trim(),
+    issueDate: String(source.issueDate ?? source.hunter_billet_issue_date ?? '').trim(),
+  }
 
-  return trimmed || null
+  if (!billet.number && !billet.issuingAuthority && !billet.rfSubject && !billet.issueDate) {
+    return null
+  }
+
+  return billet
 }
 
-export function writeHunterBilletCache(userId: number, value: string) {
-  writeJson(billetKey(userId), value.trim())
+export function readHunterBilletCache(userId: number): HunterBilletCache | null {
+  return normalizeBilletCache(readJson<unknown>(billetKey(userId)))
+}
+
+export function writeHunterBilletCache(userId: number, value: string | HunterBilletCache) {
+  if (typeof value === 'string') {
+    writeJson(billetKey(userId), {
+      number: value.trim(),
+      issuingAuthority: '',
+      rfSubject: '',
+      issueDate: '',
+    } satisfies HunterBilletCache)
+    return
+  }
+
+  writeJson(billetKey(userId), {
+    number: value.number.trim(),
+    issuingAuthority: value.issuingAuthority.trim(),
+    rfSubject: value.rfSubject.trim(),
+    issueDate: value.issueDate.trim(),
+  } satisfies HunterBilletCache)
 }
 
 export function clearUserWeaponsCache(userId?: number | null) {

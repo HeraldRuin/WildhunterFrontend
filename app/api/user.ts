@@ -25,6 +25,7 @@ export interface UpdateUserPayload {
   city?: string
   address?: string
   hunter_billet_number?: string
+  identity_document?: string
   bio?: string
   avatar?: File | null
   avatar_id?: number | null
@@ -123,6 +124,7 @@ export function useUserApi() {
     appendFormValue(body, 'city', payload.city)
     appendFormValue(body, 'address', payload.address)
     appendFormValue(body, 'hunter_billet_number', payload.hunter_billet_number)
+    appendFormValue(body, 'identity_document', payload.identity_document)
     appendFormValue(body, 'bio', payload.bio)
 
     if (payload.avatar instanceof File) {

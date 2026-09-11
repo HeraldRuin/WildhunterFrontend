@@ -1,7 +1,7 @@
 import type { ApiErrorResponse, ApiSuccessResponse } from '~/types/api'
 import type { UserWeapon, WeaponOption } from '~/types/user'
 import { useApiClient } from './client'
-import { normalizeWeaponOptions, normalizeWeapons } from '~/utils/user'
+import { formatBirthdayDisplay, normalizeWeaponOptions, normalizeWeapons } from '~/utils/user'
 
 export type WeaponsResponse =
   | ApiSuccessResponse<unknown[]>
@@ -17,6 +17,9 @@ export type UserWeaponsResponse =
 
 export interface SaveUserWeaponPayload {
   hunter_billet_number?: string | null
+  hunter_billet_issuing_authority?: string | null
+  hunter_billet_rf_subject?: string | null
+  hunter_billet_issue_date?: string | null
   hunter_license_number?: string | null
   hunter_license_date?: string | null
   weapon_type_id?: number | null
@@ -27,9 +30,16 @@ export type SaveUserWeaponResponse =
   | ApiSuccessResponse<unknown>
   | ApiErrorResponse
 
+export interface HunterBilletData {
+  number: string
+  issuingAuthority: string
+  rfSubject: string
+  issueDate: string
+}
+
 export interface UserWeaponsBundle {
   weapons: UserWeapon[]
-  hunterBilletNumber: string
+  hunterBillet: HunterBilletData
 }
 
 async function mapOptionsResponse(response: WeaponsResponse | CalibersResponse) {
@@ -64,25 +74,56 @@ function unwrapWeaponsList(payload: unknown): unknown[] {
   return []
 }
 
-function extractHunterBilletNumber(payload: unknown, list: unknown[]): string {
-  const readBillet = (value: unknown) =>
-    typeof value === 'string' && value.trim() ? value.trim() : ''
+function readTrimmedString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : ''
+}
+
+function readBilletFields(source: Record<string, unknown>): HunterBilletData {
+  return {
+    number: readTrimmedString(source.hunter_billet_number),
+    issuingAuthority: readTrimmedString(source.hunter_billet_issuing_authority),
+    rfSubject: readTrimmedString(source.hunter_billet_rf_subject),
+    issueDate: formatBirthdayDisplay(source.hunter_billet_issue_date),
+  }
+}
+
+function hasBilletData(billet: HunterBilletData) {
+  return Boolean(
+    billet.number
+    || billet.issuingAuthority
+    || billet.rfSubject
+    || billet.issueDate,
+  )
+}
+
+function mergeBilletData(base: HunterBilletData, next: HunterBilletData): HunterBilletData {
+  return {
+    number: next.number || base.number,
+    issuingAuthority: next.issuingAuthority || base.issuingAuthority,
+    rfSubject: next.rfSubject || base.rfSubject,
+    issueDate: next.issueDate || base.issueDate,
+  }
+}
+
+function extractHunterBillet(payload: unknown, list: unknown[]): HunterBilletData {
+  let billet: HunterBilletData = {
+    number: '',
+    issuingAuthority: '',
+    rfSubject: '',
+    issueDate: '',
+  }
 
   if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
     const root = payload as Record<string, unknown>
-    const fromRoot = readBillet(root.hunter_billet_number)
-
-    if (fromRoot) {
-      return fromRoot
-    }
+    billet = mergeBilletData(billet, readBilletFields(root))
 
     if (root.data && typeof root.data === 'object' && !Array.isArray(root.data)) {
-      const fromData = readBillet((root.data as Record<string, unknown>).hunter_billet_number)
-
-      if (fromData) {
-        return fromData
-      }
+      billet = mergeBilletData(billet, readBilletFields(root.data as Record<string, unknown>))
     }
+  }
+
+  if (hasBilletData(billet)) {
+    return billet
   }
 
   for (const item of list) {
@@ -90,14 +131,14 @@ function extractHunterBilletNumber(payload: unknown, list: unknown[]): string {
       continue
     }
 
-    const fromItem = readBillet((item as { hunter_billet_number?: unknown }).hunter_billet_number)
+    const fromItem = readBilletFields(item as Record<string, unknown>)
 
-    if (fromItem) {
+    if (hasBilletData(fromItem)) {
       return fromItem
     }
   }
 
-  return ''
+  return billet
 }
 
 export function useWeaponsApi() {
@@ -156,7 +197,7 @@ export function useWeaponsApi() {
 
     return {
       weapons: normalizeWeapons(list),
-      hunterBilletNumber: extractHunterBilletNumber(response.data, list),
+      hunterBillet: extractHunterBillet(response.data, list),
     }
   }
 

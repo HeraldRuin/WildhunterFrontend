@@ -4,6 +4,7 @@ definePageMeta({
   middleware: 'auth',
 })
 
+import type { HunterBilletData } from '~/api/weapons'
 import type { UserWeapon, WeaponOption } from '~/types/user'
 import { formatApiDate, formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
 import { createEmptyWeapon } from '~/utils/user'
@@ -13,23 +14,31 @@ import {
   readHunterBilletCache,
   writeHunterBilletCache,
   writeUserWeaponsCache,
+  type HunterBilletCache,
 } from '~/utils/userWeaponsCache'
-import {
-  isValidHunterDocumentNumber,
-} from '~/utils/hunterDocuments'
 
 type WeaponField =
   | 'hunter_billet_number'
+  | 'hunter_billet_issuing_authority'
+  | 'hunter_billet_rf_subject'
+  | 'hunter_billet_issue_date'
+  | 'identity_document'
   | 'hunter_license_number'
   | 'hunter_license_date'
   | 'weapon_type_id'
   | 'caliber_id'
 
-const { profile, pending, error, loadProfile, patchCachedProfile } = useProfile()
+const { profile, pending, error, loadProfile, patchCachedProfile, saveProfile } = useProfile()
 const { user } = useAuth()
 const { isBaseAdmin } = useUserRole()
 const { weapons: weaponsApi } = useApi()
 const notifications = useNotifications()
+
+type HunterBilletPreviewExpose = {
+  finishSave: () => void
+}
+
+const hunterBilletPreviewRef = ref<HunterBilletPreviewExpose | null>(null)
 
 if (import.meta.client && isBaseAdmin.value) {
   window.location.replace('/404')
@@ -176,21 +185,63 @@ const weaponSnapshots = ref<Record<number, string>>({})
 const hunterBilletSnapshot = ref('')
 const savingHunterBillet = ref(false)
 
+function currentHunterBilletData(): HunterBilletData {
+  return {
+    number: String(profile.value?.hunter_billet_number ?? '').trim(),
+    issuingAuthority: String(profile.value?.hunter_billet_issuing_authority ?? '').trim(),
+    rfSubject: String(profile.value?.hunter_billet_rf_subject ?? '').trim(),
+    issueDate: String(profile.value?.hunter_billet_issue_date ?? '').trim(),
+  }
+}
+
+function currentIdentityDocument() {
+  return String(profile.value?.identity_document ?? '').trim()
+}
+
+function serializeHunterBilletState() {
+  return JSON.stringify({
+    ...currentHunterBilletData(),
+    identityDocument: currentIdentityDocument(),
+  })
+}
+
+function parseHunterBilletSnapshot() {
+  try {
+    return JSON.parse(hunterBilletSnapshot.value || '{}') as Partial<HunterBilletData> & {
+      identityDocument?: string
+    }
+  } catch {
+    return {}
+  }
+}
+
+function isHunterBilletFieldsDirty() {
+  const snap = parseHunterBilletSnapshot()
+  const current = currentHunterBilletData()
+
+  return current.number !== String(snap.number ?? '').trim()
+    || current.issuingAuthority !== String(snap.issuingAuthority ?? '').trim()
+    || current.rfSubject !== String(snap.rfSubject ?? '').trim()
+    || current.issueDate !== String(snap.issueDate ?? '').trim()
+}
+
+function isIdentityDocumentDirty() {
+  const snap = parseHunterBilletSnapshot()
+  return currentIdentityDocument() !== String(snap.identityDocument ?? '').trim()
+}
+
 const isHunterBilletDirty = computed(() => {
-  const current = profile.value?.hunter_billet_number.trim() ?? ''
-  return current !== hunterBilletSnapshot.value
+  if (!profile.value) {
+    return false
+  }
+
+  return serializeHunterBilletState() !== hunterBilletSnapshot.value
 })
 
-const hasHunterBilletValue = computed(() =>
-  isValidHunterDocumentNumber(profile.value?.hunter_billet_number ?? '', 'billet'),
-)
-
-const showHunterBilletAction = computed(() =>
-  isHunterBilletDirty.value && hasHunterBilletValue.value,
-)
+const showHunterBilletAction = computed(() => isHunterBilletDirty.value)
 
 const hunterBilletActionLabel = computed(() =>
-  hunterBilletSnapshot.value ? 'Обновить' : 'Сохранить',
+  String(parseHunterBilletSnapshot().number ?? '').trim() ? 'Обновить' : 'Сохранить',
 )
 
 const breadcrumbs = [
@@ -254,11 +305,16 @@ async function loadUserWeapons(options: { force?: boolean, silent?: boolean } = 
       return
     }
 
-    const { weapons: list, hunterBilletNumber } = await weaponsApi.getUserWeaponsBundle()
+    const { weapons: list, hunterBillet } = await weaponsApi.getUserWeaponsBundle()
     applyWeaponsList(list)
 
-    if (hunterBilletNumber) {
-      applyHunterBilletFromApi(hunterBilletNumber)
+    if (
+      hunterBillet.number
+      || hunterBillet.issuingAuthority
+      || hunterBillet.rfSubject
+      || hunterBillet.issueDate
+    ) {
+      applyHunterBilletFromApi(hunterBillet)
     } else {
       hydrateHunterBilletFromCache()
     }
@@ -288,30 +344,58 @@ function ensureWeaponDictionaries() {
 }
 
 function syncHunterBilletSnapshot() {
-  hunterBilletSnapshot.value = profile.value?.hunter_billet_number.trim() ?? ''
+  hunterBilletSnapshot.value = serializeHunterBilletState()
 }
 
-function applyHunterBilletFromApi(value: string) {
-  const trimmed = value.trim()
-
+function applyHunterBilletFromApi(value: string | HunterBilletData | HunterBilletCache) {
   if (!profile.value) {
     return
   }
 
+  const billet: HunterBilletData = typeof value === 'string'
+    ? {
+        number: value.trim(),
+        issuingAuthority: String(profile.value.hunter_billet_issuing_authority ?? '').trim(),
+        rfSubject: String(profile.value.hunter_billet_rf_subject ?? '').trim(),
+        issueDate: String(profile.value.hunter_billet_issue_date ?? '').trim(),
+      }
+    : {
+        number: String(value.number ?? '').trim(),
+        issuingAuthority: String(value.issuingAuthority ?? '').trim(),
+        rfSubject: String(value.rfSubject ?? '').trim(),
+        issueDate: String(value.issueDate ?? '').trim(),
+      }
+
   const userId = currentUserId()
 
-  if (userId && trimmed) {
-    writeHunterBilletCache(userId, trimmed)
+  if (userId && (billet.number || billet.issuingAuthority || billet.rfSubject || billet.issueDate)) {
+    writeHunterBilletCache(userId, billet)
   }
 
-  patchCachedProfile({ hunter_billet_number: trimmed })
+  patchCachedProfile({
+    hunter_billet_number: billet.number,
+    hunter_billet_issuing_authority: billet.issuingAuthority,
+    hunter_billet_rf_subject: billet.rfSubject,
+    hunter_billet_issue_date: billet.issueDate,
+  })
   syncHunterBilletSnapshot()
 }
 
 function hydrateHunterBilletFromCache() {
   const userId = currentUserId()
 
-  if (!userId || !profile.value || profile.value.hunter_billet_number.trim()) {
+  if (!userId || !profile.value) {
+    return
+  }
+
+  const hasBillet = Boolean(
+    profile.value.hunter_billet_number.trim()
+    || profile.value.hunter_billet_issuing_authority.trim()
+    || profile.value.hunter_billet_rf_subject.trim()
+    || profile.value.hunter_billet_issue_date.trim(),
+  )
+
+  if (hasBillet) {
     return
   }
 
@@ -321,7 +405,12 @@ function hydrateHunterBilletFromCache() {
     return
   }
 
-  patchCachedProfile({ hunter_billet_number: cached })
+  patchCachedProfile({
+    hunter_billet_number: cached.number,
+    hunter_billet_issuing_authority: cached.issuingAuthority,
+    hunter_billet_rf_subject: cached.rfSubject,
+    hunter_billet_issue_date: cached.issueDate,
+  })
 }
 
 async function ensureHunterBilletLoaded() {
@@ -484,6 +573,27 @@ function clearFieldError(field: WeaponField) {
   const nextErrors = { ...fieldErrors.value }
   delete nextErrors[field]
   fieldErrors.value = nextErrors
+}
+
+function clearBilletFieldError(field?: string) {
+  if (!field) {
+    clearFieldError('hunter_billet_number')
+    clearFieldError('hunter_billet_issuing_authority')
+    clearFieldError('hunter_billet_rf_subject')
+    clearFieldError('hunter_billet_issue_date')
+    clearFieldError('identity_document')
+    return
+  }
+
+  if (
+    field === 'hunter_billet_number'
+    || field === 'hunter_billet_issuing_authority'
+    || field === 'hunter_billet_rf_subject'
+    || field === 'hunter_billet_issue_date'
+    || field === 'identity_document'
+  ) {
+    clearFieldError(field)
+  }
 }
 
 function getApiErrorPayload(source: unknown) {
@@ -836,49 +946,91 @@ function handleCancelNewWeapon() {
 }
 
 async function saveHunterBillet() {
-  if (!profile.value || savingHunterBillet.value || !showHunterBilletAction.value) {
+  if (!profile.value || savingHunterBillet.value) {
     return
   }
 
+  const billetDirty = isHunterBilletFieldsDirty()
+  const identityDirty = isIdentityDocumentDirty()
+
+  if (!billetDirty && !identityDirty) {
+    hunterBilletPreviewRef.value?.finishSave()
+    return
+  }
+
+  const billet = currentHunterBilletData()
+  const identityDocument = currentIdentityDocument()
+
   savingHunterBillet.value = true
 
-  const wasUpdate = Boolean(hunterBilletSnapshot.value)
-  const trimmed = profile.value.hunter_billet_number.trim()
+  const wasUpdate = Boolean(String(parseHunterBilletSnapshot().number ?? '').trim())
+  const issueDateApi = billet.issueDate
+    ? resolveLicenseDateForApi(billet.issueDate)
+    : ''
 
   try {
-    const response = await weaponsApi.saveUserWeapon({
-      hunter_billet_number: trimmed,
-    })
+    if (billetDirty) {
+      const response = await weaponsApi.saveUserWeapon({
+        hunter_billet_number: billet.number,
+        hunter_billet_issuing_authority: billet.issuingAuthority,
+        hunter_billet_rf_subject: billet.rfSubject,
+        hunter_billet_issue_date: issueDateApi,
+      })
 
-    if ('success' in response && response.success) {
-      clearFieldError('hunter_billet_number')
-      submitError.value = ''
-      applyHunterBilletFromApi(trimmed)
-      await loadUserWeapons({ force: true, silent: true })
-      if (!profile.value?.hunter_billet_number.trim()) {
-        applyHunterBilletFromApi(trimmed)
+      if (!('success' in response) || !response.success) {
+        if (!applyValidationErrors(response)) {
+          submitError.value = wasUpdate
+            ? 'Не удалось обновить охотничий билет'
+            : 'Не удалось сохранить охотничий билет'
+        }
+        return
       }
 
-      notifications.success(
-        wasUpdate
-          ? 'Номер охотничьего билета обновлён'
-          : 'Номер охотничьего билета сохранён',
-      )
-      return
+      clearFieldError('hunter_billet_number')
+      clearFieldError('hunter_billet_issuing_authority')
+      clearFieldError('hunter_billet_rf_subject')
+      clearFieldError('hunter_billet_issue_date')
+      applyHunterBilletFromApi(billet)
+      await loadUserWeapons({ force: true, silent: true })
     }
 
-    if (!applyValidationErrors(response)) {
-      submitError.value = wasUpdate
-        ? 'Не удалось обновить номер охотничьего билета'
-        : 'Не удалось сохранить номер охотничьего билета'
+    if (identityDirty) {
+      const response = await saveProfile({
+        email: profile.value.email,
+        identity_document: identityDocument,
+      })
+
+      if (!('success' in response) || !response.success) {
+        if (!applyValidationErrors(response)) {
+          submitError.value = 'Не удалось сохранить документ, удостоверяющий личность'
+        }
+        return
+      }
+
+      clearFieldError('identity_document')
+      patchCachedProfile({ identity_document: identityDocument })
     }
+
+    submitError.value = ''
+    syncHunterBilletSnapshot()
+    hunterBilletPreviewRef.value?.finishSave()
+
+    notifications.success(
+      wasUpdate
+        ? 'Охотничий билет обновлён'
+        : 'Охотничий билет сохранён',
+    )
   } catch (error) {
-    const data = (error as { data?: unknown }).data
+    const fetchError = error as {
+      data?: unknown
+      response?: { _data?: unknown }
+    }
+    const data = fetchError.data ?? fetchError.response?._data
 
     if (!applyValidationErrors(data)) {
       submitError.value = wasUpdate
-        ? 'Не удалось обновить номер охотничьего билета'
-        : 'Не удалось сохранить номер охотничьего билета'
+        ? 'Не удалось обновить охотничий билет'
+        : 'Не удалось сохранить охотничий билет'
     }
   } finally {
     savingHunterBillet.value = false
@@ -922,17 +1074,26 @@ const hasNewWeapon = computed(() =>
         <div class="weapons-form__billet">
           <ProfileHunterBilletPreview
             v-if="profile"
+            ref="hunterBilletPreviewRef"
             v-model:first-name="profile.first_name"
             v-model:last-name="profile.last_name"
             v-model:birthday="profile.birthday"
             v-model:billet-number="profile.hunter_billet_number"
-            :billet-error="getFieldError('hunter_billet_number')"
+            v-model:issuing-authority="profile.hunter_billet_issuing_authority"
+            v-model:rf-subject="profile.hunter_billet_rf_subject"
+            v-model:issue-date="profile.hunter_billet_issue_date"
+            v-model:identity-document="profile.identity_document"
+            :number-error="getFieldError('hunter_billet_number')"
+            :issuing-authority-error="getFieldError('hunter_billet_issuing_authority')"
+            :rf-subject-error="getFieldError('hunter_billet_rf_subject')"
+            :issue-date-error="getFieldError('hunter_billet_issue_date')"
+            :identity-document-error="getFieldError('identity_document')"
             :saving-billet="savingHunterBillet"
             :show-billet-action="showHunterBilletAction"
             :billet-action-label="hunterBilletActionLabel"
-            :billet-saving-label="hunterBilletSnapshot ? 'Обновление номера билета' : 'Сохранение номера билета'"
+            :billet-saving-label="hunterBilletActionLabel === 'Обновить' ? 'Обновление билета' : 'Сохранение билета'"
             @save-billet="saveHunterBillet"
-            @clear-billet-error="clearFieldError('hunter_billet_number')"
+            @clear-billet-error="clearBilletFieldError"
             @billet-keydown="onHunterBilletKeydown"
           />
           <CommonFormField
@@ -942,6 +1103,12 @@ const hasNewWeapon = computed(() =>
             model-value=""
             readonly
           />
+          <p
+            v-if="submitError && savingWeaponIndex === null"
+            class="profile-page__status profile-page__status--error"
+          >
+            {{ submitError }}
+          </p>
         </div>
 
         <p

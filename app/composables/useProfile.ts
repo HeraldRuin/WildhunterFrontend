@@ -198,29 +198,97 @@ export function useProfile() {
     }
   }
 
-  function resolveHunterBilletNumber(profileData: ProfileUser): string {
-    const fromPayload = profileData.hunter_billet_number.trim()
-    const fromMemory = profile.value?.id === profileData.id
-      ? profile.value.hunter_billet_number.trim()
-      : ''
-    const fromProfileCache = readCachedProfile(profileData.id)?.hunter_billet_number.trim() ?? ''
-    const fromBilletCache = readHunterBilletCache(profileData.id) ?? ''
-
+  function resolveField(
+    fromPayload: string,
+    fromMemory: string,
+    fromProfileCache: string,
+    fromBilletCache = '',
+  ) {
     return fromPayload || fromMemory || fromProfileCache || fromBilletCache
   }
 
+  function resolveHunterBilletNumber(profileData: ProfileUser): string {
+    const billetCache = readHunterBilletCache(profileData.id)
+
+    return resolveField(
+      String(profileData.hunter_billet_number ?? '').trim(),
+      profile.value?.id === profileData.id ? String(profile.value.hunter_billet_number ?? '').trim() : '',
+      String(readCachedProfile(profileData.id)?.hunter_billet_number ?? '').trim(),
+      billetCache?.number.trim() ?? '',
+    )
+  }
+
+  function resolveHunterBilletIssuingAuthority(profileData: ProfileUser): string {
+    const billetCache = readHunterBilletCache(profileData.id)
+
+    return resolveField(
+      String(profileData.hunter_billet_issuing_authority ?? '').trim(),
+      profile.value?.id === profileData.id ? String(profile.value.hunter_billet_issuing_authority ?? '').trim() : '',
+      String(readCachedProfile(profileData.id)?.hunter_billet_issuing_authority ?? '').trim(),
+      billetCache?.issuingAuthority.trim() ?? '',
+    )
+  }
+
+  function resolveHunterBilletRfSubject(profileData: ProfileUser): string {
+    const billetCache = readHunterBilletCache(profileData.id)
+
+    return resolveField(
+      String(profileData.hunter_billet_rf_subject ?? '').trim(),
+      profile.value?.id === profileData.id ? String(profile.value.hunter_billet_rf_subject ?? '').trim() : '',
+      String(readCachedProfile(profileData.id)?.hunter_billet_rf_subject ?? '').trim(),
+      billetCache?.rfSubject.trim() ?? '',
+    )
+  }
+
+  function resolveHunterBilletIssueDate(profileData: ProfileUser): string {
+    const billetCache = readHunterBilletCache(profileData.id)
+
+    return resolveField(
+      String(profileData.hunter_billet_issue_date ?? '').trim(),
+      profile.value?.id === profileData.id ? String(profile.value.hunter_billet_issue_date ?? '').trim() : '',
+      String(readCachedProfile(profileData.id)?.hunter_billet_issue_date ?? '').trim(),
+      billetCache?.issueDate.trim() ?? '',
+    )
+  }
+
+  function resolveIdentityDocument(profileData: ProfileUser): string {
+    return resolveField(
+      String(profileData.identity_document ?? '').trim(),
+      profile.value?.id === profileData.id ? String(profile.value.identity_document ?? '').trim() : '',
+      String(readCachedProfile(profileData.id)?.identity_document ?? '').trim(),
+    )
+  }
+
   function applyProfile(profileData: ProfileUser) {
-    const preservedBillet = resolveHunterBilletNumber(profileData)
+    const preservedBilletNumber = resolveHunterBilletNumber(profileData)
+    const preservedIssuingAuthority = resolveHunterBilletIssuingAuthority(profileData)
+    const preservedRfSubject = resolveHunterBilletRfSubject(profileData)
+    const preservedIssueDate = resolveHunterBilletIssueDate(profileData)
+    const preservedIdentityDocument = resolveIdentityDocument(profileData)
 
     const merged = withPreservedAvatar({
       ...profileData,
-      hunter_billet_number: preservedBillet,
+      hunter_billet_number: preservedBilletNumber,
+      hunter_billet_issuing_authority: preservedIssuingAuthority,
+      hunter_billet_rf_subject: preservedRfSubject,
+      hunter_billet_issue_date: preservedIssueDate,
+      identity_document: preservedIdentityDocument,
     }, avatarFallbacks(profileData.id))
     profile.value = merged
     writeCachedProfile(merged)
 
-    if (preservedBillet) {
-      writeHunterBilletCache(profileData.id, preservedBillet)
+    if (
+      preservedBilletNumber
+      || preservedIssuingAuthority
+      || preservedRfSubject
+      || preservedIssueDate
+    ) {
+      writeHunterBilletCache(profileData.id, {
+        number: preservedBilletNumber,
+        issuingAuthority: preservedIssuingAuthority,
+        rfSubject: preservedRfSubject,
+        issueDate: preservedIssueDate,
+      })
     }
 
     const authPatch: Parameters<typeof updateAuthUser>[0] = {
@@ -283,6 +351,10 @@ export function useProfile() {
       {
         ...cached,
         hunter_billet_number: resolveHunterBilletNumber(cached),
+        hunter_billet_issuing_authority: resolveHunterBilletIssuingAuthority(cached),
+        hunter_billet_rf_subject: resolveHunterBilletRfSubject(cached),
+        hunter_billet_issue_date: resolveHunterBilletIssueDate(cached),
+        identity_document: resolveIdentityDocument(cached),
       },
       avatarFallbacks(userId),
     )
@@ -387,6 +459,12 @@ export function useProfile() {
       if (profile.value && payload.hunter_billet_number != null) {
         patchCachedProfile({
           hunter_billet_number: String(payload.hunter_billet_number).trim(),
+        })
+      }
+
+      if (profile.value && payload.identity_document != null) {
+        patchCachedProfile({
+          identity_document: String(payload.identity_document).trim(),
         })
       }
 

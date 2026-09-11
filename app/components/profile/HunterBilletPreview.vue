@@ -6,7 +6,15 @@ const props = defineProps<{
   lastName?: string | null
   birthday?: string | null
   billetNumber?: string | null
-  billetError?: string
+  issuingAuthority?: string | null
+  rfSubject?: string | null
+  issueDate?: string | null
+  identityDocument?: string | null
+  numberError?: string
+  issuingAuthorityError?: string
+  rfSubjectError?: string
+  issueDateError?: string
+  identityDocumentError?: string
   savingBillet?: boolean
   showBilletAction?: boolean
   billetActionLabel?: string
@@ -18,8 +26,12 @@ const emit = defineEmits<{
   'update:firstName': [value: string]
   'update:lastName': [value: string]
   'update:birthday': [value: string]
+  'update:issuingAuthority': [value: string]
+  'update:rfSubject': [value: string]
+  'update:issueDate': [value: string]
+  'update:identityDocument': [value: string]
   'save-billet': []
-  'clear-billet-error': []
+  'clear-billet-error': [field?: string]
   'billet-keydown': [event: KeyboardEvent]
 }>()
 
@@ -96,10 +108,6 @@ const seriesDigits = computed(() => parseBillet(String(props.billetNumber ?? '')
 
 const billetNumberPart = computed(() => parseBillet(String(props.billetNumber ?? '')).number)
 
-const identityDocument = ref('')
-const issuingAuthority = ref('')
-const federationSubject = ref('')
-const issueDate = ref('')
 const isEditing = ref(false)
 const isIssueDateOpen = ref(false)
 const issueDatePicker = ref<Date | null>(null)
@@ -109,7 +117,7 @@ const issueDateFieldRef = ref<HTMLElement | null>(null)
 type EditSnapshot = {
   billetNumber: string
   issuingAuthority: string
-  federationSubject: string
+  rfSubject: string
   fullName: string
   birthday: string
   identityDocument: string
@@ -122,15 +130,21 @@ function closeIssueDateCalendar() {
   isIssueDateOpen.value = false
 }
 
+function finishSave() {
+  editSnapshot.value = null
+  closeIssueDateCalendar()
+  isEditing.value = false
+}
+
 function startEditing() {
   editSnapshot.value = {
     billetNumber: String(props.billetNumber ?? ''),
-    issuingAuthority: issuingAuthority.value,
-    federationSubject: federationSubject.value,
+    issuingAuthority: String(props.issuingAuthority ?? ''),
+    rfSubject: String(props.rfSubject ?? ''),
     fullName: fullNameInput.value,
     birthday: String(props.birthday ?? ''),
-    identityDocument: identityDocument.value,
-    issueDate: issueDate.value,
+    identityDocument: String(props.identityDocument ?? ''),
+    issueDate: String(props.issueDate ?? ''),
   }
   isEditing.value = true
 }
@@ -140,12 +154,12 @@ function cancelEditing() {
 
   if (snap) {
     emit('update:billetNumber', snap.billetNumber)
-    issuingAuthority.value = snap.issuingAuthority
-    federationSubject.value = snap.federationSubject
+    emit('update:issuingAuthority', snap.issuingAuthority)
+    emit('update:rfSubject', snap.rfSubject)
     onFullNameModelUpdate(snap.fullName)
     emit('update:birthday', snap.birthday)
-    identityDocument.value = snap.identityDocument
-    issueDate.value = snap.issueDate
+    emit('update:identityDocument', snap.identityDocument)
+    emit('update:issueDate', snap.issueDate)
   }
 
   editSnapshot.value = null
@@ -154,27 +168,54 @@ function cancelEditing() {
 }
 
 function saveEditing() {
-  editSnapshot.value = null
+  if (props.savingBillet) {
+    return
+  }
+
   closeIssueDateCalendar()
-  isEditing.value = false
+  emit('save-billet')
 }
+
+defineExpose({
+  finishSave,
+  cancelEditing,
+  isEditing,
+})
 
 function onBilletNumberUpdate(value: string) {
   emit('update:billetNumber', value)
-  emit('clear-billet-error')
+  emit('clear-billet-error', 'hunter_billet_number')
 }
 
 function emitBillet(series: string, number: string) {
   emit('update:billetNumber', `${series} № ${number}`)
+  emit('clear-billet-error', 'hunter_billet_number')
 }
 
 function onBirthdayUpdate(value: string) {
   emit('update:birthday', maskDotDateInput(value))
 }
 
+function onIssuingAuthorityUpdate(value: string) {
+  emit('update:issuingAuthority', value)
+  emit('clear-billet-error', 'hunter_billet_issuing_authority')
+}
+
+function onRfSubjectUpdate(value: string) {
+  emit('update:rfSubject', value)
+  emit('clear-billet-error', 'hunter_billet_rf_subject')
+}
+
+function onIdentityDocumentUpdate(value: string) {
+  emit('update:identityDocument', value)
+  emit('clear-billet-error', 'identity_document')
+}
+
 function onIssueDateUpdate(value: string) {
-  issueDate.value = maskDotDateInput(value)
-  const parsed = parseBirthdayDate(issueDate.value)
+  const next = maskDotDateInput(value)
+  emit('update:issueDate', next)
+  emit('clear-billet-error', 'hunter_billet_issue_date')
+  const parsed = parseBirthdayDate(next)
 
   if (parsed) {
     issueDatePicker.value = parsed
@@ -191,14 +232,15 @@ function toggleIssueDateCalendar() {
     return
   }
 
-  issueDatePicker.value = parseBirthdayDate(issueDate.value)
+  issueDatePicker.value = parseBirthdayDate(String(props.issueDate ?? ''))
   issueDateActivePart.value = 'start'
   isIssueDateOpen.value = true
 }
 
 function onIssueDateSelect(date: Date) {
   issueDatePicker.value = date
-  issueDate.value = formatBirthdayDate(date)
+  emit('update:issueDate', formatBirthdayDate(date))
+  emit('clear-billet-error', 'hunter_billet_issue_date')
   closeIssueDateCalendar()
 }
 
@@ -255,6 +297,7 @@ function onNumberModelUpdate(value: string) {
               :model-value="seriesDigits"
               placeholder="00"
               :disabled="!isEditing"
+              :error="numberError"
               @update:model-value="onSeriesModelUpdate"
             />
             <CommonFormField
@@ -278,7 +321,7 @@ function onNumberModelUpdate(value: string) {
               no-margin
               document-number-kind="billet"
               :model-value="billetNumber ?? ''"
-              :error="billetError"
+              :error="numberError"
               :disabled="savingBillet"
               @update:model-value="onBilletNumberUpdate"
               @keydown="emit('billet-keydown', $event)"
@@ -304,17 +347,21 @@ function onNumberModelUpdate(value: string) {
           <CommonFormField
             no-margin
             label="Исполнительный орган"
-            v-model="issuingAuthority"
+            :model-value="issuingAuthority ?? ''"
             placeholder="Наименование исполнительного органа"
             :disabled="!isEditing"
+            :error="issuingAuthorityError"
+            @update:model-value="onIssuingAuthorityUpdate"
           />
 
           <CommonFormField
             no-margin
             label="Субъект РФ"
-            v-model="federationSubject"
+            :model-value="rfSubject ?? ''"
             placeholder="Субъект Российской Федерации"
             :disabled="!isEditing"
+            :error="rfSubjectError"
+            @update:model-value="onRfSubjectUpdate"
           />
         </div>
 
@@ -338,9 +385,11 @@ function onNumberModelUpdate(value: string) {
           <CommonFormField
             no-margin
             label="Документ, удостоверяющий личность"
-            v-model="identityDocument"
+            :model-value="identityDocument ?? ''"
             placeholder="Серия и номер документа"
             :disabled="!isEditing"
+            :error="identityDocumentError"
+            @update:model-value="onIdentityDocumentUpdate"
           />
         </div>
       </div>
@@ -362,13 +411,15 @@ function onNumberModelUpdate(value: string) {
             <button
               type="button"
               class="hunter-billet__save-btn"
+              :disabled="savingBillet"
               @click="saveEditing"
             >
-              Сохранить
+              {{ savingBillet ? (billetSavingLabel || 'Сохранение') : 'Сохранить' }}
             </button>
             <button
               type="button"
               class="hunter-billet__cancel-btn"
+              :disabled="savingBillet"
               @click="cancelEditing"
             >
               Отмена
@@ -389,7 +440,8 @@ function onNumberModelUpdate(value: string) {
             placeholder="дд.мм.гггг"
             :disabled="!isEditing"
             :open="isIssueDateOpen"
-            :model-value="issueDate"
+            :model-value="issueDate ?? ''"
+            :error="issueDateError"
             @update:model-value="onIssueDateUpdate"
           >
             <template #trailing>
@@ -629,9 +681,20 @@ function onNumberModelUpdate(value: string) {
   transition: background 0.15s ease, opacity 0.15s ease;
 }
 
+.hunter-billet__save-btn:disabled,
+.hunter-billet__cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .hunter-billet__save-btn:hover {
   background: var(--wh-orange-600);
   border-color: var(--wh-orange-600);
+}
+
+.hunter-billet__save-btn:disabled:hover {
+  background: var(--wh-orange-500);
+  border-color: var(--wh-orange-500);
 }
 
 .hunter-billet__cancel-btn {
@@ -666,6 +729,7 @@ function onNumberModelUpdate(value: string) {
 .hunter-billet__issue-field :deep(.form-field) {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
@@ -683,6 +747,11 @@ function onNumberModelUpdate(value: string) {
 
 .hunter-billet__issue-field :deep(.form-field__input) {
   width: 100%;
+}
+
+.hunter-billet__issue-field :deep(.form-field__error) {
+  flex: 1 0 100%;
+  margin: 0;
 }
 
 .hunter-billet__calendar-icon {

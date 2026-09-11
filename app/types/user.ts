@@ -23,6 +23,10 @@ export interface ProfileUser {
   bio: string
   avatar: string | null
   hunter_billet_number: string
+  hunter_billet_issuing_authority: string
+  hunter_billet_rf_subject: string
+  hunter_billet_issue_date: string
+  identity_document: string
   role_name: string
   role_code: string
   created_at: string
