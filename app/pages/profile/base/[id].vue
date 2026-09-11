@@ -1187,7 +1187,9 @@ watch(activeEditTab, (tab) => {
           :loading="isSaving"
           :disabled="isLoading"
           @click="saveHotel"
-        />
+        >
+          Сохранить
+        </CommonSaveButton>
       </div>
 
       <div class="base-edit__panel-area">
@@ -1317,7 +1319,7 @@ watch(activeEditTab, (tab) => {
                 <CommonFormField
                   v-model="editContent"
                   class="base-edit__form-content"
-                  label="Контент"
+                  label="Описание"
                   placeholder=""
                   multiline
                   :rows="4"
@@ -2065,6 +2067,14 @@ watch(activeEditTab, (tab) => {
 .base-edit__nav-save {
   flex-shrink: 0;
   margin-left: auto;
+}
+
+button.base-edit__nav-save {
+  background: var(--wh-green);
+}
+
+button.base-edit__nav-save:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wh-green) 82%, black);
 }
 
 .base-edit__nav-link {

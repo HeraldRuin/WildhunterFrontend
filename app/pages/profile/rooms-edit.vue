@@ -915,7 +915,9 @@ watch(activeEditTab, (tab) => {
           :loading="isSaving"
           :disabled="isLoading"
           @click="saveRoom"
-        />
+        >
+          Сохранить
+        </CommonSaveButton>
       </div>
 
       <div class="room-edit__panel-area">
@@ -1032,7 +1034,7 @@ watch(activeEditTab, (tab) => {
                 <CommonFormField
                   v-model="editContent"
                   class="room-edit__form-content"
-                  label="Контент"
+                  label="Описание"
                   placeholder=""
                   multiline
                   :rows="4"
@@ -1367,6 +1369,14 @@ watch(activeEditTab, (tab) => {
 .room-edit__nav-save {
   flex-shrink: 0;
   margin-left: auto;
+}
+
+button.room-edit__nav-save {
+  background: var(--wh-green);
+}
+
+button.room-edit__nav-save:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wh-green) 82%, black);
 }
 
 .room-edit__nav-link {
