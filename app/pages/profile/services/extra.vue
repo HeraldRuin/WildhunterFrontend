@@ -707,7 +707,7 @@ onBeforeUnmount(() => {
           v-show="activeTab === 'installed'"
           v-model="selectedInstalledServiceId"
           class="extra-services__select-add"
-          placeholder="Добавить услугу"
+          placeholder="Выберите услугу"
           empty-text="список пуст"
           no-margin
           filled-hover
