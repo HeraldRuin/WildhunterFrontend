@@ -8,6 +8,13 @@ import {
   getDefaultStayCheckOut,
   parseDisplayDateToApiDate,
 } from '~/utils/date'
+import { getHotelPath } from '~/utils/hotel'
+import {
+  DEFAULT_MAP_CENTER,
+  offerToMapHotel,
+  type BasesMapMarker,
+  type MapHotelItem,
+} from '~/utils/map'
 import {
   buildHotelSearchBody,
   countOffersByReviewRating,
@@ -28,7 +35,7 @@ useHead({
 })
 
 const route = useRoute()
-const { search: searchApi, hotels: hotelsApi } = useApi()
+const { search: searchApi, hotels: hotelsApi, location: locationApi } = useApi()
 
 const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
 const CATALOG_PER_PAGE = 20
@@ -62,6 +69,16 @@ const { data: priceBounds } = useAsyncData(
   {
     lazy: true,
     default: () => ({ ...DEFAULT_PRICE_BOUNDS }),
+    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
+  },
+)
+
+const { data: locationItems } = useAsyncData(
+  'bases-location-offers',
+  () => locationApi.getLocationOfferItems(),
+  {
+    lazy: true,
+    default: () => [],
     getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
   },
 )
@@ -386,6 +403,73 @@ const breadcrumbs: BreadcrumbItem[] = [
   { label: 'Главная', to: '/' },
   { label: 'Базы' },
 ]
+
+const mapHotels = computed(() => (
+  filteredCatalogItems.value
+    .map(offerToMapHotel)
+    .filter((item): item is MapHotelItem => item != null)
+))
+
+const mapMarkers = computed<BasesMapMarker[]>(() => (
+  mapHotels.value.map(item => ({
+    id: item.id,
+    title: item.title,
+    lat: item.lat,
+    lng: item.lng,
+  }))
+))
+
+const mapFitVersion = ref(0)
+
+watch(
+  () => mapMarkers.value.map(item => item.id).join(','),
+  (ids, previousIds) => {
+    if (ids === previousIds) {
+      return
+    }
+
+    mapFitVersion.value += 1
+  },
+)
+
+function searchQueryForHotel() {
+  const query: Record<string, string> = {}
+
+  for (const key of ['checkIn', 'checkOut', 'guests'] as const) {
+    const value = queryString(key)
+
+    if (value) {
+      query[key] = value
+    }
+  }
+
+  if (!query.checkIn) {
+    query.checkIn = formatDisplayDate(getDefaultStayCheckIn())
+  }
+
+  if (!query.checkOut) {
+    query.checkOut = formatDisplayDate(getDefaultStayCheckOut())
+  }
+
+  if (!query.guests) {
+    query.guests = '1'
+  }
+
+  return query
+}
+
+function handleMapOpen(id: number) {
+  const hotel = mapHotels.value.find(item => item.id === id)
+
+  if (!hotel?.slug || !hotel.locationSlug) {
+    return
+  }
+
+  void navigateTo({
+    path: getHotelPath(hotel.locationSlug, hotel.slug),
+    query: searchQueryForHotel(),
+  })
+}
 </script>
 
 <template>
@@ -507,7 +591,27 @@ const breadcrumbs: BreadcrumbItem[] = [
       </div>
     </section>
 
+    <!-- временно скрыто
     <HomeBlocksCommunityBlock variant="centered" />
+    -->
+
+    <section
+      v-if="!isResultsLoading && mapMarkers.length"
+      class="bases-page__map"
+      aria-label="Базы на карте"
+    >
+      <SearchBasesMap
+        :lat="DEFAULT_MAP_CENTER.lat"
+        :lng="DEFAULT_MAP_CENTER.lng"
+        :zoom="DEFAULT_MAP_CENTER.zoom"
+        :markers="mapMarkers"
+        :fit-version="mapFitVersion"
+        @open="handleMapOpen"
+      />
+    </section>
+
+    <HomeBlocksBestLocationsBlock :items="locationItems ?? []" />
+
     <LayoutAppFooter />
   </div>
 </template>
@@ -523,6 +627,21 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 .bases-page__results {
   padding: 80px 0 104px;
+}
+
+.bases-page__map {
+  position: relative;
+  width: min(100% - 32px, 1800px);
+  height: min(70vh, 560px);
+  min-height: 400px;
+  margin: 0 auto 48px;
+  overflow: hidden;
+  border-radius: var(--wh-radius);
+}
+
+.bases-page__map :deep(.bases-map-wrap),
+.bases-page__map :deep(.bases-map) {
+  border-radius: var(--wh-radius);
 }
 
 .bases-page__results-inner.container {
