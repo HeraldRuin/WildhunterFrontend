@@ -224,6 +224,8 @@ async function saveAllAnimals() {
     return
   }
 
+  const payloadItems: { id: number, hunters_count: number }[] = []
+
   for (const animal of animals.value) {
     const huntersCount = Number(animal.huntersCountInput)
 
@@ -231,39 +233,35 @@ async function saveAllAnimals() {
       notifications.error(`Укажите целое число охотников не меньше 1 для «${animal.title}»`)
       return
     }
-  }
 
-  const toSave = animals.value.filter(
-    animal => Number(animal.huntersCountInput) !== animal.hunters_count,
-  )
-
-  if (!toSave.length) {
-    notifications.success('Изменений нет')
-    return
+    payloadItems.push({
+      id: animal.id,
+      hunters_count: huntersCount,
+    })
   }
 
   isSavingAll.value = true
 
   try {
-    for (const animal of toSave) {
-      const huntersCount = Number(animal.huntersCountInput)
-      const response = await animalsApi.updateManageHuntersCount(animal.id, {
-        hunters_count: huntersCount,
+    const response = await animalsApi.updateManageHuntersCountBulk({
+      animals: payloadItems,
+    })
+
+    if ('success' in response && response.success) {
+      const updatedById = new Map(
+        (response.data.animals ?? []).map(item => [item.id, item]),
+      )
+
+      animals.value = animals.value.map((animal) => {
+        const updated = updatedById.get(animal.id)
+        return updated ? toAnimalRow(updated) : animal
       })
 
-      if (!('success' in response) || !response.success) {
-        notifications.error(
-          extractErrorMessage(response, `Не удалось сохранить «${animal.title}»`),
-        )
-        return
-      }
-
-      animal.hunters_count = response.data.hunters_count
-      animal.huntersCountInput = String(response.data.hunters_count)
-      animal.title = response.data.title
+      notifications.success(response.message || 'Количество охотников сохранено')
+      return
     }
 
-    notifications.success('Количество охотников сохранено')
+    notifications.error(extractErrorMessage(response, 'Не удалось сохранить количество охотников'))
   }
   catch (error) {
     const data = (error as { data?: unknown }).data

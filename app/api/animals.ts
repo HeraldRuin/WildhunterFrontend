@@ -43,6 +43,23 @@ export interface UpdateManagedAnimalHuntersPayload {
   hunters_count: number
 }
 
+export interface UpdateManagedAnimalsHuntersItem {
+  id: number
+  hunters_count: number
+}
+
+export interface UpdateManagedAnimalsHuntersPayload {
+  animals: UpdateManagedAnimalsHuntersItem[]
+}
+
+export interface UpdateManagedAnimalsHuntersData {
+  animals: ManagedAnimal[]
+}
+
+export type AnimalsManageHuntersBulkResponse =
+  | ApiSuccessResponse<UpdateManagedAnimalsHuntersData>
+  | ApiErrorResponse
+
 export interface OrganisationPeriod {
   id: number
   start_date: string | null
@@ -171,6 +188,16 @@ export function useAnimalsApi() {
     )
   }
 
+  function updateManageHuntersCountBulk(payload: UpdateManagedAnimalsHuntersPayload) {
+    return apiFetch<AnimalsManageHuntersBulkResponse>(
+      '/animals/manage/hunters-count',
+      {
+        method: 'PUT',
+        body: payload,
+      },
+    )
+  }
+
   function deleteManage(animalId: number | string) {
     return apiFetch<AnimalsManageDeleteResponse>(
       `/animals/manage/${encodeURIComponent(String(animalId))}`,
@@ -252,6 +279,7 @@ export function useAnimalsApi() {
     getManage,
     addManage,
     updateManageHuntersCount,
+    updateManageHuntersCountBulk,
     deleteManage,
     getOrganisation,
     getTrophyCost,
