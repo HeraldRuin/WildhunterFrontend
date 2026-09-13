@@ -117,12 +117,12 @@ function grandTotalLines(item: BookingHistoryItem) {
   const total = sumTotals(accommodationTotal(item.accommodation), huntTotal(item.hunt))
   const lines: string[] = []
 
-  if (perPerson != null) {
+  if (!props.showCustomer && perPerson != null) {
     lines.push(`Итого на человека = ${formatHotelPriceLabel(perPerson)}`)
   }
 
   if (total != null) {
-    lines.push(`Итого общая сумма = ${formatHotelPriceLabel(total)}`)
+    lines.push(`Итоговая сумма = ${formatHotelPriceLabel(total)}`)
   }
 
   return lines
