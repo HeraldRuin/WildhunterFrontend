@@ -396,7 +396,7 @@ function onNumberModelUpdate(value: string) {
             no-margin
             label="Документ, удостоверяющий личность"
             :model-value="identityDocument ?? ''"
-            placeholder="Серия и номер документа"
+            placeholder="Документ, удостоверяющий личность"
             :disabled="!isEditing"
             :error="identityDocumentError"
             @update:model-value="onIdentityDocumentUpdate"
@@ -546,7 +546,7 @@ function onNumberModelUpdate(value: string) {
 .hunter-billet__title {
   margin: 0;
   color: var(--hunter-billet-ink);
-  font-family: var(--hunter-billet-doc-font);
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   font-size: 24px;
   font-weight: 700;
   letter-spacing: 0.08em;
