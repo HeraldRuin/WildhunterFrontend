@@ -448,7 +448,6 @@ async function goHome(event: MouseEvent) {
         </template>
       </nav>
 
-      <!-- временно скрыто
       <div class="profile-sidebar__footer">
         <NuxtLink
           to="/"
@@ -466,7 +465,6 @@ async function goHome(event: MouseEvent) {
           Выйти
         </button>
       </div>
-      -->
     </div>
   </aside>
 </template>

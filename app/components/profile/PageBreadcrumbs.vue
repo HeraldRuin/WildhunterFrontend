@@ -22,7 +22,8 @@ const { breadcrumbs } = useProfileHeader()
   width: 100%;
   min-height: 31px;
   margin-bottom: 20px;
-  padding: 0;
+  padding: 0 0 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
 }
 </style>

@@ -1356,7 +1356,7 @@ const hasNewWeapon = computed(() =>
               :disabled="userWeaponsLoading"
               @click="handleAddWeapon"
             >
-              Добавить оружие
+              Добавить лицензию
             </CommonSaveButton>
             <button
               v-if="!userWeaponsLoading && hasNewWeapon"
