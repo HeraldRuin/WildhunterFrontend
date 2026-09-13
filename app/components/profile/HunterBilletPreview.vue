@@ -286,6 +286,7 @@ function onNumberModelUpdate(value: string) {
 <template>
   <article
     class="hunter-billet"
+    :class="{ 'hunter-billet--date-open': isIssueDateOpen }"
     aria-label="Превью охотничьего билета"
   >
     <div class="hunter-billet__frame">
@@ -501,6 +502,11 @@ function onNumberModelUpdate(value: string) {
   max-width: 1080px;
   margin-top: 0;
   margin-inline: auto;
+}
+
+.hunter-billet--date-open {
+  position: relative;
+  z-index: 200;
 }
 
 .hunter-billet__frame {
@@ -734,7 +740,7 @@ function onNumberModelUpdate(value: string) {
 }
 
 .hunter-billet__issue-field--open {
-  z-index: 60;
+  z-index: 200;
 }
 
 .hunter-billet__issue-field :deep(.form-field) {
@@ -794,7 +800,7 @@ function onNumberModelUpdate(value: string) {
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  z-index: 60;
+  z-index: 200;
   width: 100%;
   padding: 18px 20px;
   border: 1px solid var(--wh-gray);

@@ -6,7 +6,7 @@ definePageMeta({
 
 import type { HunterBilletData } from '~/api/weapons'
 import type { UserWeapon, WeaponOption } from '~/types/user'
-import { formatApiDate, formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
+import { formatApiDate, formatBirthdayDate, maskDotDateInput, parseBirthdayDate } from '~/utils/date'
 import { createEmptyWeapon } from '~/utils/user'
 import {
   readUserWeaponsCache,
@@ -532,6 +532,24 @@ function setLicenseDateFieldRef(index: number, el: Element | ComponentPublicInst
 function displayLicenseDate(value: string) {
   const parsed = parseBirthdayDate(value)
   return parsed ? formatBirthdayDate(parsed) : value
+}
+
+function onLicenseDateInput(index: number, value: string) {
+  const weapon = weapons.value[index]
+
+  if (!weapon) {
+    return
+  }
+
+  const next = maskDotDateInput(value)
+  weapon.hunter_license_date = next
+  clearFieldError('hunter_license_date')
+
+  const parsed = parseBirthdayDate(next)
+
+  if (parsed) {
+    licenseDate.value = parsed
+  }
 }
 
 function toggleLicenseDateCalendar(index: number) {
@@ -1203,12 +1221,11 @@ const hasNewWeapon = computed(() =>
                     label="Дата"
                     placeholder="дд.мм.гггг"
                     no-margin
-                    cursor-pointer
+                    date-only
                     :model-value="displayLicenseDate(card.weapon.hunter_license_date)"
                     :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_date') : ''"
                     :open="openLicenseDateIndex === card.index"
-                    readonly
-                    @click.stop="toggleLicenseDateCalendar(card.index)"
+                    @update:model-value="onLicenseDateInput(card.index, $event)"
                   >
                     <template #trailing>
                       <button
@@ -1630,7 +1647,7 @@ const hasNewWeapon = computed(() =>
   padding: 0;
   border: none;
   background: none;
-  color: var(--wh-orange-text);
+  color: #dc3545;
   font-family: "Inter", sans-serif;
   font-size: 16px;
   font-weight: 600;
@@ -1640,7 +1657,7 @@ const hasNewWeapon = computed(() =>
 }
 
 .profile-weapon__confirm-cancel:hover:not(:disabled) {
-  color: var(--wh-orange-600);
+  color: #c82333;
 }
 
 .profile-weapon__confirm-cancel:disabled {
