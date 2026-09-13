@@ -3,6 +3,7 @@ import { kakStatOkhotnikomPolnoeRukovodstvoContent } from '~/content/blog/kak-st
 import { kogdaNachinaetsyaOkhotnichiySezon2026Content } from '~/content/blog/kogda-nachinaetsya-okhotnichiy-sezon-2026'
 import { kogdaZakanchivaetsyaSezonOkhoty2026Content } from '~/content/blog/kogda-zakanchivaetsya-sezon-okhoty-2026'
 import { okhotaNaKosulyuPravilaSposobySekretyContent } from '~/content/blog/okhota-na-kosulyu-pravila-sposoby-sekrety'
+import { okhotaNaLosyaSposobySekretyTaktikaContent } from '~/content/blog/okhota-na-losya-sposoby-sekrety-taktika'
 
 export type BlogPost = {
   slug: string
@@ -61,6 +62,8 @@ export const blogPosts: BlogPost[] = [
     title: 'Охота на лося: способы, секреты, тактика',
     date: '25.05.2026 г.',
     image: '/images/blog/okhota-na-losya.jpg',
+    content: okhotaNaLosyaSposobySekretyTaktikaContent,
+    embeddedHeader: true,
   },
   {
     slug: 'ohotnichii-tury',
