@@ -40,7 +40,7 @@ const profileScrollLock = computed(() => {
     || path === '/profile/services/extra'
     || path === '/profile/services/hunting'
     || path === '/profile/services/trophies'
-    || path.startsWith('/profile/timers/')
+    || path === '/profile/timers'
   )
 })
 

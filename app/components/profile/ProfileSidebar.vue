@@ -43,12 +43,6 @@ const servicesNavChildren = [
   { label: 'Доп услуги', to: '/profile/services/extra' },
 ]
 
-const timerNavChildren = [
-  { label: 'Таймер сбора', to: '/profile/timers/collection' },
-  { label: 'Таймер койко-мест', to: '/profile/timers/beds' },
-  { label: 'Таймер предоплаты', to: '/profile/timers/prepayment' },
-]
-
 const baseAdminExtraNavItems: NavItem[] = [
   {
     label: 'Управление базой',
@@ -83,7 +77,6 @@ const baseAdminExtraNavItems: NavItem[] = [
     label: 'Таймеры',
     to: '/profile/timers',
     iconSrc: '/icons/timers.svg',
-    children: timerNavChildren,
   },
 ]
 

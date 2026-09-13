@@ -1,29 +1,11 @@
 <script setup lang="ts">
 import type { TimerSettingsType } from '~/api/settings'
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   type: TimerSettingsType
-  title: string
   sectionTitle: string
   hint: string
-  breadcrumbs?: Array<{ label: string, to?: string }>
-}>(), {
-  breadcrumbs: () => [],
-})
-
-const { setProfileHeader } = useProfileHeader()
-
-watch(
-  () => [props.title, props.breadcrumbs] as const,
-  ([title, breadcrumbs]) => {
-    setProfileHeader({
-      breadcrumbs,
-      title,
-    })
-  },
-  { immediate: true, deep: true },
-)
-
+}>()
 
 const { settings: settingsApi } = useApi()
 const notifications = useNotifications()
@@ -198,79 +180,65 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="profile-page">
-    <ProfilePageBreadcrumbs />
-    <p v-if="loadError" class="timer-settings__status timer-settings__status--error">
+  <section
+    class="timer-settings__panel"
+    :class="{ 'timer-settings__panel--loading': isLoading }"
+    :aria-busy="isLoading || isSubmitting || undefined"
+  >
+    <h2 class="timer-settings__section-title">{{ sectionTitle }}</h2>
+
+    <p
+      v-if="loadError"
+      class="timer-settings__status timer-settings__status--error timer-settings__load-error"
+    >
       {{ loadError }}
     </p>
 
-    <section
-      v-else
-      class="timer-settings__panel"
-      :class="{ 'timer-settings__panel--loading': isLoading }"
-      :aria-busy="isLoading || isSubmitting || undefined"
-    >
-      <h2 class="timer-settings__section-title">{{ sectionTitle }}</h2>
+    <form v-else class="timer-settings__form" @submit.prevent="onSubmit">
+      <CommonFormField
+        :id="`timer-hours-${type}`"
+        label="Размер таймера (часы) *"
+        type="text"
+        inputmode="numeric"
+        digits-only
+        required
+        no-margin
+        :disabled="isLoading || isSubmitting"
+        :model-value="timerHours"
+        :error="fieldError"
+        @update:model-value="onHoursInput"
+      />
+      <p class="timer-settings__hint">{{ hint }}</p>
 
-      <form class="timer-settings__form" @submit.prevent="onSubmit">
-        <CommonFormField
-          id="timer-hours"
-          label="Размер таймера (часы) *"
-          type="text"
-          inputmode="numeric"
-          digits-only
-          required
-          no-margin
-          :disabled="isLoading || isSubmitting"
-          :model-value="timerHours"
-          :error="fieldError"
-          @update:model-value="onHoursInput"
-        />
-        <p class="timer-settings__hint">{{ hint }}</p>
+      <p v-if="submitError" class="timer-settings__status timer-settings__status--error">
+        {{ submitError }}
+      </p>
 
-        <p v-if="submitError" class="timer-settings__status timer-settings__status--error">
-          {{ submitError }}
-        </p>
-
-        <CommonSaveButton
-          class="timer-settings__save"
-          type="submit"
-          :disabled="isLoading || !/\d/.test(timerHours)"
-          :loading="isSubmitting"
-        >
-          Сохранить
-        </CommonSaveButton>
-      </form>
-    </section>
-  </div>
+      <CommonSaveButton
+        class="timer-settings__save"
+        type="submit"
+        :disabled="isLoading || !/\d/.test(timerHours)"
+        :loading="isSubmitting"
+      >
+        Сохранить
+      </CommonSaveButton>
+    </form>
+  </section>
 </template>
 
 <style scoped>
-.profile-page {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-height: 0;
-  height: 100%;
-  max-height: 100%;
-  width: 100%;
-  padding: 20px 40px 16px;
-  box-sizing: border-box;
-  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
-  overflow: hidden;
-}
-
 .timer-settings__panel {
   display: flex;
-  flex: 1 1 0;
+  flex: none;
   flex-direction: column;
-  min-height: 0;
-  padding: 24px 28px 28px;
+  align-self: start;
+  width: 100%;
+  max-width: 460px;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   background: var(--wh-white);
-  border: 1px solid var(--wh-gray-200, #ddd);
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  overflow: auto;
+  border: 1px solid var(--wh-field-border);
+  border-radius: 12px;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -280,8 +248,9 @@ onMounted(() => {
 
 .timer-settings__section-title {
   margin: 0 0 20px;
-  padding-bottom: 12px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--wh-gray-200, #ddd);
+  background: var(--wh-gray-450, #C8C8C8);
   font-size: 16px;
   font-weight: 700;
   line-height: 1.3;
@@ -293,6 +262,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: flex-start;
   gap: 0;
+  padding: 0 20px 20px;
 }
 
 .timer-settings__form :deep(.form-field) {
@@ -316,30 +286,17 @@ onMounted(() => {
   color: var(--wh-field-error, #dc2626);
 }
 
+.timer-settings__load-error {
+  margin: 0 20px 20px;
+}
+
 .timer-settings__save {
   margin-top: 20px;
 }
 
 @media (--wh-tablet) {
-  .profile-page {
-    height: auto;
-    max-height: none;
-    overflow: visible;
-    padding: 12px 8px 32px;
-  }
-
   .timer-settings__panel {
-    flex: none;
-    padding: 20px;
-  }
-}
-
-@media (--wh-mobile) {
-  .profile-page {
-    height: auto;
-    max-height: none;
-    overflow: visible;
-    padding: 16px 20px 32px;
+    max-width: none;
   }
 }
 </style>
