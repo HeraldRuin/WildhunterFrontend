@@ -1304,7 +1304,7 @@ const hasNewWeapon = computed(() =>
                   <span class="profile-weapon__confirm-text">Удалить лицензию?</span>
                   <button
                     type="button"
-                    class="profile-weapon__action"
+                    class="profile-weapon__action profile-weapon__action--confirm"
                     :disabled="savingWeaponIndex === card.index"
                     @click="confirmDeleteWeapon(card.index)"
                   >
@@ -1680,6 +1680,10 @@ const hasNewWeapon = computed(() =>
 
 .profile-weapon__action:hover:not(:disabled) {
   color: var(--wh-orange-600);
+}
+
+.profile-weapon__action--confirm {
+  color: var(--wh-orange-500);
 }
 
 .profile-weapon__action--delete {
