@@ -74,6 +74,60 @@ function hasAccommodationTotals(accommodation: NonNullable<BookingHistoryItem['a
   return accommodation.total != null || accommodation.totalPerPerson != null
 }
 
+function accommodationTotal(accommodation: NonNullable<BookingHistoryItem['accommodation']>) {
+  if (accommodation.total != null) return accommodation.total
+
+  const rooms = accommodation.rooms
+  if (!rooms?.length) return null
+
+  if (rooms.every(room => room.priceTotal != null)) {
+    return rooms.reduce((sum, room) => sum + (room.priceTotal ?? 0), 0)
+  }
+
+  return roomsStayTotal(rooms, accommodation.nights)
+}
+
+function accommodationPerPerson(accommodation: NonNullable<BookingHistoryItem['accommodation']>) {
+  if (accommodation.totalPerPerson != null) return accommodation.totalPerPerson
+
+  const rooms = accommodation.rooms
+  if (!rooms?.length || !rooms.every(room => room.pricePerPerson != null)) return null
+
+  return rooms.reduce((sum, room) => sum + (room.pricePerPerson ?? 0), 0)
+}
+
+function huntTotal(hunt: NonNullable<BookingHistoryItem['hunt']>) {
+  return hunt.total ?? hunt.priceTotal ?? null
+}
+
+function huntPerPerson(hunt: NonNullable<BookingHistoryItem['hunt']>) {
+  return hunt.totalPerPerson ?? hunt.pricePerPerson ?? null
+}
+
+function sumTotals(first: number | null, second: number | null) {
+  if (first == null || second == null) return null
+
+  return first + second
+}
+
+function grandTotalLines(item: BookingHistoryItem) {
+  if (!item.accommodation || !item.hunt) return []
+
+  const perPerson = sumTotals(accommodationPerPerson(item.accommodation), huntPerPerson(item.hunt))
+  const total = sumTotals(accommodationTotal(item.accommodation), huntTotal(item.hunt))
+  const lines: string[] = []
+
+  if (perPerson != null) {
+    lines.push(`Итого на человека = ${formatHotelPriceLabel(perPerson)}`)
+  }
+
+  if (total != null) {
+    lines.push(`Итого общая сумма = ${formatHotelPriceLabel(total)}`)
+  }
+
+  return lines
+}
+
 function isPaymentVisibleStatus(code?: string) {
   return code === 'finish_bed_collection'
     || code === 'paid'
@@ -269,7 +323,7 @@ onBeforeUnmount(() => {
               :data-label="showCustomer ? 'Заказчик' : 'Охотн. База'"
             >
               <div class="booking-table__value">
-                <span v-if="showCustomer">{{ item.customerName ?? '—' }}</span>
+                <span v-if="showCustomer" class="booking-table__customer">{{ item.customerName ?? '—' }}</span>
                 <template v-else>
                   <a
                     v-if="item.baseUrl"
@@ -282,22 +336,23 @@ onBeforeUnmount(() => {
                   </a>
                   <span v-else>{{ item.baseName }}</span>
                 </template>
+
+                <div v-if="item.accommodation" class="booking-table__stay-grid">
+                  <div>
+                    Заезд: {{ item.accommodation.checkIn }}<br>
+                    Выезд: {{ item.accommodation.checkOut }}
+                  </div>
+                  <div>
+                    Длительность: {{ nightsLabel(item.accommodation.nights) }}<br>
+                    Кол-во: {{ item.accommodation.guests }} чел.
+                  </div>
+                </div>
               </div>
             </td>
             <td class="booking-table__details" data-label="Детали">
               <div class="booking-table__value">
                 <template v-if="item.accommodation">
                   <strong>Проживание:</strong>
-                  <div class="booking-table__stay-grid">
-                    <div>
-                      Заезд: {{ item.accommodation.checkIn }}<br>
-                      Выезд: {{ item.accommodation.checkOut }}
-                    </div>
-                    <div>
-                      Длительность: {{ nightsLabel(item.accommodation.nights) }}<br>
-                      Кол-во: {{ item.accommodation.guests }} чел.
-                    </div>
-                  </div>
 
                   <div
                     v-if="(showDetailsButtons || showCustomer) && item.accommodation.rooms?.length"
@@ -344,50 +399,51 @@ onBeforeUnmount(() => {
                           <br>
                           Общая сумма = {{ formatHotelPriceLabel(item.accommodation.total) }}
                         </template>
-                      </div>
-                    </div>
-                    <div
-                      v-if="
-                        showDetailsButtons
-                        && (
-                          item.accommodation.total != null
-                          || (
-                            item.accommodation.total == null
-                            && item.accommodation.totalPerPerson == null
-                          )
-                        )
-                      "
-                    >
-                      <template v-if="hasAccommodationTotals(item.accommodation)">
-                        <template v-if="item.accommodation.total != null">
-                          Общая сумма = {{ formatHotelPriceLabel(item.accommodation.total) }}
-                        </template>
-                      </template>
-                      <template v-else>
                         <template
-                          v-for="(room, roomIndex) in item.accommodation.rooms"
-                          :key="`room-price-${item.id}-${roomIndex}`"
+                          v-if="
+                            showDetailsButtons
+                            && (
+                              item.accommodation.total != null
+                              || (
+                                item.accommodation.total == null
+                                && item.accommodation.totalPerPerson == null
+                              )
+                            )
+                          "
                         >
-                          <template v-if="roomIndex > 0"><br><br></template>
-                          <template v-if="hasRoomNewPrices(room)">
-                            <template v-if="room.priceTotal != null">
-                              Сумма = {{ formatHotelPriceLabel(room.priceTotal) }}
+                          <br>
+                          <template v-if="hasAccommodationTotals(item.accommodation)">
+                            <template v-if="item.accommodation.total != null">
+                              Общая сумма = {{ formatHotelPriceLabel(item.accommodation.total) }}
                             </template>
                           </template>
                           <template v-else>
-                            Сумма за сутки = {{ formatHotelPriceLabel(roomDayTotal(room)) }}<br>
-                            Сумма за проживание = {{ formatHotelPriceLabel(roomStayTotal(room, item.accommodation.nights)) }}
+                            <template
+                              v-for="(room, roomIndex) in item.accommodation.rooms"
+                              :key="`room-price-${item.id}-${roomIndex}`"
+                            >
+                              <template v-if="roomIndex > 0"><br><br></template>
+                              <template v-if="hasRoomNewPrices(room)">
+                                <template v-if="room.priceTotal != null">
+                                  Сумма = {{ formatHotelPriceLabel(room.priceTotal) }}
+                                </template>
+                              </template>
+                              <template v-else>
+                                Сумма за сутки = {{ formatHotelPriceLabel(roomDayTotal(room)) }}<br>
+                                Сумма за проживание = {{ formatHotelPriceLabel(roomStayTotal(room, item.accommodation.nights)) }}
+                              </template>
+                            </template>
+                            <template v-if="item.accommodation.rooms.length > 1">
+                              <br><br>
+                              Итого = {{ formatHotelPriceLabel(roomsStayTotal(item.accommodation.rooms, item.accommodation.nights)) }}
+                            </template>
+                            <template v-else-if="item.payment?.total">
+                              <br>
+                              Итого по брони = {{ formatHotelPriceLabel(item.payment.total) }}
+                            </template>
                           </template>
                         </template>
-                        <template v-if="item.accommodation.rooms.length > 1">
-                          <br><br>
-                          Итого = {{ formatHotelPriceLabel(roomsStayTotal(item.accommodation.rooms, item.accommodation.nights)) }}
-                        </template>
-                        <template v-else-if="item.payment?.total">
-                          <br>
-                          Итого по брони = {{ formatHotelPriceLabel(item.payment.total) }}
-                        </template>
-                      </template>
+                      </div>
                     </div>
                   </div>
                 </template>
@@ -428,6 +484,19 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                 </template>
+
+                <div
+                  v-if="grandTotalLines(item).length"
+                  class="booking-table__grand-total"
+                >
+                  <template
+                    v-for="(line, lineIndex) in grandTotalLines(item)"
+                    :key="`total-${item.id}-${lineIndex}`"
+                  >
+                    <template v-if="lineIndex > 0"><br></template>
+                    {{ line }}
+                  </template>
+                </div>
               </div>
             </td>
             <td class="booking-table__status" data-label="Статус">
@@ -660,7 +729,7 @@ onBeforeUnmount(() => {
 
 .booking-table {
   width: 100%;
-  min-width: 980px;
+  min-width: 880px;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.82rem;
@@ -707,25 +776,33 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+.booking-table th:nth-child(3),
+.booking-table__base {
+  width: 130px;
+  min-width: 130px;
+  max-width: 130px;
+  white-space: normal;
+}
+
 .booking-table th:nth-child(4),
 .booking-table__details {
-  width: 400px;
-  min-width: 360px;
-  max-width: 440px;
+  width: 185px;
+  min-width: 170px;
+  max-width: 195px;
 }
 
 .booking-table th:nth-child(5),
 .booking-table__status {
-  width: 160px;
-  min-width: 140px;
-  max-width: 180px;
+  width: 105px;
+  min-width: 100px;
+  max-width: 110px;
 }
 
 .booking-table th:nth-child(7),
 .booking-table td.booking-table__actions {
-  width: 188px;
-  min-width: 188px;
-  max-width: 188px;
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
 }
 
 .booking-table th:nth-child(6),
@@ -747,8 +824,13 @@ onBeforeUnmount(() => {
   color: var(--wh-gray-900);
 }
 
+.booking-table__customer {
+  color: var(--wh-orange-500);
+  font-weight: 600;
+}
+
 .booking-table__base-link {
-  color: #4aa3d9;
+  color: var(--wh-orange-500);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -756,8 +838,15 @@ onBeforeUnmount(() => {
 }
 
 .booking-table__base-link:hover {
-  color: #2f8fc9;
+  color: var(--wh-orange-600);
   text-decoration: underline;
+}
+
+.booking-table__base .booking-table__stay-grid {
+  margin-top: 8px;
+  min-width: 0;
+  text-align: left;
+  white-space: normal;
 }
 
 .booking-table__details strong {
@@ -771,14 +860,14 @@ onBeforeUnmount(() => {
   margin-top: 0;
 }
 
-.booking-table__details .booking-table__value > div:not(.booking-table__rooms):not(.booking-table__stay-grid) {
+.booking-table__details .booking-table__value > div:not(.booking-table__rooms):not(.booking-table__stay-grid):not(.booking-table__grand-total) {
   color: #4a4a4a;
   font-weight: 500;
 }
 
 .booking-table__stay-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px 12px;
   color: #4a4a4a;
   font-weight: 500;
@@ -788,6 +877,16 @@ onBeforeUnmount(() => {
   padding: 6px 8px;
   border: 1px solid var(--wh-gray-200);
   border-radius: 4px;
+}
+
+.booking-table__grand-total {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border: 1px solid #2f8fc9;
+  border-radius: 4px;
+  background: #2f8fc9;
+  color: var(--wh-white);
+  font-weight: 600;
 }
 
 .booking-table__rooms {
@@ -896,7 +995,7 @@ onBeforeUnmount(() => {
 .booking-table__actions-list {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 6px;
 }
 
@@ -905,14 +1004,15 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: 168px;
-  padding: 7px 14px;
+  width: 100%;
+  padding: 7px 8px;
   border-radius: 999px;
   border: 1.5px solid transparent;
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.2;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -922,8 +1022,7 @@ onBeforeUnmount(() => {
 }
 
 .booking-table__action[aria-busy="true"] {
-  width: auto;
-  min-width: 168px;
+  width: 100%;
 }
 
 .booking-table__action--danger {
