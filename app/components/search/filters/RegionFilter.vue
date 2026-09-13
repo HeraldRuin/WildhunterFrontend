@@ -2,6 +2,7 @@
 import type { SearchLocation } from '~/types/api'
 
 const PREVIEW_LIMIT = 5
+const SCROLLABLE_LIMIT = 10
 
 const model = defineModel<string[]>({ required: true })
 
@@ -29,6 +30,10 @@ const visibleLocations = computed(() => {
 
 const hasMore = computed(() => (locations.value?.length ?? 0) > PREVIEW_LIMIT)
 
+const isScrollable = computed(() => (
+  expanded.value && (locations.value?.length ?? 0) > SCROLLABLE_LIMIT
+))
+
 function locationId(item: SearchLocation) {
   return String(item.id)
 }
@@ -55,7 +60,10 @@ function toggleExpand() {
     </div>
 
     <template v-else>
-      <ul class="search-filters-region__list">
+      <ul
+        class="search-filters-region__list"
+        :class="{ 'search-filters-region__list--scrollable': isScrollable }"
+      >
         <li
           v-for="item in visibleLocations"
           :key="item.id"
@@ -124,6 +132,28 @@ function toggleExpand() {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.search-filters-region__list--scrollable {
+  max-height: calc(22px * 10 + 10px * 9);
+  padding-right: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #bfbfbf transparent;
+}
+
+.search-filters-region__list--scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-filters-region__list--scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.search-filters-region__list--scrollable::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 999px;
 }
 
 .search-filters-region__option {

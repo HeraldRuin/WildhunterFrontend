@@ -3,6 +3,7 @@ import type { HotelRoomAttribute, HotelRoomAttributeTerm, SearchFiltersState } f
 import { DEFAULT_SEARCH_FILTERS } from '~/utils/search'
 
 const PREVIEW_TERMS_LIMIT = 3
+const SCROLLABLE_TERMS_LIMIT = 10
 
 const props = withDefaults(defineProps<{
   modelValue: SearchFiltersState
@@ -98,6 +99,10 @@ function hasMoreTerms(group: HotelRoomAttribute) {
   return group.terms.length > PREVIEW_TERMS_LIMIT
 }
 
+function isGroupScrollable(group: HotelRoomAttribute) {
+  return Boolean(expandedGroups.value[group.id]) && group.terms.length > SCROLLABLE_TERMS_LIMIT
+}
+
 function toggleGroupExpand(groupId: number) {
   expandedGroups.value = {
     ...expandedGroups.value,
@@ -155,9 +160,37 @@ function closeMobile() {
 }
 
 const scrollEl = ref<HTMLElement | null>(null)
+const panelEl = ref<HTMLElement | null>(null)
+const fabLeftPx = ref<number | null>(null)
 const listPageCount = ref(1)
 const listPageIndex = ref(0)
 let listResizeObserver: ResizeObserver | null = null
+
+function updateFabPosition() {
+  if (!import.meta.client || !props.floatingReset || !hasActiveFilters.value) {
+    fabLeftPx.value = null
+    return
+  }
+
+  const panel = panelEl.value
+  if (!panel) {
+    fabLeftPx.value = null
+    return
+  }
+
+  const rect = panel.getBoundingClientRect()
+  fabLeftPx.value = rect.left + rect.width / 2
+}
+
+const fabStyle = computed(() => {
+  if (fabLeftPx.value == null) {
+    return undefined
+  }
+
+  return {
+    left: `${fabLeftPx.value}px`,
+  }
+})
 
 function getListMaxScroll(el: HTMLElement) {
   return Math.max(0, el.scrollHeight - el.clientHeight)
@@ -275,10 +308,13 @@ onMounted(() => {
   void onAmenitiesOpen()
 
   window.addEventListener('resize', scheduleListPagesUpdate)
+  window.addEventListener('resize', updateFabPosition)
+  window.addEventListener('scroll', updateFabPosition, { passive: true })
 
   if (import.meta.client && typeof ResizeObserver !== 'undefined') {
     listResizeObserver = new ResizeObserver(() => {
       updateListPages()
+      updateFabPosition()
     })
 
     void nextTick(() => {
@@ -289,19 +325,41 @@ onMounted(() => {
           listResizeObserver?.observe(content)
         }
       }
+      if (panelEl.value) {
+        listResizeObserver?.observe(panelEl.value)
+      }
       updateListPages()
+      updateFabPosition()
     })
   }
   else {
     scheduleListPagesUpdate()
+    updateFabPosition()
   }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', scheduleListPagesUpdate)
+  window.removeEventListener('resize', updateFabPosition)
+  window.removeEventListener('scroll', updateFabPosition)
   listResizeObserver?.disconnect()
   listResizeObserver = null
 })
+
+watch(hasActiveFilters, () => {
+  void nextTick(() => {
+    updateFabPosition()
+  })
+})
+
+watch(
+  () => props.floatingReset,
+  () => {
+    void nextTick(() => {
+      updateFabPosition()
+    })
+  },
+)
 </script>
 
 <template>
@@ -333,7 +391,10 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <div class="search-filters__panel">
+      <div
+        ref="panelEl"
+        class="search-filters__panel"
+      >
         <CommonModalCloseButton
           class="search-filters__modal-close"
           aria-label="Закрыть фильтры"
@@ -370,7 +431,6 @@ onBeforeUnmount(() => {
         <SearchFiltersFilterSection
           class="search-filters__group"
           title="Рейтинг"
-          default-open
         >
           <SearchFiltersRatingFilter
             :model-value="localFilters.ratings"
@@ -382,6 +442,7 @@ onBeforeUnmount(() => {
         <SearchFiltersFilterSection
           class="search-filters__group"
           title="Регион охоты (область)"
+          default-open
         >
           <SearchFiltersRegionFilter
             :model-value="localFilters.regions"
@@ -392,6 +453,7 @@ onBeforeUnmount(() => {
         <SearchFiltersFilterSection
           class="search-filters__group"
           title="Дичь"
+          default-open
         >
           <SearchFiltersAnimalFilter
             :model-value="localFilters.animals"
@@ -402,6 +464,7 @@ onBeforeUnmount(() => {
         <SearchFiltersFilterSection
           class="search-filters__group"
           title="Способ охоты"
+          default-open
         >
           <SearchFiltersHuntingMethodFilter
             :model-value="localFilters.huntingMethods"
@@ -435,7 +498,10 @@ onBeforeUnmount(() => {
                 {{ group.name }}
               </h3>
 
-              <ul class="search-filters__list">
+              <ul
+                class="search-filters__list"
+                :class="{ 'search-filters__list--scrollable': isGroupScrollable(group) }"
+              >
                 <li
                   v-for="term in visibleTerms(group)"
                   :key="term.id"
@@ -528,9 +594,10 @@ onBeforeUnmount(() => {
 
     <Teleport to="body">
       <button
-        v-if="hasActiveFilters && floatingReset"
+        v-if="hasActiveFilters && floatingReset && fabLeftPx != null"
         type="button"
         class="search-filters-fab"
+        :style="fabStyle"
         @click="handleReset"
       >
         Сбросить фильтры
@@ -611,15 +678,26 @@ onBeforeUnmount(() => {
 .search-filters__body {
   flex: 1 1 0;
   min-height: 0;
+  margin-right: -16px;
+  padding-right: 10px;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: #bfbfbf transparent;
 }
 
 .search-filters__body::-webkit-scrollbar {
-  display: none;
+  width: 6px;
+}
+
+.search-filters__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.search-filters__body::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 999px;
 }
 
 .search-filters__content {
@@ -714,6 +792,28 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.search-filters__list--scrollable {
+  max-height: calc(22px * 10 + 10px * 9);
+  padding-right: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #bfbfbf transparent;
+}
+
+.search-filters__list--scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-filters__list--scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.search-filters__list--scrollable::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 999px;
 }
 
 .search-filters__more {
@@ -935,7 +1035,6 @@ onBeforeUnmount(() => {
 /* Teleport to body — без scoped, иначе fixed-стили могут не примениться */
 .search-filters-fab {
   position: fixed;
-  left: max(24px, env(safe-area-inset-left, 0px));
   bottom: max(24px, env(safe-area-inset-bottom, 0px));
   z-index: 1000;
   display: inline-flex;
@@ -953,6 +1052,7 @@ onBeforeUnmount(() => {
   line-height: 1.2;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(17, 24, 39, 0.2);
+  transform: translateX(-50%);
 }
 
 .search-filters-fab:hover {
@@ -961,7 +1061,6 @@ onBeforeUnmount(() => {
 
 @media (max-width: 640px) {
   .search-filters-fab {
-    left: max(12px, env(safe-area-inset-left, 0px));
     bottom: max(16px, env(safe-area-inset-bottom, 0px));
     min-width: 0;
     padding-inline: 16px;
