@@ -268,6 +268,23 @@ useHead({
   object-fit: cover;
 }
 
+.blog-article__body :deep(.blog-hero-image) {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 0 28px;
+  object-fit: cover;
+}
+
+.blog-article__body :deep(ol) {
+  margin: 0 0 18px;
+  padding-left: 22px;
+}
+
+.blog-article__body :deep(ol li) {
+  margin-bottom: 8px;
+}
+
 .blog-article__body :deep(.blog-table-wrap) {
   overflow-x: auto;
   margin: 0 0 20px;
