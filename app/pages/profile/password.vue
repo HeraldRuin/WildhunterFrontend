@@ -329,6 +329,7 @@ onMounted(() => {
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <form
       class="password-form"
       :class="{ 'password-form--submitting': isSubmitting }"

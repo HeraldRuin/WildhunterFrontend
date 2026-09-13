@@ -503,6 +503,7 @@ async function handleSubmit() {
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <p v-if="error && !showForm" class="profile-page__status profile-page__status--error">{{ error }}</p>
 
     <form

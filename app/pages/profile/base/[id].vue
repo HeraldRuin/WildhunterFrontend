@@ -1160,6 +1160,7 @@ watch(activeEditTab, (tab) => {
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <div class="base-edit">
       <div
         v-if="showForm && !loadError && !isLoading"

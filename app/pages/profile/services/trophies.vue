@@ -300,6 +300,7 @@ onMounted(() => {
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <div class="trophy-cost__body">
       <p v-if="loadError" class="trophy-cost__status trophy-cost__status--error">
         {{ loadError }}

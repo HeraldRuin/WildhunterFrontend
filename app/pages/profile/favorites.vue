@@ -193,6 +193,7 @@ watch(favoriteHotelIds, (ids) => {
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <div class="profile-page__scroll">
       <div
         v-if="isPageLoading"

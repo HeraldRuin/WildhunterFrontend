@@ -459,6 +459,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <div class="animals-manage__toolbar">
       <CommonSelectField
         v-model="selectedAnimalId"

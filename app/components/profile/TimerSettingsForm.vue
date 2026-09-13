@@ -199,6 +199,7 @@ onMounted(() => {
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <p v-if="loadError" class="timer-settings__status timer-settings__status--error">
       {{ loadError }}
     </p>

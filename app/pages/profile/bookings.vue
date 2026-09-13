@@ -1087,6 +1087,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
 
 <template>
   <div class="bookings-page">
+    <ProfilePageBreadcrumbs />
     <button
       v-if="bookingIdFilter"
       type="button"

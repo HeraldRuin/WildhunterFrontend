@@ -888,6 +888,7 @@ watch(activeEditTab, (tab) => {
 
 <template>
   <div v-if="ready" class="profile-page">
+    <ProfilePageBreadcrumbs />
     <div class="room-edit">
       <div
         v-if="showForm && !loadError && !isLoading"

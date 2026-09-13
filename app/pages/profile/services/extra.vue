@@ -682,6 +682,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <div
       v-if="!loadError && !isLoading"
       class="extra-services__nav-row"

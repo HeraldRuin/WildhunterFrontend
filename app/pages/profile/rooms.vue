@@ -156,6 +156,7 @@ onMounted(() => {
 
 <template>
   <div v-if="ready" class="profile-page">
+    <ProfilePageBreadcrumbs />
     <div class="rooms-manage__toolbar">
       <div class="rooms-manage__actions">
         <button

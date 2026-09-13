@@ -468,6 +468,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <div class="hunting-org__body">
       <p v-if="loadError" class="hunting-org__status hunting-org__status--error">
         {{ loadError }}

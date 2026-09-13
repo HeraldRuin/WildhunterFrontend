@@ -1062,6 +1062,7 @@ const hasNewWeapon = computed(() =>
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <p
       v-if="error && !profile"
       class="profile-page__status profile-page__status--error"

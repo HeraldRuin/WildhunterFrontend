@@ -362,6 +362,7 @@ onMounted(() => {
 
 <template>
   <div v-if="ready" class="profile-page">
+    <ProfilePageBreadcrumbs />
     <div class="rooms-availability__toolbar-shell">
       <div class="rooms-availability__toolbar">
         <div class="rooms-availability__toolbar-controls">

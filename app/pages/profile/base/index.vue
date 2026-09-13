@@ -115,6 +115,7 @@ onMounted(() => {
 
 <template>
   <div class="profile-page">
+    <ProfilePageBreadcrumbs />
     <div class="base-manage">
       <div class="base-manage__toolbar">
         <button
