@@ -551,7 +551,7 @@ function onNumberModelUpdate(value: string) {
 
 .hunter-billet__title {
   margin: 0;
-  color: var(--hunter-billet-ink);
+  color: var(--wh-gray-900);
   font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   font-size: 24px;
   font-weight: 700;
