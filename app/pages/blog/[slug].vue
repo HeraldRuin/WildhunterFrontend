@@ -19,6 +19,16 @@ if (!post) {
 
 const pageTitle = post.pageTitle || post.title
 
+const { open: openRegisterModal } = useRegisterModal()
+
+/** Кнопки внутри v-html не имеют обработчиков, ловим клик делегированием */
+function onBodyClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null
+  if (target?.closest('[data-register-cta]')) {
+    openRegisterModal()
+  }
+}
+
 useHead({
   title: pageTitle,
   meta: [
@@ -59,6 +69,7 @@ useHead({
           v-if="post.content"
           class="blog-article__body"
           v-html="post.content"
+          @click="onBodyClick"
         />
       </div>
     </main>
@@ -166,6 +177,95 @@ useHead({
   color: #1a5fb4;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.blog-article__body :deep(.blog-lead) {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 24px 48px;
+  align-items: start;
+  margin: 0 0 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid #e0ddd6;
+}
+
+.blog-article__body :deep(.blog-lead__title) {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.blog-article__body :deep(.blog-lead__date) {
+  margin: 8px 0 0;
+  font-size: 15px;
+}
+
+.blog-article__body :deep(.blog-lead__copy p) {
+  margin: 0 0 16px;
+}
+
+.blog-article__body :deep(.blog-cta) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px 40px;
+  align-items: center;
+  width: 100vw;
+  max-width: 100vw;
+  margin: 40px calc(50% - 50vw);
+  padding: 40px max(24px, calc((100vw - 1100px) / 2 + 16px));
+  background: #f2f0eb;
+}
+
+.blog-article__body :deep(.blog-cta__title) {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.blog-article__body :deep(.blog-cta__button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  justify-self: start;
+  min-width: 260px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: var(--wh-radius-lg);
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.47;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.blog-article__body :deep(.blog-cta__button:hover) {
+  background: var(--wh-orange-600);
+  transform: var(--wh-button-hover-lift);
+}
+
+.blog-article__body :deep(.blog-cta__button svg) {
+  width: 16px;
+  height: 16px;
+}
+
+.blog-article__body :deep(.blog-minor) {
+  margin: 20px 0 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .blog-article__body :deep(.blog-subtitle) {
@@ -514,7 +614,9 @@ useHead({
 
   .blog-article__body :deep(.blog-faq__head),
   .blog-article__body :deep(.blog-join),
-  .blog-article__body :deep(.blog-contacts) {
+  .blog-article__body :deep(.blog-contacts),
+  .blog-article__body :deep(.blog-lead),
+  .blog-article__body :deep(.blog-cta) {
     grid-template-columns: 1fr;
   }
 
