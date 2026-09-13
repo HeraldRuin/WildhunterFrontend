@@ -29,7 +29,7 @@ const hunterProfileNavItem: NavItem = {
 const baseNavItems: NavItem[] = [
   { label: 'Бронирования', to: '/profile/bookings', iconSrc: '/icons/iconoir_clock-solid.png' },
   {
-    label: 'Лицензия на оружие',
+    label: 'Документы охотника',
     labelShort: 'Оружие',
     to: '/profile/weapons',
     iconSrc: '/icons/material-symbols_license-rounded.png',
