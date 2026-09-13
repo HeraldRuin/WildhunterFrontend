@@ -193,14 +193,14 @@ function isExternalHref(href: string) {
 }
 
 .app-social-links--header .app-social-links__item {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-color: var(--wh-black-text);
   color: var(--wh-black-text);
 }
 
 .app-social-links--header .app-social-links__item svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 </style>
