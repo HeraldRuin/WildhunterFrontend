@@ -118,7 +118,7 @@ function grandTotalLines(item: BookingHistoryItem) {
   const lines: string[] = []
 
   if (!props.showCustomer && perPerson != null) {
-    lines.push(`Итого на человека = ${formatHotelPriceLabel(perPerson)}`)
+    lines.push(`Сумма на одного человека = ${formatHotelPriceLabel(perPerson)}`)
   }
 
   if (total != null) {
