@@ -2,11 +2,6 @@
 const { open: openLoginModal } = useLoginModal()
 const { open: openRegisterModal } = useRegisterModal()
 const { isAuthenticated } = useAuth()
-const {
-  breadcrumbs: profileBreadcrumbs,
-  title: profileTitle,
-  isActive: isProfileHeaderActive,
-} = useProfileHeader()
 
 const route = useRoute()
 const menuRef = ref<HTMLElement | null>(null)
@@ -14,24 +9,13 @@ const isMenuOpen = ref(false)
 const hoveredKey = ref<string | null>(null)
 const isLogoNavigating = ref(false)
 
-const allMenuItems = [
+const menuItems = [
   { label: 'Для охотников', to: '/hunters' },
   { label: 'Для охотохозяйств', to: '/hunting-farms' },
   { label: 'Блог', to: '/blog' },
 ]
 
-const isProfileLayout = computed(() => route.meta.layout === 'profile')
-
-const menuItems = computed(() => {
-  if (isProfileLayout.value) {
-    return []
-  }
-
-  return allMenuItems
-})
-
-const showNavMenu = computed(() => menuItems.value.length > 0)
-const showProfileChrome = computed(() => isProfileLayout.value && isProfileHeaderActive.value)
+const showNavMenu = computed(() => menuItems.length > 0)
 
 function isCompactViewport() {
   return window.matchMedia('(max-width: 1024px)').matches
@@ -71,59 +55,36 @@ onUnmounted(() => {
   <header
     ref="menuRef"
     class="hero-header"
-    :class="{
-      'hero-header--menu-open': isMenuOpen,
-      'hero-header--profile': showProfileChrome,
-    }"
+    :class="{ 'hero-header--menu-open': isMenuOpen }"
   >
     <div class="hero-header__left">
-      <template v-if="showProfileChrome">
-        <div class="hero-header__profile-chrome">
-          <AppBreadcrumbs
-            v-if="profileBreadcrumbs.length"
-            class="hero-header__breadcrumbs"
-            :items="profileBreadcrumbs"
-          />
-          <!-- временно скрыто название раздела
-          <h1
-            v-if="profileTitle"
-            class="hero-header__profile-title"
-          >
-            {{ profileTitle }}
-          </h1>
-          -->
-        </div>
-      </template>
-
-      <template v-else>
-        <button
-          v-if="showNavMenu"
-          type="button"
-          class="hero-header__burger"
-          :class="{ 'hero-header__burger--open': isMenuOpen }"
-          :aria-expanded="isMenuOpen"
-          aria-haspopup="menu"
-          aria-label="Меню"
-          @click.stop="toggleMenu"
+      <button
+        v-if="showNavMenu"
+        type="button"
+        class="hero-header__burger"
+        :class="{ 'hero-header__burger--open': isMenuOpen }"
+        :aria-expanded="isMenuOpen"
+        aria-haspopup="menu"
+        aria-label="Меню"
+        @click.stop="toggleMenu"
+      >
+        <img
+          src="/icons/material-symbols_menu-rounded.png"
+          alt=""
+          width="34"
+          height="34"
+          aria-hidden="true"
         >
-          <img
-            src="/icons/material-symbols_menu-rounded.png"
-            alt=""
-            width="34"
-            height="34"
-            aria-hidden="true"
-          >
-        </button>
-        <NuxtLink
-          v-for="item in menuItems"
-          :key="item.to"
-          :to="item.to"
-          class="hero-header__menu hero-header__menu--desktop"
-          :class="{ 'hero-header__menu--blog': item.to === '/blog' }"
-        >
-          {{ item.label }}
-        </NuxtLink>
-      </template>
+      </button>
+      <NuxtLink
+        v-for="item in menuItems"
+        :key="item.to"
+        :to="item.to"
+        class="hero-header__menu hero-header__menu--desktop"
+        :class="{ 'hero-header__menu--blog': item.to === '/blog' }"
+      >
+        {{ item.label }}
+      </NuxtLink>
     </div>
 
     <NuxtLink
@@ -142,11 +103,6 @@ onUnmounted(() => {
       />
 
       <div class="hero-header__actions">
-        <ProfileNotificationsBell
-          v-if="showProfileChrome"
-          class="hero-header__notifications"
-        />
-
         <CommonAuthUserMenu class="hero-header__user-menu" />
 
         <button
@@ -238,13 +194,7 @@ onUnmounted(() => {
 .hero-header__left {
   justify-content: flex-end;
   padding-top: 12px;
-  padding-right: 80px;
-}
-
-.hero-header--profile .hero-header__left {
-  justify-content: flex-start;
-  padding-top: 0;
-  padding-right: 0;
+  padding-right: 20px;
 }
 
 .hero-header__right {
@@ -259,33 +209,6 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
-.hero-header__profile-chrome {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.hero-header__breadcrumbs {
-  font-size: 0.875rem;
-  line-height: 1.2;
-}
-
-.hero-header__profile-title {
-  margin: 0;
-  overflow: hidden;
-  font-family: "UNCAGE", sans-serif;
-  font-weight: 400;
-  font-size: 24px;
-  line-height: 1.2;
-  letter-spacing: -0.03em;
-  text-transform: uppercase;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--wh-gray-900);
-}
-
 .hero-header__socials {
   flex-shrink: 0;
   margin-top: 12px;
@@ -296,11 +219,6 @@ onUnmounted(() => {
   .hero-header__socials {
     display: none;
   }
-}
-
-.hero-header__notifications {
-  flex-shrink: 0;
-  margin-top: 8px;
 }
 
 .hero-header__burger {
@@ -384,7 +302,12 @@ onUnmounted(() => {
   height: auto !important;
 }
 
+.hero-header__user-menu {
+  margin-top: 12px;
+}
+
 .hero-header__register {
+  margin-top: 12px;
   padding: 0;
   border: none;
   background: transparent;
@@ -408,6 +331,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   width: 126px;
+  margin-top: 12px;
   padding: 16px 20px;
   border: none;
   border-radius: var(--wh-radius-lg);
@@ -487,15 +411,6 @@ onUnmounted(() => {
     gap: 8px;
   }
 
-  .hero-header--profile .hero-header__left {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .hero-header__profile-title {
-    font-size: 20px;
-  }
-
   .hero-header__menu {
     padding: 0 0 4px;
   }
@@ -556,18 +471,6 @@ onUnmounted(() => {
     gap: 0;
     padding-top: 0;
     padding-right: 0;
-  }
-
-  .hero-header__profile-chrome {
-    gap: 2px;
-  }
-
-  .hero-header__breadcrumbs {
-    font-size: 0.75rem;
-  }
-
-  .hero-header__profile-title {
-    font-size: 16px;
   }
 
   .hero-header__right {
