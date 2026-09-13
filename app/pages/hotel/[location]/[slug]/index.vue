@@ -318,7 +318,10 @@ function handleRetryHotelLoad() {
             </p>
 
             <div class="hotel-page__animals">
-              <span class="hotel-page__animals-label">Животные для охоты:</span>
+              <span
+                v-if="displayHotel.animals.length"
+                class="hotel-page__animals-label"
+              >Животные для охоты:</span>
               <ul
                 v-if="displayHotel.animals.length"
                 class="hotel-amenities hotel-page__animals-list"
