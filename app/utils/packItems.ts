@@ -1,7 +1,7 @@
 /**
- * Упаковывает элементы в строки по ширине: если следующий не влезает,
- * берётся первый более короткий из оставшихся (как «Лось» вместо «Олень благородный»).
- * Порядок исходного списка сохраняется по возможности (first-fit с пропуском).
+ * Упаковывает элементы в одну строку по ширине.
+ * Ожидает, что `items` уже отсортированы (например, короткие названия первыми).
+ * Не влезающие элементы отбрасываются; при обрезке резервируется место под «...».
  */
 export function packItemsByWidth<T>(
   items: T[],
@@ -10,6 +10,8 @@ export function packItemsByWidth<T>(
   options: {
     gap?: number
     firstLineOffset?: number
+    ellipsisWidth?: number
+    hasMoreOutside?: boolean
   } = {},
 ): T[] {
   if (!items.length || containerWidth <= 0) {
@@ -17,39 +19,37 @@ export function packItemsByWidth<T>(
   }
 
   const gap = options.gap ?? 0
-  const remaining = items.map((item, index) => ({
-    item,
-    index,
-    width: getWidth(item),
-  }))
+  const firstLineOffset = Math.max(0, options.firstLineOffset ?? 0)
+  const ellipsisWidth = Math.max(0, options.ellipsisWidth ?? 0)
+  const hasMoreOutside = Boolean(options.hasMoreOutside)
+
   const packed: T[] = []
-  let used = Math.max(0, options.firstLineOffset ?? 0)
+  let used = firstLineOffset
 
-  while (remaining.length) {
-    const spaceLeft = containerWidth - used
-    const fitIndex = remaining.findIndex(({ width }) => {
-      const need = (used === 0 ? 0 : gap) + width
-      return need <= spaceLeft
-    })
-
-    if (fitIndex === -1) {
-      if (used === 0) {
-        const forced = remaining.shift()
-        if (!forced) {
-          break
-        }
-        packed.push(forced.item)
-        used = forced.width
-        continue
-      }
-
-      used = 0
-      continue
+  for (const item of items) {
+    const width = getWidth(item)
+    const chipNeed = (used === 0 ? 0 : gap) + width
+    if (used + chipNeed > containerWidth) {
+      break
     }
+    packed.push(item)
+    used += chipNeed
+  }
 
-    const [picked] = remaining.splice(fitIndex, 1)
-    used += (used === 0 ? 0 : gap) + picked.width
-    packed.push(picked.item)
+  const truncated = packed.length < items.length || hasMoreOutside
+  if (!truncated || ellipsisWidth <= 0) {
+    return packed
+  }
+
+  while (packed.length > 0) {
+    used = firstLineOffset
+    for (const item of packed) {
+      used += (used === 0 ? 0 : gap) + getWidth(item)
+    }
+    if (used + gap + ellipsisWidth <= containerWidth) {
+      break
+    }
+    packed.pop()
   }
 
   return packed

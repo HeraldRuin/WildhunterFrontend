@@ -88,6 +88,7 @@ const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(pro
 
 const ANIMALS_PREVIEW_LIMIT = 4
 const ANIMALS_GAP_PX = 8
+const ANIMALS_MORE_WIDTH_PX = 16
 
 type AnimalPreview = {
   id: number
@@ -110,9 +111,16 @@ const allAnimals = computed(() => {
     .filter(animal => animal.title)
 })
 
-const previewAnimals = computed(() => allAnimals.value.slice(0, ANIMALS_PREVIEW_LIMIT))
-const hasMoreAnimals = computed(() => allAnimals.value.length > ANIMALS_PREVIEW_LIMIT)
+/** Короткие названия первыми — длинные только если ещё есть место в строке. */
+const animalsByLength = computed(() =>
+  allAnimals.value
+    .slice()
+    .sort((a, b) => a.title.length - b.title.length || a.title.localeCompare(b.title, 'ru')),
+)
+
+const previewAnimals = computed(() => animalsByLength.value.slice(0, ANIMALS_PREVIEW_LIMIT))
 const displayAnimals = computed(() => packedAnimals.value ?? previewAnimals.value)
+const hasMoreAnimals = computed(() => displayAnimals.value.length < allAnimals.value.length)
 
 function getMeasureCanvas(): HTMLCanvasElement {
   if (!measureCanvas) {
@@ -155,6 +163,8 @@ function repackAnimals() {
     return
   }
 
+  const hasHiddenBeyondPreview = allAnimals.value.length > animals.length
+
   const packed = packItemsByWidth(
     animals,
     animal => measureChipWidth(animal.title),
@@ -162,11 +172,13 @@ function repackAnimals() {
     {
       gap: ANIMALS_GAP_PX,
       firstLineOffset: label?.offsetWidth ?? 0,
+      ellipsisWidth: ANIMALS_MORE_WIDTH_PX,
+      hasMoreOutside: hasHiddenBeyondPreview,
     },
   )
 
-  const sameOrder = packed.every((animal, index) => animal.id === animals[index]?.id)
-  packedAnimals.value = sameOrder ? animals : packed
+  // Если даже один чип не рассчитался — всё равно показываем самый короткий
+  packedAnimals.value = packed.length ? packed : animals.slice(0, 1)
 }
 
 function setupAnimalsPacking() {
@@ -347,11 +359,12 @@ async function handleFavoriteClick(event: MouseEvent) {
         class="offer-card__animals"
       >
         <span
+          v-if="allAnimals.length"
           ref="animalsLabelRef"
           class="offer-card__animals-label"
         >Животные для охоты:</span>
         <ul
-          v-if="displayAnimals.length"
+          v-if="allAnimals.length"
           class="offer-card__animals-list"
         >
           <li
@@ -568,10 +581,11 @@ async function handleFavoriteClick(event: MouseEvent) {
 
 .offer-card__animals {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
   margin-top: 8px;
+  overflow: hidden;
 }
 
 .offer-card__animals-label {
@@ -592,6 +606,7 @@ async function handleFavoriteClick(event: MouseEvent) {
 
 .offer-card__animal-item {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   min-width: 0;
   padding: 4px 8px;
@@ -604,6 +619,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   line-height: 1.35;
   letter-spacing: -0.02em;
   color: var(--wh-black-text);
+  white-space: nowrap;
 }
 
 .offer-card__animal-item--more {
