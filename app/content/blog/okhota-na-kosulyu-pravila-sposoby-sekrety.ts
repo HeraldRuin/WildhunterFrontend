@@ -385,18 +385,4 @@ export const okhotaNaKosulyuPravilaSposobySekretyContent = `
     </details>
   </div>
 </section>
-
-<section class="blog-contacts">
-  <h2 class="blog-contacts__title">Контактная информация</h2>
-  <div class="blog-contacts__info">
-    <p>8 (499) 450-95-96</p>
-    <p>
-      e-mail:
-      <a href="mailto:online@wild-hunter.ru">online@wild-hunter.ru</a>
-      /
-      <a href="mailto:wh.online@yandex.ru">wh.online@yandex.ru</a>
-    </p>
-    <p>г. Москва, Дмитровское ш., 60</p>
-  </div>
-</section>
 `.trim()
