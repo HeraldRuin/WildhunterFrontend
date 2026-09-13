@@ -1,11 +1,13 @@
-export function getLocationPath(slug: string | null | undefined, id: number | string) {
-  const safeSlug = String(slug || '').trim() || String(id)
+export function getLocationPath(slug: string | null | undefined) {
+  const safeSlug = String(slug || '').trim()
 
-  return `/locations/${safeSlug}/${id}`
+  return safeSlug ? `/locations/${safeSlug}` : '/locations'
 }
 
-export function getLocationMapPath(slug: string | null | undefined, id: number | string) {
-  return `${getLocationPath(slug, id)}/map`
+export function getLocationMapPath(slug: string | null | undefined) {
+  const safeSlug = String(slug || '').trim()
+
+  return safeSlug ? `/locations/${safeSlug}/map` : '/locations'
 }
 
 export function formatLocationInPrepositional(name: string) {

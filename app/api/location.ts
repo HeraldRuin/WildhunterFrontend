@@ -60,12 +60,14 @@ export function useLocationApi() {
     return apiFetch<ApiSuccessResponse<unknown>>(`/location/${id}`)
   }
 
-  function getLocationHotels(id: number | string) {
-    return apiFetch<ApiSuccessResponse<HotelOffer[]>>(`/locations/${id}/hotels`)
+  function getLocationHotels(locationSlug: string) {
+    return apiFetch<ApiSuccessResponse<HotelOffer[]>>(
+      `/locations/${encodeURIComponent(locationSlug)}/hotels`,
+    )
   }
 
-  async function getLocationHotelItems(id: number | string): Promise<OfferItem[]> {
-    const response = await getLocationHotels(id)
+  async function getLocationHotelItems(locationSlug: string): Promise<OfferItem[]> {
+    const response = await getLocationHotels(locationSlug)
 
     if (!response.success) {
       return []

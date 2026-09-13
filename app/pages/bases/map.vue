@@ -96,6 +96,12 @@ const hotels = ref<MapHotelItem[]>([])
 const isLoading = ref(false)
 let searchLoadId = 0
 
+async function resolveLocationSlug(id: number): Promise<string> {
+  const locations = await locationApi.getLocationItems()
+
+  return locations.find(item => item.id === id)?.slug || ''
+}
+
 async function loadMapHotels() {
   const loadId = ++searchLoadId
   isLoading.value = true
@@ -107,7 +113,9 @@ async function loadMapHotels() {
     let items: OfferItem[]
 
     if (searchRequest.value.catalog && hasLocation) {
-      items = await locationApi.getLocationHotelItems(locationId)
+      const slug = await resolveLocationSlug(locationId)
+
+      items = slug ? await locationApi.getLocationHotelItems(slug) : []
     }
     else if (searchRequest.value.catalog) {
       items = await hotelsApi.getHotelOfferItems()

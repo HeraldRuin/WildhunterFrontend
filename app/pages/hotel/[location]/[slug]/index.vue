@@ -66,11 +66,11 @@ const breadcrumbs = computed(() => {
 
   const location = displayHotel.value.location
   if (location?.name) {
+    const slug = location.slug || hotelParams.value.locationSlug
+
     items.push({
       label: location.name,
-      ...(location.id
-        ? { to: getLocationPath(location.slug || hotelParams.value.locationSlug, location.id) }
-        : {}),
+      ...(slug ? { to: getLocationPath(slug) } : {}),
     })
   }
 
@@ -105,12 +105,11 @@ const reviewsLabel = computed(() => formatReviewsCount(reviewsCount.value))
 
 const mapLinkTo = computed(() => {
   const hotelId = hotel.value?.id ?? displayHotel.value.id
-  const locationId = displayHotel.value.location?.id
   const locationSlug = displayHotel.value.location?.slug || hotelParams.value.locationSlug
 
-  if (locationId) {
+  if (locationSlug) {
     return {
-      path: getLocationMapPath(locationSlug, locationId),
+      path: getLocationMapPath(locationSlug),
       query: hotelId ? { hotel: String(hotelId) } : undefined,
     }
   }

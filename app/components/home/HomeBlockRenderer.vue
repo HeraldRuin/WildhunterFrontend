@@ -79,7 +79,7 @@ const featuredItems = computed(() => (model.value.list_item as Array<Record<stri
         <NuxtLink
           v-for="location in locations"
           :key="location.id"
-          :to="getLocationPath(location.slug, location.id)"
+          :to="getLocationPath(location.slug)"
           class="region-card"
         >
           <img

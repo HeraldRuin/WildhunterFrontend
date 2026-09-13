@@ -9,7 +9,7 @@ defineProps<{
 </script>
 
 <template>
-  <NuxtLink :to="getLocationPath(item.slug, item.id)" class="location-card">
+  <NuxtLink :to="getLocationPath(item.slug)" class="location-card">
     <img :src="item.image" :alt="item.title" loading="lazy" decoding="async">
     <div class="location-card__overlay">
       <h3 class="location-card__title">{{ item.title }}</h3>
