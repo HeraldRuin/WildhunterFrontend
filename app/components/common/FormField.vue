@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { InputHTMLAttributes } from 'vue'
 import type { HunterDocumentKind } from '~/utils/hunterDocuments'
+import { maskDotDateInput } from '~/utils/date'
 import {
   hunterDocumentMaxLength,
   isDocumentNumberKeyAllowed,
@@ -42,6 +43,8 @@ const props = withDefaults(defineProps<{
 
   amountOnly?: boolean
 
+  dateOnly?: boolean
+
   documentNumberKind?: HunterDocumentKind
 
   maxLength?: number
@@ -71,6 +74,7 @@ const props = withDefaults(defineProps<{
   noMargin: false,
   digitsOnly: false,
   amountOnly: false,
+  dateOnly: false,
   documentNumberKind: undefined,
   maxLength: undefined,
   skeleton: false,
@@ -115,7 +119,7 @@ const inputAttrs = computed(() => ({
   ...(effectiveMaxLength.value != null ? { maxlength: effectiveMaxLength.value } : {}),
   inputmode: props.digitsOnly
     ? 'numeric'
-    : props.amountOnly
+    : props.amountOnly || props.dateOnly
       ? 'decimal'
       : props.documentNumberKind
         ? 'text'
@@ -165,6 +169,10 @@ function normalizeInputValue(value: string) {
 
   if (props.amountOnly) {
     return toAmount(value)
+  }
+
+  if (props.dateOnly) {
+    return maskDotDateInput(value)
   }
 
   if (effectiveMaxLength.value != null) {
@@ -340,7 +348,7 @@ function onKeydown(event: KeyboardEvent) {
   emit('keydown', event)
 
   if (
-    (!props.digitsOnly && !props.amountOnly && !props.documentNumberKind)
+    (!props.digitsOnly && !props.amountOnly && !props.dateOnly && !props.documentNumberKind)
     || event.defaultPrevented
     || props.multiline
   ) {
@@ -368,6 +376,22 @@ function onKeydown(event: KeyboardEvent) {
     return
   }
 
+  if (props.dateOnly && event.key === '.') {
+    const target = event.target as HTMLInputElement
+    const value = target.value
+    const start = target.selectionStart ?? value.length
+    const end = target.selectionEnd ?? start
+    const nextValue = `${value.slice(0, start)}.${value.slice(end)}`
+    const dotsCount = nextValue.match(/\./g)?.length ?? 0
+
+    if (dotsCount <= 2 && !nextValue.startsWith('.') && !nextValue.includes('..')) {
+      return
+    }
+
+    event.preventDefault()
+    return
+  }
+
   if (props.amountOnly && (event.key === ',' || event.key === '.')) {
     const current = props.modelValue ?? ''
     if (!/[.,]/.test(current)) {
@@ -386,7 +410,7 @@ function onPaste(event: ClipboardEvent) {
   emit('paste', event)
 
   if (
-    (!props.digitsOnly && !props.amountOnly && !props.documentNumberKind)
+    (!props.digitsOnly && !props.amountOnly && !props.dateOnly && !props.documentNumberKind)
     || event.defaultPrevented
     || props.multiline
   ) {

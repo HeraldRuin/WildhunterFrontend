@@ -385,6 +385,7 @@ function onNumberModelUpdate(value: string) {
           />
           <CommonFormField
             no-margin
+            date-only
             label="Дата рождения"
             placeholder="дд.мм.гггг"
             :model-value="birthday ?? ''"
@@ -445,6 +446,7 @@ function onNumberModelUpdate(value: string) {
         >
           <CommonFormField
             no-margin
+            date-only
             label="Дата выдачи"
             placeholder="дд.мм.гггг"
             :disabled="!isEditing"
