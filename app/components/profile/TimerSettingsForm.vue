@@ -217,6 +217,7 @@ onMounted(() => {
       <CommonSaveButton
         class="timer-settings__save"
         type="submit"
+        mobile-width="100%"
         :disabled="isLoading || !/\d/.test(timerHours)"
         :loading="isSubmitting"
       >
