@@ -70,6 +70,15 @@ const isNoRoomConfirmOpen = ref(false)
 const isAnimalWarningOpen = ref(false)
 const isHuntDateWarningOpen = ref(false)
 const isStayDateWarningOpen = ref(false)
+const isMaxHuntersWarningOpen = ref(false)
+const maxHuntersWarningLimit = ref(0)
+const extraHuntsConfirmed = ref<{ animalId: string, hunters: number } | null>(null)
+const maxHuntersPendingAction = ref<'check' | 'book' | null>(null)
+const maxHuntersPendingCheckPayload = ref<{
+  huntDate: string
+  hunters: number
+  animalId: string
+} | null>(null)
 const apiMessage = ref('')
 const animalAvailability = ref<{
   price: number
@@ -138,6 +147,7 @@ const isAnyModalOpen = computed(() =>
   || isAnimalWarningOpen.value
   || isHuntDateWarningOpen.value
   || isStayDateWarningOpen.value
+  || isMaxHuntersWarningOpen.value
   || isApiMessageOpen.value,
 )
 
@@ -182,12 +192,95 @@ function handleRoomSelectionChange(payload: { hasSelectedRooms: boolean, totalRo
   resetHunters()
 }
 
+function getAnimalMaxHunters(animalId: string) {
+  const animal = hotelAnimals.value.find(item => String(item.id) === animalId)
+
+  if (!animal) {
+    return null
+  }
+
+  const max = animal.max_hunters_count ?? animal.hunters_count
+
+  if (max == null || !Number.isFinite(max) || max < 1) {
+    return null
+  }
+
+  return max
+}
+
+function exceedsAnimalMaxHunters(animalId: string, hunters: number) {
+  if (!animalId) {
+    return null
+  }
+
+  const max = getAnimalMaxHunters(animalId)
+
+  if (max == null || hunters <= max) {
+    return null
+  }
+
+  return max
+}
+
+function hasConfirmedExtraHunts(animalId: string, hunters: number) {
+  const confirmed = extraHuntsConfirmed.value
+
+  return Boolean(
+    confirmed
+    && confirmed.animalId === animalId
+    && confirmed.hunters >= hunters,
+  )
+}
+
+function openMaxHuntersWarning(max: number, pending: 'check' | 'book' | null = null) {
+  maxHuntersWarningLimit.value = max
+  maxHuntersPendingAction.value = pending
+  isMaxHuntersWarningOpen.value = true
+}
+
+function maybeOpenMaxHuntersWarning(
+  animalId: string,
+  hunters: number,
+  pending: 'check' | 'book' | null = null,
+) {
+  const max = exceedsAnimalMaxHunters(animalId, hunters)
+
+  if (max == null) {
+    if (!animalId || extraHuntsConfirmed.value?.animalId !== animalId) {
+      extraHuntsConfirmed.value = null
+    }
+    else if (hunters <= (getAnimalMaxHunters(animalId) ?? 0)) {
+      extraHuntsConfirmed.value = null
+    }
+
+    return false
+  }
+
+  if (hasConfirmedExtraHunts(animalId, hunters)) {
+    return false
+  }
+
+  if (isMaxHuntersWarningOpen.value && pending == null) {
+    maxHuntersWarningLimit.value = max
+    return true
+  }
+
+  openMaxHuntersWarning(max, pending)
+  return true
+}
+
 function handleAnimalChange(animalId: string) {
+  if (extraHuntsConfirmed.value?.animalId !== animalId) {
+    extraHuntsConfirmed.value = null
+  }
+
   selectedAnimalId.value = animalId
+  maybeOpenMaxHuntersWarning(animalId, huntHunters.value)
 }
 
 function handleHuntersChange(hunters: number) {
   huntHunters.value = hunters
+  maybeOpenMaxHuntersWarning(selectedAnimalId.value, hunters)
 }
 
 function getBookingAdults(stayAdultsCount: number | undefined, hunters: number, hasRooms: boolean) {
@@ -422,6 +515,11 @@ async function handleAnimalsCheck(payload: {
     return
   }
 
+  if (maybeOpenMaxHuntersWarning(payload.animalId, payload.hunters, 'check')) {
+    maxHuntersPendingCheckPayload.value = payload
+    return
+  }
+
   const hotelId = hotel.value?.id
   const hunterData = parseDisplayDateToApiDate(payload.huntDate)
   const animalId = Number(payload.animalId)
@@ -492,6 +590,10 @@ async function proceedBook() {
   }
 
   if (rooms.length > 0 && hasAnimal && !validateGuestsMatchHunters(bookingAdults, hunters, hasAnimal)) {
+    return
+  }
+
+  if (hasAnimal && maybeOpenMaxHuntersWarning(animalIdRaw, hunters, 'book')) {
     return
   }
 
@@ -640,6 +742,10 @@ function handleBook() {
     return
   }
 
+  if (maybeOpenMaxHuntersWarning(animalId, hunters, 'book')) {
+    return
+  }
+
   if (!hasRooms) {
     isNoRoomConfirmOpen.value = true
     return
@@ -665,6 +771,39 @@ function closeAnimalWarning() {
   isAnimalWarningOpen.value = false
 }
 
+function closeMaxHuntersWarning() {
+  isMaxHuntersWarningOpen.value = false
+  maxHuntersPendingAction.value = null
+  maxHuntersPendingCheckPayload.value = null
+}
+
+function confirmExtraHunts() {
+  extraHuntsConfirmed.value = {
+    animalId: selectedAnimalId.value,
+    hunters: huntHunters.value,
+  }
+
+  const pending = maxHuntersPendingAction.value
+  const checkPayload = maxHuntersPendingCheckPayload.value
+  closeMaxHuntersWarning()
+
+  if (pending === 'check' && checkPayload) {
+    void handleAnimalsCheck(checkPayload)
+    return
+  }
+
+  if (pending === 'book') {
+    handleBook()
+  }
+}
+
+function declineExtraHunts() {
+  const max = maxHuntersWarningLimit.value
+  extraHuntsConfirmed.value = null
+  closeMaxHuntersWarning()
+  applyHuntersCount(max)
+}
+
 function closeHuntDateWarning() {
   isHuntDateWarningOpen.value = false
 }
@@ -684,6 +823,7 @@ function handleConfirmKeydown(event: KeyboardEvent) {
     closeAnimalWarning()
     closeHuntDateWarning()
     closeStayDateWarning()
+    closeMaxHuntersWarning()
     closeApiMessage()
   }
 }
@@ -971,6 +1111,40 @@ onMounted(() => {
                 @click="closeHuntDateWarning"
               >
                 Хорошо
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="hotel-booking-confirm">
+        <div
+          v-if="isMaxHuntersWarningOpen"
+          class="hotel-booking-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hotel-max-hunters-warning-title"
+          @click.self="closeMaxHuntersWarning"
+        >
+          <div class="hotel-booking-confirm__card">
+            <h2 id="hotel-max-hunters-warning-title" class="hotel-booking-confirm__title">
+              На это животное максимальное количество охотников: {{ maxHuntersWarningLimit }}. Сделать дополнительные охоты?
+            </h2>
+
+            <div class="hotel-booking-confirm__actions">
+              <button
+                type="button"
+                class="hotel-booking-confirm__btn hotel-booking-confirm__btn--secondary"
+                @click="declineExtraHunts"
+              >
+                Нет
+              </button>
+              <button
+                type="button"
+                class="hotel-booking-confirm__btn hotel-booking-confirm__btn--primary"
+                @click="confirmExtraHunts"
+              >
+                Да
               </button>
             </div>
           </div>
