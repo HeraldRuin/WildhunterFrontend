@@ -613,6 +613,7 @@ async function handleSubmit() {
                 label="Дата рождения"
                 placeholder="дд.мм.гггг"
                 autocomplete="bday"
+                date-only
                 cursor-pointer
                 :model-value="profile?.birthday ?? ''"
                 :error="getFieldError('birthday')"
