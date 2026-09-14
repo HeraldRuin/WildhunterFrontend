@@ -5,6 +5,7 @@ import { getHunterDocumentParts, normalizeHunterDocumentNumber } from '~/utils/h
 const props = defineProps<{
   firstName?: string | null
   lastName?: string | null
+  patronymic?: string | null
   birthday?: string | null
   billetNumber?: string | null
   issuingAuthority?: string | null
@@ -26,6 +27,7 @@ const emit = defineEmits<{
   'update:billetNumber': [value: string]
   'update:firstName': [value: string]
   'update:lastName': [value: string]
+  'update:patronymic': [value: string]
   'update:birthday': [value: string]
   'update:issuingAuthority': [value: string]
   'update:rfSubject': [value: string]
@@ -35,57 +37,6 @@ const emit = defineEmits<{
   'clear-billet-error': [field?: string]
   'billet-keydown': [event: KeyboardEvent]
 }>()
-
-function firstNamePartsFromProps() {
-  const [firstName = '', ...patronymicParts] = String(props.firstName ?? '')
-    .trim()
-    .split(/\s+/)
-
-  return {
-    firstName,
-    patronymic: patronymicParts.join(' '),
-  }
-}
-
-const initialFirstNameParts = firstNamePartsFromProps()
-const firstNameInput = ref(initialFirstNameParts.firstName)
-const patronymicInput = ref(initialFirstNameParts.patronymic)
-
-watch(
-  () => props.firstName,
-  () => {
-    const fromProps = firstNamePartsFromProps()
-    const localValue = [firstNameInput.value, patronymicInput.value]
-      .map(part => part.trim())
-      .filter(Boolean)
-      .join(' ')
-
-    if (localValue !== String(props.firstName ?? '').trim()) {
-      firstNameInput.value = fromProps.firstName
-      patronymicInput.value = fromProps.patronymic
-    }
-  },
-)
-
-function emitFirstName() {
-  emit(
-    'update:firstName',
-    [firstNameInput.value, patronymicInput.value]
-      .map(part => part.trim())
-      .filter(Boolean)
-      .join(' '),
-  )
-}
-
-function onFirstNameUpdate(value: string) {
-  firstNameInput.value = value
-  emitFirstName()
-}
-
-function onPatronymicUpdate(value: string) {
-  patronymicInput.value = value
-  emitFirstName()
-}
 
 function parseBillet(value: string) {
   const raw = String(value ?? '').trim()
@@ -133,6 +84,7 @@ type EditSnapshot = {
   rfSubject: string
   firstName: string
   lastName: string
+  patronymic: string
   birthday: string
   identityDocument: string
   issueDate: string
@@ -162,6 +114,7 @@ function startEditing() {
     rfSubject: String(props.rfSubject ?? ''),
     firstName: String(props.firstName ?? ''),
     lastName: String(props.lastName ?? ''),
+    patronymic: String(props.patronymic ?? ''),
     birthday: String(props.birthday ?? ''),
     identityDocument: String(props.identityDocument ?? ''),
     issueDate: String(props.issueDate ?? ''),
@@ -178,6 +131,7 @@ function cancelEditing() {
     emit('update:rfSubject', snap.rfSubject)
     emit('update:firstName', snap.firstName)
     emit('update:lastName', snap.lastName)
+    emit('update:patronymic', snap.patronymic)
     emit('update:birthday', snap.birthday)
     emit('update:identityDocument', snap.identityDocument)
     emit('update:issueDate', snap.issueDate)
@@ -441,18 +395,18 @@ function onNumberModelUpdate(value: string) {
             <CommonFormField
               no-margin
               label="Имя"
-              :model-value="firstNameInput"
+              :model-value="firstName ?? ''"
               placeholder="Имя"
               :disabled="!isEditing"
-              @update:model-value="onFirstNameUpdate"
+              @update:model-value="emit('update:firstName', $event)"
             />
             <CommonFormField
               no-margin
               label="Отчество"
-              :model-value="patronymicInput"
+              :model-value="patronymic ?? ''"
               placeholder="Отчество"
               :disabled="!isEditing"
-              @update:model-value="onPatronymicUpdate"
+              @update:model-value="emit('update:patronymic', $event)"
             />
           </div>
           <div

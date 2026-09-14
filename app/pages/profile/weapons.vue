@@ -198,10 +198,15 @@ function currentIdentityDocument() {
   return String(profile.value?.identity_document ?? '').trim()
 }
 
+function currentPatronymic() {
+  return String(profile.value?.patronymic ?? '').trim()
+}
+
 function serializeHunterBilletState() {
   return JSON.stringify({
     ...currentHunterBilletData(),
     identityDocument: currentIdentityDocument(),
+    patronymic: currentPatronymic(),
   })
 }
 
@@ -209,6 +214,7 @@ function parseHunterBilletSnapshot() {
   try {
     return JSON.parse(hunterBilletSnapshot.value || '{}') as Partial<HunterBilletData> & {
       identityDocument?: string
+      patronymic?: string
     }
   } catch {
     return {}
@@ -228,6 +234,11 @@ function isHunterBilletFieldsDirty() {
 function isIdentityDocumentDirty() {
   const snap = parseHunterBilletSnapshot()
   return currentIdentityDocument() !== String(snap.identityDocument ?? '').trim()
+}
+
+function isPatronymicDirty() {
+  const snap = parseHunterBilletSnapshot()
+  return currentPatronymic() !== String(snap.patronymic ?? '').trim()
 }
 
 const isHunterBilletDirty = computed(() => {
@@ -973,14 +984,16 @@ async function saveHunterBillet() {
 
   const billetDirty = isHunterBilletFieldsDirty()
   const identityDirty = isIdentityDocumentDirty()
+  const patronymicDirty = isPatronymicDirty()
 
-  if (!billetDirty && !identityDirty) {
+  if (!billetDirty && !identityDirty && !patronymicDirty) {
     hunterBilletPreviewRef.value?.finishSave()
     return
   }
 
   const billet = currentHunterBilletData()
   const identityDocument = currentIdentityDocument()
+  const patronymic = currentPatronymic()
 
   savingHunterBillet.value = true
 
@@ -990,22 +1003,26 @@ async function saveHunterBillet() {
     : ''
 
   try {
-    // Сначала документ личности через POST /user.
-    if (identityDirty || (billetDirty && identityDocument)) {
+    // Сначала персональные данные через POST /user.
+    if (identityDirty || patronymicDirty || (billetDirty && identityDocument)) {
       const response = await saveProfile({
         email: profile.value.email,
         identity_document: identityDocument,
+        patronymic,
       })
 
       if (!('success' in response) || !response.success) {
         if (!applyValidationErrors(response)) {
-          submitError.value = 'Не удалось сохранить документ, удостоверяющий личность'
+          submitError.value = 'Не удалось сохранить персональные данные'
         }
         return
       }
 
       clearFieldError('identity_document')
-      patchCachedProfile({ identity_document: identityDocument })
+      patchCachedProfile({
+        identity_document: identityDocument,
+        patronymic,
+      })
     }
 
     if (billetDirty) {
@@ -1101,6 +1118,7 @@ const hasNewWeapon = computed(() =>
             ref="hunterBilletPreviewRef"
             v-model:first-name="profile.first_name"
             v-model:last-name="profile.last_name"
+            v-model:patronymic="profile.patronymic"
             v-model:birthday="profile.birthday"
             v-model:billet-number="profile.hunter_billet_number"
             v-model:issuing-authority="profile.hunter_billet_issuing_authority"

@@ -18,6 +18,7 @@ export type CurrentPasswordResponse =
 export interface UpdateUserPayload {
   first_name?: string
   last_name?: string
+  patronymic?: string
   nik?: string
   birthday?: string
   email: string
@@ -118,6 +119,7 @@ export function useUserApi() {
     appendFormValue(body, 'email', payload.email)
     appendFormValue(body, 'first_name', payload.first_name)
     appendFormValue(body, 'last_name', payload.last_name)
+    appendFormValue(body, 'patronymic', payload.patronymic)
     appendFormValue(body, 'nik', payload.nik)
     appendFormValue(body, 'birthday', payload.birthday)
     appendFormValue(body, 'phone', payload.phone)

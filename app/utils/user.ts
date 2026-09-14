@@ -271,6 +271,7 @@ export function normalizeUserProfile(data: unknown, uploadsOrigin = ''): Profile
     email: String(source.email ?? ''),
     first_name: String(source.first_name ?? ''),
     last_name: String(source.last_name ?? ''),
+    patronymic: String(source.patronymic ?? ''),
     phone: formatPhone(String(source.phone ?? '')),
     birthday: formatBirthdayDisplay(source.birthday),
     bio: String(source.bio ?? ''),

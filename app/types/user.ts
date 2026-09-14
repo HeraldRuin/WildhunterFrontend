@@ -18,6 +18,7 @@ export interface ProfileUser {
   email: string
   first_name: string
   last_name: string
+  patronymic: string
   phone: string
   birthday: string
   bio: string
