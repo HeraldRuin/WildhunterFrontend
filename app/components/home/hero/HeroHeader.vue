@@ -215,7 +215,7 @@ onUnmounted(() => {
   margin-left: 104px;
 }
 
-@media (max-width: 1105px) {
+@media (max-width: 1280px) {
   .hero-header__socials {
     display: none;
   }
@@ -275,6 +275,12 @@ onUnmounted(() => {
 .hero-header__menu:hover::after {
   opacity: 1;
   transform: scaleX(1);
+}
+
+@media (max-width: 1280px) {
+  .hero-header__menu--blog {
+    display: none;
+  }
 }
 
 .hero-header__logo {
