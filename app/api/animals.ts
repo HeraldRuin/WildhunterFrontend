@@ -11,6 +11,7 @@ export interface ManagedAnimal {
   id: number
   title: string
   hunters_count: number
+  max_hunters_count?: number
 }
 
 export interface AvailableAnimal {
@@ -41,11 +42,13 @@ export interface AddManagedAnimalPayload {
 
 export interface UpdateManagedAnimalHuntersPayload {
   hunters_count: number
+  max_hunters_count: number
 }
 
 export interface UpdateManagedAnimalsHuntersItem {
   id: number
   hunters_count: number
+  max_hunters_count: number
 }
 
 export interface UpdateManagedAnimalsHuntersPayload {

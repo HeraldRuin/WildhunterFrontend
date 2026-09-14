@@ -11,7 +11,9 @@ useHead({
 })
 
 interface AnimalRow extends ManagedAnimal {
+  max_hunters_count: number
   huntersCountInput: string
+  maxHuntersCountInput: string
 }
 
 const { animals: animalsApi } = useApi()
@@ -59,11 +61,15 @@ const isListBusy = computed(() =>
 )
 
 function toAnimalRow(item: ManagedAnimal): AnimalRow {
+  const maxHuntersCount = item.max_hunters_count ?? item.hunters_count
+
   return {
     id: item.id,
     title: item.title,
     hunters_count: item.hunters_count,
+    max_hunters_count: maxHuntersCount,
     huntersCountInput: String(item.hunters_count),
+    maxHuntersCountInput: String(maxHuntersCount),
   }
 }
 
@@ -157,7 +163,7 @@ watch(selectedAnimalId, (value) => {
   void addAnimal(animalId)
 })
 
-function onMinHuntersKeydown(event: KeyboardEvent) {
+function onHuntersKeydown(event: KeyboardEvent) {
   if (
     event.ctrlKey
     || event.metaKey
@@ -172,13 +178,27 @@ function onMinHuntersKeydown(event: KeyboardEvent) {
   }
 }
 
-function onMinHuntersInput(animal: AnimalRow, event: Event) {
+function onHuntersCountInput(
+  animal: AnimalRow,
+  field: 'huntersCountInput' | 'maxHuntersCountInput',
+  event: Event,
+) {
   const input = event.target as HTMLInputElement
   const raw = input.value.replace(/\D/g, '')
-  animal.huntersCountInput = raw
+  animal[field] = raw
   if (input.value !== raw) {
     input.value = raw
   }
+}
+
+function parseHuntersCount(value: string) {
+  const huntersCount = Number(value)
+
+  if (!Number.isInteger(huntersCount) || huntersCount < 1) {
+    return null
+  }
+
+  return huntersCount
 }
 
 async function saveAnimal(animal: AnimalRow) {
@@ -186,10 +206,21 @@ async function saveAnimal(animal: AnimalRow) {
     return
   }
 
-  const huntersCount = Number(animal.huntersCountInput)
+  const huntersCount = parseHuntersCount(animal.huntersCountInput)
+  const maxHuntersCount = parseHuntersCount(animal.maxHuntersCountInput)
 
-  if (!Number.isInteger(huntersCount) || huntersCount < 1) {
+  if (huntersCount == null) {
     notifications.error('Укажите целое число охотников не меньше 1')
+    return
+  }
+
+  if (maxHuntersCount == null) {
+    notifications.error('Укажите максимальное целое число охотников не меньше 1')
+    return
+  }
+
+  if (maxHuntersCount < huntersCount) {
+    notifications.error('Максимальное количество охотников не может быть меньше минимального')
     return
   }
 
@@ -198,11 +229,14 @@ async function saveAnimal(animal: AnimalRow) {
   try {
     const response = await animalsApi.updateManageHuntersCount(animal.id, {
       hunters_count: huntersCount,
+      max_hunters_count: maxHuntersCount,
     })
 
     if ('success' in response && response.success) {
       animal.hunters_count = response.data.hunters_count
+      animal.max_hunters_count = response.data.max_hunters_count ?? maxHuntersCount
       animal.huntersCountInput = String(response.data.hunters_count)
+      animal.maxHuntersCountInput = String(animal.max_hunters_count)
       animal.title = response.data.title
       notifications.success(response.message || 'Количество охотников сохранено')
       return
@@ -224,19 +258,31 @@ async function saveAllAnimals() {
     return
   }
 
-  const payloadItems: { id: number, hunters_count: number }[] = []
+  const payloadItems: { id: number, hunters_count: number, max_hunters_count: number }[] = []
 
   for (const animal of animals.value) {
-    const huntersCount = Number(animal.huntersCountInput)
+    const huntersCount = parseHuntersCount(animal.huntersCountInput)
+    const maxHuntersCount = parseHuntersCount(animal.maxHuntersCountInput)
 
-    if (!Number.isInteger(huntersCount) || huntersCount < 1) {
+    if (huntersCount == null) {
       notifications.error(`Укажите целое число охотников не меньше 1 для «${animal.title}»`)
+      return
+    }
+
+    if (maxHuntersCount == null) {
+      notifications.error(`Укажите максимальное целое число охотников не меньше 1 для «${animal.title}»`)
+      return
+    }
+
+    if (maxHuntersCount < huntersCount) {
+      notifications.error(`Максимальное количество охотников не может быть меньше минимального для «${animal.title}»`)
       return
     }
 
     payloadItems.push({
       id: animal.id,
       hunters_count: huntersCount,
+      max_hunters_count: maxHuntersCount,
     })
   }
 
@@ -254,7 +300,14 @@ async function saveAllAnimals() {
 
       animals.value = animals.value.map((animal) => {
         const updated = updatedById.get(animal.id)
-        return updated ? toAnimalRow(updated) : animal
+        if (!updated) {
+          return animal
+        }
+
+        return toAnimalRow({
+          ...updated,
+          max_hunters_count: updated.max_hunters_count ?? animal.max_hunters_count,
+        })
       })
 
       notifications.success(response.message || 'Количество охотников сохранено')
@@ -531,7 +584,8 @@ onBeforeUnmount(() => {
             <div class="animals-manage__table">
               <div class="animals-manage__head">
                 <span class="animals-manage__col animals-manage__col--name">Животное</span>
-                <span class="animals-manage__col animals-manage__col--hunters">Мин кол-во охотников</span>
+                <span class="animals-manage__col animals-manage__col--hunters">Мин. кол-во охотников</span>
+                <span class="animals-manage__col animals-manage__col--hunters">Макс. кол-во охотников</span>
                 <span class="animals-manage__col animals-manage__col--actions-head" aria-hidden="true" />
               </div>
 
@@ -551,8 +605,21 @@ onBeforeUnmount(() => {
                       :value="animal.huntersCountInput"
                       :disabled="isListBusy"
                       :aria-label="`Минимальное количество охотников: ${animal.title}`"
-                      @keydown="onMinHuntersKeydown"
-                      @input="onMinHuntersInput(animal, $event)"
+                      @keydown="onHuntersKeydown"
+                      @input="onHuntersCountInput(animal, 'huntersCountInput', $event)"
+                    >
+                  </div>
+
+                  <div class="animals-manage__col animals-manage__col--hunters">
+                    <input
+                      class="animals-manage__input"
+                      type="text"
+                      inputmode="numeric"
+                      :value="animal.maxHuntersCountInput"
+                      :disabled="isListBusy"
+                      :aria-label="`Максимальное количество охотников: ${animal.title}`"
+                      @keydown="onHuntersKeydown"
+                      @input="onHuntersCountInput(animal, 'maxHuntersCountInput', $event)"
                     >
                   </div>
 
@@ -755,6 +822,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   grid-template-columns:
     minmax(0, 1fr)
+    max-content
     max-content
     max-content;
   column-gap: 10px;
@@ -1016,7 +1084,7 @@ onBeforeUnmount(() => {
 
   .animals-manage__row {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr 1fr auto;
     grid-column: auto;
     gap: 10px;
     padding: 14px 16px;
@@ -1027,12 +1095,11 @@ onBeforeUnmount(() => {
   }
 
   .animals-manage__row .animals-manage__col--hunters {
-    grid-column: 1;
     justify-content: flex-start;
   }
 
   .animals-manage__row .animals-manage__col--actions {
-    grid-column: 2;
+    grid-column: 3;
   }
 
   .animals-manage__col--name {
