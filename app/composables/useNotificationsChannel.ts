@@ -26,23 +26,27 @@ export function useNotificationsChannel(
     const scheme = String(config.public.reverbScheme || 'http')
     const port = Number(config.public.reverbPort || (scheme === 'https' ? 443 : 80))
 
-    echo = new Echo<'reverb'>({
-      broadcaster: 'reverb',
-      Pusher,
-      key,
-      wsHost: String(config.public.reverbHost),
-      wsPort: port,
-      wssPort: port,
-      forceTLS: scheme === 'https',
-      enabledTransports: ['ws', 'wss'],
-      authEndpoint: String(config.public.broadcastAuthUrl),
-      auth: {
-        headers: {
-          Accept: 'application/json',
-          Authorization: authHeader,
+    try {
+      echo = new Echo<'reverb'>({
+        broadcaster: 'reverb',
+        Pusher,
+        key,
+        wsHost: String(config.public.reverbHost),
+        wsPort: port,
+        wssPort: port,
+        forceTLS: scheme === 'https',
+        enabledTransports: ['ws', 'wss'],
+        authEndpoint: String(config.public.broadcastAuthUrl),
+        auth: {
+          headers: {
+            Accept: 'application/json',
+            Authorization: authHeader,
+          },
         },
-      },
-    })
+      })
+    } catch {
+      echo = null
+    }
 
     return echo
   }
@@ -60,20 +64,24 @@ export function useNotificationsChannel(
       return
     }
 
-    if (subscribedUserId) {
-      connection.leave(`notifications.${subscribedUserId}`)
+    try {
+      if (subscribedUserId) {
+        connection.leave(`notifications.${subscribedUserId}`)
+        subscribedUserId = null
+      }
+
+      if (!desiredUserId) {
+        return
+      }
+
+      connection
+        .private(`notifications.${desiredUserId}`)
+        .listen('.notification.created', onNotificationCreated)
+
+      subscribedUserId = desiredUserId
+    } catch {
       subscribedUserId = null
     }
-
-    if (!desiredUserId) {
-      return
-    }
-
-    connection
-      .private(`notifications.${desiredUserId}`)
-      .listen('.notification.created', onNotificationCreated)
-
-    subscribedUserId = desiredUserId
   }
 
   function disconnect() {

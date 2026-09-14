@@ -21,9 +21,16 @@ export function queueNavigationScroll(
 }
 
 export function applyScroll(target: ScrollTarget) {
-  window.scrollTo({ top: target.top, left: target.left, behavior: 'instant' })
-  document.documentElement.scrollTop = target.top
-  document.body.scrollTop = target.top
+  try {
+    window.scrollTo(target.left, target.top)
+  } catch {
+  }
+
+  try {
+    document.documentElement.scrollTop = target.top
+    document.body.scrollTop = target.top
+  } catch {
+  }
 }
 
 export function applyNavigationScroll() {
@@ -34,7 +41,10 @@ export function applyNavigationScroll() {
 
     const element = document.querySelector(hash)
     if (element instanceof HTMLElement) {
-      element.scrollIntoView({ behavior: 'instant', block: 'start' })
+      try {
+        element.scrollIntoView({ block: 'start' })
+      } catch {
+      }
       return
     }
   }

@@ -245,33 +245,36 @@ function syncDomValue(source?: Event | HTMLInputElement) {
     return
   }
 
-  const target = source instanceof HTMLInputElement
-    ? source
-    : (source?.target as HTMLInputElement | undefined) ?? inputRef.value
+  try {
+    const target = source instanceof HTMLInputElement
+      ? source
+      : (source?.target as HTMLInputElement | undefined) ?? inputRef.value
 
-  if (!target) {
-    return
-  }
+    if (!target) {
+      return
+    }
 
-  const domValue = target.value
-  const modelValue = props.modelValue ?? ''
+    const domValue = target.value
+    const modelValue = props.modelValue ?? ''
 
-  if (domValue === modelValue) {
-    return
-  }
+    if (domValue === modelValue) {
+      return
+    }
 
-  if (!modelValue && domValue) {
-    emit('update:modelValue', normalizeInputValue(domValue))
-    return
-  }
+    if (!modelValue && domValue) {
+      emit('update:modelValue', normalizeInputValue(domValue))
+      return
+    }
 
-  if (modelValue && !domValue) {
-    target.value = modelValue
-    return
-  }
+    if (modelValue && !domValue) {
+      target.value = modelValue
+      return
+    }
 
-  if (domValue) {
-    emit('update:modelValue', normalizeInputValue(domValue))
+    if (domValue) {
+      emit('update:modelValue', normalizeInputValue(domValue))
+    }
+  } catch {
   }
 }
 

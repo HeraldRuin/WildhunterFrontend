@@ -70,13 +70,13 @@ const showForm = computed(() => Boolean(profile.value) || pending.value)
 
 function snapshotProfile(data: ProfileUser) {
   return JSON.stringify({
-    user_name: data.user_name.trim(),
-    email: data.email.trim(),
-    first_name: data.first_name.trim(),
-    last_name: data.last_name.trim(),
+    user_name: String(data.user_name ?? '').trim(),
+    email: String(data.email ?? '').trim(),
+    first_name: String(data.first_name ?? '').trim(),
+    last_name: String(data.last_name ?? '').trim(),
     phone: extractPhoneDigits(data.phone),
     birthday: resolveBirthdayForApi(data.birthday),
-    bio: data.bio.trim(),
+    bio: String(data.bio ?? '').trim(),
   })
 }
 

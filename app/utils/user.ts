@@ -205,7 +205,7 @@ export function extractCreatedAt(source: Record<string, unknown>): string {
 }
 
 export function formatMemberSince(value: string): string {
-  const trimmed = value.trim()
+  const trimmed = String(value ?? '').trim()
 
   if (!trimmed) {
     return ''

@@ -350,6 +350,7 @@ export function useProfile() {
     const hydrated = withPreservedAvatar(
       {
         ...cached,
+        patronymic: String(cached.patronymic ?? ''),
         hunter_billet_number: resolveHunterBilletNumber(cached),
         hunter_billet_issuing_authority: resolveHunterBilletIssuingAuthority(cached),
         hunter_billet_rf_subject: resolveHunterBilletRfSubject(cached),
