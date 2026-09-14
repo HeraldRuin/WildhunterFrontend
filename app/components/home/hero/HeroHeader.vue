@@ -194,7 +194,7 @@ onUnmounted(() => {
 .hero-header__left {
   justify-content: flex-end;
   padding-top: 12px;
-  padding-right: 20px;
+  padding-right: 104px;
 }
 
 .hero-header__right {
@@ -212,7 +212,7 @@ onUnmounted(() => {
 .hero-header__socials {
   flex-shrink: 0;
   margin-top: 12px;
-  margin-left: 20px;
+  margin-left: 104px;
 }
 
 @media (max-width: 1105px) {
