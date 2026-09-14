@@ -807,6 +807,7 @@ export interface HotelAnimalItem {
   price?: number
   image_url?: string
   hunters_count?: number
+  max_hunters_count?: number
   periods?: HotelAnimalPeriod[]
 }
 

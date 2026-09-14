@@ -148,6 +148,9 @@ function parseAnimals(raw: unknown): HotelAnimalItem[] {
       hunters_count: animal.hunters_count != null
         ? Math.max(1, Number(animal.hunters_count) || 1)
         : undefined,
+      max_hunters_count: animal.max_hunters_count != null
+        ? Math.max(1, Number(animal.max_hunters_count) || 1)
+        : undefined,
       periods: parseAnimalPeriods(animal.periods),
     }
   }).filter(animal => animal.title && Number.isFinite(animal.id))
@@ -290,9 +293,9 @@ export function createMockHotelDetail(params: HotelSlugParams): HotelDetail {
     },
     terms: DEFAULT_TERMS,
     animals: [
-      { id: 1, title: 'Кабан', season: 'Круглый год', price: 15000, hunters_count: 2 },
-      { id: 2, title: 'Лось', season: 'Сентябрь — декабрь', price: 45000, hunters_count: 1 },
-      { id: 3, title: 'Косуля', season: 'Май — декабрь', price: 28000, hunters_count: 1 },
+      { id: 1, title: 'Кабан', season: 'Круглый год', price: 15000, hunters_count: 2, max_hunters_count: 2 },
+      { id: 2, title: 'Лось', season: 'Сентябрь — декабрь', price: 45000, hunters_count: 1, max_hunters_count: 1 },
+      { id: 3, title: 'Косуля', season: 'Май — декабрь', price: 28000, hunters_count: 1, max_hunters_count: 1 },
     ],
     related,
     check_in_time: '14:00',
