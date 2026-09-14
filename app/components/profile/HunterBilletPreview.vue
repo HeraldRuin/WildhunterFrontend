@@ -36,41 +36,55 @@ const emit = defineEmits<{
   'billet-keydown': [event: KeyboardEvent]
 }>()
 
-function fullNameFromProps() {
-  return [props.lastName, props.firstName]
-    .map(part => String(part ?? '').trim())
-    .filter(Boolean)
-    .join(' ')
+function firstNamePartsFromProps() {
+  const [firstName = '', ...patronymicParts] = String(props.firstName ?? '')
+    .trim()
+    .split(/\s+/)
+
+  return {
+    firstName,
+    patronymic: patronymicParts.join(' '),
+  }
 }
 
-const fullNameInput = ref(fullNameFromProps())
+const initialFirstNameParts = firstNamePartsFromProps()
+const firstNameInput = ref(initialFirstNameParts.firstName)
+const patronymicInput = ref(initialFirstNameParts.patronymic)
 
 watch(
-  () => [props.lastName, props.firstName] as const,
+  () => props.firstName,
   () => {
-    const fromProps = fullNameFromProps()
-    const normalizedLocal = fullNameInput.value.replace(/\s+/g, ' ').trim()
+    const fromProps = firstNamePartsFromProps()
+    const localValue = [firstNameInput.value, patronymicInput.value]
+      .map(part => part.trim())
+      .filter(Boolean)
+      .join(' ')
 
-    if (normalizedLocal !== fromProps) {
-      fullNameInput.value = fromProps
+    if (localValue !== String(props.firstName ?? '').trim()) {
+      firstNameInput.value = fromProps.firstName
+      patronymicInput.value = fromProps.patronymic
     }
   },
 )
 
-function onFullNameModelUpdate(value: string) {
-  fullNameInput.value = value
+function emitFirstName() {
+  emit(
+    'update:firstName',
+    [firstNameInput.value, patronymicInput.value]
+      .map(part => part.trim())
+      .filter(Boolean)
+      .join(' '),
+  )
+}
 
-  const trimmedStart = value.replace(/^\s+/, '')
-  const match = trimmedStart.match(/^(\S+)(?:\s+(.*))?$/)
+function onFirstNameUpdate(value: string) {
+  firstNameInput.value = value
+  emitFirstName()
+}
 
-  if (!match) {
-    emit('update:lastName', '')
-    emit('update:firstName', '')
-    return
-  }
-
-  emit('update:lastName', match[1] ?? '')
-  emit('update:firstName', (match[2] ?? '').trimStart())
+function onPatronymicUpdate(value: string) {
+  patronymicInput.value = value
+  emitFirstName()
 }
 
 function parseBillet(value: string) {
@@ -104,16 +118,21 @@ const seriesDigits = computed(() => parseBillet(String(props.billetNumber ?? '')
 const billetNumberPart = computed(() => parseBillet(String(props.billetNumber ?? '')).number)
 
 const isEditing = ref(false)
+const isBirthdayOpen = ref(false)
 const isIssueDateOpen = ref(false)
+const birthdayPicker = ref<Date | null>(null)
 const issueDatePicker = ref<Date | null>(null)
+const birthdayActivePart = ref<'start' | 'end' | null>('start')
 const issueDateActivePart = ref<'start' | 'end' | null>('start')
+const birthdayFieldRef = ref<HTMLElement | null>(null)
 const issueDateFieldRef = ref<HTMLElement | null>(null)
 
 type EditSnapshot = {
   billetNumber: string
   issuingAuthority: string
   rfSubject: string
-  fullName: string
+  firstName: string
+  lastName: string
   birthday: string
   identityDocument: string
   issueDate: string
@@ -125,8 +144,13 @@ function closeIssueDateCalendar() {
   isIssueDateOpen.value = false
 }
 
+function closeBirthdayCalendar() {
+  isBirthdayOpen.value = false
+}
+
 function finishSave() {
   editSnapshot.value = null
+  closeBirthdayCalendar()
   closeIssueDateCalendar()
   isEditing.value = false
 }
@@ -136,7 +160,8 @@ function startEditing() {
     billetNumber: String(props.billetNumber ?? ''),
     issuingAuthority: String(props.issuingAuthority ?? ''),
     rfSubject: String(props.rfSubject ?? ''),
-    fullName: fullNameInput.value,
+    firstName: String(props.firstName ?? ''),
+    lastName: String(props.lastName ?? ''),
     birthday: String(props.birthday ?? ''),
     identityDocument: String(props.identityDocument ?? ''),
     issueDate: String(props.issueDate ?? ''),
@@ -151,13 +176,15 @@ function cancelEditing() {
     emit('update:billetNumber', snap.billetNumber)
     emit('update:issuingAuthority', snap.issuingAuthority)
     emit('update:rfSubject', snap.rfSubject)
-    onFullNameModelUpdate(snap.fullName)
+    emit('update:firstName', snap.firstName)
+    emit('update:lastName', snap.lastName)
     emit('update:birthday', snap.birthday)
     emit('update:identityDocument', snap.identityDocument)
     emit('update:issueDate', snap.issueDate)
   }
 
   editSnapshot.value = null
+  closeBirthdayCalendar()
   closeIssueDateCalendar()
   isEditing.value = false
 }
@@ -167,6 +194,7 @@ function saveEditing() {
     return
   }
 
+  closeBirthdayCalendar()
   closeIssueDateCalendar()
   emit('save-billet')
 }
@@ -200,7 +228,35 @@ function emitBillet(series: string, number: string) {
 }
 
 function onBirthdayUpdate(value: string) {
-  emit('update:birthday', maskDotDateInput(value))
+  const next = maskDotDateInput(value)
+  emit('update:birthday', next)
+  const parsed = parseBirthdayDate(next)
+
+  if (parsed) {
+    birthdayPicker.value = parsed
+  }
+}
+
+function toggleBirthdayCalendar() {
+  if (!isEditing.value) {
+    return
+  }
+
+  if (isBirthdayOpen.value) {
+    closeBirthdayCalendar()
+    return
+  }
+
+  closeIssueDateCalendar()
+  birthdayPicker.value = parseBirthdayDate(String(props.birthday ?? ''))
+  birthdayActivePart.value = 'start'
+  isBirthdayOpen.value = true
+}
+
+function onBirthdaySelect(date: Date) {
+  birthdayPicker.value = date
+  emit('update:birthday', formatBirthdayDate(date))
+  closeBirthdayCalendar()
 }
 
 function onIssuingAuthorityUpdate(value: string) {
@@ -239,6 +295,7 @@ function toggleIssueDateCalendar() {
     return
   }
 
+  closeBirthdayCalendar()
   issueDatePicker.value = parseBirthdayDate(String(props.issueDate ?? ''))
   issueDateActivePart.value = 'start'
   isIssueDateOpen.value = true
@@ -252,11 +309,17 @@ function onIssueDateSelect(date: Date) {
 }
 
 function handleIssueDateDocumentClick(event: MouseEvent) {
-  if (!isIssueDateOpen.value) {
-    return
+  if (
+    isBirthdayOpen.value
+    && !birthdayFieldRef.value?.contains(event.target as Node)
+  ) {
+    closeBirthdayCalendar()
   }
 
-  if (!issueDateFieldRef.value?.contains(event.target as Node)) {
+  if (
+    isIssueDateOpen.value
+    && !issueDateFieldRef.value?.contains(event.target as Node)
+  ) {
     closeIssueDateCalendar()
   }
 }
@@ -286,7 +349,7 @@ function onNumberModelUpdate(value: string) {
 <template>
   <article
     class="hunter-billet"
-    :class="{ 'hunter-billet--date-open': isIssueDateOpen }"
+    :class="{ 'hunter-billet--date-open': isBirthdayOpen || isIssueDateOpen }"
     aria-label="Превью охотничьего билета"
   >
     <div class="hunter-billet__frame">
@@ -356,52 +419,87 @@ function onNumberModelUpdate(value: string) {
 
           <CommonFormField
             no-margin
-            label="Исполнительный орган"
+            label="Выдан"
             :model-value="issuingAuthority ?? ''"
-            placeholder="Наименование исполнительного органа"
+            placeholder="Укажите кем выдан"
             :disabled="!isEditing"
             :error="issuingAuthorityError"
             @update:model-value="onIssuingAuthorityUpdate"
           />
-
-          <CommonFormField
-            no-margin
-            label="Субъект РФ"
-            :model-value="rfSubject ?? ''"
-            placeholder="Субъект Российской Федерации"
-            :disabled="!isEditing"
-            :error="rfSubjectError"
-            @update:model-value="onRfSubjectUpdate"
-          />
         </div>
 
         <div class="hunter-billet__system-col hunter-billet__system-col--user">
-          <CommonFormField
-            no-margin
-            label="ФИО"
-            :model-value="fullNameInput"
-            placeholder="Фамилия, имя, отчество"
-            :disabled="!isEditing"
-            @update:model-value="onFullNameModelUpdate"
-          />
-          <CommonFormField
-            no-margin
-            date-only
-            label="Дата рождения"
-            placeholder="дд.мм.гггг"
-            :model-value="birthday ?? ''"
-            :disabled="!isEditing"
-            @update:model-value="onBirthdayUpdate"
-          />
-          <CommonFormField
-            no-margin
-            label="Документ, удостоверяющий личность"
-            :model-value="identityDocument ?? ''"
-            placeholder="Документ, удостоверяющий личность"
-            :disabled="!isEditing"
-            :error="identityDocumentError"
-            @update:model-value="onIdentityDocumentUpdate"
-          />
+          <div class="hunter-billet__name-fields">
+            <CommonFormField
+              no-margin
+              label="Фамилия"
+              :model-value="lastName ?? ''"
+              placeholder="Фамилия"
+              :disabled="!isEditing"
+              @update:model-value="emit('update:lastName', $event)"
+            />
+            <CommonFormField
+              no-margin
+              label="Имя"
+              :model-value="firstNameInput"
+              placeholder="Имя"
+              :disabled="!isEditing"
+              @update:model-value="onFirstNameUpdate"
+            />
+            <CommonFormField
+              no-margin
+              label="Отчество"
+              :model-value="patronymicInput"
+              placeholder="Отчество"
+              :disabled="!isEditing"
+              @update:model-value="onPatronymicUpdate"
+            />
+          </div>
+          <div
+            ref="birthdayFieldRef"
+            class="hunter-billet__birthday-field"
+            :class="{ 'hunter-billet__birthday-field--open': isBirthdayOpen }"
+          >
+            <CommonFormField
+              no-margin
+              date-only
+              label="Дата рождения"
+              placeholder="дд.мм.гггг"
+              :model-value="birthday ?? ''"
+              :disabled="!isEditing"
+              :open="isBirthdayOpen"
+              @update:model-value="onBirthdayUpdate"
+            >
+              <template #trailing>
+                <button
+                  type="button"
+                  class="hunter-billet__calendar-icon"
+                  aria-label="Открыть календарь даты рождения"
+                  :disabled="!isEditing"
+                  @click.stop="toggleBirthdayCalendar"
+                >
+                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <rect x="2.25" y="3.75" width="15.5" height="14" rx="1.75" stroke="currentColor" stroke-width="1.5" />
+                    <path d="M2.25 8.25h15.5" stroke="currentColor" stroke-width="1.5" />
+                    <path d="M6.5 2.25v3.25M13.5 2.25v3.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </button>
+              </template>
+            </CommonFormField>
+
+            <div
+              v-if="isBirthdayOpen"
+              class="hunter-billet__date-panel"
+              @click.stop
+            >
+              <HomeHeroSearchDatePicker
+                v-model:start="birthdayPicker"
+                v-model:active-part="birthdayActivePart"
+                mode="single"
+                @select="onBirthdaySelect"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -499,7 +597,7 @@ function onNumberModelUpdate(value: string) {
   --hunter-billet-field-weight: 600;
   --hunter-billet-doc-font: 'Times New Roman', 'Liberation Serif', 'Noto Serif', Georgia, serif;
   width: 100%;
-  max-width: 1080px;
+  max-width: 1280px;
   margin-top: 0;
   margin-inline: auto;
 }
@@ -568,9 +666,16 @@ function onNumberModelUpdate(value: string) {
   min-width: 0;
 }
 
+.hunter-billet__name-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
 .hunter-billet__system {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
   gap: 20px 24px;
   align-items: start;
   width: 100%;
@@ -735,11 +840,24 @@ function onNumberModelUpdate(value: string) {
 .hunter-billet__issue-field {
   position: relative;
   z-index: 1;
+  justify-self: end;
   width: 100%;
+  max-width: 400px;
   min-width: 0;
 }
 
 .hunter-billet__issue-field--open {
+  z-index: 200;
+}
+
+.hunter-billet__birthday-field {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+.hunter-billet__birthday-field--open {
   z-index: 200;
 }
 
