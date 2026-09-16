@@ -6,6 +6,8 @@ import type {
   HotelPriceRange,
   HotelPriceRangeBounds,
   HuntingMethod,
+  HotelCalendarAvailabilityQuery,
+  HotelCalendarAvailabilityResponse,
   HotelRoomAvailabilityRequest,
   HotelRoomAvailabilityResponse,
   OfferItem,
@@ -270,6 +272,19 @@ export function useHotelsApi() {
     })
   }
 
+  function getCalendarAvailability(query: HotelCalendarAvailabilityQuery) {
+    return apiFetch<HotelCalendarAvailabilityResponse>('/hotels/rooms/calendar-availability', {
+      method: 'GET',
+      skipAuth: true,
+      query: {
+        hotel_id: String(query.hotel_id),
+        start: query.start,
+        end: query.end,
+        ...(query.adults !== undefined ? { adults: query.adults } : {}),
+      },
+    })
+  }
+
   function getManage() {
     return apiFetch<HotelsManageResponse>('/hotels/manage', {
       method: 'GET',
@@ -323,6 +338,7 @@ export function useHotelsApi() {
     getHuntingMethods,
     getHuntingMethodItems,
     checkAvailability,
+    getCalendarAvailability,
     getManage,
     getManageById,
     createManage,

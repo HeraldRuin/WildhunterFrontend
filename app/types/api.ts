@@ -297,6 +297,24 @@ export interface HotelRoomAvailabilityData {
 
 export type HotelRoomAvailabilityResponse = ApiSuccessResponse<HotelRoomAvailabilityData>
 
+export interface HotelCalendarAvailabilityQuery {
+  hotel_id: number
+  start: string
+  end: string
+  adults?: number
+}
+
+export interface HotelCalendarAvailabilityDay {
+  date: string
+  available_rooms: number
+}
+
+export interface HotelCalendarAvailabilityData {
+  days: HotelCalendarAvailabilityDay[]
+}
+
+export type HotelCalendarAvailabilityResponse = ApiSuccessResponse<HotelCalendarAvailabilityData>
+
 export interface AnimalAvailabilityRequest {
   hotel_id: number
   animal_id: number

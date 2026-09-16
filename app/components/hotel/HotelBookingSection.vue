@@ -871,6 +871,7 @@ onMounted(() => {
         <div class="hotel-booking-section__rooms-block">
           <HotelDatesGuests
             ref="datesGuestsRef"
+            :hotel-id="hotel?.id ?? null"
             :loading="isCheckingAvailability"
             @check="handleCheck"
             @clear="availableRooms = []; hasCheckedAvailability = false; hasSelectedRooms = false; selectedRoomsCount = 0; resetHunters()"

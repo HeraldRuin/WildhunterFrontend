@@ -5,9 +5,11 @@ const props = withDefaults(defineProps<{
 
   blocksWidth?: string
   loading?: boolean
+  hotelId?: number | null
 }>(), {
   blocksWidth: '100%',
   loading: false,
+  hotelId: null,
 })
 
 const emit = defineEmits<{
@@ -41,11 +43,17 @@ function adultsFromQuery() {
   return Math.min(maxAdults, Math.floor(count))
 }
 
+const { hotels } = useApi()
+
 const checkIn = ref<Date | null>(parseDisplayDate(queryString('checkIn')))
 const checkOut = ref<Date | null>(parseDisplayDate(queryString('checkOut')))
 const adultsCount = ref(adultsFromQuery())
+const hasSelectedAdults = ref(Boolean(queryString('guests')))
 
 const hasDatesFromSearch = ref(Boolean(checkIn.value && checkOut.value))
+const calendarViewRange = ref<{ start: string, end: string } | null>(null)
+const unavailableDates = ref<string[]>([])
+let calendarAvailabilityRequestId = 0
 
 const isDatesOpen = ref(false)
 const isGuestsOpen = ref(false)
@@ -180,12 +188,14 @@ function onDatesFieldClick(event: MouseEvent) {
 function incrementAdults() {
   if (adultsCount.value < maxAdults) {
     adultsCount.value += 1
+    hasSelectedAdults.value = true
   }
 }
 
 function decrementAdults() {
   if (adultsCount.value > 1) {
     adultsCount.value -= 1
+    hasSelectedAdults.value = true
   }
 }
 
@@ -203,6 +213,7 @@ function onAdultsInput(event: Event) {
   const next = Number(digits)
   if (Number.isFinite(next) && next >= 1) {
     adultsCount.value = clampAdults(next)
+    hasSelectedAdults.value = true
     target.value = String(adultsCount.value)
   }
 }
@@ -225,8 +236,72 @@ function clearDates(event: MouseEvent) {
 function clearGuests(event: MouseEvent) {
   event.stopPropagation()
   adultsCount.value = 1
+  hasSelectedAdults.value = false
   isGuestsOpen.value = false
 }
+
+async function loadCalendarAvailability() {
+  const hotelId = props.hotelId
+  const range = calendarViewRange.value
+
+  if (!hotelId || !range) {
+    unavailableDates.value = []
+    return
+  }
+
+  const requestId = calendarAvailabilityRequestId + 1
+  calendarAvailabilityRequestId = requestId
+
+  try {
+    const response = await hotels.getCalendarAvailability({
+      hotel_id: hotelId,
+      start: range.start,
+      end: range.end,
+      ...(hasSelectedAdults.value ? { adults: adultsCount.value } : {}),
+    })
+
+    if (requestId !== calendarAvailabilityRequestId) {
+      return
+    }
+
+    unavailableDates.value = response.success
+      ? response.data.days
+        .filter(day => day.available_rooms === 0)
+        .map(day => day.date)
+      : []
+  }
+  catch {
+    if (requestId !== calendarAvailabilityRequestId) {
+      return
+    }
+
+    unavailableDates.value = []
+  }
+}
+
+function onCalendarViewChange(payload: { start: string, end: string }) {
+  calendarViewRange.value = payload
+  unavailableDates.value = []
+  void loadCalendarAvailability()
+}
+
+watch(
+  () => props.hotelId,
+  () => {
+    if (isDatesOpen.value) {
+      void loadCalendarAvailability()
+    }
+  },
+)
+
+watch(
+  [adultsCount, hasSelectedAdults],
+  () => {
+    if (isDatesOpen.value && calendarViewRange.value) {
+      void loadCalendarAvailability()
+    }
+  },
+)
 
 function handleDocumentClick(event: MouseEvent) {
   const target = event.target
@@ -360,6 +435,8 @@ defineExpose({
               v-model:start="checkIn"
               v-model:end="checkOut"
               v-model:active-part="activeDatePart"
+              :unavailable-dates="unavailableDates"
+              @view-change="onCalendarViewChange"
             />
           </div>
         </div>

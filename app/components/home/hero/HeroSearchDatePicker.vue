@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   addMonths,
+  formatApiDate,
   getCalendarDays,
   getMonthTitle,
   getWeekdayNames,
@@ -12,14 +13,17 @@ const props = withDefaults(defineProps<{
   mode?: 'range' | 'single'
   minDate?: Date | null
   maxDate?: Date | null
+  unavailableDates?: string[]
 }>(), {
   mode: 'range',
   minDate: null,
   maxDate: null,
+  unavailableDates: () => [],
 })
 
 const emit = defineEmits<{
   select: [date: Date]
+  'view-change': [payload: { start: string, end: string }]
 }>()
 
 const start = defineModel<Date | null>('start', { default: null })
@@ -38,6 +42,33 @@ const month = computed(() => ({
   title: getMonthTitle(currentMonth.value),
   days: getCalendarDays(currentMonth.value.getFullYear(), currentMonth.value.getMonth()),
 }))
+
+const unavailableDateSet = computed(() => new Set(props.unavailableDates))
+
+function emitViewChange() {
+  const days = month.value.days
+  const first = days[0]?.date
+  const last = days[days.length - 1]?.date
+
+  if (!first || !last) {
+    return
+  }
+
+  const end = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1)
+
+  emit('view-change', {
+    start: formatApiDate(first),
+    end: formatApiDate(end),
+  })
+}
+
+watch(
+  () => month.value.key,
+  () => {
+    emitViewChange()
+  },
+  { immediate: true },
+)
 
 function isBetween(date: Date, from: Date, to: Date) {
   const value = startOfDay(date).getTime()
@@ -91,6 +122,33 @@ watch(
   { immediate: true },
 )
 
+function isUnavailableNight(date: Date) {
+  return unavailableDateSet.value.has(formatApiDate(startOfDay(date)))
+}
+
+function hasUnavailableNightInStay(from: Date, to: Date) {
+  const cursor = startOfDay(from)
+  const endTime = startOfDay(to).getTime()
+
+  while (cursor.getTime() < endTime) {
+    if (isUnavailableNight(cursor)) {
+      return true
+    }
+
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return false
+}
+
+function isSelectingCheckout(date: Date) {
+  if (isSingle.value || !start.value || end.value) {
+    return false
+  }
+
+  return startOfDay(date).getTime() > startOfDay(start.value).getTime()
+}
+
 function isDateDisabled(date: Date) {
   const normalized = startOfDay(date)
 
@@ -102,7 +160,13 @@ function isDateDisabled(date: Date) {
     return true
   }
 
-  return false
+  const rangeStart = start.value
+
+  if (rangeStart && isSelectingCheckout(normalized)) {
+    return hasUnavailableNightInStay(rangeStart, normalized)
+  }
+
+  return isUnavailableNight(normalized)
 }
 
 function selectDate(date: Date) {
@@ -236,6 +300,7 @@ function goToNextYear() {
                   hasDateLimits
                   && !isSingle
                   && !isDateDisabled(day.date),
+                'hero-search-calendar__day--unavailable': isUnavailableNight(day.date),
                 'hero-search-calendar__day--disabled': isDateDisabled(day.date),
               }"
               :disabled="isDateDisabled(day.date)"
@@ -436,5 +501,26 @@ function goToNextYear() {
 .hero-search-calendar__day:disabled:hover {
   background: transparent;
   cursor: not-allowed;
+}
+
+.hero-search-calendar__day--unavailable,
+.hero-search-calendar__day--unavailable:disabled {
+  color: var(--wh-field-error);
+  font-weight: 500;
+  background: transparent;
+}
+
+.hero-search-calendar__cell--outside .hero-search-calendar__day--unavailable {
+  color: color-mix(in srgb, var(--wh-field-error) 70%, transparent);
+}
+
+.hero-search-calendar__day--unavailable:not(:disabled):hover {
+  background: rgb(220 38 38 / 10%);
+}
+
+.hero-search-calendar__day--unavailable.hero-search-calendar__day--selected,
+.hero-search-calendar__day--unavailable.hero-search-calendar__day--selected:disabled {
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
 }
 </style>
