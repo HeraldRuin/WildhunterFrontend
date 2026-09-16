@@ -45,6 +45,12 @@ export function toSearchLocationIds(regions: string[]): number[] {
     .filter(id => Number.isFinite(id) && id > 0)
 }
 
+export function toSearchAnimalIds(animals: string[]): number[] {
+  return animals
+    .map(Number)
+    .filter(id => Number.isFinite(id) && id > 0)
+}
+
 export function toSearchPriceFilter(
   filters: Pick<SearchFiltersState, 'priceMin' | 'priceMax'>,
   bounds: { min: number, max: number },
@@ -86,6 +92,11 @@ export function buildHotelSearchBody(options: {
 
   if (options.animalId != null && Number.isFinite(options.animalId) && options.animalId > 0) {
     body.animal_id = options.animalId
+  }
+
+  const animalIds = toSearchAnimalIds(options.filters.animals)
+  if (animalIds.length) {
+    body.animal_ids = animalIds
   }
 
   if (options.checkIn) {

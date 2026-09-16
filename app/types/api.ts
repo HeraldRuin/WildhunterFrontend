@@ -215,7 +215,10 @@ export interface HotelSearchBody {
   location_id?: number
   /** Локации из чекбоксов сайдбара (OR; вместе с location_id — AND на бэке). */
   location_ids?: number[]
+  /** Животное из формы поиска (dropdown «Дичь»). */
   animal_id?: number
+  /** Животные из чекбоксов сайдбара (OR; вместе с animal_id — AND на бэке). */
+  animal_ids?: number[]
   check_in?: string
   check_out?: string
   adults?: number

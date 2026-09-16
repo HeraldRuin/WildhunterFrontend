@@ -19,6 +19,7 @@ import {
   buildHotelSearchBody,
   countOffersByReviewRating,
   DEFAULT_SEARCH_FILTERS,
+  matchesAnimalsFilter,
   matchesFoodFilter,
   matchesRegionsFilter,
   matchesReviewRatingFilter,
@@ -292,6 +293,13 @@ const filteredCatalogItems = computed(() => {
     if (
       isCatalogMode.value
       && !matchesRegionsFilter(item.locationId, filters.value.regions)
+    ) {
+      return false
+    }
+
+    if (
+      isCatalogMode.value
+      && !matchesAnimalsFilter(item.animals, filters.value.animals)
     ) {
       return false
     }
