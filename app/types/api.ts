@@ -203,6 +203,12 @@ export interface HotelPriceRangeBounds {
   max: number
 }
 
+export interface HuntingMethod {
+  id: number
+  name: string
+  slug: string
+}
+
 export interface HotelSearchPrice {
   min?: number
   max?: number

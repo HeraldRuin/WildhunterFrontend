@@ -5,6 +5,7 @@ import type {
   HotelOffer,
   HotelPriceRange,
   HotelPriceRangeBounds,
+  HuntingMethod,
   HotelRoomAvailabilityRequest,
   HotelRoomAvailabilityResponse,
   OfferItem,
@@ -224,6 +225,23 @@ export function useHotelsApi() {
     })
   }
 
+  function getHuntingMethods() {
+    return apiFetch<ApiSuccessResponse<HuntingMethod[]>>('/hotels/hunting-methods', {
+      method: 'GET',
+      skipAuth: true,
+    })
+  }
+
+  async function getHuntingMethodItems() {
+    const response = await getHuntingMethods()
+
+    if (!response.success) {
+      return []
+    }
+
+    return response.data
+  }
+
   async function getPriceRangeBounds(): Promise<HotelPriceRangeBounds> {
     try {
       const response = await getPriceRange()
@@ -302,6 +320,8 @@ export function useHotelsApi() {
     getHotelDetail,
     getPriceRange,
     getPriceRangeBounds,
+    getHuntingMethods,
+    getHuntingMethodItems,
     checkAvailability,
     getManage,
     getManageById,

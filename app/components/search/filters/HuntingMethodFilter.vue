@@ -1,39 +1,79 @@
 <script setup lang="ts">
-import { HUNTING_METHOD_OPTIONS } from '~/utils/search'
+import type { HuntingMethod } from '~/types/api'
 
 const model = defineModel<string[]>({ required: true })
 
-function toggle(value: string) {
-  model.value = model.value.includes(value)
-    ? model.value.filter(item => item !== value)
-    : [...model.value, value]
+const { hotels: hotelsApi } = useApi()
+
+const { data: huntingMethods, pending } = useAsyncData<HuntingMethod[]>(
+  'hotel-hunting-methods',
+  () => hotelsApi.getHuntingMethodItems(),
+  {
+    lazy: true,
+    default: () => [],
+  },
+)
+
+function methodId(item: HuntingMethod) {
+  return String(item.id)
+}
+
+function toggle(id: string) {
+  model.value = model.value.includes(id)
+    ? model.value.filter(item => item !== id)
+    : [...model.value, id]
 }
 </script>
 
 <template>
-  <ul class="search-filters-hunting-method__list">
-    <li
-      v-for="option in HUNTING_METHOD_OPTIONS"
-      :key="option.value"
+  <div class="search-filters-hunting-method">
+    <div
+      v-if="pending"
+      class="search-filters-hunting-method__loading"
+      aria-live="polite"
     >
-      <label
-        class="search-filters-hunting-method__option"
-        @click.prevent="toggle(option.value)"
+      <CommonSpinner variant="ring" size="sm" label="Загрузка способов охоты" />
+    </div>
+
+    <ul
+      v-else
+      class="search-filters-hunting-method__list"
+    >
+      <li
+        v-for="item in huntingMethods"
+        :key="item.id"
       >
-        <input
-          type="checkbox"
-          :checked="model.includes(option.value)"
-          tabindex="-1"
-          @click.prevent
+        <label
+          class="search-filters-hunting-method__option"
+          @click.prevent="toggle(methodId(item))"
         >
-        <span class="search-filters-hunting-method__checkmark" />
-        <span>{{ option.label }}</span>
-      </label>
-    </li>
-  </ul>
+          <input
+            type="checkbox"
+            :checked="model.includes(methodId(item))"
+            tabindex="-1"
+            @click.prevent
+          >
+          <span class="search-filters-hunting-method__checkmark" />
+          <span>{{ item.name }}</span>
+        </label>
+      </li>
+    </ul>
+  </div>
 </template>
 
 <style scoped>
+.search-filters-hunting-method {
+  display: flex;
+  flex-direction: column;
+}
+
+.search-filters-hunting-method__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+}
+
 .search-filters-hunting-method__list {
   display: flex;
   flex-direction: column;
