@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { HotelSearchBody, OfferItem } from '~/types/api'
+import type { HotelSearchBody, LocationItem, OfferItem } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { mapHotelOfferToItem } from '~/api/hotels'
 import {
@@ -33,7 +33,13 @@ definePageMeta({
 })
 
 useHead({
-  title: 'Найденные базы — WH',
+  title: 'Охотничьи туры в России | wild-hunter.ru',
+  meta: [
+    {
+      name: 'description',
+      content: 'Организация охотничьих туров по России ✔️ Полное сопровождение: трансфер, комфортное размещение, опытный егерь ✔️ Охота на лося, косулю, кабана, оленя и других животных',
+    },
+  ],
 })
 
 const route = useRoute()
@@ -417,8 +423,46 @@ function handleFiltersReset() {
 
 const breadcrumbs: BreadcrumbItem[] = [
   { label: 'Главная', to: '/' },
-  { label: 'Базы' },
+  { label: 'Охотничьи туры' },
 ]
+
+const POPULAR_LOCATION_KEYS = ['тверск', 'астрахан', 'карел', 'алтай'] as const
+
+function popularLocationRank(item: LocationItem) {
+  const haystack = `${item.title} ${item.slug || ''}`.toLowerCase()
+  const index = POPULAR_LOCATION_KEYS.findIndex(key => haystack.includes(key))
+  return index === -1 ? 99 : index
+}
+
+const popularLocations = computed(() => (
+  [...(locationItems.value ?? [])].sort((a, b) => popularLocationRank(a) - popularLocationRank(b))
+))
+
+const galleryItems = computed(() => {
+  const seen = new Set<string>()
+  const items: Array<{ src: string, alt: string, href?: string }> = []
+
+  for (const hotel of searchResult.value.items) {
+    if (!hotel.image || seen.has(hotel.image)) {
+      continue
+    }
+
+    seen.add(hotel.image)
+    items.push({
+      src: hotel.image,
+      alt: hotel.title,
+      href: hotel.slug && hotel.locationSlug
+        ? getHotelPath(hotel.locationSlug, hotel.slug)
+        : undefined,
+    })
+
+    if (items.length >= 8) {
+      break
+    }
+  }
+
+  return items
+})
 
 const mapHotels = computed(() => (
   filteredCatalogItems.value
@@ -516,14 +560,14 @@ function handleMapOpen(id: number) {
             Фильтры
           </button>
 
-          <h1 class="bases-page__title">
+          <p class="bases-page__title">
             <span>Найдено баз:</span>
             <span
               class="bases-page__count"
             >
               {{ totalCount || '' }}
             </span>
-          </h1>
+          </p>
 
           <span
             v-if="isResultsLoading"
@@ -626,7 +670,21 @@ function handleMapOpen(id: number) {
       />
     </section>
 
-    <HomeBlocksBestLocationsBlock :items="locationItems ?? []" />
+    <HomeBlocksBestLocationsBlock
+      title="Популярные направления"
+      :items="popularLocations"
+    />
+
+    <BasesSeoIntro />
+
+    <BasesSeoContent />
+
+    <!-- Отзывы сверстаны, скрыты до появления реальных -->
+    <HomeBlocksReviewsBlock v-if="false" />
+
+    <BasesGalleryBlock :items="galleryItems" />
+
+    <BasesFaqBlock />
 
     <LayoutAppFooter />
   </div>

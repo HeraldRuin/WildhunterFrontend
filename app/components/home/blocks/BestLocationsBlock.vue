@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { LocationItem } from '~/types/api'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   items?: LocationItem[]
-}>()
+  title?: string
+}>(), {
+  title: 'Лучшие локации',
+})
 
 const locations = computed(() => props.items ?? [])
 const trackRef = ref<HTMLElement | null>(null)
@@ -37,7 +40,7 @@ function scrollBy(direction: 'prev' | 'next') {
 <template>
   <section class="best-locations">
     <div class="container best-locations__inner">
-      <h2 class="best-locations__title">Лучшие локации</h2>
+      <h2 class="best-locations__title">{{ title }}</h2>
 
       <div class="best-locations__slider-wrap">
         <CommonSliderArrow
