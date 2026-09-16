@@ -39,6 +39,12 @@ export function toSearchTermIds(amenities: string[]): number[] {
     .filter(id => Number.isFinite(id) && id > 0)
 }
 
+export function toSearchLocationIds(regions: string[]): number[] {
+  return regions
+    .map(Number)
+    .filter(id => Number.isFinite(id) && id > 0)
+}
+
 export function toSearchPriceFilter(
   filters: Pick<SearchFiltersState, 'priceMin' | 'priceMax'>,
   bounds: { min: number, max: number },
@@ -71,6 +77,11 @@ export function buildHotelSearchBody(options: {
 
   if (options.locationId != null && Number.isFinite(options.locationId) && options.locationId > 0) {
     body.location_id = options.locationId
+  }
+
+  const locationIds = toSearchLocationIds(options.filters.regions)
+  if (locationIds.length) {
+    body.location_ids = locationIds
   }
 
   if (options.animalId != null && Number.isFinite(options.animalId) && options.animalId > 0) {
@@ -275,6 +286,21 @@ export function matchesReviewRatingFilter(score: number, selected: string[]): bo
 
     return score >= range.min && (range.max >= 5 ? score <= range.max : score < range.max)
   })
+}
+
+export function matchesRegionsFilter(
+  locationId: number | undefined,
+  selected: string[],
+): boolean {
+  if (!selected.length) {
+    return true
+  }
+
+  if (locationId == null || !Number.isFinite(locationId)) {
+    return false
+  }
+
+  return selected.includes(String(locationId))
 }
 
 export function matchesAnimalsFilter(

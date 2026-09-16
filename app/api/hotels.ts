@@ -42,6 +42,7 @@ export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
     title: offer.title,
     slug: offer.slug,
     location: offer.location?.name ?? '',
+    locationId: offer.location?.id,
     locationSlug: offer.location?.slug,
     price,
     image: offer.image_url,

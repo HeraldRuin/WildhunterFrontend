@@ -45,6 +45,7 @@ export interface OfferItem {
   title: string
   slug?: string
   location: string
+  locationId?: number
   locationSlug?: string
   price: number
   image: string
@@ -210,7 +211,10 @@ export interface HotelSearchPrice {
 export type SearchSortOption = 'recommended' | 'price_asc' | 'price_desc' | 'rating'
 
 export interface HotelSearchBody {
+  /** Локация из формы поиска (иерархический фильтр). */
   location_id?: number
+  /** Локации из чекбоксов сайдбара (OR; вместе с location_id — AND на бэке). */
+  location_ids?: number[]
   animal_id?: number
   check_in?: string
   check_out?: string

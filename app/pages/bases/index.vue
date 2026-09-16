@@ -20,6 +20,7 @@ import {
   countOffersByReviewRating,
   DEFAULT_SEARCH_FILTERS,
   matchesFoodFilter,
+  matchesRegionsFilter,
   matchesReviewRatingFilter,
   sortOfferItems,
 } from '~/utils/search'
@@ -285,6 +286,13 @@ const filteredCatalogItems = computed(() => {
     }
 
     if (!matchesFoodFilter(item.has_food, filters.value.hasMeals)) {
+      return false
+    }
+
+    if (
+      isCatalogMode.value
+      && !matchesRegionsFilter(item.locationId, filters.value.regions)
+    ) {
       return false
     }
 
