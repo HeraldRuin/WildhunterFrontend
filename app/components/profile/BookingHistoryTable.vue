@@ -122,7 +122,7 @@ function grandTotalLines(item: BookingHistoryItem) {
   }
 
   if (total != null) {
-    lines.push(`Итоговая сумма = ${formatHotelPriceLabel(total)}`)
+    lines.push(`Итоговая сумма за все мероприятие = ${formatHotelPriceLabel(total)}`)
   }
 
   return lines
