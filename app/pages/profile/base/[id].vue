@@ -1214,12 +1214,28 @@ watch(activeEditTab, (tab) => {
           v-else-if="showForm"
           class="base-edit__panel-shell"
         >
+          <div
+            v-if="activeEditTab === 'attributes' && attributeGroups.length && attrPageCount > 1"
+            class="base-edit__attr-dots"
+            role="tablist"
+            aria-label="Страницы атрибутов"
+          >
+            <button
+              v-for="page in attrPageCount"
+              :key="page"
+              type="button"
+              class="base-edit__attr-dot"
+              :class="{ 'base-edit__attr-dot--active': page - 1 === attrPageIndex }"
+              :aria-label="`Страница ${page}`"
+              :aria-current="page - 1 === attrPageIndex ? 'true' : undefined"
+              @click="scrollAttrToPage(page - 1)"
+            />
+          </div>
+
           <div class="base-edit__panel">
-          <div class="base-edit__panel-main">
             <div
               ref="attrScrollEl"
               class="base-edit__body"
-              :class="{ 'base-edit__body--attributes': activeEditTab === 'attributes' && attributeGroups.length && attrPageCount > 1 }"
               @scroll.passive="onAttrScroll"
             >
             <div v-if="activeEditTab === 'content'" class="base-edit__section">
@@ -1837,25 +1853,6 @@ watch(activeEditTab, (tab) => {
             </div>
             </div>
 
-            <div
-              v-if="activeEditTab === 'attributes' && attributeGroups.length && attrPageCount > 1"
-              class="base-edit__attr-dots"
-              role="tablist"
-              aria-label="Страницы атрибутов"
-            >
-              <button
-                v-for="page in attrPageCount"
-                :key="page"
-                type="button"
-                class="base-edit__attr-dot"
-                :class="{ 'base-edit__attr-dot--active': page - 1 === attrPageIndex }"
-                :aria-label="`Страница ${page}`"
-                :aria-current="page - 1 === attrPageIndex ? 'true' : undefined"
-                @click="scrollAttrToPage(page - 1)"
-              />
-            </div>
-          </div>
-
           <div
             v-if="(activeEditTab === 'content' && activeContentTab === 'policy') || (activeEditTab === 'places' && activePlacesTab === 'surrounding') || (activeEditTab === 'pricing' && editEnableExtraPrice)"
             class="base-edit__actions"
@@ -2025,15 +2022,6 @@ watch(activeEditTab, (tab) => {
   overflow: hidden;
 }
 
-.base-edit__panel-main {
-  position: relative;
-  display: flex;
-  flex: 1 1 0;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-}
-
 .base-edit__body {
   display: flex;
   flex: 1 1 0;
@@ -2041,10 +2029,6 @@ watch(activeEditTab, (tab) => {
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-}
-
-.base-edit__body--attributes {
-  padding-left: 24px;
 }
 
 .base-edit__actions {
@@ -2509,17 +2493,15 @@ button.base-edit__nav-save:hover:not(:disabled) {
 }
 
 .base-edit__attr-dots {
-  position: absolute;
-  top: 50%;
-  left: 4px;
-  z-index: 2;
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  align-self: stretch;
   gap: 8px;
+  width: 10px;
   padding: 4px 0;
-  transform: translateY(-50%);
-  pointer-events: auto;
 }
 
 .base-edit__attr-dot {

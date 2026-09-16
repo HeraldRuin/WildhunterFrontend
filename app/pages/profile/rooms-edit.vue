@@ -942,12 +942,28 @@ watch(activeEditTab, (tab) => {
           v-else-if="showForm"
           class="room-edit__panel-shell"
         >
+          <div
+            v-if="activeEditTab === 'attributes' && attributeGroups.length && attrPageCount > 1"
+            class="room-edit__attr-dots"
+            role="tablist"
+            aria-label="Страницы атрибутов"
+          >
+            <button
+              v-for="page in attrPageCount"
+              :key="page"
+              type="button"
+              class="room-edit__attr-dot"
+              :class="{ 'room-edit__attr-dot--active': page - 1 === attrPageIndex }"
+              :aria-label="`Страница ${page}`"
+              :aria-current="page - 1 === attrPageIndex ? 'true' : undefined"
+              @click="scrollAttrToPage(page - 1)"
+            />
+          </div>
+
           <div class="room-edit__panel">
-          <div class="room-edit__panel-main">
             <div
               ref="attrScrollEl"
               class="room-edit__body"
-              :class="{ 'room-edit__body--attributes': activeEditTab === 'attributes' && attributeGroups.length && attrPageCount > 1 }"
               @scroll.passive="onAttrScroll"
             >
             <div v-if="activeEditTab === 'content'" class="room-edit__content">
@@ -1228,25 +1244,6 @@ watch(activeEditTab, (tab) => {
               </div>
             </div>
             </div>
-
-            <div
-              v-if="activeEditTab === 'attributes' && attributeGroups.length && attrPageCount > 1"
-              class="room-edit__attr-dots"
-              role="tablist"
-              aria-label="Страницы атрибутов"
-            >
-              <button
-                v-for="page in attrPageCount"
-                :key="page"
-                type="button"
-                class="room-edit__attr-dot"
-                :class="{ 'room-edit__attr-dot--active': page - 1 === attrPageIndex }"
-                :aria-label="`Страница ${page}`"
-                :aria-current="page - 1 === attrPageIndex ? 'true' : undefined"
-                @click="scrollAttrToPage(page - 1)"
-              />
-            </div>
-          </div>
           </div>
         </div>
       </div>
@@ -1336,15 +1333,6 @@ watch(activeEditTab, (tab) => {
   overflow: hidden;
 }
 
-.room-edit__panel-main {
-  position: relative;
-  display: flex;
-  flex: 1 1 0;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-}
-
 .room-edit__body {
   display: flex;
   flex: 1 1 0;
@@ -1352,10 +1340,6 @@ watch(activeEditTab, (tab) => {
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-}
-
-.room-edit__body--attributes {
-  padding-left: 24px;
 }
 
 .room-edit__nav-row {
@@ -1521,17 +1505,15 @@ button.room-edit__nav-save:hover:not(:disabled) {
 }
 
 .room-edit__attr-dots {
-  position: absolute;
-  top: 50%;
-  left: 4px;
-  z-index: 2;
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  align-self: stretch;
   gap: 8px;
+  width: 10px;
   padding: 4px 0;
-  transform: translateY(-50%);
-  pointer-events: auto;
 }
 
 .room-edit__attr-dot {
