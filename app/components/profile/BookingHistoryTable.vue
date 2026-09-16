@@ -138,6 +138,25 @@ function isHuntingFinishedCollection(item: BookingHistoryItem) {
   return item.type === 'animal' && item.status.code === 'finished_collection'
 }
 
+function isHuntOnlyBooking(item: BookingHistoryItem) {
+  if (item.type === 'animal') {
+    return Boolean(item.hunt)
+  }
+
+  if (!item.hunt) {
+    return false
+  }
+
+  if (!item.accommodation) {
+    return true
+  }
+
+  const hasRooms = (item.accommodation.rooms?.length ?? 0) > 0
+  const hasStay = item.accommodation.nights > 0
+
+  return !hasRooms && !hasStay
+}
+
 function getListMaxScroll(el: HTMLElement) {
   return Math.max(0, el.scrollHeight - el.clientHeight)
 }
@@ -484,6 +503,13 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                 </template>
+
+                <div
+                  v-if="isHuntOnlyBooking(item)"
+                  class="booking-table__no-stay-note"
+                >
+                  Без проживания
+                </div>
 
                 <div
                   v-if="grandTotalLines(item).length"
@@ -849,6 +875,15 @@ onBeforeUnmount(() => {
   white-space: normal;
 }
 
+.booking-table__no-stay-note {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 4px;
+  color: var(--wh-orange-500);
+  font-weight: 600;
+}
+
 .booking-table__details strong {
   display: block;
   margin-top: 6px;
@@ -860,7 +895,7 @@ onBeforeUnmount(() => {
   margin-top: 0;
 }
 
-.booking-table__details .booking-table__value > div:not(.booking-table__rooms):not(.booking-table__stay-grid):not(.booking-table__grand-total) {
+.booking-table__details .booking-table__value > div:not(.booking-table__rooms):not(.booking-table__stay-grid):not(.booking-table__grand-total):not(.booking-table__no-stay-note) {
   color: #4a4a4a;
   font-weight: 500;
 }
