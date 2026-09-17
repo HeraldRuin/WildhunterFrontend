@@ -85,6 +85,15 @@ function onHotelDeleted(id: number) {
   hotels.value = hotels.value.filter(hotel => hotel.id !== id)
 }
 
+function onVisibilityChanged(id: number, status: BaseHotelItem['status']) {
+  const hotel = hotels.value.find(item => item.id === id)
+  if (!hotel) {
+    return
+  }
+
+  hotel.status = status
+}
+
 async function loadHotels() {
   isLoading.value = true
   loadError.value = ''
@@ -146,6 +155,7 @@ onMounted(() => {
           :key="hotel.id"
           :item="hotel"
           @deleted="onHotelDeleted"
+          @visibility-changed="status => onVisibilityChanged(hotel.id, status)"
         />
         </div>
       </div>

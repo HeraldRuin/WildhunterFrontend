@@ -20,6 +20,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   deleted: [id: number]
+  visibilityChanged: [status: BaseHotelStatus]
 }>()
 
 const { hotels: hotelsApi } = useApi()
@@ -27,6 +28,7 @@ const notifications = useNotifications()
 const { open: openConfirmModal } = useConfirmModal()
 
 const isDeleting = ref(false)
+const isTogglingVisibility = ref(false)
 
 const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
@@ -45,6 +47,23 @@ const statusLabel = computed(() => {
     }
   }
 })
+
+const visibilityActionLabel = computed(() => {
+  switch (props.item.status) {
+    case 'publish':
+      return 'Скрыть'
+    case 'draft':
+      return 'Опубликовать'
+    default: {
+      const exhaustive: never = props.item.status
+      return exhaustive
+    }
+  }
+})
+
+function normalizeStatus(status: string): BaseHotelStatus {
+  return status === 'publish' ? 'publish' : 'draft'
+}
 
 function extractErrorMessage(source: unknown, fallback: string) {
   if (!source || typeof source !== 'object') {
@@ -68,8 +87,46 @@ function extractErrorMessage(source: unknown, fallback: string) {
   return fallback
 }
 
+async function toggleVisibility() {
+  if (isTogglingVisibility.value || isDeleting.value) {
+    return
+  }
+
+  isTogglingVisibility.value = true
+
+  const nextStatus: BaseHotelStatus = props.item.status === 'publish' ? 'draft' : 'publish'
+  const fallbackError = nextStatus === 'publish'
+    ? 'Не удалось опубликовать базу'
+    : 'Не удалось скрыть базу'
+
+  try {
+    const response = await hotelsApi.updateManage(props.item.id, {
+      title: props.item.title,
+      status: nextStatus,
+    })
+
+    if ('success' in response && response.success) {
+      const updatedStatus = normalizeStatus(response.data.status)
+      notifications.success(
+        response.message || (updatedStatus === 'publish' ? 'База опубликована' : 'База скрыта'),
+      )
+      emit('visibilityChanged', updatedStatus)
+      return
+    }
+
+    notifications.error(extractErrorMessage(response, fallbackError))
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    notifications.error(extractErrorMessage(data, fallbackError))
+  }
+  finally {
+    isTogglingVisibility.value = false
+  }
+}
+
 function requestDelete() {
-  if (isDeleting.value) {
+  if (isDeleting.value || isTogglingVisibility.value) {
     return
   }
 
@@ -208,12 +265,6 @@ async function removeHotel() {
 
         <div class="base-hotel-card__actions">
           <NuxtLink
-            :to="{ path: '/rooms', query: { hotelId: String(item.id) } }"
-            class="base-hotel-card__btn base-hotel-card__btn--success"
-          >
-            Управление номерами
-          </NuxtLink>
-          <NuxtLink
             :to="`/profile/base/${item.id}`"
             class="base-hotel-card__btn base-hotel-card__btn--primary"
           >
@@ -221,8 +272,18 @@ async function removeHotel() {
           </NuxtLink>
           <button
             type="button"
+            class="base-hotel-card__btn"
+            :class="item.status === 'publish' ? 'base-hotel-card__btn--secondary' : 'base-hotel-card__btn--success'"
+            :disabled="isTogglingVisibility || isDeleting"
+            :aria-busy="isTogglingVisibility"
+            @click="toggleVisibility"
+          >
+            {{ visibilityActionLabel }}
+          </button>
+          <button
+            type="button"
             class="base-hotel-card__btn base-hotel-card__btn--danger"
-            :disabled="isDeleting"
+            :disabled="isDeleting || isTogglingVisibility"
             @click="requestDelete"
           >
             Удалить
@@ -379,6 +440,16 @@ async function removeHotel() {
   border-color: var(--wh-green);
   background: var(--wh-green);
   color: var(--wh-white);
+}
+
+.base-hotel-card__btn--secondary {
+  border-color: #687882;
+  background: var(--wh-white);
+  color: #687882;
+}
+
+.base-hotel-card__btn--secondary:hover:not(:disabled) {
+  background: rgb(104 120 130 / 8%);
 }
 
 .base-hotel-card__btn--primary {
