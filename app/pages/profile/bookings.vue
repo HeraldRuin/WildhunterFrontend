@@ -1158,6 +1158,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
     <ProfilePrepaymentModal
       :booking="prepaymentModalBooking"
       @close="prepaymentModalBooking = null"
+      @paid="refreshHistory"
     />
     <ProfileBedSelectionModal
       :booking="bedSelectionModalBooking"

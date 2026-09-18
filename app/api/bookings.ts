@@ -19,6 +19,8 @@ import type {
   CreateBookingRequest,
   CreateBookingResponse,
   MarkPaidBookingResponse,
+  MarkPrepaymentPaidResponse,
+  BookingPaymentStatusResponse,
   ExtendCollectionResponse,
   StartCollectionResponse,
   UpdateCustomerNotesResponse,
@@ -153,12 +155,18 @@ export function useBookingsApi() {
   }
 
   function markPrepaymentPaid(code: string) {
-    return apiFetch<ApiSuccessResponse<unknown> | ApiErrorResponse>(
+    return apiFetch<MarkPrepaymentPaidResponse | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/prepayment-paid`,
       {
         method: 'POST',
         body: {},
       },
+    )
+  }
+
+  function getPaymentStatus(code: string) {
+    return apiFetch<BookingPaymentStatusResponse | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/payment-status`,
     )
   }
 
@@ -362,6 +370,7 @@ export function useBookingsApi() {
     removeHunter,
     expirePrepayment,
     markPrepaymentPaid,
+    getPaymentStatus,
     inviteHunter,
     acceptInvitation,
     declineInvitation,

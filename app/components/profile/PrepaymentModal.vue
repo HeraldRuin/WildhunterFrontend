@@ -1,22 +1,53 @@
 <script setup lang="ts">
 import type { BookingHistoryItem } from '~/types/booking'
 
+const POLL_INTERVAL_MS = 4000
+const IFRAME_BLANK_FALLBACK_MS = 2000
+const IFRAME_SAFETY_FALLBACK_MS = 5000
+
 const props = defineProps<{
   booking: BookingHistoryItem | null
 }>()
 
 const emit = defineEmits<{
   close: []
+  paid: []
 }>()
 
 const { bookings } = useApi()
 const notifications = useNotifications()
 const isPaying = ref(false)
+const paymentUrl = ref<string | null>(null)
+const iframeRef = ref<HTMLIFrameElement | null>(null)
 const isOpen = computed(() => Boolean(props.booking))
 
 useBodyScrollLock(isOpen)
 
+let pollTimer: ReturnType<typeof setInterval> | undefined
+let iframeCheckTimer: ReturnType<typeof setTimeout> | undefined
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = undefined
+  }
+}
+
+function clearIframeCheck() {
+  if (iframeCheckTimer) {
+    clearTimeout(iframeCheckTimer)
+    iframeCheckTimer = undefined
+  }
+}
+
+function resetPaymentUi() {
+  stopPolling()
+  clearIframeCheck()
+  paymentUrl.value = null
+}
+
 function close() {
+  resetPaymentUi()
   emit('close')
 }
 
@@ -61,39 +92,172 @@ function getPaymentUrl(value: unknown): string | null {
   return getPaymentUrl(record.data)
 }
 
-async function pay() {
-  if (!props.booking || isPaying.value) {
+function getPaymentStatusValue(value: unknown): string | null {
+  if (typeof value === 'string' && value) {
+    return value.toLowerCase()
+  }
+
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const record = value as Record<string, unknown>
+
+  if (record.paid === true) {
+    return 'paid'
+  }
+
+  const keys = ['status', 'payment_status', 'paymentStatus']
+
+  for (const key of keys) {
+    if (typeof record[key] === 'string' && record[key]) {
+      return record[key].toLowerCase()
+    }
+  }
+
+  return getPaymentStatusValue(record.data)
+}
+
+function openPaymentInSameTab(url: string) {
+  resetPaymentUi()
+  window.location.assign(url)
+}
+
+function isIframeBlocked(iframe: HTMLIFrameElement): boolean {
+  try {
+    const doc = iframe.contentDocument
+    if (!doc) {
+      return false
+    }
+
+    const href = doc.location?.href ?? ''
+    const body = doc.body
+    const empty = !body || (!body.childElementCount && !body.textContent?.trim())
+
+    return href === 'about:blank' || empty
+  } catch {
+    return false
+  }
+}
+
+function fallbackIfIframeBlocked(url: string) {
+  const iframe = iframeRef.value
+  if (!iframe || paymentUrl.value !== url) {
     return
   }
 
-  const paymentTab = window.open('', '_blank')
+  if (isIframeBlocked(iframe)) {
+    openPaymentInSameTab(url)
+  }
+}
+
+function handleIframeLoad() {
+  const url = paymentUrl.value
+  const iframe = iframeRef.value
+  if (!iframe || !url) {
+    return
+  }
+
+  try {
+    const doc = iframe.contentDocument
+    const blank = !doc
+      || doc.location.href === 'about:blank'
+      || !doc.body
+      || (!doc.body.childElementCount && !doc.body.textContent?.trim())
+
+    if (blank) {
+      clearIframeCheck()
+      iframeCheckTimer = setTimeout(() => {
+        fallbackIfIframeBlocked(url)
+      }, IFRAME_BLANK_FALLBACK_MS)
+      return
+    }
+
+    clearIframeCheck()
+  } catch {
+    clearIframeCheck()
+  }
+}
+
+function scheduleIframeFallback(url: string) {
+  clearIframeCheck()
+  iframeCheckTimer = setTimeout(() => {
+    fallbackIfIframeBlocked(url)
+  }, IFRAME_SAFETY_FALLBACK_MS)
+}
+
+async function checkPaymentStatus() {
+  if (!props.booking) {
+    return
+  }
+
+  try {
+    const response = await bookings.getPaymentStatus(props.booking.code)
+
+    if (!response.success) {
+      return
+    }
+
+    if (getPaymentStatusValue(response) === 'paid') {
+      resetPaymentUi()
+      emit('paid')
+      emit('close')
+    }
+  } catch {
+    // Ошибки поллинга не показываем: статус проверим на следующем тике.
+  }
+}
+
+function startPolling() {
+  stopPolling()
+  void checkPaymentStatus()
+  pollTimer = setInterval(() => {
+    void checkPaymentStatus()
+  }, POLL_INTERVAL_MS)
+}
+
+async function pay() {
+  if (!props.booking || isPaying.value || paymentUrl.value) {
+    return
+  }
+
   isPaying.value = true
 
   try {
     const response = await bookings.markPrepaymentPaid(props.booking.code)
 
     if (!response.success) {
-      paymentTab?.close()
       notifications.error(response.message || 'Не удалось выполнить оплату')
       return
     }
 
-    const paymentUrl = getPaymentUrl(response)
+    const nextPaymentUrl = getPaymentUrl(response)
 
-    if (paymentUrl) {
-      paymentTab?.location.replace(paymentUrl)
-    } else if (paymentTab) {
-      paymentTab.document.title = 'Результат оплаты'
-      paymentTab.document.body.textContent = JSON.stringify(response, null, 2)
+    if (!nextPaymentUrl) {
+      notifications.error('Не удалось получить ссылку на оплату')
+      return
     }
+
+    paymentUrl.value = nextPaymentUrl
+    scheduleIframeFallback(nextPaymentUrl)
+    startPolling()
   } catch (error) {
-    paymentTab?.close()
     const data = (error as { data?: { message?: string } }).data
     notifications.error(data?.message || 'Не удалось выполнить оплату')
   } finally {
     isPaying.value = false
   }
 }
+
+watch(() => props.booking, (booking) => {
+  if (!booking) {
+    resetPaymentUi()
+  }
+})
+
+onUnmounted(() => {
+  resetPaymentUi()
+})
 </script>
 
 <template>
@@ -108,14 +272,26 @@ async function pay() {
         @click="handleBackdropClick"
         @keydown="handleKeydown"
       >
-        <div class="prepayment-modal__card">
+        <div
+          class="prepayment-modal__card"
+          :class="{ 'prepayment-modal__card--iframe': paymentUrl }"
+        >
           <CommonModalCloseButton @click="close" />
 
           <h2 id="prepayment-modal-title" class="prepayment-modal__title">
             Предоплата для брони #{{ booking.number }}
           </h2>
 
-          <div class="prepayment-modal__footer">
+          <iframe
+            v-if="paymentUrl"
+            ref="iframeRef"
+            :src="paymentUrl"
+            style="width: 100%; height: 70vh; border: 0"
+            allow="payment *"
+            @load="handleIframeLoad"
+          />
+
+          <div v-else class="prepayment-modal__footer">
             <button
               type="button"
               class="prepayment-modal__pay"
@@ -165,6 +341,10 @@ async function pay() {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
+.prepayment-modal__card--iframe {
+  width: min(100%, 960px);
+}
+
 .prepayment-modal__title {
   margin: 0 48px 40px 0;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
@@ -172,6 +352,10 @@ async function pay() {
   font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.4;
+}
+
+.prepayment-modal__card--iframe .prepayment-modal__title {
+  margin-bottom: 16px;
 }
 
 .prepayment-modal__footer {

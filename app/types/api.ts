@@ -367,6 +367,17 @@ export type MarkPaidBookingResponse = ApiSuccessResponse<{
   is_paid: boolean
 }>
 
+export type MarkPrepaymentPaidResponse = ApiSuccessResponse<{
+  payment_url?: string
+  url?: string
+}>
+
+export type BookingPaymentStatusResponse = ApiSuccessResponse<{
+  status?: string
+  payment_status?: string
+  paid?: boolean
+}>
+
 export type CompleteBookingResponse = ApiSuccessResponse<{
   id: number
   code: string
