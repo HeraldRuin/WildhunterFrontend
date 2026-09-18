@@ -17,7 +17,9 @@ const emit = defineEmits<{
 const { bookings } = useApi()
 const notifications = useNotifications()
 const isPaying = ref(false)
+const paymentError = ref(false)
 const paymentUrl = ref<string | null>(null)
+const iframeReady = ref(false)
 const iframeRef = ref<HTMLIFrameElement | null>(null)
 const isOpen = computed(() => Boolean(props.booking))
 
@@ -44,6 +46,8 @@ function resetPaymentUi() {
   stopPolling()
   clearIframeCheck()
   paymentUrl.value = null
+  paymentError.value = false
+  iframeReady.value = false
 }
 
 function close() {
@@ -148,7 +152,10 @@ function fallbackIfIframeBlocked(url: string) {
 
   if (isIframeBlocked(iframe)) {
     openPaymentInSameTab(url)
+    return
   }
+
+  iframeReady.value = true
 }
 
 function handleIframeLoad() {
@@ -174,8 +181,10 @@ function handleIframeLoad() {
     }
 
     clearIframeCheck()
+    iframeReady.value = true
   } catch {
     clearIframeCheck()
+    iframeReady.value = true
   }
 }
 
@@ -222,11 +231,17 @@ async function pay() {
   }
 
   isPaying.value = true
+  paymentError.value = false
 
   try {
     const response = await bookings.markPrepaymentPaid(props.booking.code)
 
+    if (!props.booking) {
+      return
+    }
+
     if (!response.success) {
+      paymentError.value = true
       notifications.error(response.message || 'Не удалось выполнить оплату')
       return
     }
@@ -234,6 +249,7 @@ async function pay() {
     const nextPaymentUrl = getPaymentUrl(response)
 
     if (!nextPaymentUrl) {
+      paymentError.value = true
       notifications.error('Не удалось получить ссылку на оплату')
       return
     }
@@ -242,6 +258,7 @@ async function pay() {
     scheduleIframeFallback(nextPaymentUrl)
     startPolling()
   } catch (error) {
+    paymentError.value = true
     const data = (error as { data?: { message?: string } }).data
     notifications.error(data?.message || 'Не удалось выполнить оплату')
   } finally {
@@ -250,8 +267,10 @@ async function pay() {
 }
 
 watch(() => props.booking, (booking) => {
-  if (!booking) {
-    resetPaymentUi()
+  resetPaymentUi()
+
+  if (booking) {
+    void pay()
   }
 })
 
@@ -272,34 +291,34 @@ onUnmounted(() => {
         @click="handleBackdropClick"
         @keydown="handleKeydown"
       >
-        <div
-          class="prepayment-modal__card"
-          :class="{ 'prepayment-modal__card--iframe': paymentUrl }"
-        >
+        <div class="prepayment-modal__card">
           <CommonModalCloseButton @click="close" />
 
           <h2 id="prepayment-modal-title" class="prepayment-modal__title">
             Предоплата для брони #{{ booking.number }}
           </h2>
 
-          <iframe
-            v-if="paymentUrl"
-            ref="iframeRef"
-            :src="paymentUrl"
-            style="width: 100%; height: 70vh; border: 0"
-            allow="payment *"
-            @load="handleIframeLoad"
-          />
+          <div class="prepayment-modal__frame">
+            <iframe
+              v-if="paymentUrl"
+              ref="iframeRef"
+              :src="paymentUrl"
+              class="prepayment-modal__iframe"
+              allow="payment *"
+              @load="handleIframeLoad"
+            />
 
-          <div v-else class="prepayment-modal__footer">
-            <button
-              type="button"
-              class="prepayment-modal__pay"
-              :disabled="isPaying"
-              @click="pay"
-            >
-              {{ isPaying ? 'Открываем…' : 'Оплатить' }}
-            </button>
+            <div v-if="!iframeReady" class="prepayment-modal__loading">
+              <p v-if="paymentError" class="prepayment-modal__error">
+                Не удалось открыть оплату
+              </p>
+              <CommonSpinner
+                v-else
+                variant="ring"
+                size="lg"
+                label="Открываем оплату"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -332,7 +351,7 @@ onUnmounted(() => {
 
 .prepayment-modal__card {
   position: relative;
-  width: min(100%, 520px);
+  width: min(100%, 960px);
   padding: 28px 28px 24px;
   border: 1px solid var(--wh-gray-200);
   border-radius: var(--wh-radius);
@@ -341,12 +360,8 @@ onUnmounted(() => {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.prepayment-modal__card--iframe {
-  width: min(100%, 960px);
-}
-
 .prepayment-modal__title {
-  margin: 0 48px 40px 0;
+  margin: 0 48px 16px 0;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   color: var(--wh-gray-900);
   font-size: 1.05rem;
@@ -354,32 +369,30 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-.prepayment-modal__card--iframe .prepayment-modal__title {
-  margin-bottom: 16px;
+.prepayment-modal__frame {
+  position: relative;
+  min-height: 70vh;
 }
 
-.prepayment-modal__footer {
+.prepayment-modal__iframe {
+  width: 100%;
+  height: 70vh;
+  border: 0;
+}
+
+.prepayment-modal__loading {
+  position: absolute;
+  inset: 0;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
+  background: var(--wh-white);
 }
 
-.prepayment-modal__pay {
-  min-height: 40px;
-  padding: 10px 24px;
-  border: 1px solid var(--wh-orange-500);
-  border-radius: 20px;
-  background: var(--wh-orange-500);
-  color: var(--wh-white);
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.2;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.prepayment-modal__pay:hover {
-  border-color: var(--wh-orange-600);
-  background: var(--wh-orange-600);
+.prepayment-modal__error {
+  margin: 0;
+  color: var(--wh-gray-500);
+  font-size: 0.95rem;
 }
 
 .prepayment-modal-enter-active,
