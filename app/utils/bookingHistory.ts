@@ -53,16 +53,28 @@ const ACTION_VARIANT_MAP: Record<string, BookingActionVariant> = {
 }
 
 const HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
-  { id: 'cancel_booking', label: 'Отменить бронь', variant: 'danger' },
   { id: 'open_collection', label: 'Сбор охотников', variant: 'success' },
   { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
   { id: 'add_services', label: 'Добавить услуги', variant: 'success' },
+  { id: 'cancel_booking', label: 'Отменить бронь', variant: 'danger' },
 ]
 
 const INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
   { id: 'open_collection', label: 'Список приглашенных', variant: 'success' },
   { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
 ]
+
+function withCancelActionLast(actions: BookingAction[]): BookingAction[] {
+  const cancelActions = actions.filter(action => action.id === 'cancel_booking')
+  if (cancelActions.length === 0) {
+    return actions
+  }
+
+  return [
+    ...actions.filter(action => action.id !== 'cancel_booking'),
+    ...cancelActions,
+  ]
+}
 
 function formatHistoryDate(value: string | null | undefined) {
   if (!value) return ''
@@ -190,14 +202,16 @@ function mapActions(
 
   if (isHunter && status === 'finish_bed_collection') {
     return {
-      actions: isMasterHunter
-        ? [...HUNTER_FINISH_BED_COLLECTION_ACTIONS]
-        : [...INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS],
+      actions: withCancelActionLast(
+        isMasterHunter
+          ? [...HUNTER_FINISH_BED_COLLECTION_ACTIONS]
+          : [...INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS],
+      ),
       paymentAction,
     }
   }
 
-  return { actions: mapped, paymentAction }
+  return { actions: withCancelActionLast(mapped), paymentAction }
 }
 
 function collectionNeededCount(item: BookingHistoryItemDto): number {
