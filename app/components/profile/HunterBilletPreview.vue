@@ -335,6 +335,7 @@ function onNumberModelUpdate(value: string) {
               :model-value="billetNumberPart"
               placeholder="0000000"
               :disabled="!isEditing"
+              :readonly="isEditing && !seriesDigits"
               @update:model-value="onNumberModelUpdate"
             />
           </div>
