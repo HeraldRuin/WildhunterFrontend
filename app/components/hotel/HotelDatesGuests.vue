@@ -48,7 +48,7 @@ const { hotels } = useApi()
 const checkIn = ref<Date | null>(parseDisplayDate(queryString('checkIn')))
 const checkOut = ref<Date | null>(parseDisplayDate(queryString('checkOut')))
 const adultsCount = ref(adultsFromQuery())
-const hasSelectedAdults = ref(Boolean(queryString('guests')))
+const hasSelectedAdults = ref(false)
 
 const hasDatesFromSearch = ref(Boolean(checkIn.value && checkOut.value))
 const calendarViewRange = ref<{ start: string, end: string } | null>(null)
@@ -240,11 +240,36 @@ function clearGuests(event: MouseEvent) {
   isGuestsOpen.value = false
 }
 
+function calendarDayKey(value: string) {
+  return value.slice(0, 10)
+}
+
+function collectUnavailableDates(days: Array<{ date?: string, available_rooms?: number }>) {
+  const keys: string[] = []
+
+  for (const day of days) {
+    const rooms = Number(day.available_rooms)
+    const key = calendarDayKey(String(day.date ?? ''))
+
+    if (!Number.isFinite(rooms) || rooms !== 0) {
+      continue
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+      continue
+    }
+
+    keys.push(key)
+  }
+
+  return keys
+}
+
 async function loadCalendarAvailability() {
-  const hotelId = props.hotelId
+  const hotelId = Number(props.hotelId)
   const range = calendarViewRange.value
 
-  if (!hotelId || !range) {
+  if (!Number.isFinite(hotelId) || hotelId <= 0 || !range) {
     unavailableDates.value = []
     return
   }
@@ -265,9 +290,7 @@ async function loadCalendarAvailability() {
     }
 
     unavailableDates.value = response.success
-      ? response.data.days
-        .filter(day => day.available_rooms === 0)
-        .map(day => day.date)
+      ? collectUnavailableDates(response.data.days)
       : []
   }
   catch {

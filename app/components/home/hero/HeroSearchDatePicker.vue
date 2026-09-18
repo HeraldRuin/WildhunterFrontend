@@ -46,18 +46,13 @@ const month = computed(() => ({
 const unavailableDateSet = computed(() => new Set(props.unavailableDates))
 
 function emitViewChange() {
-  const days = month.value.days
-  const first = days[0]?.date
-  const last = days[days.length - 1]?.date
-
-  if (!first || !last) {
-    return
-  }
-
-  const end = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1)
+  const year = currentMonth.value.getFullYear()
+  const monthIndex = currentMonth.value.getMonth()
+  const start = new Date(year, monthIndex, 1)
+  const end = new Date(year, monthIndex + 1, 1)
 
   emit('view-change', {
-    start: formatApiDate(first),
+    start: formatApiDate(start),
     end: formatApiDate(end),
   })
 }
@@ -123,7 +118,7 @@ watch(
 )
 
 function isUnavailableNight(date: Date) {
-  return unavailableDateSet.value.has(formatApiDate(startOfDay(date)))
+  return unavailableDateSet.value.has(formatApiDate(date))
 }
 
 function hasUnavailableNightInStay(from: Date, to: Date) {
