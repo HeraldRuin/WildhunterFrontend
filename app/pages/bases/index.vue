@@ -674,16 +674,18 @@ function handleMapOpen(id: number) {
       :items="popularLocations"
     />
 
-    <BasesSeoIntro />
+    <div class="bases-page__seo">
+      <BasesSeoIntro />
 
-    <BasesSeoContent />
+      <BasesSeoContent />
 
-    <!-- Отзывы сверстаны, скрыты до появления реальных -->
-    <HomeBlocksReviewsBlock v-if="false" />
+      <!-- Отзывы сверстаны, скрыты до появления реальных -->
+      <HomeBlocksReviewsBlock v-if="false" />
 
-    <BasesGalleryBlock :items="galleryItems" />
+      <BasesGalleryBlock :items="galleryItems" />
 
-    <BasesFaqBlock />
+      <BasesFaqBlock />
+    </div>
 
     <LayoutAppFooter />
   </div>
@@ -692,6 +694,10 @@ function handleMapOpen(id: number) {
 <style scoped>
 .bases-page {
   background: var(--wh-white);
+}
+
+.bases-page__seo {
+  background: #f0efec;
 }
 
 .bases-page :deep(.search-top__tagline) {

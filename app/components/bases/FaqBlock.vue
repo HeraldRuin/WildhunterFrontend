@@ -135,8 +135,10 @@ useHead({
   <section class="faq-block">
     <div class="container faq-block__inner">
       <h2 class="faq-block__title">Часто задаваемые вопросы</h2>
+    </div>
 
-      <div class="faq-block__panel">
+    <div class="faq-block__panel">
+      <div class="container faq-block__panel-inner">
         <div class="faq-block__list">
           <div
             v-for="item in items"
@@ -244,18 +246,17 @@ useHead({
 
 <style scoped>
 .faq-block {
-  padding-block: 48px 64px;
-  background: var(--wh-white);
-}
-
-.faq-block__inner {
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: 32px;
+  padding-block: 48px 64px;
+  border-top: 1px solid rgb(28 33 28 / 14%);
+  background: transparent;
 }
 
-.faq-block__inner.container {
-  width: min(100% - 32px, 1600px);
+.faq-block__inner.container,
+.faq-block__panel-inner.container {
+  width: min(100% - 32px, 1240px);
 }
 
 .faq-block__title {
@@ -263,16 +264,15 @@ useHead({
   font-family: UNCAGE;
   font-weight: 400;
   font-style: normal;
-  font-size: 44px;
-  line-height: 110%;
+  font-size: 28px;
+  line-height: 1.15;
   text-transform: uppercase;
-  text-align: center;
-  color: var(--wh-gray-900);
+  text-align: left;
+  color: var(--wh-black-text);
 }
 
 .faq-block__panel {
-  border-top: 1px solid rgb(28 33 28 / 20%);
-  border-bottom: 1px solid rgb(28 33 28 / 20%);
+  width: 100%;
 }
 
 .faq-block__item {

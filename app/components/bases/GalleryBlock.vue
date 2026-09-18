@@ -52,27 +52,27 @@ const photos = computed(() => {
 
 <style scoped>
 .bases-gallery {
-  padding-block: 56px;
-  background: var(--wh-white);
+  padding-block: 48px;
+  border-top: 1px solid rgb(28 33 28 / 14%);
+  background: transparent;
 }
 
 .bases-gallery__inner.container {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  width: min(100% - 32px, 1600px);
+  gap: 28px;
+  width: min(100% - 32px, 1240px);
 }
 
 .bases-gallery__title {
   margin: 0;
   font-family: "UNCAGE", sans-serif;
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 400;
-  line-height: 120%;
-  letter-spacing: -0.03em;
-  text-align: center;
+  line-height: 1.15;
+  letter-spacing: 0;
   text-transform: uppercase;
-  color: var(--wh-gray-900);
+  color: var(--wh-black-text);
 }
 
 .bases-gallery__grid {

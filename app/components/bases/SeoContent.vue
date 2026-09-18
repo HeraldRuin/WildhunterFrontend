@@ -106,25 +106,39 @@ const seasons = [
         <h2 class="bases-seo__title">
           География угодий: лучшие регионы России для охоты
         </h2>
-        <div class="bases-seo__cards">
+        <div class="bases-seo__steps">
           <article
-            v-for="item in geography"
+            v-for="(item, index) in geography"
             :key="item.title"
-            class="bases-seo__card"
+            class="bases-seo__step"
           >
-            <h3 class="bases-seo__card-title">{{ item.title }}</h3>
-            <p class="bases-seo__card-text">{{ item.text }}</p>
+            <span class="bases-seo__step-num">{{ index + 1 }}.</span>
+            <div>
+              <h3 class="bases-seo__card-title">{{ item.title }}</h3>
+              <p class="bases-seo__card-text">{{ item.text }}</p>
+            </div>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="bases-seo__section bases-seo__section--muted">
+    <section class="bases-seo__section">
+      <div class="container bases-seo__media">
+        <img
+          class="bases-seo__media-image"
+          src="/images/blog/ohotnichii-tury.jpg"
+          alt="Охотничий тур в России"
+          width="960"
+          height="540"
+        >
+        <div class="bases-seo__media-copy">
+          <h2 class="bases-seo__title">Охотничьи туры по видам дичи</h2>
+          <p class="bases-seo__lead">
+            Актуальные предложения включают проверенные охотничьи хозяйства с гарантированной высокой плотностью диких животных, профессиональной биотехнией и полным соблюдением законодательства. Мы готовы принять как индивидуальных охотников, так и участников групп.
+          </p>
+        </div>
+      </div>
       <div class="container bases-seo__inner">
-        <h2 class="bases-seo__title">Охотничьи туры по видам дичи</h2>
-        <p class="bases-seo__lead">
-          Актуальные предложения включают проверенные охотничьи хозяйства с гарантированной высокой плотностью диких животных, профессиональной биотехнией и полным соблюдением законодательства. Мы готовы принять как индивидуальных охотников, так и участников групп.
-        </p>
         <div class="bases-seo__cards">
           <article
             v-for="item in gameTypes"
@@ -140,32 +154,39 @@ const seasons = [
 
     <section class="bases-seo__section">
       <div class="container bases-seo__inner">
-        <h2 class="bases-seo__title">
-          Что входит в стоимость тура: сервис и инфраструктура
-        </h2>
-        <p class="bases-seo__lead">
-          Организация охоты под ключ обеспечивает безупречный сервис на всех этапах.
-        </p>
-        <div class="bases-seo__cards">
+        <div class="bases-seo__split">
+          <h2 class="bases-seo__title">
+            Что входит в стоимость тура: сервис и инфраструктура
+          </h2>
+          <p class="bases-seo__lead">
+            Организация охоты под ключ обеспечивает безупречный сервис на всех этапах.
+          </p>
+        </div>
+        <div class="bases-seo__steps">
           <article
-            v-for="item in serviceItems"
+            v-for="(item, index) in serviceItems"
             :key="item.title"
-            class="bases-seo__card"
+            class="bases-seo__step"
           >
-            <h3 class="bases-seo__card-title">{{ item.title }}</h3>
-            <p class="bases-seo__card-text">{{ item.text }}</p>
+            <span class="bases-seo__step-num">{{ index + 1 }}.</span>
+            <div>
+              <h3 class="bases-seo__card-title">{{ item.title }}</h3>
+              <p class="bases-seo__card-text">{{ item.text }}</p>
+            </div>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="bases-seo__section bases-seo__section--muted">
+    <section class="bases-seo__section">
       <div class="container bases-seo__inner">
-        <h2 class="bases-seo__title">Юридические вопросы и провоз оружия</h2>
-        <p class="bases-seo__lead">
-          Легальность является приоритетным условием работы. Все мероприятия проводятся строго в рамках Федерального закона «Об охоте».
-        </p>
-        <div class="bases-seo__cards bases-seo__cards--three">
+        <div class="bases-seo__split">
+          <h2 class="bases-seo__title">Юридические вопросы и провоз оружия</h2>
+          <p class="bases-seo__lead">
+            Легальность является приоритетным условием работы. Все мероприятия проводятся строго в рамках Федерального закона «Об охоте».
+          </p>
+        </div>
+        <div class="bases-seo__cards">
           <article
             v-for="item in legalItems"
             :key="item.title"
@@ -180,7 +201,15 @@ const seasons = [
 
     <section class="bases-seo__section">
       <div class="container bases-seo__inner">
-        <h2 class="bases-seo__title">Ценообразование: стоимость охоты в России</h2>
+        <div class="bases-seo__split">
+          <h2 class="bases-seo__title">Ценообразование: стоимость охоты в России</h2>
+          <div>
+            <h3 class="bases-seo__subtitle">Факторы, влияющие на итоговую стоимость</h3>
+            <p class="bases-seo__lead">
+              Базовые цены на сезон 2026 года зависят от длительности тура и размера трофея. На цену влияют трансфер, вертолетная заброска и дополнительные услуги таксидермиста. При бронировании нескольких туров сразу действует специальная скидка. Все направления доступны для бронирования.
+            </p>
+          </div>
+        </div>
         <h3 class="bases-seo__subtitle">Базовые цены на популярные туры</h3>
         <div class="bases-seo__table-wrap">
           <table class="bases-seo__table">
@@ -205,27 +234,37 @@ const seasons = [
             </tbody>
           </table>
         </div>
-        <h3 class="bases-seo__subtitle">Факторы, влияющие на итоговую стоимость</h3>
-        <p class="bases-seo__lead">
-          Базовые цены на сезон 2026 года зависят от длительности тура и размера трофея. На цену влияют трансфер, вертолетная заброска и дополнительные услуги таксидермиста. При бронировании нескольких туров сразу действует специальная скидка. Все направления доступны для бронирования.
-        </p>
       </div>
     </section>
 
-    <section class="bases-seo__section bases-seo__section--muted">
+    <section class="bases-seo__section">
+      <div class="container bases-seo__media">
+        <img
+          class="bases-seo__media-image"
+          src="/images/hunting-farms-hunter.webp"
+          alt="Охотник в угодьях"
+          width="960"
+          height="540"
+        >
+        <div class="bases-seo__media-copy">
+          <h2 class="bases-seo__title">Календарь охотника: сезонность туров</h2>
+          <p class="bases-seo__lead">
+            Календарь охотника поможет выбрать правильное время для выезда.
+          </p>
+        </div>
+      </div>
       <div class="container bases-seo__inner">
-        <h2 class="bases-seo__title">Календарь охотника: сезонность туров</h2>
-        <p class="bases-seo__lead">
-          Календарь охотника поможет выбрать правильное время для выезда:
-        </p>
-        <div class="bases-seo__cards">
+        <div class="bases-seo__steps">
           <article
-            v-for="item in seasons"
+            v-for="(item, index) in seasons"
             :key="item.title"
-            class="bases-seo__card"
+            class="bases-seo__step"
           >
-            <h3 class="bases-seo__card-title">{{ item.title }}</h3>
-            <p class="bases-seo__card-text">{{ item.text }}</p>
+            <span class="bases-seo__step-num">{{ index + 1 }}.</span>
+            <div>
+              <h3 class="bases-seo__card-title">{{ item.title }}</h3>
+              <p class="bases-seo__card-text">{{ item.text }}</p>
+            </div>
           </article>
         </div>
       </div>
@@ -235,84 +274,114 @@ const seasons = [
 
 <style scoped>
 .bases-seo__section {
-  padding-block: 56px;
-  background: var(--wh-white);
+  padding-block: 48px;
+  border-top: 1px solid rgb(28 33 28 / 14%);
 }
 
-.bases-seo__section--muted {
-  background: var(--wh-gray-100);
+.bases-seo__inner.container,
+.bases-seo__media.container {
+  width: min(100% - 32px, 1240px);
 }
 
-.bases-seo__inner.container {
+.bases-seo__inner {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  width: min(100% - 32px, 1600px);
+  gap: 32px;
+}
+
+.bases-seo__split {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(0, 1.2fr);
+  align-items: start;
+  gap: 28px 64px;
+}
+
+.bases-seo__media {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, 1fr);
+  align-items: center;
+  gap: 32px 48px;
+  margin-bottom: 32px;
+}
+
+.bases-seo__media-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.bases-seo__media-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .bases-seo__title {
   margin: 0;
   font-family: "UNCAGE", sans-serif;
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 400;
-  line-height: 120%;
-  letter-spacing: -0.03em;
-  text-align: center;
+  line-height: 1.15;
+  letter-spacing: 0;
   text-transform: uppercase;
-  color: var(--wh-gray-900);
+  color: var(--wh-black-text);
 }
 
 .bases-seo__subtitle {
-  margin: 8px 0 0;
+  margin: 0;
   font-family: "Inter", sans-serif;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
-  line-height: 130%;
-  letter-spacing: -0.03em;
-  color: var(--wh-gray-900);
+  line-height: 1.35;
+  color: var(--wh-black-text);
 }
 
 .bases-seo__lead {
-  margin: 0 auto;
-  max-width: 920px;
+  margin: 0;
   font-family: "Inter", sans-serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 400;
-  line-height: 140%;
-  letter-spacing: -0.02em;
-  text-align: center;
-  color: var(--wh-gray-900);
+  line-height: 1.55;
+  color: var(--wh-black-text);
 }
 
+.bases-seo__steps,
 .bases-seo__cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: 28px 40px;
 }
 
-.bases-seo__cards--three {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.bases-seo__step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px 16px;
+}
+
+.bases-seo__step-num {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--wh-black-text);
 }
 
 .bases-seo__card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 100%;
-  padding: 24px;
-  border: 1px solid rgb(28 33 28 / 12%);
-  border-radius: var(--wh-radius);
-  background: var(--wh-white);
+  gap: 10px;
 }
 
 .bases-seo__card-title {
   margin: 0;
   font-family: "Inter", sans-serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
-  line-height: 130%;
-  letter-spacing: -0.04em;
-  color: var(--wh-gray-900);
+  line-height: 1.35;
+  color: var(--wh-black-text);
 }
 
 .bases-seo__card-text {
@@ -320,28 +389,28 @@ const seasons = [
   font-family: "Inter", sans-serif;
   font-size: 16px;
   font-weight: 400;
-  line-height: 140%;
-  letter-spacing: -0.02em;
-  color: var(--wh-gray-600);
+  line-height: 1.5;
+  color: rgb(28 33 28 / 78%);
 }
 
 .bases-seo__table-wrap {
   overflow-x: auto;
   border: 1px solid rgb(28 33 28 / 12%);
-  border-radius: var(--wh-radius);
+  border-radius: 8px;
+  background: var(--wh-white);
 }
 
 .bases-seo__table {
   width: 100%;
   border-collapse: collapse;
   font-family: "Inter", sans-serif;
-  font-size: 16px;
-  line-height: 140%;
+  font-size: 15px;
+  line-height: 1.4;
 }
 
 .bases-seo__table th,
 .bases-seo__table td {
-  padding: 14px 16px;
+  padding: 12px 14px;
   text-align: left;
   vertical-align: top;
   border-bottom: 1px solid rgb(28 33 28 / 10%);
@@ -362,37 +431,23 @@ const seasons = [
 .bases-seo__table td:nth-child(4) {
   white-space: nowrap;
   font-weight: 600;
-  color: var(--wh-gray-900);
 }
 
 @media (--wh-tablet) {
   .bases-seo__section {
-    padding-block: 40px;
+    padding-block: 36px;
   }
 
-  .bases-seo__title {
-    font-size: 28px;
-  }
-
-  .bases-seo__cards,
-  .bases-seo__cards--three {
+  .bases-seo__split,
+  .bases-seo__media,
+  .bases-seo__steps,
+  .bases-seo__cards {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
-}
 
-@media (--wh-mobile) {
   .bases-seo__title {
     font-size: 24px;
-  }
-
-  .bases-seo__lead,
-  .bases-seo__card-text {
-    font-size: 16px;
-    text-align: left;
-  }
-
-  .bases-seo__lead {
-    text-align: left;
   }
 }
 </style>
