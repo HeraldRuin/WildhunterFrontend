@@ -30,3 +30,8 @@ export function formatReviewsCount(count: number) {
 export function formatBasesCount(count: number) {
   return pluralizeRu(count, ['база', 'базы', 'баз'])
 }
+
+/** Родительный падеж после числительного: «1 охотника», «2 охотника», «5 охотников». */
+export function formatHuntersGenitive(count: number) {
+  return pluralizeRu(count, ['охотника', 'охотника', 'охотников'])
+}

@@ -11,6 +11,8 @@ import {
   startOfDay,
 } from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
+import { countHuntsForHunters } from '~/utils/hotelHunt'
+import { formatHuntersGenitive } from '~/utils/pluralize'
 
 const props = withDefaults(defineProps<{
 
@@ -98,11 +100,11 @@ const stayCheckIn = ref<Date | null>(null)
 const stayCheckOut = ref<Date | null>(null)
 
 const animalAvailabilityTotal = computed(() => {
-  if (!animalAvailability.value) {
+  if (!animalAvailability.value || huntHunters.value <= 0) {
     return 0
   }
 
-  return animalAvailability.value.price
+  return animalAvailability.value.price * huntHunters.value
 })
 
 const animalAvailabilityPerPerson = computed(() => {
@@ -110,7 +112,40 @@ const animalAvailabilityPerPerson = computed(() => {
     return null
   }
 
-  return Math.round(animalAvailability.value.price / huntHunters.value)
+  return Math.round(animalAvailabilityTotal.value / huntHunters.value)
+})
+
+const totalHuntCount = computed(() => {
+  if (!animalAvailability.value || !selectedAnimalId.value) {
+    return null
+  }
+
+  return getTotalHuntCount(selectedAnimalId.value, huntHunters.value)
+})
+
+const insufficientExtraHuntMessage = computed(() => {
+  if (!selectedAnimalId.value) {
+    return ''
+  }
+
+  if (hasSelectedRooms.value && huntHunters.value > stayAdults.value) {
+    return ''
+  }
+
+  const allocation = getExtraHuntAllocation(selectedAnimalId.value, huntHunters.value)
+
+  if (!allocation || allocation.canOfferExtraHunt || allocation.shortfall <= 0) {
+    return ''
+  }
+
+  const max = getAnimalMaxHunters(selectedAnimalId.value)
+  const min = getAnimalMinHunters(selectedAnimalId.value) ?? 1
+
+  if (max == null) {
+    return ''
+  }
+
+  return `На это животное максимальное количество охотников: ${max}. Для выбранного количества охотников нужна дополнительная охота. Для дополнительной охоты нужно минимум ${formatHuntersGenitive(min)}. Добавьте ещё ${formatHuntersGenitive(allocation.shortfall)}.`
 })
 const datesGuestsRef = ref<{
   getAdults: () => number
@@ -134,12 +169,16 @@ const GUESTS_HUNTERS_MISMATCH_MESSAGE
 const guestsHuntersMismatch = computed(() =>
   hasSelectedRooms.value
   && Boolean(selectedAnimalId.value)
-  && stayAdults.value !== huntHunters.value,
+  && huntHunters.value > stayAdults.value,
 )
 const ROOMS_EXCEED_GUESTS_MESSAGE = 'Количество номеров не может быть больше количества гостей'
 const INSUFFICIENT_CAPACITY_MESSAGE
   = 'Вместимость выбранных номеров меньше количества гостей. Увеличьте число номеров или выберите более вместительный вариант'
-const isBookingBlocked = computed(() => roomsExceedGuests.value || guestsHuntersMismatch.value)
+const isBookingBlocked = computed(() =>
+  roomsExceedGuests.value
+  || guestsHuntersMismatch.value
+  || Boolean(insufficientExtraHuntMessage.value),
+)
 const isApiMessageOpen = computed(() => Boolean(apiMessage.value))
 const isAnyModalOpen = computed(() =>
   isNoHuntConfirmOpen.value
@@ -152,6 +191,8 @@ const isAnyModalOpen = computed(() =>
 )
 
 const DEFAULT_HUNTERS = 1
+const huntersManuallyAdjusted = ref(false)
+const isSyncingHuntersFromGuests = ref(false)
 
 function applyHuntersCount(hunters: number) {
   const currentHunters = animalsSearchRef.value?.getHunters()
@@ -160,11 +201,15 @@ function applyHuntersCount(hunters: number) {
     return
   }
 
+  isSyncingHuntersFromGuests.value = true
   animalsSearchRef.value?.setHunters(hunters)
+  nextTick(() => {
+    isSyncingHuntersFromGuests.value = false
+  })
 }
 
 function syncHuntersFromGuests() {
-  if (!hasSelectedRooms.value) {
+  if (!hasSelectedRooms.value || huntersManuallyAdjusted.value) {
     return
   }
 
@@ -172,6 +217,7 @@ function syncHuntersFromGuests() {
 }
 
 function resetHunters() {
+  huntersManuallyAdjusted.value = false
   applyHuntersCount(DEFAULT_HUNTERS)
 }
 
@@ -208,6 +254,109 @@ function getAnimalMaxHunters(animalId: string) {
   return max
 }
 
+function getAnimalMinHunters(animalId: string) {
+  const animal = hotelAnimals.value.find(item => String(item.id) === animalId)
+
+  if (!animal) {
+    return null
+  }
+
+  const min = animal.hunters_count
+
+  if (min == null || !Number.isFinite(min) || min < 1) {
+    return null
+  }
+
+  return min
+}
+
+interface ExtraHuntAllocation {
+  canOfferExtraHunt: boolean
+  hasExtraHunt: boolean
+  shortfall: number
+  remainder: number
+  extraHuntCount: number
+}
+
+function getExtraHuntAllocation(animalId: string, hunters: number): ExtraHuntAllocation | null {
+  const max = getAnimalMaxHunters(animalId)
+
+  if (max == null || hunters <= max) {
+    return null
+  }
+
+  const min = getAnimalMinHunters(animalId) ?? 1
+  let remaining = hunters
+  let huntCount = 0
+
+  while (remaining > 0) {
+    if (remaining >= min) {
+      remaining -= Math.min(remaining, max)
+      huntCount++
+      continue
+    }
+
+    return {
+      canOfferExtraHunt: false,
+      hasExtraHunt: huntCount > 1,
+      shortfall: min - remaining,
+      remainder: remaining,
+      extraHuntCount: Math.max(0, huntCount - 1),
+    }
+  }
+
+  return {
+    canOfferExtraHunt: huntCount > 1,
+    hasExtraHunt: huntCount > 1,
+    shortfall: 0,
+    remainder: 0,
+    extraHuntCount: huntCount - 1,
+  }
+}
+
+function getTotalHuntCount(animalId: string, hunters: number): number {
+  const allocation = getExtraHuntAllocation(animalId, hunters)
+
+  if (!allocation?.canOfferExtraHunt) {
+    return 1
+  }
+
+  return allocation.extraHuntCount + 1
+}
+
+type ExtraHuntActionStatus = 'ok' | 'insufficient'
+
+function getExtraHuntActionStatus(animalId: string, hunters: number): ExtraHuntActionStatus {
+  if (hasSelectedRooms.value && hunters > stayAdults.value) {
+    return 'ok'
+  }
+
+  if (exceedsAnimalMaxHunters(animalId, hunters) == null) {
+    if (!animalId || extraHuntsConfirmed.value?.animalId !== animalId) {
+      extraHuntsConfirmed.value = null
+    }
+    else if (hunters <= (getAnimalMaxHunters(animalId) ?? 0)) {
+      extraHuntsConfirmed.value = null
+    }
+
+    return 'ok'
+  }
+
+  const allocation = getExtraHuntAllocation(animalId, hunters)
+
+  if (!allocation?.canOfferExtraHunt) {
+    extraHuntsConfirmed.value = null
+    return 'insufficient'
+  }
+
+  extraHuntsConfirmed.value = {
+    animalId,
+    hunters,
+  }
+
+  return 'ok'
+}
+
 function exceedsAnimalMaxHunters(animalId: string, hunters: number) {
   if (!animalId) {
     return null
@@ -222,51 +371,11 @@ function exceedsAnimalMaxHunters(animalId: string, hunters: number) {
   return max
 }
 
-function hasConfirmedExtraHunts(animalId: string, hunters: number) {
-  const confirmed = extraHuntsConfirmed.value
-
-  return Boolean(
-    confirmed
-    && confirmed.animalId === animalId
-    && confirmed.hunters >= hunters,
-  )
-}
-
-function openMaxHuntersWarning(max: number, pending: 'check' | 'book' | null = null) {
-  maxHuntersWarningLimit.value = max
-  maxHuntersPendingAction.value = pending
-  isMaxHuntersWarningOpen.value = true
-}
-
-function maybeOpenMaxHuntersWarning(
+function handleExtraHuntAction(
   animalId: string,
   hunters: number,
-  pending: 'check' | 'book' | null = null,
-) {
-  const max = exceedsAnimalMaxHunters(animalId, hunters)
-
-  if (max == null) {
-    if (!animalId || extraHuntsConfirmed.value?.animalId !== animalId) {
-      extraHuntsConfirmed.value = null
-    }
-    else if (hunters <= (getAnimalMaxHunters(animalId) ?? 0)) {
-      extraHuntsConfirmed.value = null
-    }
-
-    return false
-  }
-
-  if (hasConfirmedExtraHunts(animalId, hunters)) {
-    return false
-  }
-
-  if (isMaxHuntersWarningOpen.value && pending == null) {
-    maxHuntersWarningLimit.value = max
-    return true
-  }
-
-  openMaxHuntersWarning(max, pending)
-  return true
+): ExtraHuntActionStatus {
+  return getExtraHuntActionStatus(animalId, hunters)
 }
 
 function handleAnimalChange(animalId: string) {
@@ -275,12 +384,17 @@ function handleAnimalChange(animalId: string) {
   }
 
   selectedAnimalId.value = animalId
-  maybeOpenMaxHuntersWarning(animalId, huntHunters.value)
+  handleExtraHuntAction(animalId, huntHunters.value)
 }
 
 function handleHuntersChange(hunters: number) {
   huntHunters.value = hunters
-  maybeOpenMaxHuntersWarning(selectedAnimalId.value, hunters)
+
+  if (!isSyncingHuntersFromGuests.value) {
+    huntersManuallyAdjusted.value = true
+  }
+
+  handleExtraHuntAction(selectedAnimalId.value, hunters)
 }
 
 function getBookingAdults(stayAdultsCount: number | undefined, hunters: number, hasRooms: boolean) {
@@ -317,7 +431,7 @@ function validateRoomsAgainstGuests(adults: number, rooms: Array<{ room_id: numb
 }
 
 function validateGuestsMatchHunters(adults: number, hunters: number, hasAnimal: boolean) {
-  if (!hasAnimal || adults === hunters) {
+  if (!hasAnimal || hunters <= adults) {
     return true
   }
 
@@ -515,8 +629,9 @@ async function handleAnimalsCheck(payload: {
     return
   }
 
-  if (maybeOpenMaxHuntersWarning(payload.animalId, payload.hunters, 'check')) {
-    maxHuntersPendingCheckPayload.value = payload
+  const extraHuntStatus = handleExtraHuntAction(payload.animalId, payload.hunters)
+
+  if (extraHuntStatus !== 'ok') {
     return
   }
 
@@ -593,9 +708,10 @@ async function proceedBook() {
     return
   }
 
-  if (hasAnimal && maybeOpenMaxHuntersWarning(animalIdRaw, hunters, 'book')) {
-    return
-  }
+  // Временно: при бронировании не показываем диалог доп. охоты (подтверждение на шаге проверки).
+  // if (hasAnimal && handleExtraHuntAction(animalIdRaw, hunters, 'book') !== 'ok') {
+  //   return
+  // }
 
   let checkIn = stayCheckIn
   let checkOut = stayCheckOut
@@ -662,6 +778,12 @@ async function proceedBook() {
   const selectedAnimal = hasAnimal
     ? hotelAnimals.value.find(item => item.id === animalId)
     : undefined
+  const animalMinHunters = hasAnimal && animalIdRaw
+    ? getAnimalMinHunters(animalIdRaw) ?? 1
+    : undefined
+  const animalMaxHunters = hasAnimal && animalIdRaw
+    ? getAnimalMaxHunters(animalIdRaw) ?? undefined
+    : undefined
 
   const huntDateLabel = huntDateRaw
     ? formatBookingDateFromDisplay(huntDateRaw)
@@ -692,6 +814,11 @@ async function proceedBook() {
     huntCheckIn: huntDateLabel,
     huntCheckOut: huntDateLabel,
     hunters: hasAnimal ? hunters : 0,
+    huntCount: hasAnimal && animalMaxHunters
+      ? countHuntsForHunters(hunters, animalMinHunters ?? 1, animalMaxHunters)
+      : undefined,
+    animalMinHunters,
+    animalMaxHunters,
     animalTitle: selectedAnimal?.title || '',
     animalImage: selectedAnimal?.image_url || '',
     huntDate: huntDateLabel,
@@ -742,9 +869,10 @@ function handleBook() {
     return
   }
 
-  if (maybeOpenMaxHuntersWarning(animalId, hunters, 'book')) {
-    return
-  }
+  // Временно: при бронировании не показываем диалог доп. охоты (подтверждение на шаге проверки).
+  // if (animalId && handleExtraHuntAction(animalId, hunters, 'book') !== 'ok') {
+  //   return
+  // }
 
   if (!hasRooms) {
     isNoRoomConfirmOpen.value = true
@@ -798,10 +926,8 @@ function confirmExtraHunts() {
 }
 
 function declineExtraHunts() {
-  const max = maxHuntersWarningLimit.value
   extraHuntsConfirmed.value = null
   closeMaxHuntersWarning()
-  applyHuntersCount(max)
 }
 
 function closeHuntDateWarning() {
@@ -916,15 +1042,28 @@ onMounted(() => {
             @animal-change="handleAnimalChange"
             @hunters-change="handleHuntersChange"
             @need-hunt-date="openHuntDateWarning"
-          />
-
-          <p
-            v-if="guestsHuntersMismatch"
-            class="hotel-booking-section__rooms-error"
-            role="alert"
           >
-            {{ GUESTS_HUNTERS_MISMATCH_MESSAGE }}
-          </p>
+            <template
+              v-if="guestsHuntersMismatch || insufficientExtraHuntMessage"
+              #alerts
+            >
+              <p
+                v-if="guestsHuntersMismatch"
+                class="hotel-booking-section__rooms-error"
+                role="alert"
+              >
+                {{ GUESTS_HUNTERS_MISMATCH_MESSAGE }}
+              </p>
+
+              <p
+                v-if="insufficientExtraHuntMessage"
+                class="hotel-booking-section__rooms-error"
+                role="alert"
+              >
+                {{ insufficientExtraHuntMessage }}
+              </p>
+            </template>
+          </HotelAnimalsSearch>
 
           <div
             v-if="animalAvailability"
@@ -935,9 +1074,13 @@ onMounted(() => {
             </div>
 
             <div class="hotel-booking-section__animal-summary">
-              <div class="hotel-booking-section__animal-summary-item">
+              <div class="hotel-booking-section__animal-summary-item hotel-booking-section__animal-summary-item--stats">
                 <span class="hotel-booking-section__animal-summary-label">Всего охотников:</span>
                 <span class="hotel-booking-section__animal-summary-value">{{ huntHunters }}</span>
+                <template v-if="totalHuntCount != null && totalHuntCount > 1">
+                  <span class="hotel-booking-section__animal-summary-label">Всего охот:</span>
+                  <span class="hotel-booking-section__animal-summary-value">{{ totalHuntCount }}</span>
+                </template>
               </div>
               <div class="hotel-booking-section__animal-summary-item hotel-booking-section__animal-summary-item--cost">
                 <span
@@ -1129,7 +1272,7 @@ onMounted(() => {
         >
           <div class="hotel-booking-confirm__card">
             <h2 id="hotel-max-hunters-warning-title" class="hotel-booking-confirm__title">
-              На это животное максимальное количество охотников: {{ maxHuntersWarningLimit }}. Сделать дополнительные охоты?
+              На это животное максимальное количество охотников: {{ maxHuntersWarningLimit }}. Сделать дополнительную охоту?
             </h2>
 
             <div class="hotel-booking-confirm__actions">
@@ -1289,6 +1432,15 @@ onMounted(() => {
 
 .hotel-booking-section__animal-summary-item + .hotel-booking-section__animal-summary-item {
   border-left: 1px solid var(--wh-field-border);
+}
+
+.hotel-booking-section__animal-summary-item--stats {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.hotel-booking-section__animal-summary-item--stats .hotel-booking-section__animal-summary-label:last-of-type {
+  margin-left: auto;
 }
 
 .hotel-booking-section__animal-summary-item--cost {

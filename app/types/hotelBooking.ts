@@ -75,6 +75,9 @@ export interface HotelBookingDraft {
   huntCheckIn: string
   huntCheckOut: string
   hunters: number
+  huntCount?: number
+  animalMinHunters?: number
+  animalMaxHunters?: number
   animalTitle: string
   animalImage: string
   huntDate: string

@@ -7,6 +7,7 @@ import {
   parseBirthdayDate,
 } from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
+import { countHuntsForHunters, resolveHuntingPerPerson } from '~/utils/hotelHunt'
 
 definePageMeta({
   layout: 'home',
@@ -35,7 +36,15 @@ const route = useRoute()
 const { bookings } = useApi()
 const { user } = useAuth()
 const notifications = useNotifications()
-const { draft, pendingNotes, clearDraft, setPendingNotes, clearPendingNotes } = useHotelBookingDraft()
+const {
+  draft,
+  pendingNotes,
+  pendingCheckoutHuntMeta,
+  clearDraft,
+  setPendingNotes,
+  clearPendingNotes,
+  setPendingCheckoutHuntMeta,
+} = useHotelBookingDraft()
 
 const specialRequirements = ref(
   draft.value?.specialRequirements || pendingNotes.value || '',
@@ -162,6 +171,7 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
     animalImage: data.animal?.image_url || '',
     huntDate: formatCheckoutDate(data.start_date_animal || data.check_in),
     hunters: data.total_hunting ?? 0,
+    huntCount: null as number | null,
     organizationFee: data.amount_hunting,
     huntingPerPerson: data.amount_hunting_per_person ?? null,
     trophyFee: 0,
@@ -170,10 +180,33 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
   }
 }
 
+function resolveDraftHuntCount(data: HotelBookingDraft) {
+  if (data.huntCount != null && data.huntCount > 0) {
+    return data.huntCount
+  }
+
+  if (data.hunters <= 0 || data.animalMaxHunters == null) {
+    return null
+  }
+
+  return countHuntsForHunters(
+    data.hunters,
+    data.animalMinHunters ?? 1,
+    data.animalMaxHunters,
+  )
+}
+
 function mapDraftToView(data: HotelBookingDraft) {
   const roomLabel = data.rooms
     .map(room => `${room.title} × ${room.quantity}`)
     .join(', ')
+
+  const huntCount = resolveDraftHuntCount(data)
+  const huntingPerPerson = resolveHuntingPerPerson(
+    data.hunters,
+    data.organizationFee,
+    data.huntingPerPerson,
+  )
 
   return {
     bookingNumber: data.bookingNumber,
@@ -194,11 +227,35 @@ function mapDraftToView(data: HotelBookingDraft) {
     animalImage: data.animalImage,
     huntDate: data.huntDate,
     hunters: data.hunters,
+    huntCount,
     organizationFee: data.organizationFee,
-    huntingPerPerson: data.huntingPerPerson,
+    huntingPerPerson,
     trophyFee: data.trophyFee,
     hasAccommodation: data.hasAccommodation,
     hasHunt: data.hasHunt,
+  }
+}
+
+function enrichCheckoutHuntFields(
+  view: NonNullable<ReturnType<typeof mapCheckoutToView>>,
+  code: string,
+) {
+  const pendingMeta = pendingCheckoutHuntMeta.value?.code === code
+    ? pendingCheckoutHuntMeta.value
+    : null
+
+  const huntingPerPerson = resolveHuntingPerPerson(
+    view.hunters,
+    view.organizationFee,
+    pendingMeta?.huntingPerPerson ?? view.huntingPerPerson,
+  )
+
+  const huntCount = pendingMeta?.huntCount ?? view.huntCount
+
+  return {
+    ...view,
+    huntCount,
+    huntingPerPerson,
   }
 }
 
@@ -208,7 +265,13 @@ const booking = computed(() => {
   }
 
   if (bookingCode.value) {
-    return mapCheckoutToView(checkout.value ?? null)
+    const checkoutView = mapCheckoutToView(checkout.value ?? null)
+
+    if (!checkoutView) {
+      return null
+    }
+
+    return enrichCheckoutHuntFields(checkoutView, bookingCode.value)
   }
 
   return draft.value ? mapDraftToView(draft.value) : null
@@ -268,6 +331,21 @@ async function confirmSaveBooking() {
   try {
     const response = await bookings.create(currentDraft.createPayload)
     const code = response.data.booking_code
+    const huntCount = resolveDraftHuntCount(currentDraft)
+    const huntingPerPerson = resolveHuntingPerPerson(
+      currentDraft.hunters,
+      currentDraft.organizationFee,
+      currentDraft.huntingPerPerson,
+    )
+
+    if (huntCount != null || huntingPerPerson != null) {
+      setPendingCheckoutHuntMeta({
+        code,
+        huntCount: huntCount ?? 1,
+        huntingPerPerson,
+      })
+    }
+
     const notes = specialRequirements.value.trim() || currentDraft.specialRequirements.trim()
 
     if (notes) {
@@ -482,14 +560,21 @@ async function confirmSaveBooking() {
                     <dd>{{ booking.hunters }}</dd>
                   </div>
                   <div
-                    v-if="booking.hunters >= 2 && booking.huntingPerPerson != null"
+                    v-if="booking.huntCount != null && booking.huntCount > 1"
+                    class="booking-confirmation__detail-row"
+                  >
+                    <dt>Количество охот</dt>
+                    <dd>{{ booking.huntCount }}</dd>
+                  </div>
+                  <div
+                    v-if="booking.huntingPerPerson != null"
                     class="booking-confirmation__detail-row"
                   >
                     <dt>Стоимость за человека</dt>
                     <dd>{{ formatHotelPriceLabel(booking.huntingPerPerson) }}</dd>
                   </div>
                   <div class="booking-confirmation__detail-row booking-confirmation__detail-row--total">
-                    <dt>Организация охоты</dt>
+                    <dt>Стоимость охоты</dt>
                     <dd>{{ formatHotelPriceLabel(booking.organizationFee) }}</dd>
                   </div>
                   <div v-if="booking.trophyFee > 0" class="booking-confirmation__detail-row">

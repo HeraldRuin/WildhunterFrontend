@@ -478,6 +478,10 @@ defineExpose({
   >
     <h2 class="hotel-animals-search__title">Доступные животные</h2>
 
+    <div v-if="$slots.alerts" class="hotel-animals-search__alerts">
+      <slot name="alerts" />
+    </div>
+
     <form class="hotel-animals-search__form" @submit.prevent="handleSubmit">
       <div class="hotel-animals-search__panel">
         <div
@@ -760,6 +764,13 @@ defineExpose({
   align-items: center;
   gap: 24px;
   width: 100%;
+}
+
+.hotel-animals-search__alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(100%, var(--hotel-booking-blocks-width, 100%));
 }
 
 .hotel-animals-search__title {
