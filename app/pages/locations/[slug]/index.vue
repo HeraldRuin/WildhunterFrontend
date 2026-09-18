@@ -301,7 +301,6 @@ const hasActiveFilters = computed(() => {
     priceChanged
     || filters.value.ratings.length > 0
     || filters.value.amenities.length > 0
-    || filters.value.regions.length > 0
     || filters.value.animals.length > 0
     || filters.value.huntingMethods.length > 0
     || filters.value.hasMeals !== ''
@@ -418,6 +417,7 @@ function handleFiltersReset() {
           <SearchFilters
             v-model="filters"
             v-model:mobile-open="mobileFiltersOpen"
+            hide-region-filter
             :price-bound-min="priceBounds.min"
             :price-bound-max="priceBounds.max"
             :rating-counts="ratingCounts"

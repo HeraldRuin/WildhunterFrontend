@@ -10,12 +10,15 @@ const props = withDefaults(defineProps<{
   mobileOpen?: boolean
   /** Плавающая кнопка сброса (fixed); иначе — внизу блока фильтров */
   floatingReset?: boolean
+  /** Скрыть фильтр «Регион охоты (область)» — для страниц конкретной области */
+  hideRegionFilter?: boolean
   priceBoundMin?: number
   priceBoundMax?: number
   ratingCounts?: Record<string, number>
 }>(), {
   mobileOpen: false,
   floatingReset: false,
+  hideRegionFilter: false,
   priceBoundMin: 0,
   priceBoundMax: 15000,
   ratingCounts: () => ({}),
@@ -147,7 +150,7 @@ const hasActiveFilters = computed(() => {
     priceChanged
     || localFilters.value.ratings.length > 0
     || localFilters.value.amenities.length > 0
-    || localFilters.value.regions.length > 0
+    || (!props.hideRegionFilter && localFilters.value.regions.length > 0)
     || localFilters.value.animals.length > 0
     || localFilters.value.huntingMethods.length > 0
     || localFilters.value.hasMeals !== ''
@@ -440,6 +443,7 @@ watch(
         </SearchFiltersFilterSection>
 
         <SearchFiltersFilterSection
+          v-if="!hideRegionFilter"
           class="search-filters__group"
           title="Регион охоты (область)"
           default-open
