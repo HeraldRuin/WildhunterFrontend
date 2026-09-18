@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HotelManageUpdatePayload, ManagedHotelDetail, ManagedHotelExtraPriceItem, ManagedHotelExtraPriceType } from '~/api/hotels'
-import type { HotelRoomAttribute, HotelRoomAttributeTerm, SearchLocation } from '~/types/api'
+import type { HotelRoomAttribute, HotelRoomAttributeTerm, HuntingMethod, SearchLocation } from '~/types/api'
 import { formatHotelPrice, getHotelPath } from '~/utils/hotel'
 import { DEFAULT_MAP_CENTER } from '~/utils/map'
 import { extractMediaIdFromUrl, shouldShowOfferImage } from '~/utils/image'
@@ -18,7 +18,7 @@ const { hotels: hotelsApi, media: mediaApi, services: servicesApi, location: loc
 const isCreateMode = computed(() => route.params.id === 'new')
 const hotelId = computed(() => Number(route.params.id))
 
-type BaseHotelEditTab = 'content' | 'places' | 'pricing' | 'attributes' | 'jaeger'
+type BaseHotelEditTab = 'content' | 'places' | 'pricing' | 'attributes' | 'hunting' | 'jaeger'
 type ContentSubTab = 'content' | 'policy'
 type PlacesSubTab = 'location' | 'surrounding'
 
@@ -33,6 +33,7 @@ const editTabs: { id: BaseHotelEditTab, label: string }[] = [
   { id: 'places', label: 'Места' },
   { id: 'pricing', label: 'Ценообразование' },
   { id: 'attributes', label: 'Атрибуты' },
+  { id: 'hunting', label: 'Способ охоты' },
   { id: 'jaeger', label: 'Егерь' },
 ]
 
@@ -63,11 +64,16 @@ const attributeGroups = ref<HotelRoomAttribute[]>([])
 const attributesLoading = ref(false)
 const attributesError = ref('')
 const selectedTermIds = ref<number[]>([])
+const huntingMethods = ref<HuntingMethod[]>([])
+const huntingMethodsLoading = ref(false)
+const huntingMethodsError = ref('')
+const selectedHuntingMethodIds = ref<number[]>([])
 const attrScrollEl = ref<HTMLElement | null>(null)
 const attrPageCount = ref(1)
 const attrPageIndex = ref(0)
 const isSaving = ref(false)
 let attributesLoaded = false
+let huntingMethodsLoaded = false
 let attrResizeObserver: ResizeObserver | null = null
 
 const editLocationId = ref<number | null>(null)
@@ -492,6 +498,10 @@ function selectEditTab(tab: BaseHotelEditTab) {
     scheduleAttrPagesUpdate()
   }
 
+  if (tab === 'hunting') {
+    void loadHuntingMethods()
+  }
+
   if (tab === 'places') {
     activePlacesTab.value = 'location'
     void loadLocations()
@@ -672,6 +682,39 @@ function toggleTerm(termId: number) {
   selectedTermIds.value = [...selectedTermIds.value, termId]
 }
 
+function isHuntingMethodSelected(methodId: number) {
+  return selectedHuntingMethodIds.value.includes(methodId)
+}
+
+function toggleHuntingMethod(methodId: number) {
+  if (selectedHuntingMethodIds.value.includes(methodId)) {
+    selectedHuntingMethodIds.value = selectedHuntingMethodIds.value.filter(id => id !== methodId)
+    return
+  }
+
+  selectedHuntingMethodIds.value = [...selectedHuntingMethodIds.value, methodId]
+}
+
+async function loadHuntingMethods() {
+  if (huntingMethodsLoaded || huntingMethodsLoading.value) {
+    return
+  }
+
+  huntingMethodsLoading.value = true
+  huntingMethodsError.value = ''
+
+  try {
+    huntingMethods.value = await hotelsApi.getHuntingMethodItems()
+    huntingMethodsLoaded = true
+  }
+  catch {
+    huntingMethodsError.value = 'Не удалось загрузить способы охоты'
+  }
+  finally {
+    huntingMethodsLoading.value = false
+  }
+}
+
 function getAttrMaxScroll(el: HTMLElement) {
   return Math.max(0, el.scrollHeight - el.clientHeight)
 }
@@ -787,6 +830,7 @@ function resetForm() {
   galleryItems.value = []
   selectedGalleryIndex.value = null
   selectedTermIds.value = []
+  selectedHuntingMethodIds.value = []
   policyItems.value = []
   policyItemIdSeq = 0
   surroundingItems.value = []
@@ -905,6 +949,10 @@ function fillFormFromHotel(item: ManagedHotelDetail) {
     ? item.term_ids.map(Number).filter(id => Number.isFinite(id) && id > 0)
     : []
 
+  selectedHuntingMethodIds.value = Array.isArray(item.hunting_method_ids)
+    ? item.hunting_method_ids.map(Number).filter(id => Number.isFinite(id) && id > 0)
+    : []
+
   editLocationId.value = item.location_id ?? item.location?.id ?? null
   editLocationQuery.value = item.location?.name ?? ''
   editAddress.value = item.address ?? ''
@@ -991,6 +1039,7 @@ function buildSavePayload(galleryIds: number[]): HotelManageUpdatePayload {
     status: current?.status ?? 'publish',
     has_food: current?.has_food ?? false,
     term_ids: [...selectedTermIds.value],
+    hunting_method_ids: [...selectedHuntingMethodIds.value],
   }
 }
 
@@ -1836,6 +1885,46 @@ watch(activeEditTab, (tab) => {
                     </label>
                   </div>
                 </section>
+              </div>
+            </div>
+
+            <div
+              v-else-if="activeEditTab === 'hunting'"
+              class="base-edit__attributes"
+            >
+              <p v-if="huntingMethodsError" class="base-edit__status base-edit__status--error">
+                {{ huntingMethodsError }}
+              </p>
+
+              <div
+                v-else-if="huntingMethodsLoading"
+                class="base-edit__loading base-edit__loading--inline"
+                aria-live="polite"
+              >
+                <CommonSpinner variant="ring" size="lg" label="Загрузка способов охоты" />
+              </div>
+
+              <p v-else-if="!huntingMethods.length" class="base-edit__status">
+                Нет способов охоты
+              </p>
+
+              <div
+                v-else
+                class="base-edit__attr-body"
+              >
+                <label
+                  v-for="method in huntingMethods"
+                  :key="method.id"
+                  class="base-edit__attr-item"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="isHuntingMethodSelected(method.id)"
+                    @change="toggleHuntingMethod(method.id)"
+                  >
+                  <span class="base-edit__attr-checkmark" />
+                  <span class="base-edit__attr-label">{{ method.name }}</span>
+                </label>
               </div>
             </div>
 

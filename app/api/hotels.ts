@@ -138,6 +138,7 @@ export interface ManagedHotelDetail {
   location_id: number | null
   location: ManagedHotelLocation | null
   term_ids: number[]
+  hunting_method_ids?: number[]
   status: string
   status_label: string
   has_food: boolean
@@ -184,6 +185,7 @@ export interface HotelManageUpdatePayload {
   status?: HotelManageStatus | string
   has_food?: boolean
   term_ids?: number[]
+  hunting_method_ids?: number[]
 }
 
 export function useHotelsApi() {
