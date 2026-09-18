@@ -56,6 +56,7 @@ export interface OfferItem {
   map_lat?: number
   map_lng?: number
   animals?: Array<{ id: number, title: string }>
+  hunting_methods?: Array<{ id: number, title: string }>
 }
 
 export interface BookableItem {
@@ -110,6 +111,8 @@ export interface HotelOffer {
   map_lat?: number | string | null
   map_lng?: number | string | null
   animals?: Array<{ id: number, title: string }>
+  hunting_methods?: Array<{ id: number, title?: string, name?: string }>
+  hunting_method_ids?: number[]
 }
 
 export interface HotelSearchPagination {
@@ -230,6 +233,8 @@ export interface HotelSearchBody {
   adults?: number
   /** Selected attribute term ids (OR semantics on backend). */
   term_ids?: number[]
+  /** Способы охоты из чекбоксов сайдбара (OR на бэке). */
+  hunting_method_ids?: number[]
   price?: HotelSearchPrice
   star_rate?: string[]
   sort?: SearchSortOption

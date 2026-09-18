@@ -39,6 +39,20 @@ export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
       .filter(animal => animal.title && Number.isFinite(animal.id))
     : []
 
+  const huntingMethods = Array.isArray(offer.hunting_methods)
+    ? offer.hunting_methods
+      .map((method, index) => ({
+        id: Number(method.id ?? index + 1),
+        title: String(method.title ?? method.name ?? '').trim(),
+      }))
+      .filter(method => Number.isFinite(method.id) && method.id > 0)
+    : Array.isArray(offer.hunting_method_ids)
+      ? offer.hunting_method_ids
+        .map(Number)
+        .filter(id => Number.isFinite(id) && id > 0)
+        .map(id => ({ id, title: '' }))
+      : []
+
   return {
     id: offer.id,
     object_model: 'hotel',
@@ -56,6 +70,7 @@ export function mapHotelOfferToItem(offer: HotelOffer): OfferItem {
     map_lat: parseCoord(offer.map_lat),
     map_lng: parseCoord(offer.map_lng),
     animals,
+    hunting_methods: huntingMethods,
   }
 }
 

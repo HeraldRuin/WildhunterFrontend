@@ -8,6 +8,7 @@ import {
   DEFAULT_SEARCH_FILTERS,
   matchesAnimalsFilter,
   matchesFoodFilter,
+  matchesHuntingMethodsFilter,
   matchesReviewRatingFilter,
   sortOfferItems,
   toSearchTermIds,
@@ -271,6 +272,10 @@ const filteredOffers = computed(() => {
     }
 
     if (!matchesAnimalsFilter(item.animals, filters.value.animals)) {
+      return false
+    }
+
+    if (!matchesHuntingMethodsFilter(item.hunting_methods, filters.value.huntingMethods)) {
       return false
     }
 

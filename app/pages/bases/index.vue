@@ -21,6 +21,7 @@ import {
   DEFAULT_SEARCH_FILTERS,
   matchesAnimalsFilter,
   matchesFoodFilter,
+  matchesHuntingMethodsFilter,
   matchesRegionsFilter,
   matchesReviewRatingFilter,
   sortOfferItems,
@@ -306,6 +307,13 @@ const filteredCatalogItems = computed(() => {
     if (
       isCatalogMode.value
       && !matchesAnimalsFilter(item.animals, filters.value.animals)
+    ) {
+      return false
+    }
+
+    if (
+      isCatalogMode.value
+      && !matchesHuntingMethodsFilter(item.hunting_methods, filters.value.huntingMethods)
     ) {
       return false
     }

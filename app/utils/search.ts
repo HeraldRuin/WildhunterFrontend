@@ -44,6 +44,12 @@ export function toSearchAnimalIds(animals: string[]): number[] {
     .filter(id => Number.isFinite(id) && id > 0)
 }
 
+export function toSearchHuntingMethodIds(huntingMethods: string[]): number[] {
+  return huntingMethods
+    .map(Number)
+    .filter(id => Number.isFinite(id) && id > 0)
+}
+
 export function toSearchPriceFilter(
   filters: Pick<SearchFiltersState, 'priceMin' | 'priceMax'>,
   bounds: { min: number, max: number },
@@ -90,6 +96,11 @@ export function buildHotelSearchBody(options: {
   const animalIds = toSearchAnimalIds(options.filters.animals)
   if (animalIds.length) {
     body.animal_ids = animalIds
+  }
+
+  const huntingMethodIds = toSearchHuntingMethodIds(options.filters.huntingMethods)
+  if (huntingMethodIds.length) {
+    body.hunting_method_ids = huntingMethodIds
   }
 
   if (options.checkIn) {
@@ -316,6 +327,18 @@ export function matchesAnimalsFilter(
   }
 
   const ids = new Set((animals ?? []).map(animal => String(animal.id)))
+  return selected.some(id => ids.has(id))
+}
+
+export function matchesHuntingMethodsFilter(
+  huntingMethods: Array<{ id: number }> | undefined,
+  selected: string[],
+): boolean {
+  if (!selected.length) {
+    return true
+  }
+
+  const ids = new Set((huntingMethods ?? []).map(method => String(method.id)))
   return selected.some(id => ids.has(id))
 }
 
