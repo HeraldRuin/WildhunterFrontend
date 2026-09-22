@@ -31,6 +31,7 @@ const emit = defineEmits<{
 const route = useRoute()
 const { hotels, animals } = useApi()
 const { user } = useAuth()
+const { isBaseAdmin } = useUserRole()
 const { setDraft } = useHotelBookingDraft()
 
 const hotelParams = computed(() => ({
@@ -685,6 +686,10 @@ async function handleAnimalsCheck(payload: {
 }
 
 async function proceedBook() {
+  if (isBaseAdmin.value) {
+    return
+  }
+
   const currentHotel = hotel.value
   const hotelId = currentHotel?.id
   const stay = datesGuestsRef.value?.getBookingPayload()
@@ -854,6 +859,10 @@ async function proceedBook() {
 }
 
 function handleBook() {
+  if (isBaseAdmin.value) {
+    return
+  }
+
   const animalId = animalsSearchRef.value?.getSelectedAnimalId() || ''
   const rooms = roomSelectionRef.value?.getSelectedRooms() || []
   const hasRooms = rooms.length > 0
@@ -1101,6 +1110,7 @@ onMounted(() => {
 
       <Transition name="hotel-booking-book">
         <button
+          v-if="!isBaseAdmin"
           type="button"
           class="hotel-booking-section__book"
           :disabled="isBookingBlocked || !(hasSelectedRooms || animalAvailability)"
