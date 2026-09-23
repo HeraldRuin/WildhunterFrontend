@@ -11,6 +11,7 @@ import type {
   BookingServicesItems,
 } from '~/types/api'
 import type { SelectFieldOption } from '~/components/common/SelectField.vue'
+import { formatHotelPriceLabel } from '~/utils/hotel'
 
 interface PreparationDraft {
   key: number
@@ -111,10 +112,11 @@ const showExtraGroup = computed(() =>
 )
 const preparationAnimals = computed(() => services.value?.catalogs?.preparation_animals ?? [])
 const preparationAnimalOptions = computed<SelectFieldOption[]>(() =>
-  preparationAnimals.value.map(animal => ({
-    value: String(animal.id),
-    label: animal.title,
-  })),
+  preparationAnimals.value.map(animal => withCatalogPrice(
+    animal.title,
+    animal.preparations?.[0]?.price,
+    String(animal.id),
+  )),
 )
 const additionalOptions = computed<SelectFieldOption[]>(() =>
   (services.value?.catalogs?.additionals ?? []).map(item => ({
@@ -207,12 +209,79 @@ function resetServices() {
   collapsedBlocks.value = new Set()
 }
 
+function catalogUnitPrice(price: unknown): number | null {
+  if (price == null || price === '') {
+    return null
+  }
+
+  const value = typeof price === 'number' ? price : Number(price)
+  if (!Number.isFinite(value)) {
+    return null
+  }
+
+  return value
+}
+
+function catalogPriceLabel(price: unknown): string | undefined {
+  const value = catalogUnitPrice(price)
+  if (value == null) {
+    return undefined
+  }
+
+  return formatHotelPriceLabel(value)
+}
+
+function draftLinePrice(unitPrice: unknown, count = 1): string {
+  const unit = catalogUnitPrice(unitPrice)
+  const quantity = Number(count)
+  if (unit == null || !Number.isInteger(quantity) || quantity < 1) {
+    return ''
+  }
+
+  return formatHotelPriceLabel(unit * quantity)
+}
+
+function trophyDraftPrice(row: TrophyDraft): string {
+  const animal = trophyAnimals.value.find(item => String(item.id) === row.animalId)
+  const trophy = animal?.trophies?.find(item => String(item.id) === row.trophyId)
+  return draftLinePrice(trophy?.price, row.count)
+}
+
+function penaltyDraftPrice(row: PenaltyDraft): string {
+  const animal = penaltyAnimals.value.find(item => String(item.id) === row.animalId)
+  const fine = animal?.fines?.find(item => String(item.id) === row.penaltyId)
+  return draftLinePrice(fine?.price)
+}
+
+function preparationDraftPrice(row: PreparationDraft): string {
+  const animal = preparationAnimals.value.find(item => String(item.id) === row.animalId)
+  return draftLinePrice(animal?.preparations?.[0]?.price, row.count)
+}
+
+function formatServicePrice(price: unknown): string {
+  return catalogPriceLabel(price) ?? '—'
+}
+
+function withCatalogPrice(label: string, price: unknown, value: string): SelectFieldOption {
+  const suffix = catalogPriceLabel(price)
+  if (!suffix) {
+    return { value, label }
+  }
+
+  return {
+    value,
+    label,
+    suffix,
+  }
+}
+
 function trophyTypeOptions(animalId: string): SelectFieldOption[] {
   const animal = trophyAnimals.value.find(item => String(item.id) === animalId)
-  return (animal?.trophies ?? []).map(trophy => ({
-    value: String(trophy.id),
-    label: trophy.type,
-  }))
+  return (animal?.trophies ?? []).map(trophy => withCatalogPrice(
+    trophy.type,
+    trophy.price,
+    String(trophy.id),
+  ))
 }
 
 function trophyTypeById(animalId: string, trophyId: string): string {
@@ -319,10 +388,11 @@ async function saveTrophyDraft(row: TrophyDraft) {
 
 function penaltyTypeOptions(animalId: string): SelectFieldOption[] {
   const animal = penaltyAnimals.value.find(item => String(item.id) === animalId)
-  return (animal?.fines ?? []).map(fine => ({
-    value: String(fine.id),
-    label: fine.type,
-  }))
+  return (animal?.fines ?? []).map(fine => withCatalogPrice(
+    fine.type,
+    fine.price,
+    String(fine.id),
+  ))
 }
 
 function penaltyTypeById(animalId: string, penaltyId: string): string {
@@ -987,6 +1057,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Животное</span>
                   <span>Тип</span>
                   <span>Количество</span>
+                  <span>Цена</span>
                   <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
@@ -1003,6 +1074,9 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
                     <span class="add-services-modal__value">{{ item.count }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
@@ -1049,6 +1123,9 @@ function handleKeydown(event: KeyboardEvent) {
                       step="1"
                     >
                   </label>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span v-if="trophyDraftPrice(row)" class="add-services-modal__value">{{ trophyDraftPrice(row) }}</span>
+                  </div>
                   <div class="add-services-modal__form-actions">
                     <button
                       type="button"
@@ -1105,6 +1182,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Животное</span>
                   <span>Тип штрафа</span>
                   <span>Охотник</span>
+                  <span>Цена</span>
                   <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
@@ -1121,6 +1199,9 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--hunter">
                     <span class="add-services-modal__value">{{ item.hunter_name }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
@@ -1166,6 +1247,9 @@ function handleKeydown(event: KeyboardEvent) {
                       no-margin
                       :options="hunterOptions"
                     />
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span v-if="penaltyDraftPrice(row)" class="add-services-modal__value">{{ penaltyDraftPrice(row) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
@@ -1221,22 +1305,26 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                 </div>
                 <div v-show="!isBlockCollapsed('preparation')">
-                <div class="add-services-modal__columns add-services-modal__form-row">
+                <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--preparation">
                   <span>Животное</span>
                   <span>Количество</span>
+                  <span>Цена</span>
                   <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
                 <div
                   v-for="item in items.preparations"
                   :key="item.id"
-                  class="add-services-modal__form-row"
+                  class="add-services-modal__form-row add-services-modal__form-row--preparation"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <span class="add-services-modal__value">{{ item.animal_title }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
                     <span class="add-services-modal__value">{{ item.count }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
@@ -1252,7 +1340,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div
                   v-for="row in preparationDrafts"
                   :key="row.key"
-                  class="add-services-modal__form-row"
+                  class="add-services-modal__form-row add-services-modal__form-row--preparation"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
@@ -1272,6 +1360,9 @@ function handleKeydown(event: KeyboardEvent) {
                       step="1"
                     >
                   </label>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span v-if="preparationDraftPrice(row)" class="add-services-modal__value">{{ preparationDraftPrice(row) }}</span>
+                  </div>
                   <div class="add-services-modal__form-actions">
                     <button
                       type="button"
@@ -1850,17 +1941,19 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .add-services-modal__form-row--trophy {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 120px 220px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 120px 150px 220px;
 }
 
 .add-services-modal__form-row--trophy .add-services-modal__field--animal,
-.add-services-modal__form-row--trophy .add-services-modal__field--count {
+.add-services-modal__form-row--trophy .add-services-modal__field--count,
+.add-services-modal__form-row--trophy .add-services-modal__field--price {
   width: 100%;
   justify-self: stretch;
 }
 
 .add-services-modal__form-row--trophy .add-services-modal__form-actions,
 .add-services-modal__form-row--penalty .add-services-modal__form-actions,
+.add-services-modal__form-row--preparation .add-services-modal__form-actions,
 .add-services-modal__form-row--additional .add-services-modal__form-actions,
 .add-services-modal__form-row--spending .add-services-modal__form-actions {
   width: 100%;
@@ -1869,10 +1962,22 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .add-services-modal__form-row--penalty {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 220px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 150px 220px;
 }
 
-.add-services-modal__form-row--penalty .add-services-modal__field--animal {
+.add-services-modal__form-row--penalty .add-services-modal__field--animal,
+.add-services-modal__form-row--penalty .add-services-modal__field--price {
+  width: 100%;
+  justify-self: stretch;
+}
+
+.add-services-modal__form-row--preparation {
+  grid-template-columns: minmax(0, 1fr) 120px 150px 220px;
+}
+
+.add-services-modal__form-row--preparation .add-services-modal__field--animal,
+.add-services-modal__form-row--preparation .add-services-modal__field--count,
+.add-services-modal__form-row--preparation .add-services-modal__field--price {
   width: 100%;
   justify-self: stretch;
 }
@@ -1925,6 +2030,11 @@ function handleKeydown(event: KeyboardEvent) {
 .add-services-modal__field--count {
   width: 120px;
   justify-self: center;
+}
+
+.add-services-modal__field--price {
+  width: 150px;
+  justify-self: start;
 }
 
 .add-services-modal__select :deep(.select-field__trigger) {
@@ -2068,6 +2178,7 @@ function handleKeydown(event: KeyboardEvent) {
 
   .add-services-modal__field--animal,
   .add-services-modal__field--count,
+  .add-services-modal__field--price,
   .add-services-modal__field--name,
   .add-services-modal__field--hunter,
   .add-services-modal__field--comment,

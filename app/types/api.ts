@@ -489,6 +489,7 @@ export type BookingServicesRole = 'baseadmin' | 'hunter'
 export interface BookingServiceOption {
   id: number
   type: string
+  price: number
 }
 
 export interface BookingServiceAnimalCatalog {
@@ -527,6 +528,7 @@ export interface BookingServiceTrophyItem {
   animal_title: string
   type: string
   count: number
+  price: number
 }
 
 export interface BookingServicePenaltyItem {
@@ -537,6 +539,7 @@ export interface BookingServicePenaltyItem {
   count?: number
   hunter_id: number | null
   hunter_name: string
+  price: number
 }
 
 export interface BookingServicePreparationItem {
@@ -544,6 +547,7 @@ export interface BookingServicePreparationItem {
   animal_id: number | null
   animal_title: string
   count: number
+  price: number
 }
 
 export interface BookingServiceFoodItem {
