@@ -60,7 +60,7 @@ function getCachedHotelData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtAp
       return true
     }
 
-    return !('periods' in item)
+    return !('periods' in item) || !('hunt_type' in item)
   })
 
   if (animalsMissingPeriods) {

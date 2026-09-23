@@ -28,6 +28,35 @@ export function countHuntsForHunters(
   return Math.max(1, huntCount)
 }
 
+export function resolveAnimalHuntCost(input: {
+  price: number
+  hunters: number
+  huntCount: number
+  huntTypeCode?: string | null
+}): { total: number, perPerson: number | null } {
+  const price = Number.isFinite(input.price) ? input.price : 0
+  const hunters = input.hunters
+
+  if (hunters <= 0) {
+    return { total: 0, perPerson: null }
+  }
+
+  if (input.huntTypeCode === 'group') {
+    const hunts = Math.max(1, input.huntCount)
+    const total = price * hunts
+
+    return {
+      total,
+      perPerson: Math.round(total / hunters),
+    }
+  }
+
+  return {
+    total: price * hunters,
+    perPerson: price,
+  }
+}
+
 export function resolveHuntingPerPerson(
   hunters: number,
   organizationFee: number,

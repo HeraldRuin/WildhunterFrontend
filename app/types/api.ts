@@ -847,6 +847,11 @@ export interface HotelAnimalPeriod {
   price: number
 }
 
+export interface HotelAnimalHuntType {
+  code: 'individual' | 'group'
+  title: string
+}
+
 export interface HotelAnimalItem {
   id: number
   title: string
@@ -855,6 +860,7 @@ export interface HotelAnimalItem {
   image_url?: string
   hunters_count?: number
   max_hunters_count?: number
+  hunt_type?: HotelAnimalHuntType
   periods?: HotelAnimalPeriod[]
 }
 

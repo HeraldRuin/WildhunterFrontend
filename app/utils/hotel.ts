@@ -130,6 +130,22 @@ function parseAnimalPeriods(raw: unknown): HotelAnimalItem['periods'] {
   return periods.length ? periods : undefined
 }
 
+function parseHuntType(raw: unknown): HotelAnimalItem['hunt_type'] {
+  if (!raw || typeof raw !== 'object') {
+    return undefined
+  }
+
+  const huntType = raw as Record<string, unknown>
+  const code = String(huntType.code ?? '').trim()
+  const title = String(huntType.title ?? '').trim()
+
+  if (code !== 'individual' && code !== 'group') {
+    return undefined
+  }
+
+  return { code, title }
+}
+
 function parseAnimals(raw: unknown): HotelAnimalItem[] {
   if (!Array.isArray(raw)) {
     return []
@@ -151,6 +167,7 @@ function parseAnimals(raw: unknown): HotelAnimalItem[] {
       max_hunters_count: animal.max_hunters_count != null
         ? Math.max(1, Number(animal.max_hunters_count) || 1)
         : undefined,
+      hunt_type: parseHuntType(animal.hunt_type),
       periods: parseAnimalPeriods(animal.periods),
     }
   }).filter(animal => animal.title && Number.isFinite(animal.id))

@@ -11,7 +11,7 @@ import {
   startOfDay,
 } from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
-import { countHuntsForHunters } from '~/utils/hotelHunt'
+import { countHuntsForHunters, resolveAnimalHuntCost } from '~/utils/hotelHunt'
 import { formatHuntersGenitive } from '~/utils/pluralize'
 
 const props = withDefaults(defineProps<{
@@ -100,21 +100,28 @@ const didAutoCheckFromSearch = ref(false)
 const stayCheckIn = ref<Date | null>(null)
 const stayCheckOut = ref<Date | null>(null)
 
-const animalAvailabilityTotal = computed(() => {
-  if (!animalAvailability.value || huntHunters.value <= 0) {
-    return 0
-  }
+const selectedAnimalHuntTypeCode = computed(() => {
+  const animal = hotelAnimals.value.find(item => String(item.id) === selectedAnimalId.value)
 
-  return animalAvailability.value.price * huntHunters.value
+  return animal?.hunt_type?.code ?? null
 })
 
-const animalAvailabilityPerPerson = computed(() => {
+const animalHuntCost = computed(() => {
   if (!animalAvailability.value || huntHunters.value <= 0) {
-    return null
+    return { total: 0, perPerson: null as number | null }
   }
 
-  return Math.round(animalAvailabilityTotal.value / huntHunters.value)
+  return resolveAnimalHuntCost({
+    price: animalAvailability.value.price,
+    hunters: huntHunters.value,
+    huntCount: getTotalHuntCount(selectedAnimalId.value, huntHunters.value),
+    huntTypeCode: selectedAnimalHuntTypeCode.value,
+  })
 })
+
+const animalAvailabilityTotal = computed(() => animalHuntCost.value.total)
+
+const animalAvailabilityPerPerson = computed(() => animalHuntCost.value.perPerson)
 
 const totalHuntCount = computed(() => {
   if (!animalAvailability.value || !selectedAnimalId.value) {
@@ -660,6 +667,7 @@ async function handleAnimalsCheck(payload: {
     })
 
     if (response.success && response.data?.available) {
+      selectedAnimalId.value = payload.animalId
       huntHunters.value = payload.hunters
       animalAvailability.value = {
         price: Number(response.data.price) || 0,
@@ -828,9 +836,7 @@ async function proceedBook() {
     animalImage: selectedAnimal?.image_url || '',
     huntDate: huntDateLabel,
     organizationFee: animalAvailabilityTotal.value,
-    huntingPerPerson: hasAnimal && hunters > 0
-      ? Math.round(animalAvailabilityTotal.value / hunters)
-      : null,
+    huntingPerPerson: hasAnimal ? animalAvailabilityPerPerson.value : null,
     trophyFee: 0,
     bookingNumber: '—',
     bookingDate: formatBookingDate(new Date()),
