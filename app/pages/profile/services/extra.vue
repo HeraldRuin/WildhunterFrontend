@@ -200,6 +200,14 @@ function parsePrice(value: string): number | null {
   return price
 }
 
+function updateServiceName(service: ExtraServiceRow, value: string) {
+  if (service.isSystem) {
+    return
+  }
+
+  service.name = value
+}
+
 function buildPayload(service: ExtraServiceRow) {
   const name = service.name.trim()
   if (!name) {
@@ -805,15 +813,18 @@ onBeforeUnmount(() => {
                   class="extra-services__row"
                 >
                   <div class="extra-services__col extra-services__col--name">
-                    <div class="extra-services__name">
+                    <div
+                      class="extra-services__name"
+                      :class="{ 'extra-services__name--locked': service.isSystem }"
+                    >
                       <span class="extra-services__field-label extra-services__field-label--mobile">Наименование</span>
                       <CommonFormField
                         no-margin
                         placeholder="Введите название услуги"
                         :model-value="service.name"
-                        :disabled="busyServiceId === service.id"
+                        :disabled="service.isSystem || busyServiceId === service.id"
                         :aria-label="`Имя услуги #${service.id}`"
-                        @update:model-value="service.name = $event"
+                        @update:model-value="updateServiceName(service, $event)"
                       />
                     </div>
 
@@ -1280,6 +1291,20 @@ onBeforeUnmount(() => {
   flex: 1 1 0;
   min-width: 0;
   width: 100%;
+}
+
+.extra-services__name--locked,
+.extra-services__name--locked :deep(.form-field),
+.extra-services__name--locked :deep(.form-field__control) {
+  cursor: not-allowed;
+}
+
+.extra-services__name--locked :deep(.form-field__input:disabled) {
+  color: var(--wh-gray-900);
+  background: var(--wh-white);
+  opacity: 1;
+  pointer-events: none;
+  -webkit-text-fill-color: var(--wh-gray-900);
 }
 
 .extra-services__field-label--mobile {
