@@ -28,6 +28,14 @@ function isMealsService(service: Pick<ExtraServiceRow, 'name'>) {
   return service.name.trim().toLowerCase() === MEALS_SERVICE_NAME
 }
 
+function hasQuantityAndType(service: ExtraServiceRow) {
+  if (isMealsService(service)) {
+    return true
+  }
+
+  return parseCount(service.quantity) != null && service.calculationType.trim() !== ''
+}
+
 function normalizeIsSystem(value: unknown): boolean {
   return value === true || value === 1 || value === '1'
 }
@@ -217,7 +225,7 @@ function buildPayload(service: ExtraServiceRow) {
   const count = isMealsService(service)
     ? null
     : parseCount(service.quantity)
-  if (!isMealsService(service) && service.quantity.trim() && count == null) {
+  if (!isMealsService(service) && count == null) {
     return null
   }
 
@@ -227,11 +235,13 @@ function buildPayload(service: ExtraServiceRow) {
   }
 
   const calculationType = service.calculationType.trim()
+  if (!isMealsService(service) && !calculationType) {
+    return null
+  }
+
   const calculation_type = isMealsService(service)
     ? null
-    : calculationType
-      ? calculationType as 'individual' | 'per_person'
-      : null
+    : calculationType as 'individual' | 'per_person'
 
   return {
     name,
@@ -308,7 +318,11 @@ async function saveService(service: ExtraServiceRow) {
 
   const payload = buildPayload(service)
   if (!payload) {
-    notifications.error('Заполните имя и корректную стоимость')
+    notifications.error(
+      isMealsService(service)
+        ? 'Заполните имя и корректную стоимость'
+        : 'Заполните имя, количество, тип расчёта и корректную стоимость',
+    )
     return
   }
 
@@ -878,7 +892,7 @@ onBeforeUnmount(() => {
                     <button
                       type="button"
                       class="extra-services__btn extra-services__btn--save"
-                      :disabled="busyServiceId != null"
+                      :disabled="busyServiceId != null || !hasQuantityAndType(service)"
                       @click="saveService(service)"
                     >
                       Сохранить
