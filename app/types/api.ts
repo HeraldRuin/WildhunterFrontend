@@ -514,12 +514,17 @@ export interface BookingServiceAdditionalCatalog {
   is_system?: boolean | number | null
 }
 
+export interface BookingServiceFoodCatalog {
+  price: number | null
+}
+
 export interface BookingServicesCatalogs {
   trophy_animals: BookingServiceAnimalCatalog[]
   penalty_animals: BookingServiceAnimalCatalog[]
   preparation_animals: BookingServiceAnimalCatalog[]
   hunters: BookingServiceHunterCatalog[]
   additionals: BookingServiceAdditionalCatalog[]
+  food: BookingServiceFoodCatalog | null
 }
 
 export interface BookingServiceTrophyItem {
@@ -554,6 +559,7 @@ export interface BookingServiceFoodItem {
   id: number
   type?: string
   count: number
+  price: number
 }
 
 export interface BookingServiceAdditionalItem {

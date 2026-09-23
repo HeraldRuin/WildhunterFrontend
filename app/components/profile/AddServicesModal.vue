@@ -258,6 +258,10 @@ function preparationDraftPrice(row: PreparationDraft): string {
   return draftLinePrice(animal?.preparations?.[0]?.price, row.count)
 }
 
+function foodDraftPrice(row: FoodDraft): string {
+  return draftLinePrice(services.value?.catalogs?.food?.price, row.count)
+}
+
 function formatServicePrice(price: unknown): string {
   return catalogPriceLabel(price) ?? '—'
 }
@@ -1415,22 +1419,26 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                 </div>
                 <div v-show="!isBlockCollapsed('food')">
-                <div class="add-services-modal__columns add-services-modal__form-row">
+                <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--food">
                   <span>Питание</span>
                   <span>Количество чел</span>
+                  <span>Цена</span>
                   <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
                 <div
                   v-for="item in items.foods"
                   :key="item.id"
-                  class="add-services-modal__form-row"
+                  class="add-services-modal__form-row add-services-modal__form-row--food"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <span class="add-services-modal__value">{{ item.type || 'Питание' }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
                     <span class="add-services-modal__value">{{ item.count }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
@@ -1446,7 +1454,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div
                   v-for="row in foodDrafts"
                   :key="row.key"
-                  class="add-services-modal__form-row"
+                  class="add-services-modal__form-row add-services-modal__form-row--food"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <span class="add-services-modal__value">Питание</span>
@@ -1460,6 +1468,9 @@ function handleKeydown(event: KeyboardEvent) {
                       step="1"
                     >
                   </label>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span v-if="foodDraftPrice(row)" class="add-services-modal__value">{{ foodDraftPrice(row) }}</span>
+                  </div>
                   <div class="add-services-modal__form-actions">
                     <button
                       type="button"
@@ -1554,6 +1565,7 @@ function handleKeydown(event: KeyboardEvent) {
                       v-model="row.additionalId"
                       class="add-services-modal__select"
                       placeholder="Выберите услугу"
+                      empty-text="список пуст"
                       no-margin
                       :options="additionalOptions"
                     />
@@ -1954,6 +1966,7 @@ function handleKeydown(event: KeyboardEvent) {
 .add-services-modal__form-row--trophy .add-services-modal__form-actions,
 .add-services-modal__form-row--penalty .add-services-modal__form-actions,
 .add-services-modal__form-row--preparation .add-services-modal__form-actions,
+.add-services-modal__form-row--food .add-services-modal__form-actions,
 .add-services-modal__form-row--additional .add-services-modal__form-actions,
 .add-services-modal__form-row--spending .add-services-modal__form-actions {
   width: 100%;
@@ -1971,13 +1984,17 @@ function handleKeydown(event: KeyboardEvent) {
   justify-self: stretch;
 }
 
-.add-services-modal__form-row--preparation {
+.add-services-modal__form-row--preparation,
+.add-services-modal__form-row--food {
   grid-template-columns: minmax(0, 1fr) 120px 150px 220px;
 }
 
 .add-services-modal__form-row--preparation .add-services-modal__field--animal,
 .add-services-modal__form-row--preparation .add-services-modal__field--count,
-.add-services-modal__form-row--preparation .add-services-modal__field--price {
+.add-services-modal__form-row--preparation .add-services-modal__field--price,
+.add-services-modal__form-row--food .add-services-modal__field--animal,
+.add-services-modal__form-row--food .add-services-modal__field--count,
+.add-services-modal__form-row--food .add-services-modal__field--price {
   width: 100%;
   justify-self: stretch;
 }
