@@ -61,7 +61,7 @@ setProfileHeader({
 
 const calculationTypeOptions: SelectFieldOption[] = [
   { value: 'individual', label: 'Индивидуально' },
-  { value: 'per_person', label: 'На человека' },
+  { value: 'per_person', label: 'На всех' },
 ]
 
 const services = ref<ExtraServiceRow[]>([])
