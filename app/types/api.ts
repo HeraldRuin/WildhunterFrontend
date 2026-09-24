@@ -569,6 +569,7 @@ export interface BookingServiceAdditionalItem {
   count: number
   hunter_id?: number | null
   hunter_name?: string
+  price: number
 }
 
 export interface BookingServiceSpendingItem {

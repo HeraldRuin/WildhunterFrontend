@@ -28,13 +28,14 @@ interface AdditionalDraft {
   key: number
   additionalId: string
   hunterId: string
+  hunterIds: string[]
   count: number
 }
 
 interface SpendingDraft {
   key: number
   hunterId: string
-  price: number
+  price: string
   comment: string
 }
 
@@ -65,8 +66,6 @@ const EMPTY_ITEMS: BookingServicesItems = {
   additionals: [],
   spendings: [],
 }
-
-const EXTRA_SERVICE_TYPES: BookingServiceType[] = ['preparation', 'food', 'addetional']
 
 const { isOpen, booking, close } = useAddServicesModal()
 const { open: openConfirmModal } = useConfirmModal()
@@ -107,9 +106,6 @@ const items = computed(() => ({
   ...EMPTY_ITEMS,
   ...services.value?.items,
 }))
-const showExtraGroup = computed(() =>
-  EXTRA_SERVICE_TYPES.some(type => allowedTypeSet.value.has(type)),
-)
 const preparationAnimals = computed(() => services.value?.catalogs?.preparation_animals ?? [])
 const preparationAnimalOptions = computed<SelectFieldOption[]>(() =>
   preparationAnimals.value.map(animal => withCatalogPrice(
@@ -119,10 +115,11 @@ const preparationAnimalOptions = computed<SelectFieldOption[]>(() =>
   )),
 )
 const additionalOptions = computed<SelectFieldOption[]>(() =>
-  (services.value?.catalogs?.additionals ?? []).map(item => ({
-    value: String(item.id),
-    label: item.name,
-  })),
+  (services.value?.catalogs?.additionals ?? []).map(item => withCatalogPrice(
+    item.name,
+    item.price,
+    String(item.id),
+  )),
 )
 const hunterOptions = computed<SelectFieldOption[]>(() =>
   (services.value?.catalogs?.hunters ?? []).map(hunter => ({
@@ -253,9 +250,22 @@ function penaltyDraftPrice(row: PenaltyDraft): string {
   return draftLinePrice(fine?.price)
 }
 
+function preparationUnitPrice(animalId: number | string | null | undefined): string {
+  if (animalId == null || animalId === '') {
+    return ''
+  }
+
+  const animal = preparationAnimals.value.find(item => String(item.id) === String(animalId))
+  return catalogPriceLabel(animal?.preparations?.[0]?.price) ?? ''
+}
+
 function preparationDraftPrice(row: PreparationDraft): string {
   const animal = preparationAnimals.value.find(item => String(item.id) === row.animalId)
   return draftLinePrice(animal?.preparations?.[0]?.price, row.count)
+}
+
+function foodUnitPriceLabel(): string {
+  return catalogPriceLabel(services.value?.catalogs?.food?.price) ?? ''
 }
 
 function foodDraftPrice(row: FoodDraft): string {
@@ -504,7 +514,7 @@ function addSpendingDraft() {
   spendingDrafts.value.push({
     key: ++spendingDraftKey,
     hunterId: '',
-    price: 1,
+    price: '',
     comment: '',
   })
 }
@@ -521,9 +531,23 @@ function cancelSpendingDraft(key: number) {
   removeSpendingDraft(key)
 }
 
+function parseSpendingPrice(value: string): number | null {
+  const raw = value.trim().replace(/\s/g, '').replace(',', '.')
+  if (!raw) {
+    return null
+  }
+
+  const price = Number(raw)
+  if (!Number.isFinite(price) || price < 0) {
+    return null
+  }
+
+  return price
+}
+
 function canSaveSpendingDraft(row: SpendingDraft): boolean {
   return Boolean(row.hunterId && row.comment.trim())
-    && Number(row.price) >= 0
+    && parseSpendingPrice(row.price) !== null
     && savingSpendingKey.value === null
 }
 
@@ -555,10 +579,10 @@ function upsertSpendingItem(item: BookingServiceSpendingItem) {
 async function saveSpendingDraft(row: SpendingDraft) {
   const code = booking.value?.code
   const hunterId = Number(row.hunterId)
-  const price = Number(row.price)
+  const price = parseSpendingPrice(row.price)
   const comment = row.comment.trim()
 
-  if (!code || !canSaveSpendingDraft(row)) {
+  if (!code || price === null || !canSaveSpendingDraft(row)) {
     return
   }
 
@@ -595,6 +619,7 @@ function addAdditionalDraft() {
     key: ++additionalDraftKey,
     additionalId: '',
     hunterId: '',
+    hunterIds: [],
     count: 1,
   })
 }
@@ -611,12 +636,67 @@ function cancelAdditionalDraft(key: number) {
   removeAdditionalDraft(key)
 }
 
+function additionalById(additionalId: string) {
+  return (services.value?.catalogs?.additionals ?? []).find(entry => String(entry.id) === additionalId)
+}
+
+function isIndividualAdditional(additionalId: string): boolean {
+  return additionalById(additionalId)?.calculation_type === 'individual'
+}
+
+function isPerPersonAdditional(additionalId: string): boolean {
+  return additionalById(additionalId)?.calculation_type === 'per_person'
+}
+
+function onAdditionalChange(row: AdditionalDraft, additionalId: string | string[]) {
+  row.additionalId = Array.isArray(additionalId) ? additionalId[0] ?? '' : additionalId
+  row.hunterId = ''
+  row.hunterIds = []
+}
+
 function additionalNameById(additionalId: number): string {
   return additionalOptions.value.find(item => item.value === String(additionalId))?.label ?? ''
 }
 
+function additionalDraftPrice(additionalId: string): string {
+  return catalogPriceLabel(additionalById(additionalId)?.price) ?? ''
+}
+
+function additionalHunterCount(): number {
+  const fromCatalog = services.value?.catalogs?.hunters?.length ?? 0
+  if (fromCatalog > 0) {
+    return fromCatalog
+  }
+
+  return booking.value?.hunt?.hunters ?? 0
+}
+
+function additionalSharePrice(price: unknown, calculationType: string | null | undefined): string {
+  const total = catalogUnitPrice(price)
+  if (total == null) {
+    return ''
+  }
+
+  if (calculationType !== 'per_person') {
+    return formatHotelPriceLabel(total)
+  }
+
+  const people = additionalHunterCount()
+  if (people < 1) {
+    return ''
+  }
+
+  return formatHotelPriceLabel(Math.round(total / people))
+}
+
 function canSaveAdditionalDraft(row: AdditionalDraft): boolean {
-  return Boolean(row.additionalId && row.hunterId)
+  const hasHunter = isIndividualAdditional(row.additionalId)
+    ? row.hunterIds.length > 0
+    : isPerPersonAdditional(row.additionalId)
+      ? true
+      : Boolean(row.hunterId)
+
+  return Boolean(row.additionalId && hasHunter)
     && Number.isInteger(Number(row.count))
     && Number(row.count) >= 1
     && savingAdditionalKey.value === null
@@ -650,10 +730,14 @@ function upsertAdditionalItem(item: BookingServiceAdditionalItem) {
 async function saveAdditionalDraft(row: AdditionalDraft) {
   const code = booking.value?.code
   const additionalId = Number(row.additionalId)
-  const hunterId = Number(row.hunterId)
   const count = Number(row.count)
+  const individual = isIndividualAdditional(row.additionalId)
+  const perPerson = isPerPersonAdditional(row.additionalId)
+  const hunterIds = (individual ? row.hunterIds : perPerson ? [] : [row.hunterId])
+    .map(Number)
+    .filter(id => Number.isInteger(id) && id > 0)
 
-  if (!code || !canSaveAdditionalDraft(row)) {
+  if (!code || !canSaveAdditionalDraft(row) || (!perPerson && hunterIds.length === 0)) {
     return
   }
 
@@ -666,21 +750,31 @@ async function saveAdditionalDraft(row: AdditionalDraft) {
   savingAdditionalKey.value = row.key
 
   try {
-    const response = await bookings.storeAdditional(code, {
-      additional_id: additionalId,
-      name,
-      count,
-      hunter_id: hunterId,
-    })
+    const targets = perPerson ? [] : hunterIds
+    const pending = [...targets]
 
-    if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить услугу', notifyOptions)
-      return
+    for (const hunterId of perPerson ? [null] : targets) {
+      const response = await bookings.storeAdditional(code, {
+        additional_id: additionalId,
+        name,
+        count,
+        ...(hunterId === null ? {} : { hunter_id: hunterId }),
+      })
+
+      if (!response.success || !response.data) {
+        notifications.error(response.message || 'Не удалось добавить услугу', notifyOptions)
+        if (individual) {
+          row.hunterIds = pending.map(String)
+        }
+        return
+      }
+
+      upsertAdditionalItem(response.data)
+      pending.shift()
     }
 
-    upsertAdditionalItem(response.data)
     removeAdditionalDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
+    notifications.success('Услуга добавлена', notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
@@ -1061,7 +1155,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Животное</span>
                   <span>Тип</span>
                   <span>Количество</span>
-                  <span>Цена</span>
+                  <span>Общая сумма</span>
                   <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
@@ -1103,6 +1197,7 @@ function handleKeydown(event: KeyboardEvent) {
                       :model-value="row.animalId"
                       class="add-services-modal__select"
                       placeholder="Животное"
+                      filled-hover
                       no-margin
                       :options="trophyAnimalOptions"
                       @update:model-value="onTrophyAnimalChange(row, $event)"
@@ -1113,6 +1208,7 @@ function handleKeydown(event: KeyboardEvent) {
                       v-model="row.trophyId"
                       class="add-services-modal__select"
                       placeholder="Тип"
+                      filled-hover
                       no-margin
                       :disabled="!row.animalId"
                       :options="trophyTypeOptions(row.animalId)"
@@ -1186,7 +1282,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Животное</span>
                   <span>Тип штрафа</span>
                   <span>Охотник</span>
-                  <span>Цена</span>
+                  <span>Общая сумма</span>
                   <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
@@ -1228,6 +1324,7 @@ function handleKeydown(event: KeyboardEvent) {
                       :model-value="row.animalId"
                       class="add-services-modal__select"
                       placeholder="Выберите животное"
+                      filled-hover
                       no-margin
                       :options="penaltyAnimalOptions"
                       @update:model-value="onPenaltyAnimalChange(row, $event)"
@@ -1238,6 +1335,7 @@ function handleKeydown(event: KeyboardEvent) {
                       v-model="row.penaltyId"
                       class="add-services-modal__select"
                       placeholder="Выберите тип штрафа"
+                      filled-hover
                       no-margin
                       :disabled="!row.animalId"
                       :options="penaltyTypeOptions(row.animalId)"
@@ -1248,6 +1346,7 @@ function handleKeydown(event: KeyboardEvent) {
                       v-model="row.hunterId"
                       class="add-services-modal__select"
                       placeholder="Выберите охотника"
+                      filled-hover
                       no-margin
                       :options="hunterOptions"
                     />
@@ -1277,8 +1376,6 @@ function handleKeydown(event: KeyboardEvent) {
                 </div>
                 </div>
               </section>
-
-              <h3 v-if="showExtraGroup" class="add-services-modal__group-title">Доп. услуги:</h3>
 
               <section
                 v-if="isAllowed('preparation')"
@@ -1312,7 +1409,8 @@ function handleKeydown(event: KeyboardEvent) {
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--preparation">
                   <span>Животное</span>
                   <span>Количество</span>
-                  <span>Цена</span>
+                  <span>Цена на животное</span>
+                  <span>Общая сумма</span>
                   <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
@@ -1326,6 +1424,9 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
                     <span class="add-services-modal__value">{{ item.count }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--unit-price">
+                    <span class="add-services-modal__value">{{ preparationUnitPrice(item.animal_id) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
@@ -1351,6 +1452,7 @@ function handleKeydown(event: KeyboardEvent) {
                       v-model="row.animalId"
                       class="add-services-modal__select"
                       placeholder="Выберите животное"
+                      filled-hover
                       no-margin
                       :options="preparationAnimalOptions"
                     />
@@ -1364,6 +1466,9 @@ function handleKeydown(event: KeyboardEvent) {
                       step="1"
                     >
                   </label>
+                  <div class="add-services-modal__field add-services-modal__field--unit-price">
+                    <span v-if="preparationUnitPrice(row.animalId)" class="add-services-modal__value">{{ preparationUnitPrice(row.animalId) }}</span>
+                  </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span v-if="preparationDraftPrice(row)" class="add-services-modal__value">{{ preparationDraftPrice(row) }}</span>
                   </div>
@@ -1422,7 +1527,8 @@ function handleKeydown(event: KeyboardEvent) {
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--food">
                   <span>Питание</span>
                   <span>Количество чел</span>
-                  <span>Цена</span>
+                  <span>Цена на человека</span>
+                  <span>Общая сумма</span>
                   <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
@@ -1436,6 +1542,9 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
                     <span class="add-services-modal__value">{{ item.count }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--unit-price">
+                    <span class="add-services-modal__value">{{ foodUnitPriceLabel() }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
@@ -1468,6 +1577,9 @@ function handleKeydown(event: KeyboardEvent) {
                       step="1"
                     >
                   </label>
+                  <div class="add-services-modal__field add-services-modal__field--unit-price">
+                    <span v-if="foodUnitPriceLabel()" class="add-services-modal__value">{{ foodUnitPriceLabel() }}</span>
+                  </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span v-if="foodDraftPrice(row)" class="add-services-modal__value">{{ foodDraftPrice(row) }}</span>
                   </div>
@@ -1500,7 +1612,7 @@ function handleKeydown(event: KeyboardEvent) {
                 :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('addetional') }"
               >
                 <div class="add-services-modal__block-head">
-                  <h3 class="add-services-modal__block-title">Другое:</h3>
+                  <h3 class="add-services-modal__block-title">Дополнительные услуги:</h3>
                   <div class="add-services-modal__block-actions">
                     <button
                       type="button"
@@ -1525,8 +1637,10 @@ function handleKeydown(event: KeyboardEvent) {
                 <div v-show="!isBlockCollapsed('addetional')">
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--additional">
                   <span>Название</span>
-                  <span>Количество</span>
+                  <!-- <span>Количество</span> -->
                   <span>Охотник</span>
+                  <span>Цена на человека</span>
+                  <span>Общая сумма</span>
                   <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
@@ -1538,11 +1652,17 @@ function handleKeydown(event: KeyboardEvent) {
                   <div class="add-services-modal__field add-services-modal__field--name">
                     <span class="add-services-modal__value">{{ item.type }}</span>
                   </div>
-                  <div class="add-services-modal__field add-services-modal__field--count">
+                  <!-- <div class="add-services-modal__field add-services-modal__field--count">
                     <span class="add-services-modal__value">{{ item.count }}</span>
-                  </div>
+                  </div> -->
                   <div class="add-services-modal__field add-services-modal__field--hunter">
-                    <span class="add-services-modal__value">{{ item.hunter_name || '—' }}</span>
+                    <span class="add-services-modal__value">{{ item.calculation_type === 'per_person' ? 'Разделено на всех' : (item.hunter_name || '—') }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--unit-price">
+                    <span class="add-services-modal__value">{{ additionalSharePrice(item.price, item.calculation_type) }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
@@ -1562,15 +1682,17 @@ function handleKeydown(event: KeyboardEvent) {
                 >
                   <div class="add-services-modal__field add-services-modal__field--name">
                     <CommonSelectField
-                      v-model="row.additionalId"
+                      :model-value="row.additionalId"
                       class="add-services-modal__select"
                       placeholder="Выберите услугу"
                       empty-text="список пуст"
+                      filled-hover
                       no-margin
                       :options="additionalOptions"
+                      @update:model-value="onAdditionalChange(row, $event)"
                     />
                   </div>
-                  <label class="add-services-modal__field add-services-modal__field--count">
+                  <!-- <label class="add-services-modal__field add-services-modal__field--count">
                     <input
                       v-model.number="row.count"
                       class="add-services-modal__control"
@@ -1578,15 +1700,37 @@ function handleKeydown(event: KeyboardEvent) {
                       min="1"
                       step="1"
                     >
-                  </label>
+                  </label> -->
                   <div class="add-services-modal__field add-services-modal__field--hunter">
                     <CommonSelectField
-                      v-model="row.hunterId"
+                      v-if="isIndividualAdditional(row.additionalId)"
+                      v-model="row.hunterIds"
                       class="add-services-modal__select"
-                      placeholder="Выберите охотника"
+                      placeholder="Выберите охотников"
+                      filled-hover
+                      multiple
                       no-margin
                       :options="hunterOptions"
                     />
+                    <span
+                      v-else-if="isPerPersonAdditional(row.additionalId)"
+                      class="add-services-modal__value"
+                    >Разделено на всех</span>
+                    <CommonSelectField
+                      v-else
+                      v-model="row.hunterId"
+                      class="add-services-modal__select"
+                      placeholder="Выберите охотника"
+                      filled-hover
+                      no-margin
+                      :options="hunterOptions"
+                    />
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--unit-price">
+                    <span v-if="additionalDraftPrice(row.additionalId)" class="add-services-modal__value">{{ additionalSharePrice(additionalById(row.additionalId)?.price, additionalById(row.additionalId)?.calculation_type) }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span v-if="additionalDraftPrice(row.additionalId)" class="add-services-modal__value">{{ additionalDraftPrice(row.additionalId) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
@@ -1617,7 +1761,7 @@ function handleKeydown(event: KeyboardEvent) {
                 :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('spending') }"
               >
                 <div class="add-services-modal__block-head">
-                  <h3 class="add-services-modal__block-title">Траты охотников:</h3>
+                  <h3 class="add-services-modal__block-title">Личные затраты охотников:</h3>
                   <div class="add-services-modal__block-actions">
                     <button
                       type="button"
@@ -1642,8 +1786,8 @@ function handleKeydown(event: KeyboardEvent) {
                 <div v-show="!isBlockCollapsed('spending')">
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--spending">
                   <span>Кто платил</span>
-                  <span>Сумма</span>
-                  <span>Коммент</span>
+                  <span>Внесенная сумма</span>
+                  <span>Комментарий</span>
                   <span></span>
                 </div>
                 <div class="add-services-modal__block-list">
@@ -1682,17 +1826,18 @@ function handleKeydown(event: KeyboardEvent) {
                       v-model="row.hunterId"
                       class="add-services-modal__select"
                       placeholder="Выберите охотника"
+                      filled-hover
                       no-margin
                       :options="hunterOptions"
                     />
                   </div>
                   <label class="add-services-modal__field add-services-modal__field--count">
                     <input
-                      v-model.number="row.price"
+                      v-model="row.price"
                       class="add-services-modal__control"
-                      type="number"
-                      min="0"
-                      step="1"
+                      type="text"
+                      inputmode="decimal"
+                      placeholder="Внесенная сумма"
                     >
                   </label>
                   <label class="add-services-modal__field add-services-modal__field--comment">
@@ -1700,7 +1845,7 @@ function handleKeydown(event: KeyboardEvent) {
                       v-model="row.comment"
                       class="add-services-modal__control"
                       type="text"
-                      placeholder="Коммент"
+                      placeholder="Комментарий"
                     >
                   </label>
                   <div class="add-services-modal__form-actions">
@@ -1801,13 +1946,6 @@ function handleKeydown(event: KeyboardEvent) {
   padding: 32px 16px;
   color: var(--wh-gray-600);
   text-align: center;
-}
-
-.add-services-modal__group-title {
-  margin: 4px 0 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--wh-gray-900);
 }
 
 .add-services-modal__block {
@@ -1984,23 +2122,39 @@ function handleKeydown(event: KeyboardEvent) {
   justify-self: stretch;
 }
 
-.add-services-modal__form-row--preparation,
-.add-services-modal__form-row--food {
-  grid-template-columns: minmax(0, 1fr) 120px 150px 220px;
+.add-services-modal__form-row--preparation {
+  grid-template-columns: minmax(0, 1fr) 120px 180px 150px 220px;
 }
 
 .add-services-modal__form-row--preparation .add-services-modal__field--animal,
 .add-services-modal__form-row--preparation .add-services-modal__field--count,
-.add-services-modal__form-row--preparation .add-services-modal__field--price,
+.add-services-modal__form-row--preparation .add-services-modal__field--unit-price,
+.add-services-modal__form-row--preparation .add-services-modal__field--price {
+  width: 100%;
+  justify-self: stretch;
+}
+
+.add-services-modal__form-row--food {
+  grid-template-columns: minmax(0, 1fr) 140px 170px 140px 220px;
+}
+
 .add-services-modal__form-row--food .add-services-modal__field--animal,
 .add-services-modal__form-row--food .add-services-modal__field--count,
+.add-services-modal__form-row--food .add-services-modal__field--unit-price,
 .add-services-modal__form-row--food .add-services-modal__field--price {
   width: 100%;
   justify-self: stretch;
 }
 
 .add-services-modal__form-row--additional {
-  grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr) 220px;
+  /* grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr) 220px; */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px 150px 220px;
+}
+
+.add-services-modal__form-row--additional .add-services-modal__field--unit-price,
+.add-services-modal__form-row--additional .add-services-modal__field--price {
+  width: 100%;
+  justify-self: stretch;
 }
 
 .add-services-modal__form-row--additional .add-services-modal__field--count {
@@ -2009,7 +2163,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .add-services-modal__form-row--spending {
-  grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1.4fr) 220px;
+  grid-template-columns: minmax(0, 1fr) 170px minmax(0, 1.4fr) 220px;
 }
 
 .add-services-modal__form-row--spending .add-services-modal__field--count {
@@ -2060,6 +2214,12 @@ function handleKeydown(event: KeyboardEvent) {
   padding: 0 12px;
   border-radius: 8px;
   font-size: 0.88rem;
+}
+
+.add-services-modal__select :deep(.select-field__value) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .add-services-modal__select :deep(.select-field__list) {
@@ -2196,6 +2356,7 @@ function handleKeydown(event: KeyboardEvent) {
   .add-services-modal__field--animal,
   .add-services-modal__field--count,
   .add-services-modal__field--price,
+  .add-services-modal__field--unit-price,
   .add-services-modal__field--name,
   .add-services-modal__field--hunter,
   .add-services-modal__field--comment,

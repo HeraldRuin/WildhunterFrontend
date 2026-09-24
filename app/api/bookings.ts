@@ -275,7 +275,7 @@ export function useBookingsApi() {
 
   function storeAdditional(
     code: string,
-    body: { additional_id: number, name: string, count: number, hunter_id: number },
+    body: { additional_id: number, name: string, count: number, hunter_id?: number },
   ) {
     return apiFetch<ApiSuccessResponse<BookingServiceAdditionalItem> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/services/additionals`,

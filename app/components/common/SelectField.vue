@@ -20,6 +20,8 @@ const props = withDefaults(defineProps<{
 
   /** Если задан — при пустом списке селект можно открыть и показать этот текст */
   emptyText?: string
+
+  multiple?: boolean
 }>(), {
   label: '',
   placeholder: 'Выберите',
@@ -29,9 +31,10 @@ const props = withDefaults(defineProps<{
   noMargin: false,
   filledHover: false,
   emptyText: '',
+  multiple: false,
 })
 
-const model = defineModel<string>({ default: '' })
+const model = defineModel<string | string[]>({ default: '' })
 
 const isOpen = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
@@ -42,6 +45,13 @@ const canOpenEmpty = computed(() => !!props.emptyText && !hasOptions.value)
 const isTriggerDisabled = computed(() => props.disabled || (!hasOptions.value && !canOpenEmpty.value))
 
 const selectedLabel = computed(() => {
+  if (props.multiple) {
+    return selectedValues()
+      .map(value => props.options.find(item => item.value === value)?.label)
+      .filter((label): label is string => Boolean(label))
+      .join(', ')
+  }
+
   const option = props.options.find(item => item.value === model.value)
   if (!option) {
     return ''
@@ -51,6 +61,22 @@ const selectedLabel = computed(() => {
 })
 
 const triggerLabel = computed(() => selectedLabel.value || props.placeholder)
+
+function selectedValues(): string[] {
+  if (Array.isArray(model.value)) {
+    return model.value
+  }
+
+  return model.value ? [model.value] : []
+}
+
+function isSelected(value: string): boolean {
+  if (props.multiple) {
+    return selectedValues().includes(value)
+  }
+
+  return model.value === value
+}
 
 function toggle() {
   if (isTriggerDisabled.value) {
@@ -69,6 +95,14 @@ function toggle() {
 }
 
 function select(value: string) {
+  if (props.multiple) {
+    const current = selectedValues()
+    model.value = current.includes(value)
+      ? current.filter(item => item !== value)
+      : [...current, value]
+    return
+  }
+
   model.value = value
   isOpen.value = false
   hoveredValue.value = null
@@ -130,6 +164,7 @@ onUnmounted(() => {
       class="select-field__list"
       role="listbox"
       :aria-label="label || placeholder"
+      :aria-multiselectable="multiple || undefined"
       @mouseleave="hoveredValue = null"
     >
       <li
@@ -148,9 +183,10 @@ onUnmounted(() => {
           type="button"
           class="select-field__option"
           role="option"
-          :aria-selected="option.value === model"
+          spellcheck="false"
+          :aria-selected="isSelected(option.value)"
           :class="{
-            'select-field__option--active': option.value === model,
+            'select-field__option--active': isSelected(option.value),
             'select-field__option--hovered': hoveredValue === option.value,
           }"
           @mouseenter="hoveredValue = option.value"
@@ -330,10 +366,11 @@ onUnmounted(() => {
 }
 
 .select-field__option-label {
+  flex: 1 1 auto;
   min-width: 0;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .select-field__option-suffix {
