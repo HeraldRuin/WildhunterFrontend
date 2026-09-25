@@ -18,6 +18,14 @@ const READ_ONLY_COLLECTION_STATUSES = new Set([
   'finish_bed_collection',
 ])
 
+const PREPAYMENT_COLLECTED_STATUSES = new Set([
+  'finish_prepayment',
+  'bed_collection',
+  'finish_bed_collection',
+  'paid',
+  'completed',
+])
+
 const FINISHED_COLLECTION_MODAL_STATUSES = new Set([
   'prepayment_collection',
   ...READ_ONLY_COLLECTION_STATUSES,
@@ -56,7 +64,6 @@ const HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
   { id: 'open_collection', label: 'Сбор охотников', variant: 'success' },
   { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
   { id: 'add_services', label: 'Добавить услуги', variant: 'success' },
-  { id: 'cancel_booking', label: 'Отменить бронь', variant: 'danger' },
 ]
 
 const INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
@@ -64,14 +71,17 @@ const INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
   { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
 ]
 
-function withCancelActionLast(actions: BookingAction[]): BookingAction[] {
-  const cancelActions = actions.filter(action => action.id === 'cancel_booking')
+function withCancelActionLast(actions: BookingAction[], status: string): BookingAction[] {
+  const visibleActions = PREPAYMENT_COLLECTED_STATUSES.has(status)
+    ? actions.filter(action => action.id !== 'cancel_booking')
+    : actions
+  const cancelActions = visibleActions.filter(action => action.id === 'cancel_booking')
   if (cancelActions.length === 0) {
-    return actions
+    return visibleActions
   }
 
   return [
-    ...actions.filter(action => action.id !== 'cancel_booking'),
+    ...visibleActions.filter(action => action.id !== 'cancel_booking'),
     ...cancelActions,
   ]
 }
@@ -206,12 +216,13 @@ function mapActions(
         isMasterHunter
           ? [...HUNTER_FINISH_BED_COLLECTION_ACTIONS]
           : [...INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS],
+        status,
       ),
       paymentAction,
     }
   }
 
-  return { actions: withCancelActionLast(mapped), paymentAction }
+  return { actions: withCancelActionLast(mapped, status), paymentAction }
 }
 
 function collectionNeededCount(item: BookingHistoryItemDto): number {
