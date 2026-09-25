@@ -126,6 +126,41 @@ const seasons = [
       <div class="container bases-seo__media">
         <img
           class="bases-seo__media-image"
+          src="/images/blog/listing-bg.jpg"
+          alt="Охота в угодьях на рассвете"
+          width="960"
+          height="540"
+        >
+        <div class="bases-seo__media-copy">
+          <h2 class="bases-seo__title">
+            Что входит в стоимость тура: сервис и инфраструктура
+          </h2>
+          <p class="bases-seo__lead">
+            Организация охоты под ключ обеспечивает безупречный сервис на всех этапах.
+          </p>
+        </div>
+      </div>
+      <div class="container bases-seo__inner">
+        <div class="bases-seo__steps">
+          <article
+            v-for="(item, index) in serviceItems"
+            :key="item.title"
+            class="bases-seo__step"
+          >
+            <span class="bases-seo__step-num">{{ index + 1 }}.</span>
+            <div>
+              <h3 class="bases-seo__card-title">{{ item.title }}</h3>
+              <p class="bases-seo__card-text">{{ item.text }}</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="bases-seo__section">
+      <div class="container bases-seo__media">
+        <img
+          class="bases-seo__media-image"
           src="/images/blog/ohotnichii-tury.jpg"
           alt="Охотничий тур в России"
           width="960"
@@ -147,32 +182,6 @@ const seasons = [
           >
             <h3 class="bases-seo__card-title">{{ item.title }}</h3>
             <p class="bases-seo__card-text">{{ item.text }}</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="bases-seo__section">
-      <div class="container bases-seo__inner">
-        <div class="bases-seo__split">
-          <h2 class="bases-seo__title">
-            Что входит в стоимость тура: сервис и инфраструктура
-          </h2>
-          <p class="bases-seo__lead">
-            Организация охоты под ключ обеспечивает безупречный сервис на всех этапах.
-          </p>
-        </div>
-        <div class="bases-seo__steps">
-          <article
-            v-for="(item, index) in serviceItems"
-            :key="item.title"
-            class="bases-seo__step"
-          >
-            <span class="bases-seo__step-num">{{ index + 1 }}.</span>
-            <div>
-              <h3 class="bases-seo__card-title">{{ item.title }}</h3>
-              <p class="bases-seo__card-text">{{ item.text }}</p>
-            </div>
           </article>
         </div>
       </div>
