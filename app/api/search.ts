@@ -8,10 +8,10 @@ export function useSearchApi() {
     return apiFetch<ApiSuccessResponse<unknown>>('/services', { query: params })
   }
 
-  function searchHotels(page: number, body: HotelSearchBody) {
+  function searchHotels(page: number, body: HotelSearchBody, perPage = 12) {
     return apiFetch<ApiSuccessResponse<HotelSearchResultData>>('/hotels/search', {
       method: 'POST',
-      query: { page },
+      query: { page, limit: perPage },
       body,
     })
   }

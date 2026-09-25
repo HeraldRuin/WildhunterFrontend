@@ -47,7 +47,7 @@ const route = useRoute()
 const { search: searchApi, hotels: hotelsApi, location: locationApi } = useApi()
 
 const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
-const CATALOG_PER_PAGE = 20
+const CATALOG_PER_PAGE = 12
 
 function queryString(key: string): string {
   const value = route.query[key]
