@@ -30,6 +30,28 @@ function participantsTitle(status?: string) {
   return 'Приглашенные охотники'
 }
 
+function isFinishedBooking(status?: string) {
+  return status === 'paid' || status === 'completed'
+}
+
+function eventDateText(booking: BookingHistoryItem) {
+  const parts: string[] = []
+
+  if (booking.hunt?.date) {
+    parts.push(`Дата охоты: ${booking.hunt.date}`)
+  }
+
+  if (booking.accommodation?.checkIn) {
+    parts.push(`Заезд: ${booking.accommodation.checkIn}`)
+  }
+
+  if (booking.accommodation?.checkOut) {
+    parts.push(`Выезд: ${booking.accommodation.checkOut}`)
+  }
+
+  return parts.join(' · ') || 'Дата события не указана'
+}
+
 const { bookings: bookingsApi, user: userApi } = useApi()
 const notifications = useNotifications()
 const { open: openConfirmModal } = useConfirmModal()
@@ -60,6 +82,17 @@ onUnmounted(resetHunterSearch)
 function isCurrentUser(hunterId: number) {
   return Number(hunterId) === Number(user.value?.id)
 }
+
+const sortedInvitations = computed(() => {
+  const invitations = props.booking?.collectionInvitations ?? []
+
+  return [...invitations].sort((left, right) => {
+    const leftSelf = isCurrentUser(left.hunterId)
+    const rightSelf = isCurrentUser(right.hunterId)
+    if (leftSelf === rightSelf) return 0
+    return leftSelf ? -1 : 1
+  })
+})
 
 function prepaymentStatusLabel(invitation: BookingInvitationParticipant) {
   if (invitation.prepaymentPaid) return 'Оплачено'
@@ -272,11 +305,21 @@ function handleKeydown(event: KeyboardEvent) {
           <CommonModalCloseButton @click="close" />
 
           <h2 id="finished-collection-modal-title" class="finished-collection-modal__title">
-            Сбор для брони #{{ booking.number }}
+            <template v-if="isFinishedBooking(booking.status.code)">
+              Информация о бронировании #{{ booking.number }}
+            </template>
+            <template v-else>
+              Сбор для брони #{{ booking.number }}
+            </template>
           </h2>
 
           <div class="finished-collection-modal__success">
-            Сбор завершен
+            <template v-if="isFinishedBooking(booking.status.code)">
+              {{ eventDateText(booking) }}
+            </template>
+            <template v-else>
+              Сбор завершен
+            </template>
           </div>
 
           <section>
@@ -285,7 +328,7 @@ function handleKeydown(event: KeyboardEvent) {
             </h3>
 
             <div
-              v-for="invitation in booking.collectionInvitations"
+              v-for="invitation in sortedInvitations"
               :key="invitation.invitationId"
               class="finished-collection-modal__participant"
               :class="{

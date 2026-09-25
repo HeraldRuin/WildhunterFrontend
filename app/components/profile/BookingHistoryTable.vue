@@ -536,7 +536,8 @@ onBeforeUnmount(() => {
                     'booking-table__status-label--confirmed':
                       item.status.code === 'confirmed'
                       || item.status.code === 'finish_bed_collection'
-                      || item.status.code === 'paid',
+                      || item.status.code === 'paid'
+                      || item.status.code === 'completed',
                     'booking-table__status-label--collection':
                       item.status.code === 'collection'
                       || item.status.code === 'prepayment_collection',

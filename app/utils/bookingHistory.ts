@@ -73,9 +73,9 @@ const INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
   { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
 ]
 
-const MASTER_HUNTER_HUNT_INFO_STATUSES = new Set(['paid', 'completed'])
+const HUNT_INFO_STATUSES = new Set(['paid', 'completed'])
 
-const MASTER_HUNTER_HUNT_INFO_ACTION: BookingAction = {
+const HUNT_INFO_ACTION: BookingAction = {
   id: 'open_collection',
   label: 'Информация об охоте',
   variant: 'success',
@@ -178,6 +178,7 @@ function mapActions(
   isAcceptedInvitation = false,
   isHunter = false,
   isMasterHunter = false,
+  type: BookingType = 'hotel',
 ): {
   actions: BookingAction[]
   paymentAction?: string
@@ -221,11 +222,12 @@ function mapActions(
   }
 
   if (
-    isMasterHunter
-    && MASTER_HUNTER_HUNT_INFO_STATUSES.has(status)
+    isHunter
+    && (type === 'animal' || type === 'hotel_animal')
+    && HUNT_INFO_STATUSES.has(status)
     && !mapped.some(action => action.id === 'open_collection')
   ) {
-    mapped.push({ ...MASTER_HUNTER_HUNT_INFO_ACTION })
+    mapped.push({ ...HUNT_INFO_ACTION })
   }
 
   if (isHunter && status === 'finish_bed_collection') {
@@ -347,6 +349,7 @@ export function mapBookingHistoryItem(
     Boolean(item.is_invited && item.invitation_accepted),
     Boolean(fallback?.isHunter),
     Boolean(item.is_master_hunter),
+    type,
   )
   const details = item.details
   const rooms = details.rooms || []

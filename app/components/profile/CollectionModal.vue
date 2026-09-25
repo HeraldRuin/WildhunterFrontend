@@ -35,6 +35,7 @@ const {
   liveDeclinedParticipants,
 } = useCollectionModal()
 const { bookings: bookingsApi, user: userApi } = useApi()
+const { user } = useAuth()
 const notifications = useNotifications()
 const { open: openConfirmModal } = useConfirmModal()
 
@@ -88,9 +89,25 @@ const PARTICIPANT_STATUS_ORDER: Record<CollectionParticipantStatus, number> = {
   declined: 2,
 }
 
+function isCurrentParticipant(participantId?: number) {
+  return Number(participantId) === Number(user.value?.id)
+}
+
 const sortedOccupiedParticipants = computed(() => {
   return [...occupiedParticipants.value].sort((left, right) => {
+    const leftSelf = isCurrentParticipant(left.id)
+    const rightSelf = isCurrentParticipant(right.id)
+    if (leftSelf !== rightSelf) return leftSelf ? -1 : 1
     return PARTICIPANT_STATUS_ORDER[left.status] - PARTICIPANT_STATUS_ORDER[right.status]
+  })
+})
+
+const sortedDeclinedParticipants = computed(() => {
+  return [...liveDeclinedParticipants.value].sort((left, right) => {
+    const leftSelf = isCurrentParticipant(left.id)
+    const rightSelf = isCurrentParticipant(right.id)
+    if (leftSelf === rightSelf) return 0
+    return leftSelf ? -1 : 1
   })
 })
 
@@ -158,7 +175,7 @@ const statsPanelParticipants = computed<CollectionParticipant[]>(() => {
     case 'pending':
       return pendingParticipants.value
     case 'declined':
-      return [...liveDeclinedParticipants.value]
+      return sortedDeclinedParticipants.value
     default:
       return []
   }
@@ -979,7 +996,7 @@ function updateStatsPanelLayout() {
             </div>
 
             <div
-              v-for="(participant, index) in liveDeclinedParticipants"
+              v-for="(participant, index) in sortedDeclinedParticipants"
               :key="`declined-${participant.id ?? participant.name}`"
               class="collection-modal__slot-row"
             >

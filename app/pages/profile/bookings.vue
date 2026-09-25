@@ -904,6 +904,14 @@ async function startCollection(booking: BookingHistoryItem) {
 
 function handleBookingAction({ booking, action }: { booking: BookingHistoryItem, action: BookingAction }) {
   if (
+    action.id === 'open_collection'
+    && (booking.status.code === 'paid' || booking.status.code === 'completed')
+  ) {
+    void openFinishedCollectionModal(booking)
+    return
+  }
+
+  if (
     booking.status.code
     && FINISHED_COLLECTION_MODAL_STATUSES.has(booking.status.code)
     && (action.id === 'open_collection' || action.id === 'start_collection')

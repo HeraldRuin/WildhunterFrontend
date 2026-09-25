@@ -12,6 +12,18 @@ const emit = defineEmits<{
 const isOpen = computed(() => Boolean(props.booking))
 const { user } = useAuth()
 
+const sortedInvitations = computed(() => {
+  const invitations = props.booking?.collectionInvitations ?? []
+  const currentId = Number(user.value?.id)
+
+  return [...invitations].sort((left, right) => {
+    const leftSelf = Number(left.hunterId) === currentId
+    const rightSelf = Number(right.hunterId) === currentId
+    if (leftSelf === rightSelf) return 0
+    return leftSelf ? -1 : 1
+  })
+})
+
 useBodyScrollLock(isOpen)
 
 function close() {
@@ -58,7 +70,7 @@ function handleKeydown(event: KeyboardEvent) {
             </h3>
 
             <div
-              v-for="invitation in booking.collectionInvitations"
+              v-for="invitation in sortedInvitations"
               :key="invitation.invitationId"
               class="collection-invitations-modal__participant"
             >

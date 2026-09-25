@@ -18,7 +18,17 @@ const uploadsOrigin = new URL(config.public.apiBase as string).origin
 
 const isOpen = computed(() => Boolean(props.booking))
 
-const participants = computed(() => props.booking?.collectionInvitations ?? [])
+const participants = computed(() => {
+  const invitations = props.booking?.collectionInvitations ?? []
+  const currentId = Number(user.value?.id)
+
+  return [...invitations].sort((left, right) => {
+    const leftSelf = Number(left.hunterId) === currentId
+    const rightSelf = Number(right.hunterId) === currentId
+    if (leftSelf === rightSelf) return 0
+    return leftSelf ? -1 : 1
+  })
+})
 
 const showPaymentStatus = computed(() => {
   return props.booking?.status.code !== 'collection'
