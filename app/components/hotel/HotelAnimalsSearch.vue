@@ -476,7 +476,7 @@ defineExpose({
     class="hotel-animals-search"
     :class="{ 'hotel-animals-search--dropdown-open': isAnyDropdownOpen }"
   >
-    <h2 class="hotel-animals-search__title">Доступные животные</h2>
+    <h2 class="hotel-animals-search__title">На кого будет охота</h2>
 
     <div v-if="$slots.alerts" class="hotel-animals-search__alerts">
       <slot name="alerts" />
