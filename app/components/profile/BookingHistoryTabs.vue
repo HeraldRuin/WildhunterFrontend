@@ -39,8 +39,9 @@ const isBaseAdmin = computed(() =>
 )
 
 const hunterTabs = [
-  { id: undefined as string | undefined, label: 'Мои брони' },
-  { id: 'invitation', label: 'Приглашения' },
+  { id: 'all', label: 'Все бронирования' },
+  { id: undefined as string | undefined, label: 'Я организатор' },
+  { id: 'invitation', label: 'Меня пригласили' },
 ]
 
 const adminTabs = computed(() => [
@@ -101,7 +102,7 @@ function invitationBadgeLabel(count: number) {
     >
       <button
         v-for="tab in (isBaseAdmin ? adminTabs : hunterTabs)"
-        :key="tab.id ?? 'all'"
+        :key="tab.id ?? 'mine'"
         type="button"
         role="tab"
         class="booking-history-tabs__tab"

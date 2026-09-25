@@ -51,12 +51,14 @@ const routeStatus = computed(() => {
   const status = route.query.status
   return Array.isArray(status) ? status[0] : status
 })
-const statusFilter = ref<string | undefined>(
-  routeStatus.value === 'invitation' ? 'invitation' : undefined,
-)
+function hunterQueryStatus(status: string | undefined) {
+  return status === 'invitation' || status === 'all' ? status : undefined
+}
+
+const statusFilter = ref<string | undefined>(hunterQueryStatus(routeStatus.value))
 /** Статус для API/empty: query надёжнее локального таба при deep-link из уведомлений. */
 const historyStatusFilter = computed(() =>
-  routeStatus.value === 'invitation' ? 'invitation' : statusFilter.value,
+  hunterQueryStatus(routeStatus.value) ?? statusFilter.value,
 )
 const page = ref(1)
 const timerNow = ref(Date.now())
@@ -145,8 +147,9 @@ watch(bookingIdFilter, () => {
 
   // Deep-link с ?status=invitation при уже открытой вкладке «Мои брони»
   // (statusFilter сброшен, а query ещё invitation) — подтянуть фильтр из URL.
-  if (routeStatus.value === 'invitation' && statusFilter.value !== 'invitation') {
-    statusFilter.value = 'invitation'
+  const queryStatus = hunterQueryStatus(routeStatus.value)
+  if (queryStatus && statusFilter.value !== queryStatus) {
+    statusFilter.value = queryStatus
   }
 })
 
@@ -749,8 +752,8 @@ const emptyText = computed(() => {
 })
 
 function syncStatusFilterToRoute(status: string | undefined) {
-  const nextStatus = status === 'invitation' ? 'invitation' : undefined
-  const currentRouteStatus = routeStatus.value === 'invitation' ? 'invitation' : undefined
+  const nextStatus = hunterQueryStatus(status)
+  const currentRouteStatus = hunterQueryStatus(routeStatus.value)
   if (nextStatus === currentRouteStatus) {
     return
   }
@@ -782,7 +785,7 @@ watch([historyResponse, invitationsCountResponse, historyStatusFilter], syncPend
 const invitationsCount = computed(() => pendingInvitationsCount.value)
 
 watch(routeStatus, (status) => {
-  const next = status === 'invitation' ? 'invitation' : undefined
+  const next = hunterQueryStatus(status)
   if (statusFilter.value !== next) {
     statusFilter.value = next
   }
