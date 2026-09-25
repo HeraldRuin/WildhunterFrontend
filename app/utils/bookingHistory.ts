@@ -225,6 +225,17 @@ function mapActions(
   return { actions: withCancelActionLast(mapped, status), paymentAction }
 }
 
+function isPrepaymentCollected(item: BookingHistoryItemDto) {
+  if (PREPAYMENT_COLLECTED_STATUSES.has(item.status)) {
+    return true
+  }
+
+  const accepted = item.collection?.accepted_count ?? 0
+  const paid = item.collection?.paid_count ?? 0
+
+  return accepted > 0 && paid >= accepted
+}
+
 function collectionNeededCount(item: BookingHistoryItemDto): number {
   const hunting = Number(item.details?.total_hunting)
 
@@ -395,6 +406,7 @@ export function mapBookingHistoryItem(
       baseTotal: item.payment?.base_total ?? 0,
       total: item.payment?.total ?? 0,
     },
+    prepaymentCollected: isPrepaymentCollected(item),
     paymentAction,
     actions,
     isMasterHunter: Boolean(item.is_master_hunter),

@@ -125,6 +125,7 @@ export interface BookingHistoryItem {
   hunt?: BookingHuntDetails
   status: BookingStatusInfo
   payment?: BookingPaymentInfo
+  prepaymentCollected?: boolean
   paymentAction?: string
   actions: BookingAction[]
   isMasterHunter?: boolean

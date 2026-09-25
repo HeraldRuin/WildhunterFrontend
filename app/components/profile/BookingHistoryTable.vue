@@ -535,7 +535,8 @@ onBeforeUnmount(() => {
                       || item.status.code === 'cancelled',
                     'booking-table__status-label--confirmed':
                       item.status.code === 'confirmed'
-                      || item.status.code === 'finish_bed_collection',
+                      || item.status.code === 'finish_bed_collection'
+                      || item.status.code === 'paid',
                     'booking-table__status-label--collection':
                       item.status.code === 'collection'
                       || item.status.code === 'prepayment_collection',
@@ -617,6 +618,22 @@ onBeforeUnmount(() => {
                 >
                   {{ item.paymentAction || 'Калькуляция' }}
                 </button>
+                <template v-else-if="showCustomer && item.prepaymentCollected">
+                  <div
+                    v-if="item.status.code !== 'paid' && item.status.code !== 'completed'"
+                    class="booking-table__status-label booking-table__status-label--confirmed"
+                  >
+                    Предоплата собрана
+                  </div>
+                  <div
+                    class="booking-table__payment-summary"
+                    :class="{ 'booking-table__payment-summary--after-badge': item.status.code !== 'paid' && item.status.code !== 'completed' }"
+                  >
+                    <div>Внесена предоплата: {{ formatPrice(item.payment?.prepaidTotal ?? 0) }} руб</div>
+                    <div>Остаток базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</div>
+                    <div>Всего: {{ formatPrice(item.payment?.total ?? 0) }} руб</div>
+                  </div>
+                </template>
                 <div
                   v-else-if="showCustomer && isHuntingFinishedCollection(item)"
                   class="booking-table__payment-summary"
@@ -833,9 +850,9 @@ onBeforeUnmount(() => {
 
 .booking-table th:nth-child(6),
 .booking-table__payment {
-  width: 120px;
-  min-width: 100px;
-  max-width: 140px;
+  width: 180px;
+  min-width: 160px;
+  max-width: 240px;
 }
 
 .booking-table__payment-summary {
@@ -843,6 +860,10 @@ onBeforeUnmount(() => {
   color: var(--wh-gray-900);
   font-size: 0.82rem;
   line-height: 1.45;
+}
+
+.booking-table__payment-summary--after-badge {
+  margin-top: 8px;
 }
 
 .booking-table__number {
