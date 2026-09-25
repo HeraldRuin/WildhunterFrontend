@@ -495,6 +495,7 @@ export interface BookingServiceOption {
 export interface BookingServiceAnimalCatalog {
   id: number
   title: string
+  price?: number | null
   trophies?: BookingServiceOption[]
   fines?: BookingServiceOption[]
   preparations?: BookingServiceOption[]

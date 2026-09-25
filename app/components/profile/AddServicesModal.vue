@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type {
   BookingServiceAdditionalItem,
+  BookingServiceAnimalCatalog,
   BookingServiceFoodItem,
+  BookingServiceOption,
   BookingServicePenaltyItem,
   BookingServicePreparationItem,
   BookingServiceSpendingItem,
@@ -129,17 +131,19 @@ const hunterOptions = computed<SelectFieldOption[]>(() =>
 )
 const trophyAnimals = computed(() => services.value?.catalogs?.trophy_animals ?? [])
 const trophyAnimalOptions = computed<SelectFieldOption[]>(() =>
-  trophyAnimals.value.map(animal => ({
-    value: String(animal.id),
-    label: animal.title,
-  })),
+  trophyAnimals.value.map(animal => withCatalogPrice(
+    animal.title,
+    animalListPrice(animal, animal.trophies),
+    String(animal.id),
+  )),
 )
 const penaltyAnimals = computed(() => services.value?.catalogs?.penalty_animals ?? [])
 const penaltyAnimalOptions = computed<SelectFieldOption[]>(() =>
-  penaltyAnimals.value.map(animal => ({
-    value: String(animal.id),
-    label: animal.title,
-  })),
+  penaltyAnimals.value.map(animal => withCatalogPrice(
+    animal.title,
+    animalListPrice(animal, animal.fines),
+    String(animal.id),
+  )),
 )
 
 watch(
@@ -274,6 +278,30 @@ function foodDraftPrice(row: FoodDraft): string {
 
 function formatServicePrice(price: unknown): string {
   return catalogPriceLabel(price) ?? '—'
+}
+
+function animalListPrice(
+  animal: BookingServiceAnimalCatalog,
+  options: BookingServiceOption[] | undefined,
+): unknown {
+  if (animal.price != null) {
+    return animal.price
+  }
+
+  const prices = (options ?? [])
+    .map(item => item.price)
+    .filter((price): price is number => price != null)
+
+  if (prices.length === 0) {
+    return undefined
+  }
+
+  const first = prices[0]
+  if (prices.every(price => price === first)) {
+    return first
+  }
+
+  return undefined
 }
 
 function withCatalogPrice(label: string, price: unknown, value: string): SelectFieldOption {
