@@ -22,6 +22,14 @@ function isReadOnlyCollectionStatus(status?: string) {
   return Boolean(status && READ_ONLY_COLLECTION_STATUSES.has(status))
 }
 
+function participantsTitle(status?: string) {
+  if (status === 'paid' || status === 'completed') {
+    return 'Участники охоты'
+  }
+
+  return 'Приглашенные охотники'
+}
+
 const { bookings: bookingsApi, user: userApi } = useApi()
 const notifications = useNotifications()
 const { open: openConfirmModal } = useConfirmModal()
@@ -273,7 +281,7 @@ function handleKeydown(event: KeyboardEvent) {
 
           <section>
             <h3 class="finished-collection-modal__subtitle">
-              Приглашенные охотники
+              {{ participantsTitle(booking.status.code) }}
             </h3>
 
             <div

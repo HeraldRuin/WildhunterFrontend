@@ -16,6 +16,8 @@ import { getHotelPath } from '~/utils/hotel'
 const READ_ONLY_COLLECTION_STATUSES = new Set([
   'bed_collection',
   'finish_bed_collection',
+  'paid',
+  'completed',
 ])
 
 const PREPAYMENT_COLLECTED_STATUSES = new Set([
@@ -70,6 +72,14 @@ const INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
   { id: 'open_collection', label: 'Список приглашенных', variant: 'success' },
   { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
 ]
+
+const MASTER_HUNTER_HUNT_INFO_STATUSES = new Set(['paid', 'completed'])
+
+const MASTER_HUNTER_HUNT_INFO_ACTION: BookingAction = {
+  id: 'open_collection',
+  label: 'Информация об охоте',
+  variant: 'success',
+}
 
 function withCancelActionLast(actions: BookingAction[], status: string): BookingAction[] {
   const visibleActions = PREPAYMENT_COLLECTED_STATUSES.has(status)
@@ -208,6 +218,14 @@ function mapActions(
         { id: 'decline_invitation', label: 'Отказаться', variant: 'danger' },
       )
     }
+  }
+
+  if (
+    isMasterHunter
+    && MASTER_HUNTER_HUNT_INFO_STATUSES.has(status)
+    && !mapped.some(action => action.id === 'open_collection')
+  ) {
+    mapped.push({ ...MASTER_HUNTER_HUNT_INFO_ACTION })
   }
 
   if (isHunter && status === 'finish_bed_collection') {
