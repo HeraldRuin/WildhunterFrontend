@@ -399,7 +399,7 @@ defineExpose({
           :class="{ 'hotel-dates-guests__field--open': isDatesOpen }"
           @click="onDatesFieldClick"
         >
-          <span class="hotel-dates-guests__label">Заезд – Выезд</span>
+          <span class="hotel-dates-guests__label">Дата поездки</span>
           <div
             v-if="hasSelectedDates"
             class="hotel-dates-guests__dates-control"
