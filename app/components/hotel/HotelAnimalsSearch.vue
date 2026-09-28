@@ -2,6 +2,7 @@
 import type { HotelAnimalItem } from '~/types/api'
 import { formatApiDate, formatDisplayDate, startOfDay } from '~/utils/date'
 import { formatHotelPrice } from '~/utils/hotel'
+import { pluralizeRu } from '~/utils/pluralize'
 
 const props = withDefaults(defineProps<{
   animals?: HotelAnimalItem[]
@@ -212,18 +213,11 @@ watch(
   { immediate: true },
 )
 
-function formatAdultsLabel(count: number) {
-  const mod10 = count % 10
-  const mod100 = count % 100
-
-  if (mod10 === 1 && mod100 !== 11) {
-    return `${count} взрослый`
-  }
-
-  return `${count} взрослых`
+function formatHuntersLabel(count: number) {
+  return pluralizeRu(count, ['охотник', 'охотника', 'охотников'])
 }
 
-const huntersLabel = computed(() => formatAdultsLabel(adultsCount.value))
+const huntersLabel = computed(() => formatHuntersLabel(adultsCount.value))
 
 const huntDateLabel = computed(() =>
   huntDate.value ? formatDisplayDate(huntDate.value) : emptyHuntDateLabel,
@@ -581,12 +575,12 @@ defineExpose({
 
           <div v-if="isHuntersOpen" class="hotel-animals-search__dropdown">
             <div class="hotel-animals-search__stepper-row">
-              <span class="hotel-animals-search__stepper-label">Взрослые</span>
+              <span class="hotel-animals-search__stepper-label">Охотники</span>
               <div class="hotel-animals-search__stepper">
                 <button
                   type="button"
                   class="hotel-animals-search__stepper-btn"
-                  aria-label="Уменьшить количество взрослых"
+                  aria-label="Уменьшить количество охотников"
                   :disabled="adultsCount <= 1"
                   @click="decrementAdults"
                 >
@@ -608,7 +602,7 @@ defineExpose({
                 <button
                   type="button"
                   class="hotel-animals-search__stepper-btn"
-                  aria-label="Увеличить количество взрослых"
+                  aria-label="Увеличить количество охотников"
                   :disabled="adultsCount >= maxAdults"
                   @click="incrementAdults"
                 >
