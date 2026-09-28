@@ -550,7 +550,7 @@ defineExpose({
         />
         <template v-else>
           <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--desktop">
-            Проверить наличие
+            Проверить наличие номеров
           </span>
           <span class="hotel-dates-guests__submit-label hotel-dates-guests__submit-label--mobile">
             Искать
