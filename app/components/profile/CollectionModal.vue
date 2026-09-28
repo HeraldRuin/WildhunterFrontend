@@ -17,7 +17,6 @@ let activeInviteBookingCode: string | null = null
 const emit = defineEmits<{
   extended: []
   cancelled: []
-  finished: []
   invited: [payload: { hunter: UserSearchItem }]
 }>()
 
@@ -109,17 +108,6 @@ const sortedDeclinedParticipants = computed(() => {
     if (leftSelf === rightSelf) return 0
     return leftSelf ? -1 : 1
   })
-})
-
-const canFinishCollection = computed(() => {
-  if (!state.value) return false
-
-  const required = state.value.slotsTotal
-  const accepted = occupiedParticipants.value.filter(
-    participant => participant.status === 'confirmed',
-  ).length
-
-  return accepted >= required
 })
 
 const emptySlotCount = computed(() => {
@@ -630,53 +618,12 @@ async function cancelCollection() {
   throw new Error('cancel_collection_failed')
 }
 
-async function finishCollection() {
-  const bookingCode = state.value?.bookingCode
-  if (!bookingCode) return
-
-  try {
-    const response = await bookingsApi.finishCollection(bookingCode)
-
-    if (response.success) {
-      notifications.success(response.message || 'Сбор завершён')
-      clearInviteDraft(bookingCode)
-      close()
-      emit('finished')
-      return
-    }
-
-    notifications.error(response.message || 'Не удалось завершить сбор')
-  }
-  catch (error) {
-    const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось завершить сбор')
-    throw error
-  }
-
-  throw new Error('finish_collection_failed')
-}
-
 function requestCollectionCancellation() {
   hide()
   openConfirmModal({
     title: 'Вы уверены, что хотите отменить сбор?',
     confirmLabel: 'Отменить сбор',
     onConfirm: cancelCollection,
-    onCancel: () => {
-      setTimeout(reopen, 200)
-    },
-    transparentBackdrop: true,
-  })
-}
-
-function requestCollectionFinish() {
-  if (!canFinishCollection.value) return
-
-  hide()
-  openConfirmModal({
-    title: 'Вы уверены, что хотите завершить сбор?',
-    confirmLabel: 'Завершить сбор',
-    onConfirm: finishCollection,
     onCancel: () => {
       setTimeout(reopen, 200)
     },
@@ -1313,18 +1260,17 @@ function updateStatsPanelLayout() {
               </button>
               <button
                 type="button"
+                class="collection-modal__btn"
+                disabled
+              >
+                Завершить сбор
+              </button>
+              <button
+                type="button"
                 class="collection-modal__btn collection-modal__btn--danger"
                 @click="requestCollectionCancellation"
               >
                 Отменить сбор
-              </button>
-              <button
-                type="button"
-                class="collection-modal__btn"
-                :disabled="!canFinishCollection"
-                @click="requestCollectionFinish"
-              >
-                Завершить сбор
               </button>
               <button type="button" class="collection-modal__btn" disabled>
                 Открытый сбор

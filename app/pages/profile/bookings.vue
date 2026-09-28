@@ -1154,7 +1154,6 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
       @extended="handleCollectionExtended"
       @invited="handleHunterInvited"
       @cancelled="refreshHistory"
-      @finished="refreshHistory"
     />
     <ProfileInvitationModal
       :booking="invitationModalBooking"
