@@ -48,7 +48,7 @@ export function normalizeRichTextHtml(html: string): string {
 
   const withNewlines = normalizeNewlines(trimmed)
 
-  if (!BLOCK_TAG.test(withNewlines) && /\n\s*\n/.test(withNewlines)) {
+  if (!BLOCK_TAG.test(withNewlines) && withNewlines.includes('\n')) {
     return plainTextToParagraphHtml(withNewlines)
   }
 
