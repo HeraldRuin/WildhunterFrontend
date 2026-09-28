@@ -21,7 +21,7 @@ const items = [
 <template>
   <section class="why-us">
     <div class="container why-us__inner">
-      <h2 class="why-us__title">Почему мы?</h2>
+      <h2 class="why-us__title">Онлайн-платформа для настоящих охотников</h2>
 
       <div class="why-us__grid">
         <article
@@ -57,7 +57,9 @@ const items = [
 }
 
 .why-us__title {
+  max-width: 100%;
   margin: 0;
+  text-align: center;
   font-family: UNCAGE;
   font-weight: 400;
   font-style: normal;

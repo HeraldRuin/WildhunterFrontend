@@ -23,7 +23,7 @@
   max-width: 870px;
   text-align: center;
   font-family: 'UNCAGE';
-  font-size: 56px;
+  font-size: 46px;
   font-weight: 400;
   line-height: 1;
   letter-spacing: -0.03em;

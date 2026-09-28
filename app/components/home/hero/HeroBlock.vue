@@ -25,10 +25,9 @@ function handleSearch(payload: Record<string, string>) {
     <div class="hero-block__inner">
       <HomeHeroHeader />
     </div>
-    <div class="hero-block__title">
-      <HomeHeroTitle />
-    </div>
+    <p class="hero-block__eyebrow">Онлайн-платформа для настоящих охотников</p>
     <div class="hero-block__search">
+      <h1 class="hero-block__heading">Организуйте охоту с понятными расходами для каждого</h1>
       <HomeHeroSearchForm :loading="loading" @search="handleSearch" />
     </div>
   </section>
@@ -61,24 +60,42 @@ function handleSearch(payload: Record<string, string>) {
   pointer-events: auto;
 }
 
-.hero-block__title {
+.hero-block__eyebrow {
   position: absolute;
-  top: 346px;
-  left: 50%;
-  z-index: 1;
-  width: 100%;
-  max-width: calc(100% - 24px);
-  transform: translateX(-50%);
+  top: 148px;
+  left: max(24px, calc(50% - 708px));
+  z-index: 2;
+  margin: 0;
+  color: var(--wh-white);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
 .hero-block__search {
   position: absolute;
-  top: 518px;
+  top: 392px;
   left: 50%;
   z-index: 21;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 1500px;
   max-width: calc(100% - 24px);
   transform: translateX(-50%);
+}
+
+.hero-block__heading {
+  width: 100%;
+  margin: 0 0 28px;
+  text-align: center;
+  color: var(--wh-white);
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 4px 18px rgba(0, 0, 0, 0.35);
 }
 
 @media (--wh-tablet) {
@@ -95,21 +112,15 @@ function handleSearch(payload: Record<string, string>) {
     padding-bottom: 0;
   }
 
-  .hero-block__title {
-    position: absolute;
-    top: 410px;
-    left: 50%;
-    z-index: 1;
-    width: 100%;
-    max-width: none;
-    margin-top: 0;
-    padding-inline: 12px;
-    transform: translateX(-50%);
+  .hero-block__eyebrow {
+    top: 128px;
+    left: 24px;
+    font-size: 16px;
   }
 
   .hero-block__search {
     position: absolute;
-    top: 626px;
+    top: 470px;
     left: 50%;
     z-index: 21;
     width: 100%;
@@ -117,6 +128,11 @@ function handleSearch(payload: Record<string, string>) {
     margin-top: 0;
     padding-inline: 12px;
     transform: translateX(-50%);
+  }
+
+  .hero-block__heading {
+    margin-bottom: 28px;
+    font-size: 32px;
   }
 }
 
@@ -131,21 +147,23 @@ function handleSearch(payload: Record<string, string>) {
     padding-bottom: 0;
   }
 
-  .hero-block__title {
+  .hero-block__eyebrow {
     position: static;
-    top: auto;
-    margin-top: 124px;
-    max-width: none;
-    padding-inline: 12px;
-    transform: none;
+    margin: 20px 12px 0;
+    font-size: 14px;
   }
 
   .hero-block__search {
     position: static;
     top: auto;
-    margin-top: 24px;
+    margin-top: 48px;
     padding-inline: 12px;
     transform: none;
+  }
+
+  .hero-block__heading {
+    margin-bottom: 20px;
+    font-size: 26px;
   }
 }
 </style>
