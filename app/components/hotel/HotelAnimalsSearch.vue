@@ -746,7 +746,7 @@ defineExpose({
         />
         <template v-else>
           <span class="hotel-animals-search__submit-label hotel-animals-search__submit-label--desktop">
-            Проверить доступность
+            Проверить доступные варианты охоты
           </span>
           <span class="hotel-animals-search__submit-label hotel-animals-search__submit-label--mobile">
             Искать

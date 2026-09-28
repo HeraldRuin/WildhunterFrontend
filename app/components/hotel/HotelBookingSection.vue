@@ -12,7 +12,7 @@ import {
 } from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 import { countHuntsForHunters, resolveAnimalHuntCost } from '~/utils/hotelHunt'
-import { formatHuntersGenitive } from '~/utils/pluralize'
+import { formatHuntersGenitive, pluralizeRu } from '~/utils/pluralize'
 
 const props = withDefaults(defineProps<{
 
@@ -153,7 +153,12 @@ const insufficientExtraHuntMessage = computed(() => {
     return ''
   }
 
-  return `На это животное максимальное количество охотников: ${max}. Для выбранного количества охотников нужна дополнительная охота. Для дополнительной охоты нужно минимум ${formatHuntersGenitive(min)}. Добавьте ещё ${formatHuntersGenitive(allocation.shortfall)}.`
+  const huntersToAdd = formatHuntersGenitive(allocation.shortfall)
+  const peopleToAdd = pluralizeRu(allocation.shortfall, ['человека', 'человека', 'человек'])
+  const maxPeople = pluralizeRu(max, ['человек', 'человека', 'человек'])
+  const minParticipants = pluralizeRu(min, ['участника', 'участников', 'участников'])
+
+  return `Для вашей группы нужно добавить ещё ${huntersToAdd}\n\nВ одной охоте могут участвовать максимум ${maxPeople}. Если охотников больше, формируется ещё одна охота минимум для ${minParticipants}. Добавьте ещё ${peopleToAdd}, чтобы продолжить бронирование.`
 })
 const datesGuestsRef = ref<{
   getAdults: () => number
@@ -179,9 +184,9 @@ const guestsHuntersMismatch = computed(() =>
   && Boolean(selectedAnimalId.value)
   && huntHunters.value > stayAdults.value,
 )
-const ROOMS_EXCEED_GUESTS_MESSAGE = 'Количество номеров не может быть больше количества гостей'
+const ROOMS_EXCEED_GUESTS_MESSAGE = 'Количество номеров не может быть больше количества охотников'
 const INSUFFICIENT_CAPACITY_MESSAGE
-  = 'Вместимость выбранных номеров меньше количества гостей. Увеличьте число номеров или выберите более вместительный вариант'
+  = 'Вместимость выбранных номеров меньше количества охотников. Увеличьте число номеров или выберите более вместительный вариант'
 const isBookingBlocked = computed(() =>
   roomsExceedGuests.value
   || guestsHuntersMismatch.value
@@ -1072,7 +1077,7 @@ onMounted(() => {
 
               <p
                 v-if="insufficientExtraHuntMessage"
-                class="hotel-booking-section__rooms-error"
+                class="hotel-booking-section__rooms-error hotel-booking-section__rooms-error--multiline"
                 role="alert"
               >
                 {{ insufficientExtraHuntMessage }}
@@ -1085,7 +1090,8 @@ onMounted(() => {
             class="hotel-booking-section__animal-result"
           >
             <div class="hotel-booking-section__animal-success" role="status">
-              На этот день есть охота на животное. Можете продолжить бронирование
+              Отлично, охота доступна!<br>
+              На выбранную дату есть свободные места. Можно продолжить бронирование
             </div>
 
             <div class="hotel-booking-section__animal-summary">
@@ -1122,7 +1128,7 @@ onMounted(() => {
           :disabled="isBookingBlocked || !(hasSelectedRooms || animalAvailability)"
           @click="handleBook"
         >
-          Забронировать сейчас
+          Перейти к бронированию
         </button>
       </Transition>
     </div>
@@ -1403,6 +1409,10 @@ onMounted(() => {
   line-height: 1.4;
   letter-spacing: -0.02em;
   text-align: center;
+}
+
+.hotel-booking-section__rooms-error--multiline {
+  white-space: pre-line;
 }
 
 .hotel-booking-section__animals-block {

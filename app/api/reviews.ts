@@ -10,7 +10,8 @@ import { useApiClient } from './client'
 export function mapServiceReviewToItem(review: ServiceReview): ReviewItem {
   const author = review.author
   const fullName = [author.first_name, author.last_name].filter(Boolean).join(' ')
-  const name = fullName || author.name || author.nik || 'Гость'
+  const rawName = fullName || author.name || author.nik || ''
+  const name = !rawName || rawName.trim() === 'Гость' ? 'Охотник' : rawName
 
   return {
     id: review.id,

@@ -36,13 +36,13 @@ function handleBook() {
       </label>
 
       <label class="hotel-booking__field">
-        <span class="hotel-booking__label">Гости</span>
+        <span class="hotel-booking__label">Охотники</span>
         <span class="hotel-booking__control">
           <select v-model="guests">
             <option>1 взрослый</option>
             <option>2 взрослых</option>
             <option>3 взрослых</option>
-            <option>4+ гостей</option>
+            <option>4+ охотников</option>
           </select>
           <svg class="hotel-booking__chevron" viewBox="0 0 8 13" aria-hidden="true">
             <path d="M1.5 4.5 4 7.5 6.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />

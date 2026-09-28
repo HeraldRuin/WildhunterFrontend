@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { SearchAnimal, SearchLocation } from '~/types/api'
 import { formatDisplayDate, parseDisplayDate, startOfDay } from '~/utils/date'
+import { pluralizeRu } from '~/utils/pluralize'
 
 withDefaults(defineProps<{
   layout?: 'inline' | 'split'
@@ -186,18 +187,11 @@ const filteredAnimals = computed(() => {
   return list.filter(item => item.title.toLocaleLowerCase('ru').includes(query))
 })
 
-function formatAdultsLabel(count: number) {
-  const mod10 = count % 10
-  const mod100 = count % 100
-
-  if (mod10 === 1 && mod100 !== 11) {
-    return `${count} взрослый`
-  }
-
-  return `${count} взрослых`
+function formatHuntersLabel(count: number) {
+  return pluralizeRu(count, ['охотник', 'охотника', 'охотников'])
 }
 
-const guestsLabel = computed(() => formatAdultsLabel(adultsCount.value))
+const guestsLabel = computed(() => formatHuntersLabel(adultsCount.value))
 
 const checkInLabel = computed(() =>
   checkIn.value ? formatDisplayDate(checkIn.value) : 'Заезд',
@@ -541,7 +535,7 @@ onUnmounted(() => {
         class="hero-search__field hero-search__field--location"
         :class="{ 'hero-search__field--open': isLocationOpen }"
       >
-      <span class="hero-search__label">Локация</span>
+      <span class="hero-search__label">Регион охоты</span>
       <button
         type="button"
         class="hero-search__control hero-search__dropdown-trigger"
@@ -598,7 +592,7 @@ onUnmounted(() => {
         <ul
           class="hero-search__dropdown-options hero-search__dropdown-options--limited"
           role="listbox"
-          aria-label="Локация"
+          aria-label="Регион охоты"
           @pointerleave="clearLocationHover"
           @mouseleave="clearLocationHover"
           @mousemove="setLocationHoverFromEvent"
@@ -726,7 +720,7 @@ onUnmounted(() => {
       :class="{ 'hero-search__field--open': isDatesOpen }"
       @click="onDatesFieldClick"
     >
-      <span class="hero-search__label">Заезд - Выезд</span>
+      <span class="hero-search__label">Даты поездки</span>
       <div class="hero-search__control hero-search__dates-control">
         <span class="hero-search__date-part">{{ checkInLabel }}</span>
         <span class="hero-search__dates-sep" aria-hidden="true">-</span>
@@ -769,7 +763,7 @@ onUnmounted(() => {
       class="hero-search__field hero-search__field--guests"
       :class="{ 'hero-search__field--open': isGuestsOpen }"
     >
-      <span class="hero-search__label">Гости</span>
+      <span class="hero-search__label">Охотники</span>
       <button
         type="button"
         class="hero-search__control hero-search__dropdown-trigger"
@@ -781,7 +775,7 @@ onUnmounted(() => {
         v-if="adultsCount > 1"
         type="button"
         class="hero-search__clear"
-        aria-label="Сбросить количество гостей"
+        aria-label="Сбросить количество охотников"
         @click="clearGuests"
       >
         <svg viewBox="0 0 12 12" aria-hidden="true">
@@ -794,12 +788,12 @@ onUnmounted(() => {
 
       <div v-if="isGuestsOpen" class="hero-search__dropdown-panel">
         <div class="hero-search__guest-row">
-          <span class="hero-search__guest-label">Взрослые</span>
+          <span class="hero-search__guest-label">Охотники</span>
           <div class="hero-search__guest-stepper">
             <button
               type="button"
               class="hero-search__guest-btn"
-              aria-label="Уменьшить количество взрослых"
+              aria-label="Уменьшить количество охотников"
               :disabled="adultsCount <= 1"
               @click="decrementAdults"
             >
@@ -812,7 +806,7 @@ onUnmounted(() => {
               pattern="[0-9]*"
               class="hero-search__guest-count"
               :value="adultsCount"
-              aria-label="Количество взрослых"
+              aria-label="Количество охотников"
               @input="onAdultsInput"
               @blur="onAdultsBlur"
               @keydown.enter.prevent="onAdultsBlur"
@@ -821,7 +815,7 @@ onUnmounted(() => {
             <button
               type="button"
               class="hero-search__guest-btn"
-              aria-label="Увеличить количество взрослых"
+              aria-label="Увеличить количество охотников"
               :disabled="adultsCount >= maxAdults"
               @click="incrementAdults"
             >
@@ -847,7 +841,7 @@ onUnmounted(() => {
         color="var(--wh-white)"
         label="Поиск"
       />
-      <span v-else>Искать</span>
+      <span v-else>Найти охоту</span>
     </button>
   </form>
 </template>

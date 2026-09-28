@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatDisplayDate, parseDisplayDate, startOfDay } from '~/utils/date'
+import { pluralizeRu } from '~/utils/pluralize'
 
 const props = withDefaults(defineProps<{
 
@@ -63,18 +64,11 @@ const datesFieldRef = ref<HTMLElement | null>(null)
 const guestsFieldRef = ref<HTMLElement | null>(null)
 const adultsInputRef = ref<HTMLInputElement | null>(null)
 
-function formatAdultsLabel(count: number) {
-  const mod10 = count % 10
-  const mod100 = count % 100
-
-  if (mod10 === 1 && mod100 !== 11) {
-    return `${count} взрослый`
-  }
-
-  return `${count} взрослых`
+function formatHuntersLabel(count: number) {
+  return pluralizeRu(count, ['охотник', 'охотника', 'охотников'])
 }
 
-const guestsLabel = computed(() => formatAdultsLabel(adultsCount.value))
+const guestsLabel = computed(() => formatHuntersLabel(adultsCount.value))
 
 const checkInLabel = computed(() =>
   checkIn.value ? formatDisplayDate(checkIn.value) : 'Заезд',
@@ -395,7 +389,7 @@ defineExpose({
     :class="{ 'hotel-dates-guests--dropdown-open': isAnyDropdownOpen }"
     :style="blocksStyle"
   >
-    <h2 class="hotel-dates-guests__title">Даты и гости</h2>
+    <h2 class="hotel-dates-guests__title">Даты и охотники</h2>
 
     <form class="hotel-dates-guests__form" @submit.prevent="handleSubmit">
       <div class="hotel-dates-guests__panel">
@@ -469,7 +463,7 @@ defineExpose({
           class="hotel-dates-guests__field hotel-dates-guests__field--guests"
           :class="{ 'hotel-dates-guests__field--open': isGuestsOpen }"
         >
-          <span class="hotel-dates-guests__label">Гости</span>
+          <span class="hotel-dates-guests__label">Охотники</span>
           <button
             type="button"
             class="hotel-dates-guests__value"
@@ -481,7 +475,7 @@ defineExpose({
             v-if="adultsCount > 1"
             type="button"
             class="hotel-dates-guests__clear"
-            aria-label="Сбросить количество гостей"
+            aria-label="Сбросить количество охотников"
             @click="clearGuests"
           >
             <svg viewBox="0 0 12 12" aria-hidden="true">
@@ -501,12 +495,12 @@ defineExpose({
 
           <div v-if="isGuestsOpen" class="hotel-dates-guests__dropdown">
             <div class="hotel-dates-guests__guest-row">
-              <span class="hotel-dates-guests__guest-label">Взрослые</span>
+              <span class="hotel-dates-guests__guest-label">Охотники</span>
               <div class="hotel-dates-guests__guest-stepper">
                 <button
                   type="button"
                   class="hotel-dates-guests__guest-btn"
-                  aria-label="Уменьшить количество взрослых"
+                  aria-label="Уменьшить количество охотников"
                   :disabled="adultsCount <= 1"
                   @click="decrementAdults"
                 >
@@ -519,7 +513,7 @@ defineExpose({
                   pattern="[0-9]*"
                   class="hotel-dates-guests__guest-count"
                   :value="adultsCount"
-                  aria-label="Количество взрослых"
+                  aria-label="Количество охотников"
                   @input="onAdultsInput"
                   @blur="onAdultsBlur"
                   @keydown.enter.prevent="onAdultsBlur"
@@ -528,7 +522,7 @@ defineExpose({
                 <button
                   type="button"
                   class="hotel-dates-guests__guest-btn"
-                  aria-label="Увеличить количество взрослых"
+                  aria-label="Увеличить количество охотников"
                   :disabled="adultsCount >= maxAdults"
                   @click="incrementAdults"
                 >
