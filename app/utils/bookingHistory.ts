@@ -81,6 +81,24 @@ const HUNT_INFO_ACTION: BookingAction = {
   variant: 'success',
 }
 
+const ADD_SERVICES_ACTION: BookingAction = {
+  id: 'add_services',
+  label: 'Добавить услуги',
+  variant: 'success',
+}
+
+function withMarkPaidFirst(actions: BookingAction[]): BookingAction[] {
+  const markPaid = actions.filter(action => action.id === 'mark_paid')
+  if (markPaid.length === 0) {
+    return actions
+  }
+
+  return [
+    ...markPaid,
+    ...actions.filter(action => action.id !== 'mark_paid'),
+  ]
+}
+
 function withCancelActionLast(actions: BookingAction[], status: string): BookingAction[] {
   const visibleActions = PREPAYMENT_COLLECTED_STATUSES.has(status)
     ? actions.filter(action => action.id !== 'cancel_booking')
@@ -209,7 +227,9 @@ function mapActions(
               : 'Собрать охотников')
           : action.code === 'open_invitation'
           ? 'Список приглашенных'
-          : action.label,
+          : action.code === 'mark_paid' && !isHunter
+            ? 'Подтвердить событие'
+            : action.label,
       variant: ACTION_VARIANT_MAP[action.code] ?? 'success',
     })
 
@@ -230,6 +250,14 @@ function mapActions(
     mapped.push({ ...HUNT_INFO_ACTION })
   }
 
+  if (
+    status === 'paid'
+    && (!isHunter || isMasterHunter)
+    && !mapped.some(action => action.id === 'add_services')
+  ) {
+    mapped.push({ ...ADD_SERVICES_ACTION })
+  }
+
   if (isHunter && status === 'finish_bed_collection') {
     return {
       actions: withCancelActionLast(
@@ -242,7 +270,10 @@ function mapActions(
     }
   }
 
-  return { actions: withCancelActionLast(mapped, status), paymentAction }
+  return {
+    actions: withCancelActionLast(isHunter ? mapped : withMarkPaidFirst(mapped), status),
+    paymentAction,
+  }
 }
 
 function isPrepaymentCollected(item: BookingHistoryItemDto) {

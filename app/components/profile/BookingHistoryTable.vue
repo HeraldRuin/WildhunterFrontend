@@ -642,15 +642,15 @@ onBeforeUnmount(() => {
                     :class="{ 'booking-table__payment-summary--after-badge': item.status.code !== 'paid' && item.status.code !== 'completed' }"
                   >
                     <div>Внесена предоплата: {{ formatPrice(item.payment?.prepaidTotal ?? 0) }} руб</div>
-                    <div>Остаток базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</div>
-                    <div>Всего: {{ formatPrice(item.payment?.total ?? 0) }} руб</div>
+                    <div>Остаток доплаты базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</div>
+                    <div>Всего по мероприятию: {{ formatPrice(item.payment?.total ?? 0) }} руб</div>
                   </div>
                 </template>
                 <div
                   v-else-if="showCustomer && isHuntingFinishedCollection(item)"
                   class="booking-table__payment-summary"
                 >
-                  <div>Остаток базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб.</div>
+                  <div>Остаток доплаты базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб.</div>
                 </div>
               </div>
             </td>

@@ -1993,15 +1993,18 @@ function handleKeydown(event: KeyboardEvent) {
   overflow-y: auto;
 }
 
-.add-services-modal__card:has(.select-field--open),
-.add-services-modal__body:has(.select-field--open),
 .add-services-modal__block-list:has(.select-field--open) {
+  max-height: none;
   overflow: visible;
 }
 
-.add-services-modal__block:has(.select-field--open) {
-  position: relative;
-  z-index: 10;
+.add-services-modal__form-row:has(.select-field--open) {
+  align-items: start;
+}
+
+.add-services-modal__block :deep(.select-field--open .select-field__list) {
+  position: static;
+  width: 100%;
 }
 
 .add-services-modal__block-head {
@@ -2026,7 +2029,7 @@ function handleKeydown(event: KeyboardEvent) {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--wh-gray-900);
+  color: var(--wh-orange-500);
 }
 
 .add-services-modal__toggle {

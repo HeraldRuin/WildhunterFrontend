@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { BookingCalculatingData, BookingCalculationLine } from '~/types/api'
-import { formatHotelPrice } from '~/utils/hotel'
+import { formatHotelPriceLabel } from '~/utils/hotel'
 
-const TOOLTIP_TEXT = 'За человека в сутки'
+const TOOLTIP_TEXT = 'на человека'
 const CALCULATION_NOTIFICATION_GROUP = 'calculation'
 /** Ожидаемые состояния калькуляции — достаточно текста в модалке, без toast */
 const SILENT_CALCULATION_ERROR_CODES = new Set([
@@ -22,6 +22,7 @@ function shouldNotifyCalculationError(errorCode?: string) {
 const isLoading = ref(false)
 const loadError = ref('')
 const calculation = ref<BookingCalculatingData | null>(null)
+const openTooltipKey = ref<string | null>(null)
 let loadRequestId = 0
 
 useBodyScrollLock(isOpen)
@@ -51,7 +52,34 @@ function resetCalculation() {
   isLoading.value = false
   loadError.value = ''
   calculation.value = null
+  openTooltipKey.value = null
 }
+
+function toggleTooltip(key: string) {
+  openTooltipKey.value = openTooltipKey.value === key ? null : key
+}
+
+function onDocumentClick(event: MouseEvent) {
+  const target = event.target
+  if (target instanceof Element && target.closest('.calculation-modal__alert-wrap')) {
+    return
+  }
+
+  openTooltipKey.value = null
+}
+
+watch(openTooltipKey, (key) => {
+  if (key) {
+    document.addEventListener('click', onDocumentClick)
+    return
+  }
+
+  document.removeEventListener('click', onDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocumentClick)
+})
 
 async function loadCalculation(code: string) {
   const requestId = ++loadRequestId
@@ -173,18 +201,27 @@ function isBoldLine(name: string) {
                   :key="lineKey(item, index)"
                 >
                   <td>{{ item.name }}</td>
-                  <td>{{ formatHotelPrice(item.total_cost) }}</td>
+                  <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                   <td v-if="showMyCosts">
-                    <span>{{ formatHotelPrice(item.my_cost) }}</span>
-                    <button
-                      v-if="item.has_tooltip"
-                      type="button"
-                      class="calculation-modal__alert"
-                      :title="TOOLTIP_TEXT"
-                      :aria-label="TOOLTIP_TEXT"
-                    >
-                      !
-                    </button>
+                    <span>{{ formatHotelPriceLabel(item.my_cost) }}</span>
+                    <span v-if="item.has_tooltip" class="calculation-modal__alert-wrap">
+                      <button
+                        type="button"
+                        class="calculation-modal__alert"
+                        :aria-expanded="openTooltipKey === lineKey(item, index)"
+                        :aria-label="TOOLTIP_TEXT"
+                        @click.stop="toggleTooltip(lineKey(item, index))"
+                      >
+                        !
+                      </button>
+                      <span
+                        v-if="openTooltipKey === lineKey(item, index)"
+                        class="calculation-modal__alert-popup"
+                        role="tooltip"
+                      >
+                        {{ TOOLTIP_TEXT }}
+                      </span>
+                    </span>
                   </td>
                 </tr>
 
@@ -199,8 +236,8 @@ function isBoldLine(name: string) {
                     :key="`trophy-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
-                    <td>{{ formatHotelPrice(item.total_cost) }}</td>
-                    <td v-if="showMyCosts">{{ formatHotelPrice(item.my_cost) }}</td>
+                    <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                    <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
                 </template>
 
@@ -215,8 +252,8 @@ function isBoldLine(name: string) {
                     :key="`penalty-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
-                    <td>{{ formatHotelPrice(item.total_cost) }}</td>
-                    <td v-if="showMyCosts">{{ formatHotelPrice(item.my_cost) }}</td>
+                    <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                    <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
                 </template>
 
@@ -231,8 +268,8 @@ function isBoldLine(name: string) {
                     :key="`extra-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
-                    <td>{{ formatHotelPrice(item.total_cost) }}</td>
-                    <td v-if="showMyCosts">{{ formatHotelPrice(item.my_cost) }}</td>
+                    <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                    <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
                 </template>
 
@@ -247,8 +284,8 @@ function isBoldLine(name: string) {
                     :key="`spending-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
-                    <td>{{ formatHotelPrice(item.total_cost) }}</td>
-                    <td>{{ formatHotelPrice(item.my_cost) }}</td>
+                    <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                    <td>{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
                 </template>
 
@@ -268,8 +305,8 @@ function isBoldLine(name: string) {
                   </tr>
                   <tr :class="{ 'calculation-modal__total': isBoldLine(item.name) }">
                     <td>{{ lineName(item.name) }}</td>
-                    <td>{{ formatHotelPrice(item.total_cost) }}</td>
-                    <td v-if="showMyCosts">{{ formatHotelPrice(item.my_cost) }}</td>
+                    <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                    <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
                   <tr v-if="item.name === 'Внесена предоплата'" class="calculation-modal__section">
                     <td></td>
@@ -403,11 +440,16 @@ function isBoldLine(name: string) {
   white-space: nowrap;
 }
 
+.calculation-modal__alert-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-left: 4px;
+}
+
 .calculation-modal__alert {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: 4px;
   padding: 0;
   border: none;
   background: none;
@@ -416,6 +458,24 @@ function isBoldLine(name: string) {
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
+}
+
+.calculation-modal__alert-popup {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 6px);
+  z-index: 2;
+  transform: translateY(-50%);
+  padding: 8px 10px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 8px;
+  background: var(--wh-white);
+  box-shadow: var(--wh-shadow);
+  color: var(--wh-gray-900);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
 }
 
 .calculation-modal__table td.calculation-modal__owe {
