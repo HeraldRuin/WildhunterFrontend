@@ -395,7 +395,10 @@ const bookings = computed<BookingHistoryItem[]>(() => {
       isHunter: isHunter.value,
     }, timerNow.value)
 
-    if (completedPrepaymentExpirations.has(booking.code)) {
+    if (
+      completedPrepaymentExpirations.has(booking.code)
+      && booking.status.code !== 'cancelled'
+    ) {
       return {
         ...booking,
         status: {

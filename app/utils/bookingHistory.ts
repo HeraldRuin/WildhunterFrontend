@@ -305,6 +305,21 @@ function isPrepaymentCollected(item: BookingHistoryItemDto) {
   return accepted > 0 && paid >= accepted
 }
 
+function prepaymentIncompleteCancelReason(item: BookingHistoryItemDto): string | undefined {
+  if (item.status !== 'cancelled') {
+    return undefined
+  }
+
+  const accepted = item.collection?.accepted_count ?? 0
+  const paid = item.collection?.paid_count ?? 0
+
+  if (accepted > 0 && paid < accepted && item.collection?.paid_end_at) {
+    return 'Не все участники внесли предоплату'
+  }
+
+  return undefined
+}
+
 function collectionNeededCount(item: BookingHistoryItemDto): number {
   const hunting = Number(item.details?.total_hunting)
 
@@ -479,6 +494,7 @@ export function mapBookingHistoryItem(
     },
     prepaymentCollected: isPrepaymentCollected(item),
     paymentAction,
+    cancelReason: prepaymentIncompleteCancelReason(item),
     actions,
     isMasterHunter: Boolean(item.is_master_hunter),
     isInvitation: Boolean(item.is_invited),

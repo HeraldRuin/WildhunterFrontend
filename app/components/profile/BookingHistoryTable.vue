@@ -567,7 +567,7 @@ onBeforeUnmount(() => {
                   {{ item.status.label }}<template v-if="item.status.timerHours"> ({{ item.status.timerHours }} ч)</template>
                 </div>
                 <div
-                  v-if="item.status.timer && item.status.code !== 'finish_bed_collection'"
+                  v-if="item.status.timer && item.status.code !== 'finish_bed_collection' && item.status.code !== 'cancelled'"
                   class="booking-table__status-meta booking-table__status-meta--timer"
                   :class="{
                     'booking-table__status-meta--expired':
@@ -629,8 +629,14 @@ onBeforeUnmount(() => {
             </td>
             <td class="booking-table__payment" data-label="Оплата">
               <div class="booking-table__value">
+                <div
+                  v-if="item.cancelReason"
+                  class="booking-table__grand-total booking-table__cancel-reason"
+                >
+                  {{ item.cancelReason }}
+                </div>
                 <button
-                  v-if="
+                  v-else-if="
                     showHunterCalculation
                     && isPaymentVisibleStatus(item.status.code)
                   "
@@ -972,6 +978,10 @@ onBeforeUnmount(() => {
   background: #2f8fc9;
   color: var(--wh-white);
   font-weight: 600;
+}
+
+.booking-table__cancel-reason {
+  margin-top: 0;
 }
 
 .booking-table__rooms {
