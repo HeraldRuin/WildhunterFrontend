@@ -988,7 +988,7 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
 
   if (action.id === 'mark_paid') {
     openConfirmModal({
-      title: 'Это действие переведет бронь в статус «Оплачено». Продолжить?',
+      title: 'Это действие переведет бронь в статус «Подтверждено событие». Продолжить?',
       onConfirm: () => markPaid(booking),
     })
     return
