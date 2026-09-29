@@ -488,10 +488,18 @@ async function expirePrepayment(code: string): Promise<boolean> {
       return true
     }
 
+    if ('error_code' in response && response.error_code === 'prepayment_timer_not_expired') {
+      return false
+    }
+
     notifications.error(response.message || 'Не удалось завершить сбор предоплаты')
   }
   catch (error) {
-    const data = (error as { data?: { message?: string } }).data
+    const data = (error as { data?: { message?: string, error_code?: string } }).data
+    if (data?.error_code === 'prepayment_timer_not_expired') {
+      return false
+    }
+
     notifications.error(data?.message || 'Не удалось завершить сбор предоплаты')
   }
 

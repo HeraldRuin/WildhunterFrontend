@@ -345,7 +345,7 @@ function buildStatus(item: BookingHistoryItemDto, now: number) {
     result.timerHours = item.hotel?.paid_timer_hours || undefined
     result.timer = collection.paid_end_at
       ? formatRemainingTimer(collection.paid_end_at, now) || '00 мин 00 сек'
-      : '00 мин 00 сек'
+      : undefined
     if (collection.accepted_count > 0) {
       result.paid = `Оплачено ${collection.paid_count}/${collection.accepted_count}`
     }
