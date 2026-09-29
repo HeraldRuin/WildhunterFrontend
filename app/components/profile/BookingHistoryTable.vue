@@ -1035,18 +1035,24 @@ onBeforeUnmount(() => {
 }
 
 .booking-table__payment-btn {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--wh-orange-text);
-  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--wh-orange-500);
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+  font-size: 0.75rem;
   font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .booking-table__payment-btn:hover {
-  color: var(--wh-orange-600);
+  background: var(--wh-orange-600);
+  border-color: var(--wh-orange-600);
 }
 
 .booking-table__actions-list {

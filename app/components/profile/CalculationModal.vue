@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BookingCalculatingData, BookingCalculationLine } from '~/types/api'
+import { formatHotelPrice } from '~/utils/hotel'
 
 const TOOLTIP_TEXT = 'За человека в сутки'
 const CALCULATION_NOTIFICATION_GROUP = 'calculation'
@@ -30,6 +31,8 @@ const additionalServices = computed(() => [
   ...(calculation.value?.preparation ?? []),
   ...(calculation.value?.addetionals ?? []),
 ])
+
+const showMyCosts = computed(() => !calculation.value?.is_baseAdmin)
 
 watch(
   () => booking.value?.code,
@@ -108,6 +111,24 @@ function handleKeydown(event: KeyboardEvent) {
 function lineKey(line: BookingCalculationLine, index: number) {
   return `${line.name}-${index}`
 }
+
+const BOLD_LINE_NAMES = new Set(['Остаток базе', 'Итог охотникам'])
+
+function lineName(name: string) {
+  if (name === 'Остаток базе') {
+    return 'Остаток оплаты на базу'
+  }
+
+  if (name === 'Итог охотникам') {
+    return 'Итого по охотникам'
+  }
+
+  return name
+}
+
+function isBoldLine(name: string) {
+  return BOLD_LINE_NAMES.has(name)
+}
 </script>
 
 <template>
@@ -126,7 +147,7 @@ function lineKey(line: BookingCalculationLine, index: number) {
           <CommonModalCloseButton @click="close" />
 
           <h2 id="calculation-modal-title" class="calculation-modal__title">
-            Калькуляция
+            Калькуляция по мероприятию
           </h2>
 
           <div class="calculation-modal__body">
@@ -142,8 +163,8 @@ function lineKey(line: BookingCalculationLine, index: number) {
               <thead>
                 <tr class="calculation-modal__section">
                   <th>Услуги</th>
-                  <th>Всего расходы</th>
-                  <th>Мои расходы</th>
+                  <th>Общие расходы</th>
+                  <th v-if="showMyCosts">Мои личные расходы</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,9 +173,9 @@ function lineKey(line: BookingCalculationLine, index: number) {
                   :key="lineKey(item, index)"
                 >
                   <td>{{ item.name }}</td>
-                  <td>{{ item.total_cost }}</td>
-                  <td>
-                    <span>{{ item.my_cost }}</span>
+                  <td>{{ formatHotelPrice(item.total_cost) }}</td>
+                  <td v-if="showMyCosts">
+                    <span>{{ formatHotelPrice(item.my_cost) }}</span>
                     <button
                       v-if="item.has_tooltip"
                       type="button"
@@ -171,15 +192,15 @@ function lineKey(line: BookingCalculationLine, index: number) {
                   <tr class="calculation-modal__section">
                     <td>Трофеи</td>
                     <td></td>
-                    <td></td>
+                    <td v-if="showMyCosts"></td>
                   </tr>
                   <tr
                     v-for="(item, index) in calculation.trophies"
                     :key="`trophy-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
-                    <td>{{ item.total_cost }}</td>
-                    <td>{{ item.my_cost }}</td>
+                    <td>{{ formatHotelPrice(item.total_cost) }}</td>
+                    <td v-if="showMyCosts">{{ formatHotelPrice(item.my_cost) }}</td>
                   </tr>
                 </template>
 
@@ -187,15 +208,15 @@ function lineKey(line: BookingCalculationLine, index: number) {
                   <tr class="calculation-modal__section">
                     <td>Штрафы</td>
                     <td></td>
-                    <td></td>
+                    <td v-if="showMyCosts"></td>
                   </tr>
                   <tr
                     v-for="(item, index) in calculation.penalties"
                     :key="`penalty-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
-                    <td>{{ item.total_cost }}</td>
-                    <td>{{ item.my_cost }}</td>
+                    <td>{{ formatHotelPrice(item.total_cost) }}</td>
+                    <td v-if="showMyCosts">{{ formatHotelPrice(item.my_cost) }}</td>
                   </tr>
                 </template>
 
@@ -203,21 +224,21 @@ function lineKey(line: BookingCalculationLine, index: number) {
                   <tr class="calculation-modal__section">
                     <td>Доп. услуги</td>
                     <td></td>
-                    <td></td>
+                    <td v-if="showMyCosts"></td>
                   </tr>
                   <tr
                     v-for="(item, index) in additionalServices"
                     :key="`extra-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
-                    <td>{{ item.total_cost }}</td>
-                    <td>{{ item.my_cost }}</td>
+                    <td>{{ formatHotelPrice(item.total_cost) }}</td>
+                    <td v-if="showMyCosts">{{ formatHotelPrice(item.my_cost) }}</td>
                   </tr>
                 </template>
 
-                <template v-if="!calculation.is_baseAdmin && calculation.spendings_show">
+                <template v-if="showMyCosts && calculation.spendings_show">
                   <tr class="calculation-modal__section">
-                    <td>Расходы охотников</td>
+                    <td>Личные расходы охотников на мероприятии</td>
                     <td></td>
                     <td class="calculation-modal__owe">Я должен</td>
                   </tr>
@@ -226,29 +247,34 @@ function lineKey(line: BookingCalculationLine, index: number) {
                     :key="`spending-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
-                    <td>{{ item.total_cost }}</td>
-                    <td>{{ item.my_cost }}</td>
+                    <td>{{ formatHotelPrice(item.total_cost) }}</td>
+                    <td>{{ formatHotelPrice(item.my_cost) }}</td>
                   </tr>
                 </template>
 
                 <tr class="calculation-modal__section">
                   <td>Подытог</td>
                   <td></td>
-                  <td></td>
+                  <td v-if="showMyCosts"></td>
                 </tr>
                 <template
                   v-for="(item, index) in calculation.all_items"
                   :key="`total-${lineKey(item, index)}`"
                 >
-                  <tr v-if="index === 1" class="calculation-modal__owe-row">
+                  <tr v-if="showMyCosts && index === 1" class="calculation-modal__section">
                     <td></td>
                     <td></td>
                     <td class="calculation-modal__owe">Я должен</td>
                   </tr>
-                  <tr>
-                    <td>{{ item.name }}</td>
-                    <td>{{ item.total_cost }}</td>
-                    <td>{{ item.my_cost }}</td>
+                  <tr :class="{ 'calculation-modal__total': isBoldLine(item.name) }">
+                    <td>{{ lineName(item.name) }}</td>
+                    <td>{{ formatHotelPrice(item.total_cost) }}</td>
+                    <td v-if="showMyCosts">{{ formatHotelPrice(item.my_cost) }}</td>
+                  </tr>
+                  <tr v-if="item.name === 'Внесена предоплата'" class="calculation-modal__section">
+                    <td></td>
+                    <td></td>
+                    <td v-if="showMyCosts"></td>
                   </tr>
                 </template>
               </tbody>
@@ -348,7 +374,23 @@ function lineKey(line: BookingCalculationLine, index: number) {
 
 .calculation-modal__section th,
 .calculation-modal__section td {
-  background: var(--wh-gray-100);
+  background: var(--wh-gray-450);
+  border-top-color: var(--wh-gray-450);
+  border-bottom-color: var(--wh-gray-450);
+  font-weight: 700;
+}
+
+.calculation-modal__section th:not(:first-child),
+.calculation-modal__section td:not(:first-child) {
+  border-left-color: #bcbcbc;
+}
+
+.calculation-modal__section th:not(:last-child),
+.calculation-modal__section td:not(:last-child) {
+  border-right-color: #bcbcbc;
+}
+
+.calculation-modal__total td {
   font-weight: 700;
 }
 
@@ -375,12 +417,7 @@ function lineKey(line: BookingCalculationLine, index: number) {
   cursor: pointer;
 }
 
-.calculation-modal__owe-row td {
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
-.calculation-modal__owe {
+.calculation-modal__table td.calculation-modal__owe {
   color: var(--wh-field-error);
   font-size: 0.78rem;
   font-weight: 700;
