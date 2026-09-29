@@ -25,7 +25,6 @@ function handleSearch(payload: Record<string, string>) {
     <div class="hero-block__inner">
       <HomeHeroHeader />
     </div>
-    <p class="hero-block__eyebrow">Онлайн-платформа для настоящих охотников</p>
     <div class="hero-block__search">
       <h1 class="hero-block__heading">Организуйте охоту с понятными расходами для каждого</h1>
       <HomeHeroSearchForm :loading="loading" @search="handleSearch" />
@@ -58,19 +57,6 @@ function handleSearch(payload: Record<string, string>) {
 
 .hero-block__inner > * {
   pointer-events: auto;
-}
-
-.hero-block__eyebrow {
-  position: absolute;
-  top: 148px;
-  left: max(24px, calc(50% - 708px));
-  z-index: 2;
-  margin: 0;
-  color: var(--wh-white);
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1.3;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
 .hero-block__search {
@@ -112,12 +98,6 @@ function handleSearch(payload: Record<string, string>) {
     padding-bottom: 0;
   }
 
-  .hero-block__eyebrow {
-    top: 128px;
-    left: 24px;
-    font-size: 16px;
-  }
-
   .hero-block__search {
     position: absolute;
     top: 470px;
@@ -145,12 +125,6 @@ function handleSearch(payload: Record<string, string>) {
   .hero-block__inner {
     min-height: auto;
     padding-bottom: 0;
-  }
-
-  .hero-block__eyebrow {
-    position: static;
-    margin: 20px 12px 0;
-    font-size: 14px;
   }
 
   .hero-block__search {
