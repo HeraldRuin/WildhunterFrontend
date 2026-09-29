@@ -386,7 +386,7 @@ async function handleFavoriteClick(event: MouseEvent) {
           v-else
           class="offer-card__animals-empty"
         >
-          нет животных для охоты
+          Сейчас охота недоступна
         </span>
       </div>
       <div class="offer-card__footer">

@@ -348,7 +348,7 @@ function handleRetryHotelLoad() {
                 v-else
                 class="hotel-page__animals-empty"
               >
-                нет животных для охоты
+                Сейчас охота недоступна
               </span>
             </div>
 
