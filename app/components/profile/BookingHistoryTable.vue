@@ -138,6 +138,10 @@ function isHuntingFinishedCollection(item: BookingHistoryItem) {
   return item.type === 'animal' && item.status.code === 'finished_collection'
 }
 
+function isHunterPaidConfirmation(item: BookingHistoryItem) {
+  return Boolean(props.showHunterCalculation) && item.status.code === 'paid'
+}
+
 function isHuntOnlyBooking(item: BookingHistoryItem) {
   if (item.type === 'animal') {
     return Boolean(item.hunt)
@@ -528,6 +532,13 @@ onBeforeUnmount(() => {
             <td class="booking-table__status" data-label="Статус">
               <div class="booking-table__value">
                 <div
+                  v-if="isHunterPaidConfirmation(item)"
+                  class="booking-table__paid-message"
+                >
+                  Поздравляем! База подтвердила событие. Ждем вас на охоте
+                </div>
+                <div
+                  v-else
                   class="booking-table__status-label"
                   :class="{
                     'booking-table__status-label--danger':
@@ -842,6 +853,13 @@ onBeforeUnmount(() => {
   max-width: 110px;
 }
 
+.booking-table:has(.booking-table__paid-message) th:nth-child(5),
+.booking-table:has(.booking-table__paid-message) .booking-table__status {
+  width: 190px;
+  min-width: 180px;
+  max-width: 210px;
+}
+
 .booking-table th:nth-child(7),
 .booking-table td.booking-table__actions {
   width: 150px;
@@ -964,6 +982,16 @@ onBeforeUnmount(() => {
 .booking-table__rooms > .booking-table__stay-grid {
   padding: 0;
   border: none;
+}
+
+.booking-table__paid-message {
+  padding: 6px 8px;
+  border: 1px solid #2f8fc9;
+  border-radius: 4px;
+  background: #2f8fc9;
+  color: var(--wh-white);
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .booking-table__status-label {
