@@ -243,6 +243,8 @@ function mapActions(
               : 'Собрать охотников')
           : action.code === 'open_invitation'
           ? 'Список приглашенных'
+          : action.code === 'complete' && !isHunter
+            ? 'Оплата полностью получена. Завершить событие'
           : action.code === 'mark_paid' && !isHunter
             ? 'Подтвердить событие'
             : action.label,
