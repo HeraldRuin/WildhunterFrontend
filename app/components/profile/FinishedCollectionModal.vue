@@ -95,7 +95,7 @@ const sortedInvitations = computed(() => {
 })
 
 function prepaymentStatusLabel(invitation: BookingInvitationParticipant) {
-  if (invitation.prepaymentPaid) return 'Оплачено'
+  if (invitation.prepaymentPaid) return 'Внесена предоплата'
   if (invitation.prepaymentPaidStatus === 'unpaid') return 'Не оплачено'
   return 'Ожидается оплата'
 }
@@ -306,7 +306,7 @@ function handleKeydown(event: KeyboardEvent) {
 
           <h2 id="finished-collection-modal-title" class="finished-collection-modal__title">
             <template v-if="isFinishedBooking(booking.status.code)">
-              Информация о бронировании #{{ booking.number }}
+              Информация о мероприятии бронирования #{{ booking.number }}
             </template>
             <template v-else>
               Сбор для брони #{{ booking.number }}
