@@ -138,8 +138,18 @@ function isHuntingFinishedCollection(item: BookingHistoryItem) {
   return item.type === 'animal' && item.status.code === 'finished_collection'
 }
 
-function isHunterPaidConfirmation(item: BookingHistoryItem) {
-  return Boolean(props.showHunterCalculation) && item.status.code === 'paid'
+function paidConfirmationMessage(item: BookingHistoryItem) {
+  if (item.status.code !== 'paid') return ''
+
+  if (props.showHunterCalculation) {
+    return 'Поздравляем! База подтвердила событие. Ждем вас на охоте'
+  }
+
+  if (props.showCustomer) {
+    return 'Событие подтверждено. Ожидание охотников на базе'
+  }
+
+  return ''
 }
 
 function isHuntOnlyBooking(item: BookingHistoryItem) {
@@ -532,10 +542,10 @@ onBeforeUnmount(() => {
             <td class="booking-table__status" data-label="Статус">
               <div class="booking-table__value">
                 <div
-                  v-if="isHunterPaidConfirmation(item)"
+                  v-if="paidConfirmationMessage(item)"
                   class="booking-table__paid-message"
                 >
-                  Поздравляем! База подтвердила событие. Ждем вас на охоте
+                  {{ paidConfirmationMessage(item) }}
                 </div>
                 <div
                   v-else
@@ -641,7 +651,7 @@ onBeforeUnmount(() => {
                     class="booking-table__payment-summary"
                     :class="{ 'booking-table__payment-summary--after-badge': item.status.code !== 'paid' && item.status.code !== 'completed' }"
                   >
-                    <div>Внесена предоплата: {{ formatPrice(item.payment?.prepaidTotal ?? 0) }} руб</div>
+                    <div>Предоплата собрана: {{ formatPrice(item.payment?.prepaidTotal ?? 0) }} руб</div>
                     <div>Остаток доплаты базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</div>
                     <div>Всего по мероприятию: {{ formatPrice(item.payment?.total ?? 0) }} руб</div>
                   </div>

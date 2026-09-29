@@ -77,7 +77,7 @@ const HUNT_INFO_STATUSES = new Set(['paid', 'completed'])
 
 const HUNT_INFO_ACTION: BookingAction = {
   id: 'open_collection',
-  label: 'Информация об охоте',
+  label: 'Участники события',
   variant: 'success',
 }
 
@@ -190,6 +190,17 @@ function mapType(type: string): BookingType {
   return 'hotel'
 }
 
+function isCheckoutToday(endDate: string | null | undefined, now: number) {
+  const checkout = endDate ? parseBirthdayDate(endDate) : null
+  if (!checkout) return false
+
+  const today = new Date(now)
+
+  return checkout.getFullYear() === today.getFullYear()
+    && checkout.getMonth() === today.getMonth()
+    && checkout.getDate() === today.getDate()
+}
+
 function mapActions(
   actions: BookingHistoryActionDto[],
   status: string,
@@ -197,6 +208,7 @@ function mapActions(
   isHunter = false,
   isMasterHunter = false,
   type: BookingType = 'hotel',
+  checkoutToday = false,
 ): {
   actions: BookingAction[]
   paymentAction?: string
@@ -211,6 +223,10 @@ function mapActions(
     }
 
     if (action.code === 'cancel_collection') {
+      continue
+    }
+
+    if (action.code === 'complete' && !checkoutToday) {
       continue
     }
 
@@ -381,6 +397,7 @@ export function mapBookingHistoryItem(
     Boolean(fallback?.isHunter),
     Boolean(item.is_master_hunter),
     type,
+    isCheckoutToday(item.details.end_date, now),
   )
   const details = item.details
   const rooms = details.rooms || []
