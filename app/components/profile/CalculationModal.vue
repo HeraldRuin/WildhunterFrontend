@@ -377,6 +377,7 @@ function isBoldLine(name: string) {
   background: var(--wh-gray-450);
   border-top-color: var(--wh-gray-450);
   border-bottom-color: var(--wh-gray-450);
+  color: var(--wh-orange-500);
   font-weight: 700;
 }
 
