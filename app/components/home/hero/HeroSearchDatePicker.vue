@@ -33,7 +33,7 @@ const activePart = defineModel<'start' | 'end' | null>('activePart', { default: 
 const viewMonth = ref(startOfDay(start.value ?? props.minDate ?? new Date()))
 const weekdays = getWeekdayNames()
 const isSingle = computed(() => props.mode === 'single')
-const hasDateLimits = computed(() => Boolean(props.minDate || props.maxDate))
+const hasDateLimits = computed(() => Boolean(props.minDate && props.maxDate))
 
 const currentMonth = computed(() => new Date(viewMonth.value.getFullYear(), viewMonth.value.getMonth(), 1))
 
@@ -116,6 +116,14 @@ watch(
   },
   { immediate: true },
 )
+
+function isBeforeMinDate(date: Date) {
+  if (!props.minDate) {
+    return false
+  }
+
+  return startOfDay(date).getTime() < startOfDay(props.minDate).getTime()
+}
 
 function isUnavailableNight(date: Date) {
   return unavailableDateSet.value.has(formatApiDate(date))
@@ -295,7 +303,8 @@ function goToNextYear() {
                   hasDateLimits
                   && !isSingle
                   && !isDateDisabled(day.date),
-                'hero-search-calendar__day--unavailable': isUnavailableNight(day.date),
+                'hero-search-calendar__day--unavailable':
+                  isUnavailableNight(day.date) && !isBeforeMinDate(day.date),
                 'hero-search-calendar__day--disabled': isDateDisabled(day.date),
               }"
               :disabled="isDateDisabled(day.date)"
@@ -454,10 +463,6 @@ function goToNextYear() {
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.2s ease;
 }
 
-.hero-search-calendar__cell--outside .hero-search-calendar__day {
-  color: rgb(28 33 28 / 35%);
-}
-
 .hero-search-calendar__day--selected {
   background: var(--wh-orange-500);
   color: var(--wh-white);
@@ -500,17 +505,28 @@ function goToNextYear() {
 
 .hero-search-calendar__day--unavailable,
 .hero-search-calendar__day--unavailable:disabled {
-  color: var(--wh-field-error);
+  color: var(--wh-black-text);
   font-weight: 500;
   background: transparent;
 }
 
-.hero-search-calendar__cell--outside .hero-search-calendar__day--unavailable {
-  color: color-mix(in srgb, var(--wh-field-error) 70%, transparent);
+.hero-search-calendar__day--unavailable::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background:
+    linear-gradient(45deg, transparent calc(50% - 0.6px), currentColor calc(50% - 0.6px) calc(50% + 0.6px), transparent calc(50% + 0.6px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.6px), currentColor calc(50% - 0.6px) calc(50% + 0.6px), transparent calc(50% + 0.6px));
 }
 
-.hero-search-calendar__day--unavailable:not(:disabled):hover {
-  background: rgb(220 38 38 / 10%);
+.hero-search-calendar__day--unavailable.hero-search-calendar__day--selected::after,
+.hero-search-calendar__day--unavailable.hero-search-calendar__day--selected:disabled::after {
+  content: none;
 }
 
 .hero-search-calendar__day--unavailable.hero-search-calendar__day--selected,

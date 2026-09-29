@@ -51,6 +51,7 @@ const checkOut = ref<Date | null>(parseDisplayDate(queryString('checkOut')))
 const adultsCount = ref(adultsFromQuery())
 const hasSelectedAdults = ref(false)
 
+const stayMinDate = computed(() => startOfDay(new Date()))
 const hasDatesFromSearch = ref(Boolean(checkIn.value && checkOut.value))
 const calendarViewRange = ref<{ start: string, end: string } | null>(null)
 const unavailableDates = ref<string[]>([])
@@ -452,6 +453,7 @@ defineExpose({
               v-model:start="checkIn"
               v-model:end="checkOut"
               v-model:active-part="activeDatePart"
+              :min-date="stayMinDate"
               :unavailable-dates="unavailableDates"
               @view-change="onCalendarViewChange"
             />

@@ -24,6 +24,8 @@ function getDefaultCheckIn() {
   return startOfDay(new Date())
 }
 
+const stayMinDate = computed(() => getDefaultCheckIn())
+
 function getDefaultCheckOut() {
   const tomorrow = startOfDay(new Date())
   tomorrow.setDate(tomorrow.getDate() + 1)
@@ -754,6 +756,7 @@ onUnmounted(() => {
           v-model:start="checkIn"
           v-model:end="checkOut"
           v-model:active-part="activeDatePart"
+          :min-date="stayMinDate"
         />
       </div>
     </div>
