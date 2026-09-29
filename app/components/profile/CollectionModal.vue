@@ -1265,15 +1265,15 @@ function updateStatsPanelLayout() {
               >
                 Завершить сбор
               </button>
+              <button type="button" class="collection-modal__btn" disabled>
+                Открытый сбор
+              </button>
               <button
                 type="button"
                 class="collection-modal__btn collection-modal__btn--danger"
                 @click="requestCollectionCancellation"
               >
                 Отменить сбор
-              </button>
-              <button type="button" class="collection-modal__btn" disabled>
-                Открытый сбор
               </button>
             </div>
           </footer>
