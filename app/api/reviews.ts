@@ -4,14 +4,23 @@ import type {
   ReviewRatingOption,
   ReviewsQuery,
   ServiceReview,
+  ServiceReviewAuthor,
 } from '~/types/api'
 import { useApiClient } from './client'
 
+function formatReviewAuthorName(author: ServiceReviewAuthor) {
+  const firstName = author.first_name?.trim() ?? ''
+
+  if (!firstName) {
+    return 'Охотник'
+  }
+
+  return firstName
+}
+
 export function mapServiceReviewToItem(review: ServiceReview): ReviewItem {
   const author = review.author
-  const fullName = [author.first_name, author.last_name].filter(Boolean).join(' ')
-  const rawName = fullName || author.name || author.nik || ''
-  const name = !rawName || rawName.trim() === 'Гость' ? 'Охотник' : rawName
+  const name = formatReviewAuthorName(author)
 
   return {
     id: review.id,
