@@ -1031,6 +1031,7 @@ onUnmounted(() => {
 }
 
 .hero-search__dates-control {
+  flex: 1;
   gap: 0;
   padding-right: 28px;
 }
