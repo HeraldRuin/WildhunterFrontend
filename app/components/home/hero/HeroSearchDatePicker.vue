@@ -166,7 +166,7 @@ function isDateDisabled(date: Date) {
   const rangeStart = start.value
 
   if (rangeStart && isSelectingCheckout(normalized)) {
-    return hasUnavailableNightInStay(rangeStart, normalized)
+    return isUnavailableNight(normalized) || hasUnavailableNightInStay(rangeStart, normalized)
   }
 
   return isUnavailableNight(normalized)

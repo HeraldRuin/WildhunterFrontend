@@ -87,11 +87,21 @@ const isAnyDropdownOpen = computed(() => isDatesOpen.value || isGuestsOpen.value
 
 watch(
   [checkIn, checkOut],
-  ([nextCheckIn, nextCheckOut]) => {
+  ([nextCheckIn, nextCheckOut], previous) => {
     emit('dates-change', {
       checkIn: nextCheckIn,
       checkOut: nextCheckOut,
     })
+
+    const previousCheckOut = previous?.[1]
+    if (
+      isDatesOpen.value
+      && nextCheckIn
+      && nextCheckOut
+      && nextCheckOut !== previousCheckOut
+    ) {
+      closeDatesDropdown()
+    }
   },
   { immediate: true },
 )
@@ -132,28 +142,9 @@ function toggleGuestsDropdown() {
 }
 
 function openDatesDropdown() {
-  const seedingCheckIn = !checkIn.value
-
-  if (!seedingCheckIn && isDatesOpen.value) {
-    closeDatesDropdown()
-    return
-  }
-
-  if (seedingCheckIn) {
-    checkIn.value = startOfDay(new Date())
-    checkOut.value = null
-  }
-
   activeDatePart.value = 'start'
   isDatesOpen.value = true
   closeOtherDropdowns('dates')
-
-  if (seedingCheckIn) {
-    void nextTick(() => {
-      isDatesOpen.value = true
-      activeDatePart.value = 'start'
-    })
-  }
 }
 
 function toggleDatesDropdown() {
@@ -173,7 +164,6 @@ function onDatesFieldClick(event: MouseEvent) {
   }
 
   if (isDatesOpen.value) {
-    closeDatesDropdown()
     return
   }
 
