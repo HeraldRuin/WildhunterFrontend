@@ -8,6 +8,7 @@ import {
 } from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 import { countHuntsForHunters, resolveHuntingPerPerson } from '~/utils/hotelHunt'
+import { pluralizeRu } from '~/utils/pluralize'
 
 definePageMeta({
   layout: 'home',
@@ -152,6 +153,8 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
     })
     .join(', ')
 
+  const roomsCount = data.rooms.reduce((sum, room) => sum + room.number, 0)
+
   return {
     bookingNumber: String(data.booking_number ?? ''),
     bookingDate: formatCheckoutDate(data.created_at),
@@ -164,6 +167,7 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
     checkOut: formatCheckoutDate(data.check_out),
     nights,
     adults: data.total_guests,
+    roomsCount,
     roomLabel,
     accommodationTotal: data.total,
     accommodationPerPerson: data.amount_accommodation_per_person ?? null,
@@ -178,6 +182,18 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
     hasAccommodation: data.type === 'hotel' || data.type === 'hotel_animal',
     hasHunt: data.type === 'animal' || data.type === 'hotel_animal',
   }
+}
+
+function roomWord(count: number) {
+  return pluralizeRu(count, ['номер', 'номера', 'номеров']).replace(/^\d+\s+/, '')
+}
+
+function roomsTotalCaption(count: number) {
+  return `Стоимость за ${roomWord(count)} всего`
+}
+
+function roomPerPersonCaption(count: number) {
+  return `Стоимость за ${roomWord(count)} с человека`
 }
 
 function resolveDraftHuntCount(data: HotelBookingDraft) {
@@ -201,6 +217,7 @@ function mapDraftToView(data: HotelBookingDraft) {
     .map(room => `${room.title} × ${room.quantity}`)
     .join(', ')
 
+  const roomsCount = data.rooms.reduce((sum, room) => sum + room.quantity, 0)
   const huntCount = resolveDraftHuntCount(data)
   const huntingPerPerson = resolveHuntingPerPerson(
     data.hunters,
@@ -220,6 +237,7 @@ function mapDraftToView(data: HotelBookingDraft) {
     checkOut: data.checkOut,
     nights: data.nights,
     adults: data.adults,
+    roomsCount,
     roomLabel,
     accommodationTotal: data.accommodationTotal,
     accommodationPerPerson: data.accommodationPerPerson,
@@ -275,6 +293,65 @@ const booking = computed(() => {
   }
 
   return draft.value ? mapDraftToView(draft.value) : null
+})
+
+const accommodationPerNight = computed(() => {
+  const current = booking.value
+
+  if (!current?.hasAccommodation || current.nights <= 0) {
+    return 0
+  }
+
+  return Math.round(current.accommodationTotal / current.nights)
+})
+
+const eventTotal = computed(() => {
+  const current = booking.value
+
+  if (!current) {
+    return 0
+  }
+
+  const accommodation = current.hasAccommodation ? current.accommodationTotal : 0
+  const hunt = current.hasHunt ? current.organizationFee + current.trophyFee : 0
+
+  return accommodation + hunt
+})
+
+const roomPerPersonTotal = computed(() => {
+  const current = booking.value
+
+  if (!current?.hasAccommodation) {
+    return 0
+  }
+
+  if (current.accommodationPerPerson != null) {
+    return current.accommodationPerPerson
+  }
+
+  if (current.adults <= 0) {
+    return 0
+  }
+
+  return Math.round(current.accommodationTotal / current.adults)
+})
+
+const huntPerPersonTotal = computed(() => {
+  const current = booking.value
+
+  if (!current?.hasHunt) {
+    return 0
+  }
+
+  if (current.huntingPerPerson != null) {
+    return current.huntingPerPerson
+  }
+
+  if (current.hunters <= 0) {
+    return 0
+  }
+
+  return Math.round(current.organizationFee / current.hunters)
 })
 
 const isLoading = computed(() => Boolean(bookingCode.value) && checkoutPending.value && !isConfirmingBooking.value)
@@ -507,9 +584,13 @@ async function confirmSaveBooking() {
                     <dt>Взрослые</dt>
                     <dd>{{ booking.adults }}</dd>
                   </div>
-                  <div class="booking-confirmation__detail-row booking-confirmation__detail-row--room">
-                    <dt>{{ booking.roomLabel }}</dt>
-                    <dd>{{ formatHotelPriceLabel(booking.accommodationTotal) }}</dd>
+                  <div v-if="booking.roomsCount > 0" class="booking-confirmation__detail-row">
+                    <dt>Количество номеров</dt>
+                    <dd>{{ booking.roomsCount }}</dd>
+                  </div>
+                  <div v-if="accommodationPerNight > 0" class="booking-confirmation__detail-row">
+                    <dt>Стоимость за сутки</dt>
+                    <dd>{{ formatHotelPriceLabel(accommodationPerNight) }}</dd>
                   </div>
                   <div
                     v-if="booking.adults >= 2 && booking.accommodationPerPerson != null"
@@ -588,6 +669,7 @@ async function confirmSaveBooking() {
         </div>
 
         <section class="booking-confirmation__requirements">
+          <!--
           <h2 class="booking-confirmation__requirements-title">Особые требования</h2>
           <div class="booking-confirmation__requirements-row">
             <input
@@ -598,6 +680,31 @@ async function confirmSaveBooking() {
               aria-label="Особые требования"
               :readonly="isNotesFieldReadonly"
             >
+          </div>
+          -->
+
+          <h2 class="booking-confirmation__event-total-title">Предварительная смета по мероприятию</h2>
+          <div class="booking-confirmation__event-total">
+            <div class="booking-confirmation__event-total-row">
+              <span class="booking-confirmation__event-total-caption">Взрослых</span>
+              <span class="booking-confirmation__event-total-count">{{ booking.adults }}</span>
+            </div>
+            <div v-if="booking.hasAccommodation && roomPerPersonTotal > 0" class="booking-confirmation__event-total-row">
+              <span class="booking-confirmation__event-total-caption">{{ roomPerPersonCaption(booking.roomsCount) }}</span>
+              <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(roomPerPersonTotal) }}</span>
+            </div>
+            <div v-if="booking.hasHunt && huntPerPersonTotal > 0" class="booking-confirmation__event-total-row">
+              <span class="booking-confirmation__event-total-caption">Стоимость охоты на человека</span>
+              <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(huntPerPersonTotal) }}</span>
+            </div>
+            <div v-if="booking.hasAccommodation" class="booking-confirmation__event-total-row">
+              <span class="booking-confirmation__event-total-caption">{{ roomsTotalCaption(booking.roomsCount) }}</span>
+              <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(booking.accommodationTotal) }}</span>
+            </div>
+            <div class="booking-confirmation__event-total-row">
+              <span class="booking-confirmation__event-total-caption">Стоимость на всех</span>
+              <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(eventTotal) }}</span>
+            </div>
           </div>
 
           <button
@@ -1101,6 +1208,68 @@ async function confirmSaveBooking() {
   border-color: var(--wh-gray-400);
 }
 
+.booking-confirmation__event-total-title {
+  margin: 0 0 12px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
+}
+
+.booking-confirmation__event-total {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-height: 70px;
+  padding: 16px 18px;
+  border: 1px solid var(--wh-gray-400);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--wh-shadow);
+  box-sizing: border-box;
+}
+
+.booking-confirmation__event-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.booking-confirmation__event-total-caption {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
+}
+
+.booking-confirmation__event-total-count {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-black-text);
+}
+
+.booking-confirmation__event-total-value {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-orange-text);
+  white-space: nowrap;
+}
+
 .booking-confirmation__confirm-save {
   display: inline-flex;
   align-items: center;
@@ -1311,6 +1480,16 @@ async function confirmSaveBooking() {
   .booking-confirmation__card-title,
   .booking-confirmation__requirements-title {
     font-size: 22px;
+  }
+
+  .booking-confirmation__event-total-title {
+    font-size: 22px;
+  }
+
+  .booking-confirmation__event-total-caption,
+  .booking-confirmation__event-total-count,
+  .booking-confirmation__event-total-value {
+    font-size: 18px;
   }
 
   .booking-confirmation__summary-row,
