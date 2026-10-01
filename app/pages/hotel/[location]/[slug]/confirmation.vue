@@ -196,6 +196,12 @@ function roomPerPersonCaption(count: number) {
   return `Стоимость за ${roomWord(count)} с человека`
 }
 
+function nightsCaption(count: number) {
+  const word = pluralizeRu(count, ['сутки', 'сутки', 'суток']).replace(/^\d+\s+/, '')
+
+  return word.charAt(0).toUpperCase() + word.slice(1)
+}
+
 function resolveDraftHuntCount(data: HotelBookingDraft) {
   if (data.huntCount != null && data.huntCount > 0) {
     return data.huntCount
@@ -577,7 +583,7 @@ async function confirmSaveBooking() {
                     <dd>{{ booking.checkOut }}</dd>
                   </div>
                   <div class="booking-confirmation__detail-row">
-                    <dt>Ночи</dt>
+                    <dt>{{ nightsCaption(booking.nights) }}</dt>
                     <dd>{{ booking.nights }}</dd>
                   </div>
                   <div class="booking-confirmation__detail-row">
