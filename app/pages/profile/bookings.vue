@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { UserSearchItem } from '~/api/user'
 import type {
+  BookingGatheringCompletedPayload,
   BookingInvitationUpdatedPayload,
   BookingStatusUpdatedPayload,
 } from '~/composables/useBookingStatusChannel'
@@ -24,6 +25,8 @@ const notifications = useNotifications()
 
 const {
   open: openCollectionModal,
+  close: closeCollectionModal,
+  isOpen: isCollectionModalOpen,
   applyInvitationUpdate,
   syncTimerFromBooking,
   state: collectionModalState,
@@ -578,6 +581,31 @@ watch(
   { immediate: true },
 )
 
+function applyBookingGatheringCompleted(payload: BookingGatheringCompletedPayload) {
+  const opened = collectionModalState.value
+  const matchesOpenedGathering = Boolean(
+    opened
+    && (
+      Number(opened.bookingId) === Number(payload.booking_id)
+      || (payload.code && opened.bookingCode === payload.code)
+    ),
+  )
+
+  if (matchesOpenedGathering) {
+    closeCollectionModal()
+  }
+
+  void reloadBooking(payload.code)
+}
+
+async function reloadBooking(code: string) {
+  if (!code) {
+    return
+  }
+
+  await refreshHistory()
+}
+
 function applyBookingStatusUpdate(payload: BookingStatusUpdatedPayload) {
   const response = historyResponse.value
 
@@ -708,9 +736,22 @@ function applyBookingInvitationUpdate(payload: BookingInvitationUpdatedPayload) 
   applyInvitationUpdate(payload)
 }
 
-const { syncSubscriptions } = useBookingStatusChannel(
+const { syncSubscriptions, setGatheringSubscription } = useBookingStatusChannel(
   applyBookingStatusUpdate,
   applyBookingInvitationUpdate,
+  applyBookingGatheringCompleted,
+)
+
+watch(
+  () => (
+    isCollectionModalOpen.value
+      ? collectionModalState.value?.bookingId ?? null
+      : null
+  ),
+  bookingId => {
+    setGatheringSubscription(bookingId)
+  },
+  { immediate: true, flush: 'sync' },
 )
 
 async function refreshHistoryFromChannel() {

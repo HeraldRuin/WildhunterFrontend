@@ -8,6 +8,15 @@ export interface BookingStatusUpdatedPayload {
   status_label: string
 }
 
+export interface BookingGatheringCompletedPayload {
+  booking_id: number
+  code: string
+  status: string
+  status_label: string
+  removed_hunter_ids: number[]
+  removed_invitation_ids: number[]
+}
+
 export type BookingInvitationAction = 'accepted' | 'declined'
 
 export interface BookingInvitationUpdatedPayload {
@@ -24,11 +33,14 @@ export interface BookingInvitationUpdatedPayload {
 export function useBookingStatusChannel(
   onStatusUpdated: (payload: BookingStatusUpdatedPayload) => void,
   onInvitationUpdated?: (payload: BookingInvitationUpdatedPayload) => void,
+  onGatheringCompleted?: (payload: BookingGatheringCompletedPayload) => void,
 ) {
   const config = useRuntimeConfig()
   const { authorizationHeader } = useAuthToken()
   const desiredBookingIds = new Set<number>()
   const subscribedBookingIds = new Set<number>()
+  const gatheringListenedIds = new Set<number>()
+  let gatheringBookingId: number | null = null
   let echo: Echo<'reverb'> | null = null
 
   function createEcho(): Echo<'reverb'> | null {
@@ -67,6 +79,40 @@ export function useBookingStatusChannel(
     return echo
   }
 
+  function activeBookingIds() {
+    const ids = new Set(desiredBookingIds)
+
+    if (gatheringBookingId != null) {
+      ids.add(gatheringBookingId)
+    }
+
+    return ids
+  }
+
+  function bindGatheringListener(bookingId: number) {
+    if (!echo || !onGatheringCompleted) {
+      return
+    }
+
+    const shouldListen = gatheringBookingId === bookingId
+    const isListening = gatheringListenedIds.has(bookingId)
+
+    if (shouldListen === isListening) {
+      return
+    }
+
+    const channel = echo.private(`bookings.${bookingId}`)
+
+    if (shouldListen) {
+      channel.listen('.booking.gathering.completed', onGatheringCompleted)
+      gatheringListenedIds.add(bookingId)
+      return
+    }
+
+    channel.stopListening('.booking.gathering.completed', onGatheringCompleted)
+    gatheringListenedIds.delete(bookingId)
+  }
+
   function syncSubscriptions(bookingIds: number[]) {
     desiredBookingIds.clear()
     bookingIds.forEach(id => desiredBookingIds.add(id))
@@ -77,28 +123,40 @@ export function useBookingStatusChannel(
       return
     }
 
-    for (const bookingId of subscribedBookingIds) {
-      if (!desiredBookingIds.has(bookingId)) {
+    const activeIds = activeBookingIds()
+
+    for (const bookingId of [...subscribedBookingIds]) {
+      if (!activeIds.has(bookingId)) {
+        gatheringListenedIds.delete(bookingId)
         connection.leave(`bookings.${bookingId}`)
         subscribedBookingIds.delete(bookingId)
       }
     }
 
-    for (const bookingId of desiredBookingIds) {
-      if (subscribedBookingIds.has(bookingId)) {
-        continue
+    for (const bookingId of activeIds) {
+      if (!subscribedBookingIds.has(bookingId)) {
+        const channel = connection
+          .private(`bookings.${bookingId}`)
+          .listen('.booking.status.updated', onStatusUpdated)
+
+        if (onInvitationUpdated) {
+          channel.listen('.booking.invitation.updated', onInvitationUpdated)
+        }
+
+        subscribedBookingIds.add(bookingId)
       }
 
-      const channel = connection
-        .private(`bookings.${bookingId}`)
-        .listen('.booking.status.updated', onStatusUpdated)
-
-      if (onInvitationUpdated) {
-        channel.listen('.booking.invitation.updated', onInvitationUpdated)
-      }
-
-      subscribedBookingIds.add(bookingId)
+      bindGatheringListener(bookingId)
     }
+  }
+
+  function setGatheringSubscription(bookingId: number | null) {
+    if (gatheringBookingId === bookingId) {
+      return
+    }
+
+    gatheringBookingId = bookingId
+    syncSubscriptions([...desiredBookingIds])
   }
 
   function disconnect() {
@@ -117,6 +175,7 @@ export function useBookingStatusChannel(
     }
 
     subscribedBookingIds.clear()
+    gatheringListenedIds.clear()
   }
 
   watch(authorizationHeader, () => {
@@ -128,6 +187,7 @@ export function useBookingStatusChannel(
 
   return {
     syncSubscriptions,
+    setGatheringSubscription,
     disconnect,
   }
 }
