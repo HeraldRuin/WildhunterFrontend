@@ -85,6 +85,7 @@ const maxHuntersPendingCheckPayload = ref<{
 const apiMessage = ref('')
 const animalAvailability = ref<{
   price: number
+  animalId: string
 } | null>(null)
 
 const animalAvailabilityStay = ref<{
@@ -391,6 +392,60 @@ function handleExtraHuntAction(
   return getExtraHuntActionStatus(animalId, hunters)
 }
 
+function getAnimalPeriodPrice(animalId: string, huntDate: string): number | null {
+  const animal = hotelAnimals.value.find(item => String(item.id) === animalId)
+  const periods = animal?.periods
+
+  if (!periods?.length || !huntDate) {
+    return null
+  }
+
+  const day = huntDate.slice(0, 10)
+  const period = periods.find((entry) => {
+    const start = entry.start_date.slice(0, 10)
+    const end = entry.end_date.slice(0, 10)
+
+    return day >= start && day <= end
+  })
+
+  if (!period || !Number.isFinite(period.price)) {
+    return null
+  }
+
+  return period.price
+}
+
+function syncCheckedAnimalPrice() {
+  if (!animalAvailability.value) {
+    return
+  }
+
+  const animalId = selectedAnimalId.value
+
+  if (!animalId) {
+    clearAnimalAvailability()
+    return
+  }
+
+  if (animalAvailability.value.animalId === animalId) {
+    return
+  }
+
+  const huntDateRaw = animalsSearchRef.value?.getHuntDate() || ''
+  const huntDate = huntDateRaw ? parseDisplayDateToApiDate(huntDateRaw) : null
+  const price = huntDate ? getAnimalPeriodPrice(animalId, huntDate) : null
+
+  if (price == null) {
+    clearAnimalAvailability()
+    return
+  }
+
+  animalAvailability.value = {
+    price,
+    animalId,
+  }
+}
+
 function handleAnimalChange(animalId: string) {
   if (extraHuntsConfirmed.value?.animalId !== animalId) {
     extraHuntsConfirmed.value = null
@@ -398,6 +453,7 @@ function handleAnimalChange(animalId: string) {
 
   selectedAnimalId.value = animalId
   handleExtraHuntAction(animalId, huntHunters.value)
+  syncCheckedAnimalPrice()
 }
 
 function handleHuntersChange(hunters: number) {
@@ -408,6 +464,7 @@ function handleHuntersChange(hunters: number) {
   }
 
   handleExtraHuntAction(selectedAnimalId.value, hunters)
+  syncCheckedAnimalPrice()
 }
 
 function getBookingAdults(stayAdultsCount: number | undefined, hunters: number, hasRooms: boolean) {
@@ -676,6 +733,7 @@ async function handleAnimalsCheck(payload: {
       huntHunters.value = payload.hunters
       animalAvailability.value = {
         price: Number(response.data.price) || 0,
+        animalId: payload.animalId,
       }
       animalAvailabilityStay.value = stayCheckIn.value && stayCheckOut.value
         ? {
