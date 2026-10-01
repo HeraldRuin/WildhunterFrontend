@@ -184,18 +184,6 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
   }
 }
 
-function roomWord(count: number) {
-  return pluralizeRu(count, ['номер', 'номера', 'номеров']).replace(/^\d+\s+/, '')
-}
-
-function roomsTotalCaption(count: number) {
-  return `Стоимость за ${roomWord(count)} всего`
-}
-
-function roomPerPersonCaption(count: number) {
-  return `Стоимость за ${roomWord(count)} с человека`
-}
-
 function nightsCaption(count: number) {
   const word = pluralizeRu(count, ['сутки', 'сутки', 'суток']).replace(/^\d+\s+/, '')
 
@@ -324,40 +312,22 @@ const eventTotal = computed(() => {
   return accommodation + hunt
 })
 
-const roomPerPersonTotal = computed(() => {
+const eventPerPersonTotal = computed(() => {
   const current = booking.value
 
-  if (!current?.hasAccommodation) {
+  if (!current) {
     return 0
   }
 
-  if (current.accommodationPerPerson != null) {
-    return current.accommodationPerPerson
-  }
+  const room = !current.hasAccommodation
+    ? 0
+    : current.accommodationPerPerson ?? (current.adults > 0 ? Math.round(current.accommodationTotal / current.adults) : 0)
 
-  if (current.adults <= 0) {
-    return 0
-  }
+  const hunt = !current.hasHunt
+    ? 0
+    : current.huntingPerPerson ?? (current.hunters > 0 ? Math.round(current.organizationFee / current.hunters) : 0)
 
-  return Math.round(current.accommodationTotal / current.adults)
-})
-
-const huntPerPersonTotal = computed(() => {
-  const current = booking.value
-
-  if (!current?.hasHunt) {
-    return 0
-  }
-
-  if (current.huntingPerPerson != null) {
-    return current.huntingPerPerson
-  }
-
-  if (current.hunters <= 0) {
-    return 0
-  }
-
-  return Math.round(current.organizationFee / current.hunters)
+  return room + hunt
 })
 
 const isLoading = computed(() => Boolean(bookingCode.value) && checkoutPending.value && !isConfirmingBooking.value)
@@ -691,24 +661,12 @@ async function confirmSaveBooking() {
 
           <h2 class="booking-confirmation__event-total-title">Предварительная смета по мероприятию</h2>
           <div class="booking-confirmation__event-total">
-            <div class="booking-confirmation__event-total-row">
-              <span class="booking-confirmation__event-total-caption">Взрослых</span>
-              <span class="booking-confirmation__event-total-count">{{ booking.adults }}</span>
-            </div>
-            <div v-if="booking.hasAccommodation && roomPerPersonTotal > 0" class="booking-confirmation__event-total-row">
-              <span class="booking-confirmation__event-total-caption">{{ roomPerPersonCaption(booking.roomsCount) }}</span>
-              <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(roomPerPersonTotal) }}</span>
-            </div>
-            <div v-if="booking.hasHunt && huntPerPersonTotal > 0" class="booking-confirmation__event-total-row">
-              <span class="booking-confirmation__event-total-caption">Стоимость охоты на человека</span>
-              <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(huntPerPersonTotal) }}</span>
-            </div>
-            <div v-if="booking.hasAccommodation" class="booking-confirmation__event-total-row">
-              <span class="booking-confirmation__event-total-caption">{{ roomsTotalCaption(booking.roomsCount) }}</span>
-              <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(booking.accommodationTotal) }}</span>
+            <div v-if="eventPerPersonTotal > 0" class="booking-confirmation__event-total-row">
+              <span class="booking-confirmation__event-total-caption">Общая на одного человека</span>
+              <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(eventPerPersonTotal) }}</span>
             </div>
             <div class="booking-confirmation__event-total-row">
-              <span class="booking-confirmation__event-total-caption">Стоимость на всех</span>
+              <span class="booking-confirmation__event-total-caption">Общая за все мероприятие</span>
               <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(eventTotal) }}</span>
             </div>
           </div>
