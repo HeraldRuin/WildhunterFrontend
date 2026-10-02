@@ -85,6 +85,7 @@ export interface BookingAccommodationDetails {
 export interface BookingHuntDetails {
   date: string
   animal: string
+  animalId?: number
   hunters: number
   pricePerHunter?: number | null
   priceTotal?: number | null

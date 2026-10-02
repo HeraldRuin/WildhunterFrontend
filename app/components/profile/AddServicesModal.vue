@@ -110,8 +110,25 @@ const items = computed(() => ({
   ...services.value?.items,
 }))
 const preparationAnimals = computed(() => services.value?.catalogs?.preparation_animals ?? [])
+const preparationAnimalsForSelect = computed(() => {
+  if (isBaseAdmin.value || !booking.value?.isMasterHunter) {
+    return preparationAnimals.value
+  }
+
+  const bookedAnimalId = booking.value.hunt?.animalId
+  if (bookedAnimalId != null) {
+    return preparationAnimals.value.filter(animal => animal.id === bookedAnimalId)
+  }
+
+  const bookedTitle = booking.value.hunt?.animal?.trim()
+  if (!bookedTitle || bookedTitle === '—') {
+    return []
+  }
+
+  return preparationAnimals.value.filter(animal => animal.title.trim() === bookedTitle)
+})
 const preparationAnimalOptions = computed<SelectFieldOption[]>(() =>
-  preparationAnimals.value.map(animal => withCatalogPrice(
+  preparationAnimalsForSelect.value.map(animal => withCatalogPrice(
     animal.title,
     animal.preparations?.[0]?.price,
     String(animal.id),
@@ -895,11 +912,33 @@ async function saveFoodDraft(row: FoodDraft) {
   }
 }
 
+function bookedPreparationAnimalId(): string {
+  const animals = preparationAnimalsForSelect.value
+  const bookedAnimalId = booking.value?.hunt?.animalId
+
+  if (bookedAnimalId != null) {
+    const match = animals.find(animal => animal.id === bookedAnimalId)
+    if (match) {
+      return String(match.id)
+    }
+  }
+
+  const bookedTitle = booking.value?.hunt?.animal?.trim()
+  if (bookedTitle && bookedTitle !== '—') {
+    const match = animals.find(animal => animal.title.trim() === bookedTitle)
+    if (match) {
+      return String(match.id)
+    }
+  }
+
+  return ''
+}
+
 function addPreparationDraft() {
   expandBlock('preparation')
   preparationDrafts.value.push({
     key: ++preparationDraftKey,
-    animalId: '',
+    animalId: bookedPreparationAnimalId(),
     count: 1,
   })
 }
