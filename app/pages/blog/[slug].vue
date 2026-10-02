@@ -38,6 +38,26 @@ useHead({
     },
   ],
 })
+
+const isSearching = ref(false)
+
+async function handleSearch(payload: Record<string, string>) {
+  if (isSearching.value) {
+    return
+  }
+
+  isSearching.value = true
+
+  try {
+    await navigateTo({
+      path: '/bases',
+      query: payload,
+    })
+  }
+  catch {
+    isSearching.value = false
+  }
+}
 </script>
 
 <template>
@@ -46,8 +66,9 @@ useHead({
       <div class="blog-article__header">
         <HomeHeroHeader />
       </div>
-      <div class="blog-article__hero-title">
-        <HomeHeroTitle />
+      <div class="blog-article__hero-panel">
+        <p class="blog-article__hero-heading">Организуйте охоту с понятными расходами для каждого</p>
+        <HomeHeroSearchForm :loading="isSearching" @search="handleSearch" />
       </div>
     </section>
 
@@ -81,7 +102,8 @@ useHead({
 <style scoped>
 .blog-article__hero {
   position: relative;
-  min-height: 520px;
+  z-index: 2;
+  min-height: 680px;
   background:
     linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(17, 24, 39, 0.18) 100%),
     url('/images/headBlock.jpg') center / 100% 100% no-repeat;
@@ -89,18 +111,43 @@ useHead({
 }
 
 .blog-article__header {
+  position: relative;
+  z-index: 20;
   display: flex;
   justify-content: center;
   padding-inline: 12px;
+  pointer-events: none;
 }
 
-.blog-article__hero-title {
+.blog-article__header > * {
+  pointer-events: auto;
+}
+
+.blog-article__hero-panel {
   position: absolute;
-  top: 300px;
+  top: 268px;
   left: 50%;
-  width: 100%;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 1500px;
   max-width: calc(100% - 24px);
   transform: translateX(-50%);
+}
+
+.blog-article__hero-heading {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  color: var(--wh-white);
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 4px 18px rgba(0, 0, 0, 0.35);
 }
 
 .blog-article__main {
@@ -591,11 +638,18 @@ useHead({
 
 @media (--wh-tablet) {
   .blog-article__hero {
-    min-height: 500px;
+    min-height: 760px;
   }
 
-  .blog-article__hero-title {
-    top: 290px;
+  .blog-article__hero-panel {
+    top: 240px;
+    width: 100%;
+    max-width: none;
+    padding-inline: 12px;
+  }
+
+  .blog-article__hero-heading {
+    font-size: 32px;
   }
 
   .blog-article__body :deep(.blog-split) {
@@ -637,12 +691,22 @@ useHead({
 
 @media (--wh-mobile) {
   .blog-article__hero {
-    min-height: 390px;
+    min-height: 0;
+    padding-bottom: 32px;
     background-size: cover;
   }
 
-  .blog-article__hero-title {
-    top: 220px;
+  .blog-article__hero-panel {
+    position: static;
+    top: auto;
+    width: 100%;
+    margin-top: 28px;
+    transform: none;
+    gap: 20px;
+  }
+
+  .blog-article__hero-heading {
+    font-size: 26px;
   }
 
   .blog-article__content {

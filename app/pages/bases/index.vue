@@ -569,7 +569,11 @@ function handleMapOpen(id: number) {
 
 <template>
   <div class="bases-page">
-    <SearchHero :loading="isButtonSearching" @search="handleSearch" />
+    <SearchHero
+      title="Организуйте охоту с понятными расходами для каждого"
+      :loading="isButtonSearching"
+      @search="handleSearch"
+    />
 
     <section class="bases-page__results">
       <div class="container bases-page__results-inner">
@@ -735,8 +739,20 @@ function handleMapOpen(id: number) {
   background: #f0efec;
 }
 
+.bases-page :deep(.search-top) {
+  height: auto;
+  min-height: 375px;
+}
+
 .bases-page :deep(.search-top__tagline) {
-  width: auto;
+  width: 100%;
+  max-width: none;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--wh-white);
 }
 
 .bases-page__results {
@@ -907,6 +923,11 @@ function handleMapOpen(id: number) {
 }
 
 @media (--wh-tablet) {
+  .bases-page :deep(.search-top__tagline) {
+    font-size: 32px;
+    letter-spacing: -0.02em;
+  }
+
   .bases-page__top {
     flex-direction: column;
     align-items: stretch;
@@ -935,6 +956,12 @@ function handleMapOpen(id: number) {
 }
 
 @media (--wh-mobile) {
+  .bases-page :deep(.search-top__tagline) {
+    font-size: 26px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
   .bases-page__layout--filters-open .bases-page__main {
     display: none;
   }
