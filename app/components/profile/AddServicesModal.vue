@@ -298,6 +298,57 @@ function formatServicePrice(price: unknown): string {
   return catalogPriceLabel(price) ?? '—'
 }
 
+const preliminaryTotalLabel = computed(() => {
+  const total = services.value?.preliminary_total
+  if (typeof total !== 'number' || !Number.isFinite(total)) {
+    return ''
+  }
+
+  return formatHotelPriceLabel(total)
+})
+
+function serviceDays(): number {
+  return Math.max(1, Number(booking.value?.accommodation?.nights) || 1)
+}
+
+function preliminaryPart(list: DeletableServiceList, price: unknown): number {
+  if (list === 'spendings') {
+    return 0
+  }
+
+  const amount = Number(price)
+  if (!Number.isFinite(amount)) {
+    return 0
+  }
+
+  if (list === 'foods') {
+    return amount * serviceDays()
+  }
+
+  return amount
+}
+
+function commitServiceItems(
+  itemsPatch: Partial<BookingServicesItems>,
+  totalDelta: number,
+) {
+  if (!services.value) {
+    return
+  }
+
+  const currentTotal = services.value.preliminary_total
+  services.value = {
+    ...services.value,
+    preliminary_total: typeof currentTotal === 'number'
+      ? Math.round(currentTotal + totalDelta)
+      : currentTotal,
+    items: {
+      ...services.value.items,
+      ...itemsPatch,
+    },
+  }
+}
+
 function animalListPrice(
   animal: BookingServiceAnimalCatalog,
   options: BookingServiceOption[] | undefined,
@@ -389,6 +440,7 @@ function upsertTrophyItem(item: BookingServiceTrophyItem) {
 
   const current = services.value.items.trophies ?? []
   const index = current.findIndex(existing => existing.id === item.id)
+  const previous = index >= 0 ? current[index] : undefined
   const next = [...current]
 
   if (index >= 0) {
@@ -398,13 +450,10 @@ function upsertTrophyItem(item: BookingServiceTrophyItem) {
     next.push(item)
   }
 
-  services.value = {
-    ...services.value,
-    items: {
-      ...services.value.items,
-      trophies: next,
-    },
-  }
+  commitServiceItems(
+    { trophies: next },
+    preliminaryPart('trophies', item.price) - preliminaryPart('trophies', previous?.price),
+  )
 }
 
 async function saveTrophyDraft(row: TrophyDraft) {
@@ -498,6 +547,7 @@ function upsertPenaltyItem(item: BookingServicePenaltyItem) {
 
   const current = services.value.items.penalties ?? []
   const index = current.findIndex(existing => existing.id === item.id)
+  const previous = index >= 0 ? current[index] : undefined
   const next = [...current]
 
   if (index >= 0) {
@@ -507,13 +557,10 @@ function upsertPenaltyItem(item: BookingServicePenaltyItem) {
     next.push(item)
   }
 
-  services.value = {
-    ...services.value,
-    items: {
-      ...services.value.items,
-      penalties: next,
-    },
-  }
+  commitServiceItems(
+    { penalties: next },
+    preliminaryPart('penalties', item.price) - preliminaryPart('penalties', previous?.price),
+  )
 }
 
 async function savePenaltyDraft(row: PenaltyDraft) {
@@ -755,6 +802,7 @@ function upsertAdditionalItem(item: BookingServiceAdditionalItem) {
 
   const current = services.value.items.additionals ?? []
   const index = current.findIndex(existing => existing.id === item.id)
+  const previous = index >= 0 ? current[index] : undefined
   const next = [...current]
 
   if (index >= 0) {
@@ -764,13 +812,10 @@ function upsertAdditionalItem(item: BookingServiceAdditionalItem) {
     next.push(item)
   }
 
-  services.value = {
-    ...services.value,
-    items: {
-      ...services.value.items,
-      additionals: next,
-    },
-  }
+  commitServiceItems(
+    { additionals: next },
+    preliminaryPart('additionals', item.price) - preliminaryPart('additionals', previous?.price),
+  )
 }
 
 async function saveAdditionalDraft(row: AdditionalDraft) {
@@ -858,6 +903,7 @@ function upsertFoodItem(item: BookingServiceFoodItem) {
 
   const current = services.value.items.foods ?? []
   const index = current.findIndex(existing => existing.id === item.id)
+  const previous = index >= 0 ? current[index] : undefined
   const next = [...current]
 
   if (index >= 0) {
@@ -867,13 +913,10 @@ function upsertFoodItem(item: BookingServiceFoodItem) {
     next.push(item)
   }
 
-  services.value = {
-    ...services.value,
-    items: {
-      ...services.value.items,
-      foods: next,
-    },
-  }
+  commitServiceItems(
+    { foods: next },
+    preliminaryPart('foods', item.price) - preliminaryPart('foods', previous?.price),
+  )
 }
 
 async function saveFoodDraft(row: FoodDraft) {
@@ -967,6 +1010,7 @@ function upsertPreparationItem(item: BookingServicePreparationItem) {
 
   const current = services.value.items.preparations ?? []
   const index = current.findIndex(existing => existing.id === item.id)
+  const previous = index >= 0 ? current[index] : undefined
   const next = [...current]
 
   if (index >= 0) {
@@ -976,13 +1020,10 @@ function upsertPreparationItem(item: BookingServicePreparationItem) {
     next.push(item)
   }
 
-  services.value = {
-    ...services.value,
-    items: {
-      ...services.value.items,
-      preparations: next,
-    },
-  }
+  commitServiceItems(
+    { preparations: next },
+    preliminaryPart('preparations', item.price) - preliminaryPart('preparations', previous?.price),
+  )
 }
 
 function removeServiceItem(serviceId: number, list: DeletableServiceList) {
@@ -990,13 +1031,13 @@ function removeServiceItem(serviceId: number, list: DeletableServiceList) {
     return
   }
 
-  services.value = {
-    ...services.value,
-    items: {
-      ...services.value.items,
-      [list]: (services.value.items[list] ?? []).filter(item => item.id !== serviceId),
-    },
-  }
+  const current = services.value.items[list] ?? []
+  const removed = current.find(item => item.id === serviceId)
+
+  commitServiceItems(
+    { [list]: current.filter(item => item.id !== serviceId) },
+    -preliminaryPart(list, removed?.price),
+  )
 }
 
 function requestServiceDeletion(serviceId: number, title: string, list: DeletableServiceList) {
@@ -1181,7 +1222,10 @@ function handleKeydown(event: KeyboardEvent) {
               Добавить услуги для брони #{{ booking.number }}
             </h2>
             <p v-if="isBaseAdmin" class="add-services-modal__estimate">
-              Предварительная смета всего за услуги всего:
+              Предварительная смета за услуги всего:
+            </p>
+            <p v-if="isBaseAdmin" class="add-services-modal__estimate-value">
+              {{ preliminaryTotalLabel }}
             </p>
           </div>
 
@@ -2007,15 +2051,25 @@ function handleKeydown(event: KeyboardEvent) {
   color: var(--wh-gray-900);
 }
 
-.add-services-modal__estimate {
+.add-services-modal__estimate,
+.add-services-modal__estimate-value {
   margin: 0;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.35;
   color: var(--wh-orange-500);
-  text-align: center;
   white-space: nowrap;
+}
+
+.add-services-modal__estimate {
+  text-align: center;
+}
+
+.add-services-modal__estimate-value {
+  justify-self: start;
+  min-width: 7.5rem;
+  text-align: left;
 }
 
 .add-services-modal__body {
@@ -2442,7 +2496,8 @@ function handleKeydown(event: KeyboardEvent) {
     padding-right: 108px;
   }
 
-  .add-services-modal__estimate {
+  .add-services-modal__estimate,
+  .add-services-modal__estimate-value {
     justify-self: start;
     white-space: normal;
   }

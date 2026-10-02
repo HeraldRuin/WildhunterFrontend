@@ -592,6 +592,7 @@ export interface BookingServicesItems {
 
 export interface BookingServicesData {
   role: BookingServicesRole
+  preliminary_total: number
   booking_type: 'hotel' | 'animal' | 'hotel_animal'
   allowed_types: BookingServiceType[]
   catalogs: BookingServicesCatalogs
