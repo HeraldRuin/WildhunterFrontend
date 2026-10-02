@@ -148,7 +148,7 @@ function lineName(name: string) {
   }
 
   if (name === 'Итог охотникам') {
-    return 'Итого по охотникам'
+    return 'Итого по личным расходам охотникам'
   }
 
   return name
