@@ -126,6 +126,7 @@ watch(
 
 const mobileFiltersOpen = ref(false)
 const currentPage = ref(Number(route.query.page) || 1)
+const resultsTopRef = ref<HTMLElement | null>(null)
 
 interface NormalizedSearchResult {
   items: OfferItem[]
@@ -409,14 +410,40 @@ async function handleSearch(payload: Record<string, string>) {
   }
 }
 
+function scrollResultsIntoView() {
+  const el = resultsTopRef.value
+  if (!el) {
+    return
+  }
+
+  const top = el.getBoundingClientRect().top + window.scrollY
+
+  window.scrollTo({
+    top: Math.max(0, top),
+    left: 0,
+  })
+}
+
 function handlePageChange(page: number) {
   currentPage.value = page
-  navigateTo({
+
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur()
+  }
+
+  void navigateTo({
     path: '/bases',
     query: {
       ...route.query,
       page: page > 1 ? String(page) : undefined,
     },
+  })
+
+  void nextTick(() => {
+    scrollResultsIntoView()
+    requestAnimationFrame(() => {
+      scrollResultsIntoView()
+    })
   })
 }
 
@@ -546,7 +573,7 @@ function handleMapOpen(id: number) {
 
     <section class="bases-page__results">
       <div class="container bases-page__results-inner">
-        <div class="bases-page__top">
+        <div ref="resultsTopRef" class="bases-page__top">
           <AppBreadcrumbs
             :items="breadcrumbs"
             class="bases-page__breadcrumbs"
