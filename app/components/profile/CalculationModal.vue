@@ -175,7 +175,7 @@ function isBoldLine(name: string) {
           <CommonModalCloseButton @click="close" />
 
           <h2 id="calculation-modal-title" class="calculation-modal__title">
-            Калькуляция по мероприятию
+            Предварительная калькуляция по мероприятию
           </h2>
 
           <div class="calculation-modal__body">

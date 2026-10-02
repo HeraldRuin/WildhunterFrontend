@@ -81,6 +81,14 @@ function extractErrorMessage(source: unknown, fallback: string) {
   return fallback
 }
 
+function addBase() {
+  if (isLoading.value || loadError.value || hotelsCount.value > 0) {
+    return
+  }
+
+  void navigateTo('/profile/base/new')
+}
+
 function onHotelDeleted(id: number) {
   hotels.value = hotels.value.filter(hotel => hotel.id !== id)
 }
@@ -130,7 +138,8 @@ onMounted(() => {
         <button
           type="button"
           class="base-manage__btn base-manage__btn--success"
-          disabled
+          :disabled="isLoading || Boolean(loadError) || hotelsCount > 0"
+          @click="addBase"
         >
           + Добавить базу
         </button>

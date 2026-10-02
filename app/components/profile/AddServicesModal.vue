@@ -73,6 +73,7 @@ const { isOpen, booking, close } = useAddServicesModal()
 const { open: openConfirmModal } = useConfirmModal()
 const { bookings } = useApi()
 const notifications = useNotifications()
+const { isBaseAdmin } = useUserRole()
 const notifyOptions = { group: ADD_SERVICES_NOTIFICATION_GROUP }
 
 const isLoading = ref(false)
@@ -1136,9 +1137,14 @@ function handleKeydown(event: KeyboardEvent) {
         <div class="add-services-modal__card">
           <CommonModalCloseButton @click="close" />
 
-          <h2 id="add-services-modal-title" class="add-services-modal__title">
-            Добавить услуги для брони #{{ booking.number }}
-          </h2>
+          <div class="add-services-modal__header">
+            <h2 id="add-services-modal-title" class="add-services-modal__title">
+              Добавить услуги для брони #{{ booking.number }}
+            </h2>
+            <p v-if="isBaseAdmin" class="add-services-modal__estimate">
+              Предварительная смета всего за услуги всего:
+            </p>
+          </div>
 
           <div class="add-services-modal__body">
             <div v-if="isLoading" class="add-services-modal__loading">
@@ -1944,13 +1950,33 @@ function handleKeydown(event: KeyboardEvent) {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
+.add-services-modal__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(120px, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  min-height: 36px;
+}
+
 .add-services-modal__title {
-  margin: 0 40px 24px 0;
+  margin: 0;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 1.15rem;
   font-weight: 700;
   line-height: 1.35;
   color: var(--wh-gray-900);
+}
+
+.add-services-modal__estimate {
+  margin: 0;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--wh-orange-500);
+  text-align: center;
+  white-space: nowrap;
 }
 
 .add-services-modal__body {
@@ -2370,6 +2396,16 @@ function handleKeydown(event: KeyboardEvent) {
 @media (--wh-tablet) {
   .add-services-modal__card {
     padding: 22px 18px 18px;
+  }
+
+  .add-services-modal__header {
+    grid-template-columns: minmax(0, 1fr);
+    padding-right: 108px;
+  }
+
+  .add-services-modal__estimate {
+    justify-self: start;
+    white-space: normal;
   }
 
   .add-services-modal__columns--2,

@@ -65,7 +65,7 @@ const ACTION_VARIANT_MAP: Record<string, BookingActionVariant> = {
 const HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
   { id: 'open_collection', label: 'Сбор охотников', variant: 'success' },
   { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
-  { id: 'add_services', label: 'Добавить услуги', variant: 'success' },
+  { id: 'add_services', label: 'Дополнительные услуги', variant: 'success' },
 ]
 
 const INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
@@ -83,7 +83,7 @@ const HUNT_INFO_ACTION: BookingAction = {
 
 const ADD_SERVICES_ACTION: BookingAction = {
   id: 'add_services',
-  label: 'Добавить услуги',
+  label: 'Дополнительные услуги',
   variant: 'success',
 }
 
@@ -247,7 +247,9 @@ function mapActions(
             ? 'Оплата полностью получена. Завершить событие'
           : action.code === 'mark_paid' && !isHunter
             ? 'Подтвердить событие'
-            : action.label,
+            : action.code === 'add_services'
+              ? 'Дополнительные услуги'
+              : action.label,
       variant: ACTION_VARIANT_MAP[action.code] ?? 'success',
     })
 
