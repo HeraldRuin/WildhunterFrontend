@@ -557,8 +557,9 @@ onBeforeUnmount(() => {
                     'booking-table__status-label--confirmed':
                       item.status.code === 'confirmed'
                       || item.status.code === 'finish_bed_collection'
-                      || item.status.code === 'paid'
-                      || item.status.code === 'completed',
+                      || item.status.code === 'paid',
+                    'booking-table__status-label--completed':
+                      item.status.code === 'completed',
                     'booking-table__status-label--collection':
                       item.status.code === 'collection'
                       || item.status.code === 'prepayment_collection',
@@ -1006,9 +1007,9 @@ onBeforeUnmount(() => {
 
 .booking-table__paid-message {
   padding: 6px 8px;
-  border: 1px solid #2f8fc9;
+  border: 1px solid var(--wh-green);
   border-radius: 4px;
-  background: #2f8fc9;
+  background: var(--wh-green);
   color: var(--wh-white);
   font-weight: 600;
   line-height: 1.35;
@@ -1031,6 +1032,10 @@ onBeforeUnmount(() => {
 
 .booking-table__status-label--confirmed {
   background: #25a447;
+}
+
+.booking-table__status-label--completed {
+  background: var(--wh-green);
 }
 
 .booking-table__status-label--collection {
