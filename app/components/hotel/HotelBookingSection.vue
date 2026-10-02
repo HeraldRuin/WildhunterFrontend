@@ -1179,8 +1179,15 @@ onMounted(() => {
       </div>
 
       <Transition name="hotel-booking-book">
+        <p
+          v-if="isBaseAdmin"
+          class="hotel-booking-section__admin-notice"
+          role="status"
+        >
+          Администратор базы не может делать бронирование
+        </p>
         <button
-          v-if="!isBaseAdmin"
+          v-else
           type="button"
           class="hotel-booking-section__book"
           :disabled="isBookingBlocked || !(hasSelectedRooms || animalAvailability)"
@@ -1571,6 +1578,27 @@ onMounted(() => {
   line-height: 1.4;
   letter-spacing: -0.02em;
   text-align: center;
+}
+
+.hotel-booking-section__admin-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, var(--hotel-booking-blocks-width, 100%));
+  min-height: 81px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  border: 1px solid color-mix(in srgb, var(--wh-orange-500) 42%, white);
+  border-radius: var(--wh-radius-lg);
+  background: color-mix(in srgb, var(--wh-orange-500) 28%, white);
+  color: var(--wh-orange-600);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .hotel-booking-section__book {
