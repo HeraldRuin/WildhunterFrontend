@@ -2075,7 +2075,7 @@ function handleKeydown(event: KeyboardEvent) {
                     <span class="add-services-modal__value">{{ item.hunter_name || '—' }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__value">{{ item.price }}</span>
+                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--comment">
                     <span class="add-services-modal__value">{{ item.comment }}</span>
