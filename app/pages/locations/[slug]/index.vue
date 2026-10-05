@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { locationSeoBySlug } from '~/content/location-seo'
 import type { HotelSearchBody, LocationItem, OfferItem, SearchLocation } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { formatApiDate, getDefaultStayCheckIn, getDefaultStayCheckOut } from '~/utils/date'
@@ -238,11 +239,27 @@ const locationName = computed(() => {
   return resolvedLocation.value?.name ?? ''
 })
 
-useHead(() => ({
-  title: locationName.value
-    ? `${locationName.value} — WH`
-    : 'Область — WH',
-}))
+const locationSeo = computed(() => locationSeoBySlug[locationSlug.value] ?? null)
+
+useHead(() => {
+  if (locationSeo.value) {
+    return {
+      title: locationSeo.value.title,
+      meta: [
+        {
+          name: 'description',
+          content: locationSeo.value.description,
+        },
+      ],
+    }
+  }
+
+  return {
+    title: locationName.value
+      ? `${locationName.value} — WH`
+      : 'Область — WH',
+  }
+})
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
   { label: 'Главная', to: '/' },
@@ -403,12 +420,13 @@ function handleFiltersReset() {
               Все локации
             </NuxtLink> -->
 
-            <h1
+            <component
+              :is="locationSeo ? 'p' : 'h1'"
               v-if="countReady"
               class="location-page__title"
             >
               Найдено баз: {{ totalCount }}
-            </h1>
+            </component>
 
             <NuxtLink
               v-if="countReady"
@@ -468,7 +486,14 @@ function handleFiltersReset() {
       </div>
     </section>
 
-    <HomeBlocksLocationAboutBlock :location-name="locationName || 'Область'" />
+    <LocationsLocationSeo
+      v-if="locationSeo"
+      :content="locationSeo"
+    />
+    <HomeBlocksLocationAboutBlock
+      v-else
+      :location-name="locationName || 'Область'"
+    />
     <HomeBlocksCommunityBlock variant="centered" />
     <LayoutAppFooter />
   </div>

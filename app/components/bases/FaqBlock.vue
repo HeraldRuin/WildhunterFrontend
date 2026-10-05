@@ -15,7 +15,11 @@ interface FaqItem {
   schemaText: string
 }
 
-const items: FaqItem[] = [
+const props = defineProps<{
+  items?: FaqItem[]
+}>()
+
+const defaultItems: FaqItem[] = [
   {
     id: 1,
     question: 'Что нужно учитывать при выборе охотничьего тура?',
@@ -105,19 +109,21 @@ const items: FaqItem[] = [
 const openId = ref<number | null>(null)
 const faqIconPlus = '/icons/Property%201=icon%20plus.png'
 const faqIconMinus = '/icons/line-md_plus.png'
+const faqItems = computed(() => props.items ?? defaultItems)
 
 function toggleItem(id: number) {
   openId.value = openId.value === id ? null : id
 }
 
-useHead({
+useHead(() => ({
   script: [
     {
+      key: 'faq-jsonld',
       type: 'application/ld+json',
       innerHTML: JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
-        mainEntity: items.map(item => ({
+        mainEntity: faqItems.value.map(item => ({
           '@type': 'Question',
           name: item.question,
           acceptedAnswer: {
@@ -128,7 +134,7 @@ useHead({
       }),
     },
   ],
-})
+}))
 </script>
 
 <template>
@@ -141,7 +147,7 @@ useHead({
       <div class="container faq-block__panel-inner">
         <div class="faq-block__list">
           <div
-            v-for="item in items"
+            v-for="item in faqItems"
             :key="item.id"
             class="faq-block__item"
             :class="{ 'faq-block__item--open': openId === item.id }"
