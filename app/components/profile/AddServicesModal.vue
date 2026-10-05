@@ -871,22 +871,38 @@ function additionalHunterCount(): number {
   return booking.value?.hunt?.hunters ?? 0
 }
 
-function additionalSharePrice(price: unknown, calculationType: string | null | undefined): string {
+function additionalSharePrice(price: unknown, calculationType: string | null | undefined, people?: number): string {
   const total = catalogUnitPrice(price)
   if (total == null) {
     return ''
   }
 
-  if (calculationType !== 'per_person') {
+  if (calculationType !== 'per_person' && calculationType !== 'individual') {
     return formatHotelPriceLabel(total)
   }
 
-  const people = additionalHunterCount()
-  if (people < 1) {
+  const sharePeople = calculationType === 'individual'
+    ? people ?? 0
+    : additionalHunterCount()
+
+  if (sharePeople < 1) {
+    return formatHotelPriceLabel(total)
+  }
+
+  return formatHotelPriceLabel(Math.round(total / sharePeople))
+}
+
+function additionalDraftUnitPrice(row: AdditionalDraft): string {
+  const catalog = additionalById(row.additionalId)
+  if (!catalog) {
     return ''
   }
 
-  return formatHotelPriceLabel(Math.round(total / people))
+  return additionalSharePrice(
+    catalog.price,
+    catalog.calculation_type,
+    catalog.calculation_type === 'individual' ? row.hunterIds.length : undefined,
+  )
 }
 
 function canSaveAdditionalDraft(row: AdditionalDraft): boolean {
@@ -1985,7 +2001,7 @@ function handleKeydown(event: KeyboardEvent) {
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span v-if="additionalDraftPrice(row.additionalId)" class="add-services-modal__value">{{ additionalSharePrice(additionalById(row.additionalId)?.price, additionalById(row.additionalId)?.calculation_type) }}</span>
+                    <span v-if="additionalDraftPrice(row.additionalId)" class="add-services-modal__value">{{ additionalDraftUnitPrice(row) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span v-if="additionalDraftPrice(row.additionalId)" class="add-services-modal__value">{{ additionalDraftPrice(row.additionalId) }}</span>
