@@ -36,9 +36,16 @@ const props = withDefaults(defineProps<{
 
 const model = defineModel<string | string[]>({ default: '' })
 
+const overlay = inject('select-field-overlay', false)
 const isOpen = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
+const triggerRef = ref<HTMLElement | null>(null)
+const listRef = ref<HTMLElement | null>(null)
 const hoveredValue = ref<string | null>(null)
+const overlayStyle = ref<Record<string, string>>({})
+
+const OVERLAY_MAX_HEIGHT = 280
+const OVERLAY_GAP = 4
 
 const hasOptions = computed(() => props.options.length > 0)
 const canOpenEmpty = computed(() => !!props.emptyText && !hasOptions.value)
@@ -91,6 +98,11 @@ function toggle() {
 
   if (!isOpen.value) {
     hoveredValue.value = null
+    return
+  }
+
+  if (overlay) {
+    updateOverlayPosition()
   }
 }
 
@@ -109,18 +121,82 @@ function select(value: string) {
 }
 
 function handleDocumentClick(event: MouseEvent) {
-  if (!rootRef.value?.contains(event.target as Node)) {
-    isOpen.value = false
-    hoveredValue.value = null
+  const target = event.target as Node
+
+  if (rootRef.value?.contains(target) || listRef.value?.contains(target)) {
+    return
   }
+
+  isOpen.value = false
+  hoveredValue.value = null
 }
+
+function updateOverlayPosition() {
+  const trigger = triggerRef.value
+  if (!trigger) {
+    return
+  }
+
+  const rect = trigger.getBoundingClientRect()
+  const spaceBelow = window.innerHeight - rect.bottom - OVERLAY_GAP
+  const spaceAbove = rect.top - OVERLAY_GAP
+  const openUp = spaceBelow < 160 && spaceAbove > spaceBelow
+  const maxHeight = Math.min(OVERLAY_MAX_HEIGHT, Math.max(120, openUp ? spaceAbove : spaceBelow))
+
+  overlayStyle.value = openUp
+    ? {
+        top: 'auto',
+        bottom: `${window.innerHeight - rect.top + OVERLAY_GAP}px`,
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        maxHeight: `${maxHeight}px`,
+      }
+    : {
+        top: `${rect.bottom + OVERLAY_GAP}px`,
+        bottom: 'auto',
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        maxHeight: `${maxHeight}px`,
+      }
+}
+
+function onOverlayViewportChange() {
+  if (!isOpen.value) {
+    return
+  }
+
+  updateOverlayPosition()
+}
+
+watch(isOpen, async (open) => {
+  if (!open || !overlay) {
+    return
+  }
+
+  await nextTick()
+  updateOverlayPosition()
+})
 
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
+
+  if (!overlay) {
+    return
+  }
+
+  window.addEventListener('resize', onOverlayViewportChange)
+  window.addEventListener('scroll', onOverlayViewportChange, true)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleDocumentClick)
+
+  if (!overlay) {
+    return
+  }
+
+  window.removeEventListener('resize', onOverlayViewportChange)
+  window.removeEventListener('scroll', onOverlayViewportChange, true)
 })
 </script>
 
@@ -138,6 +214,7 @@ onUnmounted(() => {
     <span v-if="label" class="select-field__label">{{ label }}</span>
 
     <button
+      ref="triggerRef"
       type="button"
       class="select-field__trigger"
       :class="{ 'select-field__trigger--placeholder': !selectedLabel }"
@@ -159,9 +236,13 @@ onUnmounted(() => {
       </svg>
     </button>
 
+    <Teleport to="body" :disabled="!overlay">
     <ul
       v-if="isOpen && (hasOptions || canOpenEmpty)"
+      ref="listRef"
       class="select-field__list"
+      :class="{ 'select-field__list--overlay': overlay }"
+      :style="overlay ? overlayStyle : undefined"
       role="listbox"
       :aria-label="label || placeholder"
       :aria-multiselectable="multiple || undefined"
@@ -201,6 +282,7 @@ onUnmounted(() => {
         </button>
       </li>
     </ul>
+    </Teleport>
 
     <p v-if="error" class="select-field__error">{{ error }}</p>
   </div>
@@ -321,6 +403,12 @@ onUnmounted(() => {
   overflow-x: hidden;
   overflow-y: auto;
   box-shadow: var(--wh-shadow);
+}
+
+.select-field__list.select-field__list--overlay {
+  position: fixed;
+  right: auto;
+  z-index: 1200;
 }
 
 .select-field__empty {

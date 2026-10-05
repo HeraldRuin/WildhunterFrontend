@@ -59,6 +59,8 @@ type DeletableServiceList = 'trophies' | 'penalties' | 'preparations' | 'foods' 
 type ServiceBlockId = 'trophy' | 'penalty' | 'preparation' | 'food' | 'addetional' | 'spending'
 
 const ADD_SERVICES_NOTIFICATION_GROUP = 'add-services'
+const CONFIRMED_EVENT_STATUSES = new Set(['paid', 'completed'])
+const CONFIRMED_SPENDING_LOCK_PREFIX = 'booking-confirmed-spending-ids:'
 
 const EMPTY_ITEMS: BookingServicesItems = {
   trophies: [],
@@ -75,6 +77,8 @@ const { bookings } = useApi()
 const notifications = useNotifications()
 const { isBaseAdmin } = useUserRole()
 const notifyOptions = { group: ADD_SERVICES_NOTIFICATION_GROUP }
+
+provide('select-field-overlay', true)
 
 const isLoading = ref(false)
 const loadError = ref('')
@@ -93,6 +97,7 @@ const savingTrophyKey = ref<number | null>(null)
 const savingPenaltyKey = ref<number | null>(null)
 const deletingServiceId = ref<number | null>(null)
 const collapsedBlocks = ref(new Set<ServiceBlockId>())
+const lockedSpendingIds = ref(new Set<number>())
 
 let loadRequestId = 0
 let preparationDraftKey = 0
@@ -105,6 +110,11 @@ let penaltyDraftKey = 0
 useBodyScrollLock(isOpen)
 
 const allowedTypeSet = computed(() => new Set(services.value?.allowed_types ?? []))
+const masterHunterServicesLocked = computed(() =>
+  !isBaseAdmin.value
+  && Boolean(booking.value?.isMasterHunter)
+  && CONFIRMED_EVENT_STATUSES.has(booking.value?.status.code ?? ''),
+)
 const items = computed(() => ({
   ...EMPTY_ITEMS,
   ...services.value?.items,
@@ -180,6 +190,82 @@ function isAllowed(type: BookingServiceType): boolean {
   return allowedTypeSet.value.has(type)
 }
 
+function confirmedSpendingLockKey(code: string) {
+  return `${CONFIRMED_SPENDING_LOCK_PREFIX}${code}`
+}
+
+function readConfirmedSpendingIds(code: string): number[] | null {
+  if (!import.meta.client) {
+    return null
+  }
+
+  try {
+    const raw = localStorage.getItem(confirmedSpendingLockKey(code))
+    if (raw == null) {
+      return null
+    }
+
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) {
+      return null
+    }
+
+    return parsed.filter((id): id is number => Number.isInteger(id))
+  }
+  catch {
+    return null
+  }
+}
+
+function writeConfirmedSpendingIds(code: string, ids: number[]) {
+  if (!import.meta.client) {
+    return
+  }
+
+  try {
+    localStorage.setItem(confirmedSpendingLockKey(code), JSON.stringify(ids))
+  }
+  catch {
+    // Снимок остаётся в памяти на время этой сессии.
+  }
+}
+
+function syncConfirmedSpendingLock(code: string, spendingIds: number[]) {
+  if (!masterHunterServicesLocked.value) {
+    lockedSpendingIds.value = new Set()
+    return
+  }
+
+  const stored = readConfirmedSpendingIds(code)
+  const ids = stored ?? spendingIds
+
+  if (!stored) {
+    writeConfirmedSpendingIds(code, ids)
+  }
+
+  lockedSpendingIds.value = new Set(ids)
+}
+
+function canAddServiceType(type: BookingServiceType): boolean {
+  if (!masterHunterServicesLocked.value) {
+    return true
+  }
+
+  return type === 'spending'
+}
+
+function canDeleteService(list: DeletableServiceList, serviceId: number): boolean {
+  if (!masterHunterServicesLocked.value) {
+    return true
+  }
+
+  if (list !== 'spendings') {
+    return false
+  }
+
+  return !lockedSpendingIds.value.has(serviceId)
+}
+
 function isBlockCollapsed(id: ServiceBlockId): boolean {
   return collapsedBlocks.value.has(id)
 }
@@ -226,6 +312,7 @@ function resetServices() {
   savingPenaltyKey.value = null
   deletingServiceId.value = null
   collapsedBlocks.value = new Set()
+  lockedSpendingIds.value = new Set()
 }
 
 function catalogUnitPrice(price: unknown): number | null {
@@ -405,6 +492,10 @@ function onTrophyAnimalChange(row: TrophyDraft, animalId: string) {
 }
 
 function addTrophyDraft() {
+  if (!canAddServiceType('trophy')) {
+    return
+  }
+
   expandBlock('trophy')
   trophyDrafts.value.push({
     key: ++trophyDraftKey,
@@ -457,6 +548,10 @@ function upsertTrophyItem(item: BookingServiceTrophyItem) {
 }
 
 async function saveTrophyDraft(row: TrophyDraft) {
+  if (!canAddServiceType('trophy')) {
+    return
+  }
+
   const code = booking.value?.code
   const animalId = Number(row.animalId)
   const trophyId = Number(row.trophyId)
@@ -514,6 +609,10 @@ function onPenaltyAnimalChange(row: PenaltyDraft, animalId: string) {
 }
 
 function addPenaltyDraft() {
+  if (!canAddServiceType('penalty')) {
+    return
+  }
+
   expandBlock('penalty')
   penaltyDrafts.value.push({
     key: ++penaltyDraftKey,
@@ -564,6 +663,10 @@ function upsertPenaltyItem(item: BookingServicePenaltyItem) {
 }
 
 async function savePenaltyDraft(row: PenaltyDraft) {
+  if (!canAddServiceType('penalty')) {
+    return
+  }
+
   const code = booking.value?.code
   const animalId = Number(row.animalId)
   const penaltyId = Number(row.penaltyId)
@@ -707,6 +810,10 @@ async function saveSpendingDraft(row: SpendingDraft) {
 }
 
 function addAdditionalDraft() {
+  if (!canAddServiceType('addetional')) {
+    return
+  }
+
   expandBlock('addetional')
   additionalDrafts.value.push({
     key: ++additionalDraftKey,
@@ -819,6 +926,10 @@ function upsertAdditionalItem(item: BookingServiceAdditionalItem) {
 }
 
 async function saveAdditionalDraft(row: AdditionalDraft) {
+  if (!canAddServiceType('addetional')) {
+    return
+  }
+
   const code = booking.value?.code
   const additionalId = Number(row.additionalId)
   const count = Number(row.count)
@@ -877,6 +988,10 @@ async function saveAdditionalDraft(row: AdditionalDraft) {
 }
 
 function addFoodDraft() {
+  if (!canAddServiceType('food')) {
+    return
+  }
+
   expandBlock('food')
   foodDrafts.value.push({
     key: ++foodDraftKey,
@@ -920,6 +1035,10 @@ function upsertFoodItem(item: BookingServiceFoodItem) {
 }
 
 async function saveFoodDraft(row: FoodDraft) {
+  if (!canAddServiceType('food')) {
+    return
+  }
+
   const code = booking.value?.code
   const count = Number(row.count)
 
@@ -978,6 +1097,10 @@ function bookedPreparationAnimalId(): string {
 }
 
 function addPreparationDraft() {
+  if (!canAddServiceType('preparation')) {
+    return
+  }
+
   expandBlock('preparation')
   preparationDrafts.value.push({
     key: ++preparationDraftKey,
@@ -1041,7 +1164,7 @@ function removeServiceItem(serviceId: number, list: DeletableServiceList) {
 }
 
 function requestServiceDeletion(serviceId: number, title: string, list: DeletableServiceList) {
-  if (deletingServiceId.value !== null) {
+  if (deletingServiceId.value !== null || !canDeleteService(list, serviceId)) {
     return
   }
 
@@ -1086,6 +1209,10 @@ async function deleteBookingService(serviceId: number, list: DeletableServiceLis
 }
 
 async function savePreparationDraft(row: PreparationDraft) {
+  if (!canAddServiceType('preparation')) {
+    return
+  }
+
   const code = booking.value?.code
   const animalId = Number(row.animalId)
   const count = Number(row.count)
@@ -1171,6 +1298,10 @@ async function loadServices(code: string) {
     }
 
     services.value = response.data
+    syncConfirmedSpendingLock(
+      code,
+      (response.data.items?.spendings ?? []).map(item => item.id),
+    )
     loadError.value = ''
   }
   catch (error) {
@@ -1260,6 +1391,7 @@ function handleKeydown(event: KeyboardEvent) {
                       </svg>
                     </button>
                     <button
+                      v-if="canAddServiceType('trophy')"
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить трофей"
@@ -1295,6 +1427,7 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
+                      v-if="canDeleteService('trophies', item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
@@ -1387,6 +1520,7 @@ function handleKeydown(event: KeyboardEvent) {
                       </svg>
                     </button>
                     <button
+                      v-if="canAddServiceType('penalty')"
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить штраф"
@@ -1422,6 +1556,7 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
+                      v-if="canDeleteService('penalties', item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
@@ -1515,6 +1650,7 @@ function handleKeydown(event: KeyboardEvent) {
                       </svg>
                     </button>
                     <button
+                      v-if="canAddServiceType('preparation')"
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить разделку"
@@ -1550,6 +1686,7 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
+                      v-if="canDeleteService('preparations', item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
@@ -1633,6 +1770,7 @@ function handleKeydown(event: KeyboardEvent) {
                       </svg>
                     </button>
                     <button
+                      v-if="canAddServiceType('food')"
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить питание"
@@ -1668,6 +1806,7 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
+                      v-if="canDeleteService('foods', item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
@@ -1744,6 +1883,7 @@ function handleKeydown(event: KeyboardEvent) {
                       </svg>
                     </button>
                     <button
+                      v-if="canAddServiceType('addetional')"
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить другое"
@@ -1783,6 +1923,7 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
+                      v-if="canDeleteService('additionals', item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
@@ -1893,6 +2034,7 @@ function handleKeydown(event: KeyboardEvent) {
                       </svg>
                     </button>
                     <button
+                      v-if="canAddServiceType('spending')"
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить трату"
@@ -1924,6 +2066,7 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
+                      v-if="canDeleteService('spendings', item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
@@ -2110,20 +2253,6 @@ function handleKeydown(event: KeyboardEvent) {
   max-height: 260px;
   overflow-x: hidden;
   overflow-y: auto;
-}
-
-.add-services-modal__block-list:has(.select-field--open) {
-  max-height: none;
-  overflow: visible;
-}
-
-.add-services-modal__form-row:has(.select-field--open) {
-  align-items: start;
-}
-
-.add-services-modal__block :deep(.select-field--open .select-field__list) {
-  position: static;
-  width: 100%;
 }
 
 .add-services-modal__block-head {
