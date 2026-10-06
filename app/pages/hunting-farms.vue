@@ -22,6 +22,26 @@ useHead({
     },
   ],
 })
+
+const isSearching = ref(false)
+
+async function handleSearch(payload: Record<string, string>) {
+  if (isSearching.value) {
+    return
+  }
+
+  isSearching.value = true
+
+  try {
+    await navigateTo({
+      path: '/bases',
+      query: payload,
+    })
+  }
+  catch {
+    isSearching.value = false
+  }
+}
 </script>
 
 <template>
@@ -30,8 +50,9 @@ useHead({
       <div class="hunters-hero__header">
         <HomeHeroHeader />
       </div>
-      <div class="hunters-hero__title">
-        <HomeHeroTitle />
+      <div class="hunters-hero__panel">
+        <p class="hunters-hero__heading">Организуйте охоту с понятными расходами для каждого</p>
+        <HomeHeroSearchForm :loading="isSearching" @search="handleSearch" />
       </div>
     </section>
 
@@ -137,7 +158,8 @@ useHead({
 <style scoped>
 .hunters-hero {
   position: relative;
-  min-height: 520px;
+  z-index: 2;
+  min-height: 680px;
   background:
     linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(17, 24, 39, 0.18) 100%),
     url('/images/headBlock.jpg') center / 100% 100% no-repeat;
@@ -145,18 +167,43 @@ useHead({
 }
 
 .hunters-hero__header {
+  position: relative;
+  z-index: 20;
   display: flex;
   justify-content: center;
   padding-inline: 12px;
+  pointer-events: none;
 }
 
-.hunters-hero__title {
+.hunters-hero__header > * {
+  pointer-events: auto;
+}
+
+.hunters-hero__panel {
   position: absolute;
-  top: 300px;
+  top: 268px;
   left: 50%;
-  width: 100%;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 1500px;
   max-width: calc(100% - 24px);
   transform: translateX(-50%);
+}
+
+.hunters-hero__heading {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  color: var(--wh-white);
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 4px 18px rgba(0, 0, 0, 0.35);
 }
 
 .hunters-main {
@@ -305,11 +352,18 @@ useHead({
 
 @media (--wh-tablet) {
   .hunters-hero {
-    min-height: 500px;
+    min-height: 760px;
   }
 
-  .hunters-hero__title {
-    top: 290px;
+  .hunters-hero__panel {
+    top: 240px;
+    width: 100%;
+    max-width: none;
+    padding-inline: 12px;
+  }
+
+  .hunters-hero__heading {
+    font-size: 32px;
   }
 
   .hunters-grid--intro,
@@ -329,12 +383,22 @@ useHead({
 
 @media (--wh-mobile) {
   .hunters-hero {
-    min-height: 390px;
+    min-height: 0;
+    padding-bottom: 32px;
     background-size: cover;
   }
 
-  .hunters-hero__title {
-    top: 220px;
+  .hunters-hero__panel {
+    position: static;
+    top: auto;
+    width: 100%;
+    margin-top: 28px;
+    transform: none;
+    gap: 20px;
+  }
+
+  .hunters-hero__heading {
+    font-size: 26px;
   }
 
   .hunters-section {
