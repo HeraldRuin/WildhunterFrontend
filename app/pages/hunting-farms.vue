@@ -204,7 +204,16 @@ async function handleSearch(payload: Record<string, string>) {
           </div>
 
           <div class="hunters-article__group">
-            <h2 class="hunters-heading">Возможности для охотников: единый каталог туров</h2>
+            <div class="hunters-media">
+              <h2 class="hunters-heading">Возможности для охотников: единый каталог туров</h2>
+              <img
+                class="hunters-media__image"
+                src="/images/blog/ohotnichii-tury.jpg"
+                alt="Охотник на утиной охоте среди камыша"
+                width="960"
+                height="540"
+              >
+            </div>
             <div class="hunters-subsections">
               <article class="hunters-subsection">
                 <h3 class="hunters-subheading">Популярные направления</h3>
@@ -490,6 +499,22 @@ h1.hunters-heading {
   gap: 28px;
 }
 
+.hunters-media {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 32px 48px;
+}
+
+.hunters-media__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 .hunters-subsections {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -586,7 +611,8 @@ h1.hunters-heading {
 
   .hunters-grid--intro,
   .hunters-grid--equal,
-  .hunters-subsections {
+  .hunters-subsections,
+  .hunters-media {
     grid-template-columns: 1fr;
     gap: 20px;
   }
