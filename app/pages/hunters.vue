@@ -110,22 +110,25 @@ async function handleSearch(payload: Record<string, string>) {
       </section>
 
       <section class="hunters-section hunters-section--join">
-        <div class="container hunters-grid hunters-grid--equal">
+        <div class="container hunters-join">
           <h2 class="hunters-heading">
             Присоединяйтесь к нам прямо сейчас
           </h2>
-          <p class="hunters-join__text">
-            Будьте на связи с нами через удобные каналы общения! Мы доступны в популярных мессенджерах и социальных сетях, чтобы вы могли легко задать вопросы, получить поддержку или поделиться своими идеями
-          </p>
+          <div class="hunters-join__row">
+            <p class="hunters-join__text">
+              Будьте на связи с нами через удобные каналы общения! Мы доступны в популярных мессенджерах и социальных сетях, чтобы вы могли легко задать вопросы, получить поддержку или поделиться своими идеями
+            </p>
+            <LayoutAppSocialLinks />
+          </div>
         </div>
       </section>
 
-      <section class="hunters-section hunters-section--split">
+      <section class="hunters-section hunters-section--unique">
         <div class="container hunters-grid hunters-grid--equal">
           <h2 class="hunters-heading">
             Уникальность мероприятий и прозрачность расчетов для охотников
           </h2>
-          <div class="hunters-copy">
+          <div class="hunters-unique__copy">
             <p>
               Wild-Hunter.ru предоставляет охотникам инструменты для самостоятельной организации охоты, включая выбор охотничьих угодий, согласование условий и управление участниками. Это позволяет создавать мероприятия, полностью соответствующие предпочтениям и требованиям охотников.
             </p>
@@ -141,6 +144,9 @@ async function handleSearch(payload: Record<string, string>) {
               @click="openRegisterModal"
             >
               Зарегистрироваться
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path fill="currentColor" d="M4.5 11.5 11 5v5.2h1.5V2.5H4.8V4h5.1l-6.5 6.5 1.1 1z" />
+              </svg>
             </button>
           </div>
         </div>
@@ -232,9 +238,40 @@ async function handleSearch(payload: Record<string, string>) {
   border-top: 1px solid rgba(28, 33, 28, 0.14);
 }
 
-.hunters-section--join + .hunters-section {
+.hunters-section--join + .hunters-section--unique {
   border-top: none;
-  padding-top: 0;
+}
+
+.hunters-join {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.hunters-join__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px 48px;
+}
+
+.hunters-section--unique {
+  background: #e6e4df;
+}
+
+.hunters-unique__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 28px;
+}
+
+.hunters-unique__copy p {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .hunters-grid {
@@ -308,6 +345,7 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .hunters-join__text {
+  max-width: 640px;
   margin: 0;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 16px;
@@ -327,13 +365,14 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .hunters-cta__button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 360px;
-  margin-top: 8px;
-  margin-inline: auto;
-  padding: 14px 24px;
+  align-self: flex-end;
+  gap: 10px;
+  width: fit-content;
+  margin: 0;
+  padding: 14px 28px;
   border: none;
   border-radius: var(--wh-radius-lg);
   background: var(--wh-orange-500);
@@ -345,6 +384,11 @@ async function handleSearch(payload: Record<string, string>) {
   letter-spacing: 0;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.hunters-cta__button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .hunters-cta__button:hover {
@@ -371,6 +415,12 @@ async function handleSearch(payload: Record<string, string>) {
   .hunters-grid--intro,
   .hunters-grid--equal {
     grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .hunters-join__row {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 20px;
   }
 
@@ -416,8 +466,8 @@ async function handleSearch(payload: Record<string, string>) {
   }
 
   .hunters-cta__button {
+    align-self: stretch;
     width: 100%;
-    min-width: 0;
   }
 }
 </style>

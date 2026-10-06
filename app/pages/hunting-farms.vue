@@ -23,6 +23,15 @@ useHead({
   ],
 })
 
+const farmFaqItems = [
+  {
+    id: 1,
+    question: 'Как гарантируется безопасность финансовой сделки?',
+    lead: 'Используются механизмы безопасной сделки (эскроу-счета) или предоплаты через защищенные платежные шлюзы с фискализацией чеков. Средства перечисляются охотничьему хозяйству (базе) в соответствии с условиями договора.',
+    schemaText: 'Используются механизмы безопасной сделки (эскроу-счета) или предоплаты через защищенные платежные шлюзы с фискализацией чеков. Средства перечисляются охотничьему хозяйству (базе) в соответствии с условиями договора.',
+  },
+]
+
 const isSearching = ref(false)
 
 async function handleSearch(payload: Record<string, string>) {
@@ -253,16 +262,13 @@ async function handleSearch(payload: Record<string, string>) {
             </p>
           </div>
 
-          <div class="hunters-article__group">
-            <h2 class="hunters-heading">Часто задаваемые вопросы</h2>
-            <article class="hunters-subsection">
-              <h3 class="hunters-subheading">Как гарантируется безопасность финансовой сделки?</h3>
-              <p>
-                Используются механизмы безопасной сделки (эскроу-счета) или предоплаты через защищенные платежные шлюзы с фискализацией чеков. Средства перечисляются охотничьему хозяйству (базе) в соответствии с условиями договора.
-              </p>
-            </article>
-          </div>
+        </div>
+      </section>
 
+      <BasesFaqBlock :items="farmFaqItems" />
+
+      <section class="hunters-section">
+        <div class="container">
           <p class="hunters-subsection__text">
             Интеграция в цифровую платформу и агрегатор охотничьих туров представляет собой стратегический шаг для модернизации бизнеса охотничьего хозяйства. Заполнение профиля и публикация актуальных предложений открывает доступ к новой целевой аудитории, ищущей легальные, прозрачные и комфортно организованные охотничьи туры. Регистрация профиля охотничьего хозяйства или поиск подходящего тура доступны в основном меню платформы wild-hunter.ru.
           </p>
@@ -419,11 +425,16 @@ async function handleSearch(payload: Record<string, string>) {
 .hunters-heading {
   margin: 0;
   font-family: 'UNCAGE', sans-serif;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 400;
-  line-height: 1.1;
+  line-height: 1.15;
   letter-spacing: 0;
+  text-transform: uppercase;
   color: var(--wh-black-text);
+}
+
+h1.hunters-heading {
+  font-size: 32px;
 }
 
 .hunters-copy {
@@ -476,17 +487,23 @@ async function handleSearch(payload: Record<string, string>) {
 .hunters-article__group {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 28px;
 }
 
 .hunters-subsections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px 40px;
+}
+
+.hunters-subsection {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 10px;
 }
 
 .hunters-subheading {
-  margin: 0 0 10px;
+  margin: 0;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 16px;
   font-weight: 600;
@@ -501,6 +518,10 @@ async function handleSearch(payload: Record<string, string>) {
   font-size: 16px;
   font-weight: 400;
   line-height: 1.5;
+}
+
+.hunters-subsection p {
+  color: rgb(28 33 28 / 78%);
 }
 
 .hunters-banner {
@@ -564,7 +585,8 @@ async function handleSearch(payload: Record<string, string>) {
   }
 
   .hunters-grid--intro,
-  .hunters-grid--equal {
+  .hunters-grid--equal,
+  .hunters-subsections {
     grid-template-columns: 1fr;
     gap: 20px;
   }
@@ -581,6 +603,14 @@ async function handleSearch(payload: Record<string, string>) {
 
   .hunters-banner {
     padding-block: 0 40px;
+  }
+
+  .hunters-heading {
+    font-size: 24px;
+  }
+
+  h1.hunters-heading {
+    font-size: 28px;
   }
 }
 
@@ -610,10 +640,6 @@ async function handleSearch(payload: Record<string, string>) {
 
   .hunters-banner {
     padding-block: 0 32px;
-  }
-
-  .hunters-heading {
-    font-size: 32px;
   }
 
   .hunters-cta__button {
