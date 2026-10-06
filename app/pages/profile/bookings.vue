@@ -19,7 +19,7 @@ useHead({
 })
 
 const route = useRoute()
-const { bookings: bookingsApi } = useApi()
+const { bookings: bookingsApi, location: locationApi } = useApi()
 const { user } = useAuth()
 const notifications = useNotifications()
 
@@ -387,6 +387,25 @@ const dropdownStatuses = computed(() =>
   historyResponse.value?.data?.dropdown_statuses ?? [],
 )
 
+const { data: locations } = useAsyncData(
+  'search-locations',
+  () => locationApi.getLocationItems(),
+  {
+    lazy: true,
+    default: () => [],
+  },
+)
+
+function baseRegionBySlug(slug: string | null | undefined) {
+  const key = String(slug || '').trim()
+  if (!key) {
+    return undefined
+  }
+
+  const name = locations.value?.find(location => location.slug === key)?.name.trim()
+  return name || undefined
+}
+
 const bookings = computed<BookingHistoryItem[]>(() => {
   const rootHotel = historyResponse.value?.data?.hotel
   const filterId = bookingIdFilter.value
@@ -397,21 +416,27 @@ const bookings = computed<BookingHistoryItem[]>(() => {
       locationSlug: rootHotel?.location?.slug,
       isHunter: isHunter.value,
     }, timerNow.value)
+    const withRegion: BookingHistoryItem = {
+      ...booking,
+      baseRegion: booking.baseRegion || baseRegionBySlug(
+        item.hotel?.location?.slug || item.location?.slug,
+      ),
+    }
 
     if (
-      completedPrepaymentExpirations.has(booking.code)
-      && booking.status.code !== 'cancelled'
+      completedPrepaymentExpirations.has(withRegion.code)
+      && withRegion.status.code !== 'cancelled'
     ) {
       return {
-        ...booking,
+        ...withRegion,
         status: {
-          ...booking.status,
+          ...withRegion.status,
           timer: '00 мин 00 сек',
         },
       }
     }
 
-    return booking
+    return withRegion
   })
 
   if (!filterId) {

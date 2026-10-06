@@ -467,6 +467,11 @@ export function mapBookingHistoryItem(
     || fallback?.locationSlug
     || '',
   ).trim()
+  const baseRegion = String(
+    item.hotel?.location?.name
+    || item.location?.name
+    || '',
+  ).trim() || undefined
   const customerName = [
     item.creator?.first_name,
     item.creator?.last_name,
@@ -484,6 +489,7 @@ export function mapBookingHistoryItem(
     baseUrl: hotelSlug && locationSlug
       ? getHotelPath(locationSlug, hotelSlug)
       : undefined,
+    baseRegion,
     customerName,
     type,
     typeLabel: item.type_text || item.type,

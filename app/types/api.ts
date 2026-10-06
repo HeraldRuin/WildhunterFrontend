@@ -717,6 +717,7 @@ export interface BookingHistoryHotelDto {
   slug?: string | null
   location?: {
     slug?: string | null
+    name?: string | null
   } | null
   collection_timer_hours?: number | null
   paid_timer_hours?: number | null
@@ -743,6 +744,7 @@ export interface BookingHistoryItemDto {
   hotel: BookingHistoryHotelDto | null
   location?: {
     slug?: string | null
+    name?: string | null
   } | null
   creator: {
     id: number

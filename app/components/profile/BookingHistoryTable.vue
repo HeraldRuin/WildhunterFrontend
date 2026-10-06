@@ -380,6 +380,10 @@ onBeforeUnmount(() => {
                     Кол-во: {{ item.accommodation.guests }} чел.
                   </div>
                 </div>
+
+                <div v-if="item.baseRegion" class="booking-table__base-region">
+                  {{ item.baseRegion }}
+                </div>
               </div>
             </td>
             <td class="booking-table__details" data-label="Детали">
@@ -928,6 +932,17 @@ onBeforeUnmount(() => {
 .booking-table__base .booking-table__stay-grid {
   margin-top: 8px;
   min-width: 0;
+  text-align: left;
+  white-space: normal;
+}
+
+.booking-table__base-region {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 4px;
+  color: #4a4a4a;
+  font-weight: 500;
   text-align: left;
   white-space: normal;
 }
