@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<{
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Черновик',
   unpaid: 'Не оплачено',
-  paid: 'Оплачено',
+  paid: 'Подтверждено событие',
   processing: 'Ожидается подтверждение базой',
   completed: 'Завершено',
   confirmed: 'Подтверждено',
