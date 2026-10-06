@@ -347,12 +347,6 @@ function handleKeydown(event: KeyboardEvent) {
                   </span>
                   <strong>{{ invitation.name }}</strong>
                   <span
-                    v-if="invitation.isAccepted"
-                    class="finished-collection-modal__badge finished-collection-modal__badge--accepted"
-                  >
-                    Приглашение принято
-                  </span>
-                  <span
                     class="finished-collection-modal__badge"
                     :class="prepaymentStatusClass(invitation)"
                   >
@@ -580,12 +574,8 @@ function handleKeydown(event: KeyboardEvent) {
   text-align: center;
 }
 
-.finished-collection-modal__badge--accepted {
-  background: var(--wh-gray-600);
-}
-
 .finished-collection-modal__badge--payment-pending {
-  background: #f4c533;
+  background: var(--wh-orange-500);
 }
 
 .finished-collection-modal__badge--payment-unpaid {

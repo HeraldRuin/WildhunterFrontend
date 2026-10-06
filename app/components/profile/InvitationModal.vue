@@ -93,13 +93,11 @@ function handleKeydown(event: KeyboardEvent) {
 
 function invitationStatusLabel(invitation: BookingInvitationParticipant) {
   if (invitation.isDeclined) return 'Отклонено'
-  if (invitation.isAccepted) return 'Приглашение принято'
   return 'Ожидает подтверждения'
 }
 
 function invitationStatusClass(invitation: BookingInvitationParticipant) {
   if (invitation.isDeclined) return 'invitation-modal__badge--declined'
-  if (invitation.isAccepted) return 'invitation-modal__badge--accepted'
   return 'invitation-modal__badge--pending'
 }
 
@@ -241,26 +239,10 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
 
                   <div class="invitation-modal__participant-statuses">
                     <span
+                      v-if="!participant.isAccepted"
                       class="invitation-modal__badge"
                       :class="invitationStatusClass(participant)"
                     >
-                      <svg
-                        v-if="participant.isAccepted"
-                        class="invitation-modal__badge-icon"
-                        width="12"
-                        height="12"
-                        viewBox="0 0 12 12"
-                        fill="none"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M2 6l3 3 5-5"
-                          stroke="currentColor"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
                       {{ invitationStatusLabel(participant) }}
                     </span>
                     <span
@@ -478,7 +460,7 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
   flex-shrink: 0;
   padding: 3px 10px;
   border-radius: 4px;
-  background: var(--wh-orange-500);
+  background: #25a447;
   color: var(--wh-white);
   font-size: 0.7rem;
   font-weight: 600;
@@ -541,14 +523,6 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
   color: var(--wh-white);
 }
 
-.invitation-modal__badge-icon {
-  flex-shrink: 0;
-}
-
-.invitation-modal__badge--accepted {
-  background: var(--wh-green);
-}
-
 .invitation-modal__badge--pending {
   background: var(--wh-gray-600);
 }
@@ -562,6 +536,11 @@ async function openUserDetails(participant: BookingInvitationParticipant) {
   font-size: 0.78rem;
   line-height: 1.2;
   white-space: nowrap;
+}
+
+.invitation-modal__payment--pending {
+  color: var(--wh-orange-500);
+  font-weight: 600;
 }
 
 .invitation-modal__payment--unpaid {
