@@ -112,7 +112,7 @@ async function handleSearch(payload: Record<string, string>) {
 
 .blog-article__header {
   position: relative;
-  z-index: 20;
+  z-index: 30;
   display: flex;
   justify-content: center;
   padding-inline: 12px;

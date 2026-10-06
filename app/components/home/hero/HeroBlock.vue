@@ -45,7 +45,7 @@ function handleSearch(payload: Record<string, string>) {
 
 .hero-block__inner {
   position: relative;
-  z-index: 20;
+  z-index: 30;
   display: flex;
   flex-direction: column;
   align-items: center;
