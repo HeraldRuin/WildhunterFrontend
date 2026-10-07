@@ -528,19 +528,6 @@ onBeforeUnmount(() => {
                 >
                   Без проживания
                 </div>
-
-                <div
-                  v-if="grandTotalLines(item).length"
-                  class="booking-table__grand-total"
-                >
-                  <template
-                    v-for="(line, lineIndex) in grandTotalLines(item)"
-                    :key="`total-${item.id}-${lineIndex}`"
-                  >
-                    <template v-if="lineIndex > 0"><br></template>
-                    {{ line }}
-                  </template>
-                </div>
               </div>
             </td>
             <td class="booking-table__status" data-label="Статус">
@@ -672,6 +659,18 @@ onBeforeUnmount(() => {
                   class="booking-table__payment-summary"
                 >
                   <div>Остаток доплаты базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб.</div>
+                </div>
+                <div
+                  v-if="grandTotalLines(item).length"
+                  class="booking-table__grand-total"
+                >
+                  <template
+                    v-for="(line, lineIndex) in grandTotalLines(item)"
+                    :key="`total-${item.id}-${lineIndex}`"
+                  >
+                    <template v-if="lineIndex > 0"><br></template>
+                    {{ line }}
+                  </template>
                 </div>
               </div>
             </td>
@@ -994,6 +993,10 @@ onBeforeUnmount(() => {
   background: #2f8fc9;
   color: var(--wh-white);
   font-weight: 600;
+}
+
+.booking-table__payment .booking-table__grand-total:first-child {
+  margin-top: 0;
 }
 
 .booking-table__cancel-reason {
