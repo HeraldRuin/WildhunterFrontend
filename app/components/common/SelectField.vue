@@ -241,7 +241,10 @@ onUnmounted(() => {
       v-if="isOpen && (hasOptions || canOpenEmpty)"
       ref="listRef"
       class="select-field__list"
-      :class="{ 'select-field__list--overlay': overlay }"
+      :class="{
+        'select-field__list--overlay': overlay,
+        'select-field--filled-hover': filledHover,
+      }"
       :style="overlay ? overlayStyle : undefined"
       role="listbox"
       :aria-label="label || placeholder"
@@ -269,6 +272,7 @@ onUnmounted(() => {
           :class="{
             'select-field__option--active': isSelected(option.value),
             'select-field__option--hovered': hoveredValue === option.value,
+            'select-field__option--filled': filledHover,
           }"
           @mouseenter="hoveredValue = option.value"
           @click.stop="select(option.value)"
@@ -468,14 +472,17 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.select-field__option:hover,
-.select-field__option--hovered,
-.select-field__option:focus-visible {
+.select-field__option:hover:not(.select-field__option--filled),
+.select-field__option--hovered:not(.select-field__option--filled),
+.select-field__option:focus-visible:not(.select-field__option--filled) {
   background-color: transparent;
   border-color: #e8883a;
   color: var(--wh-black-text);
 }
 
+.select-field__option--filled:hover,
+.select-field__option--filled.select-field__option--hovered,
+.select-field__option--filled:focus-visible,
 .select-field--filled-hover .select-field__option:hover,
 .select-field--filled-hover .select-field__option--hovered,
 .select-field--filled-hover .select-field__option:focus-visible {
@@ -502,6 +509,9 @@ onUnmounted(() => {
   background-color: #ffffff;
 }
 
+.select-field__option--filled:hover .select-field__option-dot,
+.select-field__option--filled.select-field__option--hovered .select-field__option-dot,
+.select-field__option--filled:focus-visible .select-field__option-dot,
 .select-field--filled-hover .select-field__option:hover .select-field__option-dot,
 .select-field--filled-hover .select-field__option--hovered .select-field__option-dot,
 .select-field--filled-hover .select-field__option:focus-visible .select-field__option-dot {
