@@ -96,14 +96,6 @@ function accommodationPerPerson(accommodation: NonNullable<BookingHistoryItem['a
   return rooms.reduce((sum, room) => sum + (room.pricePerPerson ?? 0), 0)
 }
 
-function huntTotal(hunt: NonNullable<BookingHistoryItem['hunt']>) {
-  return hunt.total ?? hunt.priceTotal ?? null
-}
-
-function huntPerPerson(hunt: NonNullable<BookingHistoryItem['hunt']>) {
-  return hunt.totalPerPerson ?? hunt.pricePerPerson ?? null
-}
-
 function sumTotals(first: number | null, second: number | null) {
   if (first == null || second == null) return null
 
@@ -113,8 +105,14 @@ function sumTotals(first: number | null, second: number | null) {
 function grandTotalLines(item: BookingHistoryItem) {
   if (!item.accommodation || !item.hunt) return []
 
-  const perPerson = sumTotals(accommodationPerPerson(item.accommodation), huntPerPerson(item.hunt))
-  const total = sumTotals(accommodationTotal(item.accommodation), huntTotal(item.hunt))
+  const perPerson = sumTotals(
+    accommodationPerPerson(item.accommodation),
+    item.hunt.totalWithServicesPerPerson ?? null,
+  )
+  const total = sumTotals(
+    accommodationTotal(item.accommodation),
+    item.hunt.totalWithServices ?? null,
+  )
   const lines: string[] = []
 
   if (!props.showCustomer && perPerson != null) {
@@ -622,6 +620,18 @@ onBeforeUnmount(() => {
             <td class="booking-table__payment" data-label="Оплата">
               <div class="booking-table__value">
                 <div
+                  v-if="grandTotalLines(item).length"
+                  class="booking-table__grand-total"
+                >
+                  <template
+                    v-for="(line, lineIndex) in grandTotalLines(item)"
+                    :key="`total-${item.id}-${lineIndex}`"
+                  >
+                    <template v-if="lineIndex > 0"><br></template>
+                    {{ line }}
+                  </template>
+                </div>
+                <div
                   v-if="item.cancelReason"
                   class="booking-table__grand-total booking-table__cancel-reason"
                 >
@@ -659,18 +669,6 @@ onBeforeUnmount(() => {
                   class="booking-table__payment-summary"
                 >
                   <div>Остаток доплаты базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб.</div>
-                </div>
-                <div
-                  v-if="grandTotalLines(item).length"
-                  class="booking-table__grand-total"
-                >
-                  <template
-                    v-for="(line, lineIndex) in grandTotalLines(item)"
-                    :key="`total-${item.id}-${lineIndex}`"
-                  >
-                    <template v-if="lineIndex > 0"><br></template>
-                    {{ line }}
-                  </template>
                 </div>
               </div>
             </td>
@@ -997,6 +995,10 @@ onBeforeUnmount(() => {
 
 .booking-table__payment .booking-table__grand-total:first-child {
   margin-top: 0;
+}
+
+.booking-table__payment .booking-table__grand-total:not(.booking-table__cancel-reason):not(:last-child) {
+  margin-bottom: 8px;
 }
 
 .booking-table__cancel-reason {

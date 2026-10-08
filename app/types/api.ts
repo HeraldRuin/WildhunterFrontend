@@ -763,6 +763,8 @@ export interface BookingHistoryItemDto {
     total_hunting: number | null
     amount_hunting?: number | null
     amount_hunting_per_person?: number | null
+    amount_hunting_with_services?: number | null
+    amount_hunting_with_services_per_person?: number | null
     amount_accommodation?: number | null
     amount_accommodation_per_person?: number | null
     animal: {

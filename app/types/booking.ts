@@ -92,6 +92,8 @@ export interface BookingHuntDetails {
   pricePerPerson?: number | null
   total?: number | null
   totalPerPerson?: number | null
+  totalWithServices?: number | null
+  totalWithServicesPerPerson?: number | null
 }
 
 export interface BookingStatusInfo {

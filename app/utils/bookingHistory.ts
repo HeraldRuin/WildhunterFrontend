@@ -455,6 +455,8 @@ export function mapBookingHistoryItem(
           pricePerPerson: details.animal?.price_per_person ?? null,
           total: details.amount_hunting ?? null,
           totalPerPerson: details.amount_hunting_per_person ?? null,
+          totalWithServices: details.amount_hunting_with_services ?? null,
+          totalWithServicesPerPerson: details.amount_hunting_with_services_per_person ?? null,
         }
       : undefined
 
