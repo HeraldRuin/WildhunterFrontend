@@ -620,7 +620,7 @@ onBeforeUnmount(() => {
             <td class="booking-table__payment" data-label="Оплата">
               <div class="booking-table__value">
                 <div
-                  v-if="grandTotalLines(item).length"
+                  v-if="item.status.code !== 'cancelled' && grandTotalLines(item).length"
                   class="booking-table__grand-total"
                 >
                   <template
@@ -1003,6 +1003,8 @@ onBeforeUnmount(() => {
 
 .booking-table__cancel-reason {
   margin-top: 0;
+  border-color: var(--wh-field-error);
+  background: var(--wh-field-error);
 }
 
 .booking-table__rooms {
