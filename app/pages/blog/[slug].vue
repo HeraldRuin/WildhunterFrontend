@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { getBlogPost } from '~/utils/blog-posts'
 
 definePageMeta({
@@ -19,6 +20,12 @@ if (!post) {
 
 const pageTitle = post.pageTitle || post.title
 
+const breadcrumbs: BreadcrumbItem[] = [
+  { label: 'Главная', to: '/' },
+  { label: 'Блог', to: '/blog' },
+  { label: pageTitle },
+]
+
 const { open: openRegisterModal } = useRegisterModal()
 
 /** Кнопки внутри v-html не имеют обработчиков, ловим клик делегированием */
@@ -30,11 +37,11 @@ function onBodyClick(event: MouseEvent) {
 }
 
 useHead({
-  title: pageTitle,
+  title: post.seoTitle || pageTitle,
   meta: [
     {
       name: 'description',
-      content: pageTitle,
+      content: post.description || pageTitle,
     },
   ],
 })
@@ -73,7 +80,12 @@ async function handleSearch(payload: Record<string, string>) {
     </section>
 
     <main class="blog-article__main">
-      <div class="container blog-article__content">
+      <div class="container blog-article__frame">
+        <AppBreadcrumbs
+          :items="breadcrumbs"
+          class="blog-article__breadcrumbs"
+        />
+        <div class="blog-article__content">
         <template v-if="!post.embeddedHeader">
           <h1>{{ pageTitle }}</h1>
           <p class="blog-article__date">{{ post.date }}</p>
@@ -92,6 +104,7 @@ async function handleSearch(payload: Record<string, string>) {
           v-html="post.content"
           @click="onBodyClick"
         />
+        </div>
       </div>
     </main>
 
@@ -155,9 +168,18 @@ async function handleSearch(payload: Record<string, string>) {
   background: var(--wh-white);
 }
 
+.blog-article__frame.container {
+  width: min(100% - 32px, 1800px);
+  padding-block: 48px 0;
+}
+
+.blog-article__breadcrumbs {
+  margin: 0 0 28px 22px;
+}
+
 .blog-article__content {
   max-width: 1100px;
-  padding-block: 48px 0;
+  margin-inline: auto;
   color: #111;
 }
 
@@ -740,7 +762,7 @@ async function handleSearch(payload: Record<string, string>) {
     font-size: 26px;
   }
 
-  .blog-article__content {
+  .blog-article__frame.container {
     padding-block: 28px 0;
   }
 

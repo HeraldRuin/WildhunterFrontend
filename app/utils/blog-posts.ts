@@ -13,6 +13,10 @@ export type BlogPost = {
   slug: string
   title: string
   pageTitle?: string
+  /** Заголовок вкладки браузера */
+  seoTitle?: string
+  /** meta description */
+  description?: string
   date: string
   image: string
   content?: string
@@ -25,6 +29,8 @@ export const blogPosts: BlogPost[] = [
     slug: 'chto-takoe-zagonnaya-okhota',
     title: 'Что такое загонная охота',
     pageTitle: 'Что такое загонная охота: руководство по тактике и безопасности',
+    seoTitle: 'Что такое загонная охота | wild-hunter.ru',
+    description: 'Как проходит загонная охота ✔️ Участники, этапы проведения, правила безопасности ✔️ Объекты охоты и сезонность в России',
     date: '04.07.2026 г.',
     image: '/images/blog/okhota-na-losya-zagon.jpg',
     content: chtoTakoeZagonnayaOkhotaContent,
@@ -33,6 +39,8 @@ export const blogPosts: BlogPost[] = [
     slug: 'kakoe-oruzhie-vybrat-novichku-dlya-okhoty',
     title: 'Какое оружие выбрать новичку для охоты',
     pageTitle: 'Какое оружие выбрать новичку для охоты: полное руководство по выбору первого ружья',
+    seoTitle: 'Какое оружие выбрать новичку для охоты | wild-hunter.ru',
+    description: 'Ключевые критерии выбора первого ружья ✔️ Топ проверенных моделей ружей ✔️ Законодательные ограничения для начинающего охотника в РФ',
     date: '28.06.2026 г.',
     image: '/images/blog/chto-vzyat-na-okhotu-gear.jpg',
     content: kakoeOruzhieVybratNovichkuContent,
@@ -41,6 +49,8 @@ export const blogPosts: BlogPost[] = [
     slug: 'kuda-poekhat-na-okhotu',
     title: 'Куда поехать на охоту в России',
     pageTitle: 'Куда поехать на охоту в России: лучшие места, базы и сезоны',
+    seoTitle: 'Куда поехать на охоту | wild-hunter.ru',
+    description: 'ТОП регионов для охоты в России ✔️ Критерии выбора места для охоты ✔️ Популярные виды охоты и их сезонность',
     date: '22.06.2026 г.',
     image: '/images/hunting-farms-hunter.webp',
     content: kudaPoekhatNaOkhotuContent,

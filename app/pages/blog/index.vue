@@ -57,12 +57,13 @@ async function handleSearch(payload: Record<string, string>) {
 
     <main class="blog-listing">
       <!-- <div class="blog-listing__bg" aria-hidden="true" /> -->
-      <div class="container blog-listing__inner">
+      <div class="container blog-listing__frame">
         <AppBreadcrumbs
           :items="breadcrumbs"
           class="blog-listing__breadcrumbs"
         />
 
+        <div class="blog-listing__inner">
         <h1 class="blog-listing__title">
           Тематический блог об охоте и охотниках
         </h1>
@@ -90,6 +91,7 @@ async function handleSearch(payload: Record<string, string>) {
               Прочитать статью
             </NuxtLink>
           </article>
+        </div>
         </div>
       </div>
     </main>
@@ -157,15 +159,17 @@ async function handleSearch(payload: Record<string, string>) {
   background: var(--wh-white);
 }
 
-.blog-listing__inner.container {
-  display: flex;
-  flex-direction: column;
-  width: min(100% - 32px, 1240px);
+.blog-listing__frame.container {
+  width: min(100% - 32px, 1800px);
+}
+
+.blog-listing__inner {
+  width: min(100%, 1240px);
+  margin-inline: auto;
 }
 
 .blog-listing__breadcrumbs {
-  align-self: start;
-  margin-bottom: 28px;
+  margin: 0 0 28px 22px;
 }
 
 .blog-listing__title {
