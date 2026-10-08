@@ -326,6 +326,33 @@ async function handleSearch(payload: Record<string, string>) {
   letter-spacing: 0;
 }
 
+.blog-article__body :deep(.blog-blocks) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin: 8px 0 28px;
+}
+
+.blog-article__body :deep(.blog-block) {
+  padding: 20px 22px 8px;
+  background: var(--wh-white);
+  border: 1px solid var(--wh-field-border);
+  border-radius: var(--wh-radius);
+  box-shadow: var(--wh-shadow);
+}
+
+.blog-article__body :deep(.blog-block .blog-subtitle) {
+  margin: 0 0 12px;
+}
+
+.blog-article__body :deep(.blog-block p) {
+  margin-bottom: 12px;
+}
+
+.blog-article__body :deep(.blog-block ul) {
+  margin-bottom: 12px;
+}
+
 .blog-article__body :deep(.blog-display) {
   margin: 40px 0 20px;
   font-family: 'Inter', system-ui, sans-serif;
@@ -660,6 +687,10 @@ async function handleSearch(payload: Record<string, string>) {
   .blog-article__body :deep(.blog-steps) {
     grid-template-columns: 1fr;
     gap: 24px;
+  }
+
+  .blog-article__body :deep(.blog-blocks) {
+    grid-template-columns: 1fr;
   }
 
   .blog-article__body :deep(.blog-split__image) {
