@@ -147,6 +147,15 @@ export function useServicesApi() {
     )
   }
 
+  function hideAdditional(additionalId: number | string) {
+    return apiFetch<AdditionalServiceResponse>(
+      `/services/additionals/${encodeURIComponent(String(additionalId))}/hide`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
   return {
     addFavorite,
     removeFavorite,
@@ -158,5 +167,6 @@ export function useServicesApi() {
     createAdditional,
     updateAdditional,
     deleteAdditional,
+    hideAdditional,
   }
 }

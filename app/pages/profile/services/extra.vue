@@ -20,6 +20,7 @@ interface ExtraServiceRow {
   calculationType: string
   cost: string
   isSystem: boolean
+  type: string | null
 }
 
 const MEALS_SERVICE_NAME = 'питание'
@@ -28,9 +29,21 @@ function isMealsService(service: Pick<ExtraServiceRow, 'name'>) {
   return service.name.trim().toLowerCase() === MEALS_SERVICE_NAME
 }
 
+function isFoodService(service: ExtraServiceRow) {
+  return service.type === 'food'
+}
+
+function canDeleteService(service: ExtraServiceRow) {
+  return !isFoodService(service) && !isMealsService(service)
+}
+
 function hasQuantityAndType(service: ExtraServiceRow) {
   if (isMealsService(service)) {
     return true
+  }
+
+  if (isFoodService(service)) {
+    return service.calculationType.trim() !== ''
   }
 
   return parseCount(service.quantity) != null && service.calculationType.trim() !== ''
@@ -125,6 +138,7 @@ function toServiceRow(item: ManagedAdditionalService | BookingServiceAdditionalC
     calculationType: item.calculation_type ?? '',
     cost: formatCost(item.price),
     isSystem: normalizeIsSystem(item.is_system),
+    type: 'type' in item ? item.type ?? null : null,
   }
 }
 
@@ -222,10 +236,10 @@ function buildPayload(service: ExtraServiceRow) {
     return null
   }
 
-  const count = isMealsService(service)
+  const count = isMealsService(service) || isFoodService(service)
     ? null
     : parseCount(service.quantity)
-  if (!isMealsService(service) && count == null) {
+  if (!isMealsService(service) && !isFoodService(service) && count == null) {
     return null
   }
 
@@ -308,6 +322,7 @@ function addService() {
     calculationType: '',
     cost: formatCost(0),
     isSystem: false,
+    type: null,
   })
 }
 
@@ -385,6 +400,52 @@ function requestRemoveService(service: ExtraServiceRow) {
   })
 }
 
+function requestHideService(service: ExtraServiceRow) {
+  if (isLoading.value || busyServiceId.value != null || isDraftService(service)) {
+    return
+  }
+
+  const title = service.name.trim() || 'услугу'
+  openConfirmModal({
+    title: `Приостановить «${title}»? Он станет недоступен на базе.`,
+    confirmLabel: 'Приостановить',
+    onConfirm: () => hideService(service),
+  })
+}
+
+async function hideService(service: ExtraServiceRow) {
+  if (isLoading.value || busyServiceId.value != null) {
+    return
+  }
+
+  busyServiceId.value = service.id
+  busyActionLabel.value = 'Приостановка'
+
+  try {
+    const response = await servicesApi.hideAdditional(service.id)
+
+    if ('success' in response && response.success) {
+      services.value = services.value.filter(item => item.id !== service.id)
+      notifications.success(response.message || 'Питание приостановлено на базе')
+      return
+    }
+
+    notifications.error(extractErrorMessage(response, 'Не удалось приостановить питание'))
+    throw new Error('hide_service_failed')
+  }
+  catch (error) {
+    if ((error as Error).message !== 'hide_service_failed') {
+      const data = (error as { data?: unknown }).data
+      notifications.error(extractErrorMessage(data, 'Не удалось приостановить питание'))
+    }
+
+    throw error
+  }
+  finally {
+    busyServiceId.value = null
+  }
+}
+
 async function removeService(service: ExtraServiceRow) {
   if (isLoading.value || busyServiceId.value != null) {
     return
@@ -429,21 +490,15 @@ const activeTab = ref<ExtraServicesTab>('installed')
 const selectedInstalledServiceId = ref('')
 const systemServices = ref<SystemServiceCatalogItem[]>([])
 
+const INSTALLED_SERVICE_ORDER = ['завтрак', 'обед', 'ужин', 'питание']
+
+function installedServiceRank(service: Pick<ExtraServiceRow, 'name'>) {
+  const index = INSTALLED_SERVICE_ORDER.indexOf(service.name.trim().toLowerCase())
+  return index === -1 ? INSTALLED_SERVICE_ORDER.length : index
+}
+
 function sortInstalledServices(items: ExtraServiceRow[]) {
-  return [...items].sort((left, right) => {
-    const leftIsPrimary = isMealsService(left)
-    const rightIsPrimary = isMealsService(right)
-
-    if (leftIsPrimary && !rightIsPrimary) {
-      return -1
-    }
-
-    if (!leftIsPrimary && rightIsPrimary) {
-      return 1
-    }
-
-    return 0
-  })
+  return [...items].sort((left, right) => installedServiceRank(left) - installedServiceRank(right))
 }
 
 const installedServices = computed(() =>
@@ -843,7 +898,7 @@ onBeforeUnmount(() => {
                     </div>
 
                     <div
-                      v-if="!isMealsService(service)"
+                      v-if="!isMealsService(service) && !isFoodService(service)"
                       class="extra-services__field extra-services__field--qty"
                     >
                       <span class="extra-services__field-label">Количество</span>
@@ -887,7 +942,7 @@ onBeforeUnmount(() => {
 
                   <div
                     class="extra-services__col extra-services__col--actions"
-                    :class="{ 'extra-services__col--actions--single': isMealsService(service) }"
+                    :class="{ 'extra-services__col--actions--single': !canDeleteService(service) && !isFoodService(service) }"
                   >
                     <button
                       type="button"
@@ -898,7 +953,17 @@ onBeforeUnmount(() => {
                       Сохранить
                     </button>
                     <button
-                      v-if="!isMealsService(service)"
+                      v-if="isFoodService(service)"
+                      type="button"
+                      class="extra-services__btn extra-services__btn--hide"
+                      :disabled="busyServiceId != null"
+                      :title="`«${service.name.trim() || 'Питание'}» станет недоступно на базе`"
+                      @click="requestHideService(service)"
+                    >
+                      Приостановить
+                    </button>
+                    <button
+                      v-else-if="canDeleteService(service)"
                       type="button"
                       class="extra-services__btn extra-services__btn--delete"
                       :disabled="busyServiceId != null"
@@ -1212,7 +1277,7 @@ onBeforeUnmount(() => {
   grid-template-columns:
     minmax(0, 1fr)
     140px
-    220px;
+    300px;
   align-items: end;
   gap: 16px;
   padding: 14px 20px;
@@ -1261,6 +1326,7 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
   gap: 8px;
   padding-bottom: 1px;
+  width: 300px;
 }
 
 .extra-services__col--actions--single {
@@ -1348,6 +1414,7 @@ onBeforeUnmount(() => {
 }
 
 .extra-services__btn {
+  flex-shrink: 0;
   padding: 7px 16px;
   border: 1.5px solid transparent;
   border-radius: 999px;
@@ -1378,6 +1445,17 @@ onBeforeUnmount(() => {
 .extra-services__btn--save:hover:not(:disabled) {
   border-color: var(--wh-green);
   background: var(--wh-green);
+}
+
+.extra-services__btn--hide {
+  border-color: #6c757d;
+  background: #6c757d;
+  color: var(--wh-white);
+}
+
+.extra-services__btn--hide:hover:not(:disabled) {
+  border-color: #5a6268;
+  background: #5a6268;
 }
 
 .extra-services__btn--delete {
