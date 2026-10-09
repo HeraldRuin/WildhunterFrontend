@@ -11,7 +11,7 @@ const errorLabel = computed(() => {
   const code = Number(props.statusCode)
 
   if (code === 404) {
-    return 'Ошибка сервера'
+    return 'Страница не найдена'
   }
 
   if (code === 403) {
