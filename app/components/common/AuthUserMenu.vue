@@ -219,6 +219,7 @@ onUnmounted(() => {
   line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transform: translateY(-2px);
 }
 
 .auth-user-menu__arrow {
