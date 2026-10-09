@@ -513,6 +513,7 @@ export interface BookingServiceAdditionalCatalog {
   count: number | null
   price: number
   is_system?: boolean | number | null
+  is_visible?: boolean | number | null
 }
 
 export interface BookingServiceFoodCatalog {

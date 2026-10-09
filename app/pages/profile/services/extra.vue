@@ -21,6 +21,7 @@ interface ExtraServiceRow {
   cost: string
   isSystem: boolean
   type: string | null
+  isVisible: boolean
 }
 
 const MEALS_SERVICE_NAME = 'питание'
@@ -51,6 +52,10 @@ function hasQuantityAndType(service: ExtraServiceRow) {
 
 function normalizeIsSystem(value: unknown): boolean {
   return value === true || value === 1 || value === '1'
+}
+
+function normalizeIsVisible(value: unknown): boolean {
+  return value !== false && value !== 0 && value !== '0'
 }
 
 const { services: servicesApi } = useApi()
@@ -139,6 +144,7 @@ function toServiceRow(item: ManagedAdditionalService | BookingServiceAdditionalC
     cost: formatCost(item.price),
     isSystem: normalizeIsSystem(item.is_system),
     type: 'type' in item ? item.type ?? null : null,
+    isVisible: 'is_visible' in item ? normalizeIsVisible(item.is_visible) : true,
   }
 }
 
@@ -323,6 +329,7 @@ function addService() {
     cost: formatCost(0),
     isSystem: false,
     type: null,
+    isVisible: true,
   })
 }
 
@@ -363,6 +370,9 @@ async function saveService(service: ExtraServiceRow) {
       }
 
       const saved = toServiceRow(savedItem)
+      if (!('is_visible' in savedItem)) {
+        saved.isVisible = service.isVisible
+      }
       services.value = services.value.map(item =>
         item.id === service.id ? saved : item,
       )
@@ -376,6 +386,41 @@ async function saveService(service: ExtraServiceRow) {
   catch (error) {
     const data = (error as { data?: unknown }).data
     notifications.error(extractErrorMessage(data, 'Не удалось сохранить услугу'))
+  }
+  finally {
+    busyServiceId.value = null
+  }
+}
+
+async function toggleServiceVisibility(service: ExtraServiceRow) {
+  if (isLoading.value || busyServiceId.value != null || isDraftService(service)) {
+    return
+  }
+
+  const nextVisible = !service.isVisible
+  busyServiceId.value = service.id
+  busyActionLabel.value = nextVisible ? 'Показ услуги' : 'Скрытие услуги'
+
+  try {
+    const response = await servicesApi.setAdditionalVisibility(service.id, nextVisible)
+
+    if ('success' in response && response.success) {
+      const savedItem = unwrapAdditionalItem(response.data)
+      service.isVisible = savedItem && 'is_visible' in savedItem
+        ? normalizeIsVisible(savedItem.is_visible)
+        : nextVisible
+      notifications.success(
+        response.message
+        || (service.isVisible ? 'Услуга показана в каталоге брони' : 'Услуга скрыта в каталоге брони'),
+      )
+      return
+    }
+
+    notifications.error(extractErrorMessage(response, 'Не удалось изменить видимость услуги'))
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    notifications.error(extractErrorMessage(data, 'Не удалось изменить видимость услуги'))
   }
   finally {
     busyServiceId.value = null
@@ -398,52 +443,6 @@ function requestRemoveService(service: ExtraServiceRow) {
     confirmLabel: 'Удалить',
     onConfirm: () => removeService(service),
   })
-}
-
-function requestHideService(service: ExtraServiceRow) {
-  if (isLoading.value || busyServiceId.value != null || isDraftService(service)) {
-    return
-  }
-
-  const title = service.name.trim() || 'услугу'
-  openConfirmModal({
-    title: `Приостановить «${title}»? Он станет недоступен на базе.`,
-    confirmLabel: 'Приостановить',
-    onConfirm: () => hideService(service),
-  })
-}
-
-async function hideService(service: ExtraServiceRow) {
-  if (isLoading.value || busyServiceId.value != null) {
-    return
-  }
-
-  busyServiceId.value = service.id
-  busyActionLabel.value = 'Приостановка'
-
-  try {
-    const response = await servicesApi.hideAdditional(service.id)
-
-    if ('success' in response && response.success) {
-      services.value = services.value.filter(item => item.id !== service.id)
-      notifications.success(response.message || 'Питание приостановлено на базе')
-      return
-    }
-
-    notifications.error(extractErrorMessage(response, 'Не удалось приостановить питание'))
-    throw new Error('hide_service_failed')
-  }
-  catch (error) {
-    if ((error as Error).message !== 'hide_service_failed') {
-      const data = (error as { data?: unknown }).data
-      notifications.error(extractErrorMessage(data, 'Не удалось приостановить питание'))
-    }
-
-    throw error
-  }
-  finally {
-    busyServiceId.value = null
-  }
 }
 
 async function removeService(service: ExtraServiceRow) {
@@ -953,14 +952,19 @@ onBeforeUnmount(() => {
                       Сохранить
                     </button>
                     <button
-                      v-if="isFoodService(service)"
+                      v-if="isFoodService(service) && !isDraftService(service)"
                       type="button"
-                      class="extra-services__btn extra-services__btn--hide"
+                      class="extra-services__visibility"
+                      role="switch"
+                      :aria-checked="service.isVisible"
+                      :aria-label="service.isVisible ? 'доступно' : 'не доступно'"
                       :disabled="busyServiceId != null"
-                      :title="`«${service.name.trim() || 'Питание'}» станет недоступно на базе`"
-                      @click="requestHideService(service)"
+                      @click="toggleServiceVisibility(service)"
                     >
-                      Приостановить
+                      <span class="extra-services__visibility-knob" />
+                      <span class="extra-services__visibility-label">
+                        {{ service.isVisible ? 'доступно' : 'не доступно' }}
+                      </span>
                     </button>
                     <button
                       v-else-if="canDeleteService(service)"
@@ -1277,7 +1281,7 @@ onBeforeUnmount(() => {
   grid-template-columns:
     minmax(0, 1fr)
     140px
-    300px;
+    348px;
   align-items: end;
   gap: 16px;
   padding: 14px 20px;
@@ -1326,7 +1330,58 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
   gap: 8px;
   padding-bottom: 1px;
-  width: 300px;
+  width: 348px;
+}
+
+.extra-services__visibility {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 128px;
+  height: 28px;
+  padding: 0 8px 0 26px;
+  border: 0;
+  border-radius: 999px;
+  background: #dc3545;
+  color: var(--wh-white);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.extra-services__visibility[aria-checked='true'] {
+  padding: 0 26px 0 8px;
+  background: #e67e22;
+}
+
+.extra-services__visibility:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.extra-services__visibility-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--wh-white);
+  transition: transform 0.15s ease;
+}
+
+.extra-services__visibility[aria-checked='true'] .extra-services__visibility-knob {
+  transform: translateX(100px);
+}
+
+.extra-services__visibility-label {
+  width: 100%;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .extra-services__col--actions--single {
@@ -1445,17 +1500,6 @@ onBeforeUnmount(() => {
 .extra-services__btn--save:hover:not(:disabled) {
   border-color: var(--wh-green);
   background: var(--wh-green);
-}
-
-.extra-services__btn--hide {
-  border-color: #6c757d;
-  background: #6c757d;
-  color: var(--wh-white);
-}
-
-.extra-services__btn--hide:hover:not(:disabled) {
-  border-color: #5a6268;
-  background: #5a6268;
 }
 
 .extra-services__btn--delete {

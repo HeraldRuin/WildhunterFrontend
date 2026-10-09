@@ -147,6 +147,16 @@ export function useServicesApi() {
     )
   }
 
+  function setAdditionalVisibility(additionalId: number | string, isVisible: boolean) {
+    return apiFetch<AdditionalServiceResponse>(
+      `/services/additionals/${encodeURIComponent(String(additionalId))}/visibility`,
+      {
+        method: 'PATCH',
+        body: { is_visible: isVisible },
+      },
+    )
+  }
+
   function hideAdditional(additionalId: number | string) {
     return apiFetch<AdditionalServiceResponse>(
       `/services/additionals/${encodeURIComponent(String(additionalId))}/hide`,
@@ -167,6 +177,7 @@ export function useServicesApi() {
     createAdditional,
     updateAdditional,
     deleteAdditional,
+    setAdditionalVisibility,
     hideAdditional,
   }
 }
