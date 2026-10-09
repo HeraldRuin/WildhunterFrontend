@@ -156,7 +156,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   <div class="location-map-page">
     <SearchHero
       :title="heroTitle"
-      background-image="/images/location-img.jpg"
+      background-image="/images/communutu2-bg.jpg"
       hide-search
     />
 

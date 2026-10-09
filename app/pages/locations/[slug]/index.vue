@@ -380,7 +380,7 @@ function handleFiltersReset() {
   <div class="location-page">
     <SearchHero
       :title="locationName || 'Область'"
-      background-image="/images/location-img.jpg"
+      background-image="/images/communutu2-bg.jpg"
       hide-search
     />
 

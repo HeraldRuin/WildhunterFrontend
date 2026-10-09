@@ -59,7 +59,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 <template>
   <div class="locations-page">
     <SearchHero
-      background-image="/images/location-img.jpg"
+      background-image="/images/communutu2-bg.jpg"
       hide-search
     />
 
