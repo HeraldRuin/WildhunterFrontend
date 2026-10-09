@@ -64,47 +64,49 @@ const breadcrumbs: BreadcrumbItem[] = [
     />
 
     <section class="locations-page__results">
-      <div class="container locations-page__results-inner">
+      <div class="locations-page__frame">
         <AppBreadcrumbs
           :items="breadcrumbs"
           class="locations-page__breadcrumbs"
         />
 
-        <div class="locations-page__toolbar">
-          <h1
-            v-if="!pending || totalCount"
-            class="locations-page__title"
+        <div class="locations-page__results-inner">
+          <div class="locations-page__toolbar">
+            <h1
+              v-if="!pending || totalCount"
+              class="locations-page__title"
+            >
+              Всего локаций: {{ totalCount }}
+            </h1>
+          </div>
+
+          <div
+            v-if="pending && !locations.length"
+            class="locations-page__state locations-page__state--loading"
           >
-            Всего локаций: {{ totalCount }}
-          </h1>
-        </div>
+            <CommonSpinner
+              variant="ring"
+              size="lg"
+            />
+          </div>
 
-        <div
-          v-if="pending && !locations.length"
-          class="locations-page__state locations-page__state--loading"
-        >
-          <CommonSpinner
-            variant="ring"
-            size="lg"
-          />
-        </div>
+          <div
+            v-else-if="!locations.length"
+            class="locations-page__state locations-page__state--empty"
+          >
+            Локации не найдены
+          </div>
 
-        <div
-          v-else-if="!locations.length"
-          class="locations-page__state locations-page__state--empty"
-        >
-          Локации не найдены
-        </div>
-
-        <div
-          v-else
-          class="locations-page__grid"
-        >
-          <HomeLocationCard
-            v-for="item in locations"
-            :key="item.id"
-            :item="item"
-          />
+          <div
+            v-else
+            class="locations-page__grid"
+          >
+            <HomeLocationCard
+              v-for="item in locations"
+              :key="item.id"
+              :item="item"
+            />
+          </div>
         </div>
       </div>
     </section>
@@ -124,14 +126,27 @@ const breadcrumbs: BreadcrumbItem[] = [
   padding: 80px 0 104px;
 }
 
+.locations-page__frame {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: min(100% - 32px, 1800px);
+  margin-inline: auto;
+}
+
 .locations-page__results-inner {
   display: flex;
   flex-direction: column;
   gap: 28px;
+  width: min(100%, var(--wh-container));
+  margin-inline: auto;
 }
 
 .locations-page__breadcrumbs {
   align-self: start;
+  min-width: 0;
+  /* Как на странице области: колонка точек 10px + gap 12px */
+  margin-left: 22px;
 }
 
 .locations-page__toolbar {
@@ -187,6 +202,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     padding-top: 48px;
   }
 
+  .locations-page__frame,
   .locations-page__results-inner {
     gap: 12px;
   }
