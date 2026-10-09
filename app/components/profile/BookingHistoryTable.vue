@@ -539,31 +539,12 @@ onBeforeUnmount(() => {
                 <div
                   v-else
                   class="booking-table__status-label"
-                  :class="{
-                    'booking-table__status-label--danger':
-                      item.status.code === 'processing'
-                      || item.status.code === 'cancelled',
-                    'booking-table__status-label--confirmed':
-                      item.status.code === 'confirmed'
-                      || item.status.code === 'finish_bed_collection'
-                      || item.status.code === 'paid',
-                    'booking-table__status-label--completed':
-                      item.status.code === 'completed',
-                    'booking-table__status-label--collection':
-                      item.status.code === 'collection'
-                      || item.status.code === 'prepayment_collection',
-                  }"
                 >
                   {{ item.status.label }}<template v-if="item.status.timerHours"> ({{ item.status.timerHours }} ч)</template>
                 </div>
                 <div
                   v-if="item.status.timer && item.status.code !== 'finish_bed_collection' && item.status.code !== 'cancelled'"
                   class="booking-table__status-meta booking-table__status-meta--timer"
-                  :class="{
-                    'booking-table__status-meta--expired':
-                      item.status.timer === '00 мин 00 сек'
-                      || item.status.timer === 'Время оплаты истекло',
-                  }"
                 >
                   {{ item.status.timer }}
                 </div>
@@ -620,7 +601,7 @@ onBeforeUnmount(() => {
             <td class="booking-table__payment" data-label="Оплата">
               <div class="booking-table__value">
                 <div
-                  v-if="item.status.code !== 'cancelled' && grandTotalLines(item).length"
+                  v-if="!showCustomer && item.status.code !== 'cancelled' && grandTotalLines(item).length"
                   class="booking-table__grand-total"
                 >
                   <template
@@ -659,16 +640,16 @@ onBeforeUnmount(() => {
                     class="booking-table__payment-summary"
                     :class="{ 'booking-table__payment-summary--after-badge': item.status.code !== 'paid' && item.status.code !== 'completed' }"
                   >
-                    <div>Предоплата собрана: {{ formatPrice(item.payment?.prepaidTotal ?? 0) }} руб</div>
-                    <div>Остаток доплаты базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</div>
-                    <div>Всего по мероприятию: {{ formatPrice(item.payment?.total ?? 0) }} руб</div>
+                    <div>Предоплата собрана: <span class="booking-table__payment-summary-value">{{ formatPrice(item.payment?.prepaidTotal ?? 0) }} руб</span></div>
+                    <div>Остаток доплаты базе: <span class="booking-table__payment-summary-value">{{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</span></div>
+                    <div>Итоговая сумма за все мероприятие: <span class="booking-table__payment-summary-value">{{ formatPrice(item.payment?.total ?? 0) }} руб</span></div>
                   </div>
                 </template>
                 <div
                   v-else-if="showCustomer && isHuntingFinishedCollection(item)"
                   class="booking-table__payment-summary"
                 >
-                  <div>Остаток доплаты базе: {{ formatPrice(item.payment?.baseTotal ?? 0) }} руб.</div>
+                  <div>Остаток доплаты базе: <span class="booking-table__payment-summary-value">{{ formatPrice(item.payment?.baseTotal ?? 0) }} руб.</span></div>
                 </div>
               </div>
             </td>
@@ -903,6 +884,10 @@ onBeforeUnmount(() => {
   margin-top: 8px;
 }
 
+.booking-table__payment-summary-value {
+  font-weight: 700;
+}
+
 .booking-table__number {
   font-weight: 600;
   color: var(--wh-gray-900);
@@ -1027,17 +1012,21 @@ onBeforeUnmount(() => {
   border: none;
 }
 
-.booking-table__paid-message {
-  padding: 6px 8px;
-  border: 1px solid var(--wh-green);
-  border-radius: 4px;
-  background: var(--wh-green);
-  color: var(--wh-white);
-  font-weight: 600;
-  line-height: 1.35;
+.booking-table__status .booking-table__paid-message {
+  color: var(--wh-gray-900);
+  font-weight: 400;
+  line-height: 1.45;
 }
 
-.booking-table__status-label {
+.booking-table__status .booking-table__status-label {
+  display: block;
+  color: var(--wh-gray-900);
+  font-size: inherit;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.booking-table__payment .booking-table__status-label {
   display: inline-block;
   padding: 3px 8px;
   border-radius: 3px;
@@ -1048,65 +1037,28 @@ onBeforeUnmount(() => {
   line-height: 1.2;
 }
 
-.booking-table__status-label--danger {
-  background: var(--wh-field-error);
-}
-
-.booking-table__status-label--confirmed {
+.booking-table__payment .booking-table__status-label--confirmed {
   background: #25a447;
 }
 
-.booking-table__status-label--completed {
-  background: var(--wh-green);
-}
-
-.booking-table__status-label--collection {
-  background: #2f8fc9;
-}
-
-.booking-table__status-meta {
+.booking-table__status .booking-table__status-meta {
+  display: block;
   margin-top: 4px;
-  color: var(--wh-gray-600);
-  font-size: 0.78rem;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--wh-gray-900);
+  font-size: inherit;
+  font-weight: 400;
+  line-height: 1.45;
 }
 
-.booking-table__status-meta--timer {
-  color: var(--wh-black-text);
-  font-weight: 600;
+.booking-table__status .booking-table__status-meta--collected {
+  font-weight: 700;
 }
 
-.booking-table__status-meta--expired {
-  color: var(--wh-field-error);
-}
-
-.booking-table__status-meta--substatus {
-  display: block;
-  width: fit-content;
-  margin-top: 6px;
-  padding: 3px 8px;
-  border-radius: 3px;
-  background: #25a447;
-  color: var(--wh-white);
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.booking-table__status-meta--collected + .booking-table__status-meta--substatus {
+.booking-table__status .booking-table__status-meta--collected + .booking-table__status-meta--substatus {
   margin-top: 12px;
-}
-
-.booking-table__status-meta--collected {
-  display: block;
-  width: fit-content;
-  margin-top: 6px;
-  padding: 3px 8px;
-  border-radius: 3px;
-  background: var(--wh-gray-600);
-  color: var(--wh-white);
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1.2;
 }
 
 .booking-table__payment-btn {
