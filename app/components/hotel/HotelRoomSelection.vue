@@ -37,6 +37,17 @@ useHead(() => needsFontAwesome.value
 )
 
 const PREVIEW_TERMS_LIMIT = 4
+const PREVIEW_ROOMS_LIMIT = 3
+
+const showAllRooms = ref(false)
+
+const visibleRooms = computed(() =>
+  showAllRooms.value ? props.rooms : props.rooms.slice(0, PREVIEW_ROOMS_LIMIT),
+)
+
+const hasHiddenRooms = computed(() =>
+  !showAllRooms.value && props.rooms.length > PREVIEW_ROOMS_LIMIT,
+)
 
 const quantities = ref<Record<string, number>>({})
 const lightboxOpen = ref(false)
@@ -76,6 +87,7 @@ watch(
   () => props.rooms,
   (rooms) => {
     quantities.value = Object.fromEntries(rooms.map(room => [room.id, 0]))
+    showAllRooms.value = false
   },
   { immediate: true },
 )
@@ -210,7 +222,7 @@ defineExpose({
 <template>
   <div class="hotel-room-selection">
     <article
-      v-for="room in rooms"
+      v-for="room in visibleRooms"
       :key="room.id"
       class="hotel-room-selection__card"
     >
@@ -366,6 +378,15 @@ defineExpose({
         </div>
       </div>
     </article>
+
+    <button
+      v-if="hasHiddenRooms"
+      type="button"
+      class="hotel-room-selection__show-all"
+      @click="showAllRooms = true"
+    >
+      Показать все категории
+    </button>
 
     <div
       v-if="hasSelectedRooms"
@@ -645,6 +666,27 @@ defineExpose({
   padding: 0;
   list-style: none;
   width: 100%;
+}
+
+.hotel-room-selection__show-all {
+  display: block;
+  margin: 16px auto 0;
+  padding: 12px 24px;
+  border: 1px solid var(--wh-orange-500);
+  border-radius: 8px;
+  background: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+  color: var(--wh-orange-500);
+  cursor: pointer;
+}
+
+.hotel-room-selection__show-all:hover {
+  background: var(--wh-orange-500);
+  color: #fff;
 }
 
 .hotel-room-selection__all-services {
