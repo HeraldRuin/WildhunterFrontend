@@ -80,7 +80,7 @@ export const MOCK_HOTEL_REVIEWS: ReviewItem[] = [
 
 function parseTerms(raw: unknown): HotelTermGroup[] {
   if (!Array.isArray(raw) || !raw.length) {
-    return DEFAULT_TERMS
+    return []
   }
 
   return raw.map((group, index) => {

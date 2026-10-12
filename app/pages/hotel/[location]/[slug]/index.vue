@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { HotelRoomAttribute, HuntingMethod } from '~/types/api'
+import type { HotelRoomOption } from '~/types/hotelBooking'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
@@ -30,7 +32,7 @@ const displayHotelContent = computed(() => {
 
   return content ? normalizeRichTextHtml(content) : ''
 })
-const { services } = useApi()
+const { services, hotels: hotelsApi } = useApi()
 const { open: openFavoriteAuthModal } = useFavoriteAuthModal()
 const { isFavorite: isHotelFavorite, setFavorite, loadFavorites, isLoaded } = useFavoriteHotels()
 const { isBaseAdmin } = useUserRole()
@@ -167,9 +169,139 @@ const hotelMapCoordsLabel = computed(() => {
   return `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`
 })
 
+const AMENITIES_PREVIEW_LIMIT = 6
+
+const attributeGroups = ref<HotelRoomAttribute[]>([])
+const huntingMethods = ref<HuntingMethod[]>([])
+const amenitiesModalOpen = ref(false)
+
 const amenitiesGroup = computed(() => {
-  return displayHotel.value.terms.find(group => /услуг/i.test(group.title)) ?? null
+  const hotelTerms = hotel.value?.terms ?? []
+  return hotelTerms.find(group => /услуг/i.test(group.title)) ?? hotelTerms[0] ?? null
 })
+
+const amenityGroups = computed(() => {
+  const hotelTerms = amenitiesGroup.value?.terms ?? []
+  if (!hotelTerms.length) {
+    return []
+  }
+
+  const attributeTermIds = new Set(
+    attributeGroups.value.flatMap(group => group.terms.map(term => term.id)),
+  )
+  const huntingMethodIds = new Set(huntingMethods.value.map(method => method.id))
+
+  const groups = attributeGroups.value
+    .map(group => ({
+      id: group.id,
+      name: group.name,
+      terms: group.terms
+        .filter(term => hotelTerms.some(item => item.id === term.id))
+        .map(term => ({
+          id: term.id,
+          name: term.name,
+          icon: term.icon ?? '',
+          imageUrl: term.image_url ?? '',
+        })),
+    }))
+    .filter(group => group.terms.length)
+
+  const huntingTerms = hotelTerms
+    .filter(term => huntingMethodIds.has(term.id) && !attributeTermIds.has(term.id))
+    .map(term => ({
+      id: term.id,
+      name: huntingMethods.value.find(method => method.id === term.id)?.name || term.title,
+      icon: '',
+      imageUrl: '',
+    }))
+
+  if (huntingTerms.length) {
+    groups.push({
+      id: 0,
+      name: 'Способы охоты',
+      terms: huntingTerms,
+    })
+  }
+
+  return groups
+})
+
+const previewAmenities = computed(() => {
+  const grouped = amenityGroups.value.flatMap(group => group.terms)
+  if (grouped.length) {
+    return grouped.slice(0, AMENITIES_PREVIEW_LIMIT)
+  }
+
+  return (amenitiesGroup.value?.terms ?? [])
+    .slice(0, AMENITIES_PREVIEW_LIMIT)
+    .map(term => ({
+      id: term.id,
+      name: term.title,
+      icon: term.icon ?? '',
+      imageUrl: '',
+    }))
+})
+
+const amenitiesTotalCount = computed(() => {
+  const groupedCount = amenityGroups.value.reduce((sum, group) => sum + group.terms.length, 0)
+  if (groupedCount) {
+    return groupedCount
+  }
+
+  return amenitiesGroup.value?.terms.length ?? 0
+})
+
+const hasMoreAmenities = computed(() => amenitiesTotalCount.value > AMENITIES_PREVIEW_LIMIT)
+
+const amenitiesModalRoom = computed<HotelRoomOption | null>(() => {
+  const currentHotel = hotel.value
+  if (!currentHotel) {
+    return null
+  }
+
+  const attributes = amenityGroups.value.length
+    ? amenityGroups.value
+    : [{
+        id: amenitiesGroup.value?.id ?? 0,
+        name: amenitiesGroup.value?.title ?? 'Услуги на базе',
+        terms: (amenitiesGroup.value?.terms ?? []).map(term => ({
+          id: term.id,
+          name: term.title,
+          icon: term.icon ?? '',
+          imageUrl: '',
+        })),
+      }].filter(group => group.terms.length)
+
+  return {
+    id: String(currentHotel.id),
+    title: currentHotel.title,
+    area: '',
+    capacity: 0,
+    price: currentHotel.price,
+    nights: 1,
+    image: currentHotel.image,
+    photosCount: currentHotel.gallery.length,
+    gallery: currentHotel.gallery,
+    maxQuantity: 0,
+    attributes,
+  }
+})
+
+watch(() => hotel.value?.id, async (hotelId) => {
+  if (!hotelId) {
+    attributeGroups.value = []
+    huntingMethods.value = []
+    return
+  }
+
+  const [groups, methods] = await Promise.all([
+    services.getAttributeGroups('hotel'),
+    hotelsApi.getHuntingMethodItems(),
+  ])
+
+  attributeGroups.value = groups
+  huntingMethods.value = methods
+}, { immediate: true })
 
 function getErrorMessage(error: unknown) {
   if (!error || typeof error !== 'object') {
@@ -353,9 +485,9 @@ function handleRetryHotelLoad() {
             </div>
 
             <div class="hotel-page__amenities-row">
-              <ul v-if="amenitiesGroup" class="hotel-amenities">
+              <ul v-if="previewAmenities.length" class="hotel-amenities">
                 <li
-                  v-for="term in amenitiesGroup.terms"
+                  v-for="term in previewAmenities"
                   :key="term.id"
                   class="hotel-amenities__item"
                 >
@@ -367,7 +499,16 @@ function handleRetryHotelLoad() {
                     height="18"
                     aria-hidden="true"
                   >
-                  {{ term.title }}
+                  {{ term.name }}
+                </li>
+                <li v-if="hasMoreAmenities" class="hotel-amenities__item hotel-amenities__item--more">
+                  <button
+                    type="button"
+                    class="hotel-amenities__more"
+                    @click="amenitiesModalOpen = true"
+                  >
+                    Все услуги на базе
+                  </button>
                 </li>
               </ul>
 
@@ -431,6 +572,12 @@ function handleRetryHotelLoad() {
         </div>
       </div>
     </div>
+
+    <HotelRoomAttributesModal
+      v-model:open="amenitiesModalOpen"
+      :room="amenitiesModalRoom"
+      photos-aria-label="Фотографии базы"
+    />
 
     <section
       v-if="hotelMapPoint"
@@ -915,6 +1062,24 @@ function handleRetryHotelLoad() {
   height: 48px;
   border-radius: 50%;
   object-fit: cover;
+}
+
+.hotel-amenities__more {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
+  color: var(--wh-orange-500);
+  cursor: pointer;
+}
+
+.hotel-amenities__more:hover {
+  color: var(--wh-orange-600);
 }
 
 .hotel-amenities__icon {

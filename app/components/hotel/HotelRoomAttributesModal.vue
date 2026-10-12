@@ -2,10 +2,13 @@
 import type { HotelGalleryImage } from '~/types/api'
 import type { HotelRoomOption } from '~/types/hotelBooking'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   open: boolean
   room: HotelRoomOption | null
-}>()
+  photosAriaLabel?: string
+}>(), {
+  photosAriaLabel: 'Фотографии номера',
+})
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -188,7 +191,7 @@ onUnmounted(() => {
                 v-if="showGalleryDots"
                 class="room-attrs-modal__dots"
                 role="tablist"
-                aria-label="Фотографии номера"
+                :aria-label="photosAriaLabel"
               >
                 <button
                   v-for="(image, index) in galleryImages"
