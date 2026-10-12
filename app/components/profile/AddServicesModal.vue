@@ -384,7 +384,11 @@ const foodOptions = computed<SelectFieldOption[]>(() => {
   )
 
   return foodCatalog.value
-    .filter(item => !addedNames.has(item.name.trim().toLowerCase()))
+    .filter((item) => {
+      const price = Number(item.price)
+      const visible = item.is_visible !== false && item.is_visible !== 0 && item.is_visible !== '0'
+      return visible && Number.isFinite(price) && price > 0 && !addedNames.has(item.name.trim().toLowerCase())
+    })
     .map(item => withCatalogPrice(item.name, item.price, String(item.id)))
 })
 
@@ -444,23 +448,32 @@ function foodCatalogItem(foodId: string) {
   return foodCatalog.value.find(item => String(item.id) === foodId)
 }
 
+function foodDraftPeople(row: FoodDraft): number {
+  if (isIndividualFood(row.foodId)) {
+    return Math.max(row.hunterIds.length, 1)
+  }
+
+  return 1
+}
+
 function foodDraftUnitPrice(row: FoodDraft): string {
+  return catalogPriceLabel(foodCatalogItem(row.foodId)?.price) ?? ''
+}
+
+function foodDraftTotal(row: FoodDraft): string {
   const catalog = foodCatalogItem(row.foodId)
-  if (!catalog) {
+  const price = Number(catalog?.price)
+  if (!catalog || !Number.isFinite(price)) {
     return ''
   }
 
-  const calculationType = foodCalculationType(row.foodId)
-
-  return additionalSharePrice(
-    catalog.price,
-    calculationType,
-    calculationType === 'individual' ? row.hunterIds.length : undefined,
-  )
+  return formatHotelPriceLabel(Math.round(price * foodDraftPeople(row) * serviceDays()))
 }
 
-function foodDraftTotal(foodId: string): string {
-  return catalogPriceLabel(foodCatalogItem(foodId)?.price) ?? ''
+function foodSavedUnitPrice(item: BookingServiceFoodItem): string {
+  const name = (item.type ?? '').trim().toLowerCase()
+  const catalog = foodCatalog.value.find(entry => entry.name.trim().toLowerCase() === name)
+  return catalogPriceLabel(catalog?.price) ?? '—'
 }
 
 function canSaveFoodDraft(row: FoodDraft): boolean {
@@ -494,10 +507,6 @@ function preliminaryPart(list: DeletableServiceList, price: unknown): number {
   const amount = Number(price)
   if (!Number.isFinite(amount)) {
     return 0
-  }
-
-  if (list === 'foods') {
-    return amount * serviceDays()
   }
 
   return amount
@@ -1919,7 +1928,7 @@ function handleKeydown(event: KeyboardEvent) {
                     <span class="add-services-modal__value">{{ item.calculation_type === 'per_person' ? 'Разделено на всех' : (item.hunter_name || '—') }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span class="add-services-modal__value">{{ additionalSharePrice(item.price, item.calculation_type) }}</span>
+                    <span class="add-services-modal__value">{{ foodSavedUnitPrice(item) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
@@ -1981,10 +1990,10 @@ function handleKeydown(event: KeyboardEvent) {
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span v-if="foodDraftTotal(row.foodId)" class="add-services-modal__value">{{ foodDraftUnitPrice(row) }}</span>
+                    <span v-if="foodDraftUnitPrice(row)" class="add-services-modal__value">{{ foodDraftUnitPrice(row) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span v-if="foodDraftTotal(row.foodId)" class="add-services-modal__value">{{ foodDraftTotal(row.foodId) }}</span>
+                    <span v-if="foodDraftTotal(row)" class="add-services-modal__value">{{ foodDraftTotal(row) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
