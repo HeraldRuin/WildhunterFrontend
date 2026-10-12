@@ -517,7 +517,10 @@ export interface BookingServiceAdditionalCatalog {
 }
 
 export interface BookingServiceFoodCatalog {
-  price: number | null
+  id: number
+  name: string
+  price: number
+  calculation_type?: 'individual' | 'per_person' | null
 }
 
 export interface BookingServicesCatalogs {
@@ -526,7 +529,7 @@ export interface BookingServicesCatalogs {
   preparation_animals: BookingServiceAnimalCatalog[]
   hunters: BookingServiceHunterCatalog[]
   additionals: BookingServiceAdditionalCatalog[]
-  food: BookingServiceFoodCatalog | null
+  food: BookingServiceFoodCatalog[]
 }
 
 export interface BookingServiceTrophyItem {
@@ -562,6 +565,9 @@ export interface BookingServiceFoodItem {
   type?: string
   count: number
   price: number
+  calculation_type?: string | null
+  hunter_id?: number | null
+  hunter_name?: string
 }
 
 export interface BookingServiceAdditionalItem {

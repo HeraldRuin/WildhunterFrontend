@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  BookingServiceAdditionalCatalog,
   BookingServiceAdditionalItem,
   BookingServiceFoodItem,
   BookingServicePenaltyItem,
@@ -21,6 +22,9 @@ interface PreparationDraft {
 
 interface FoodDraft {
   key: number
+  foodId: string
+  hunterId: string
+  hunterIds: string[]
   count: number
 }
 
@@ -71,7 +75,8 @@ const EMPTY_ITEMS: BookingServicesItems = {
 
 const { isOpen, booking, close } = useAddServicesModal()
 const { open: openConfirmModal } = useConfirmModal()
-const { bookings } = useApi()
+const { bookings, services: servicesApi } = useApi()
+const hotelAdditionals = ref<BookingServiceAdditionalCatalog[]>([])
 const notifications = useNotifications()
 const { isBaseAdmin } = useUserRole()
 const notifyOptions = { group: ADD_SERVICES_NOTIFICATION_GROUP }
@@ -369,12 +374,99 @@ function preparationDraftPrice(row: PreparationDraft): string {
   return draftLinePrice(animal?.preparations?.[0]?.price, row.count)
 }
 
-function foodUnitPriceLabel(): string {
-  return catalogPriceLabel(services.value?.catalogs?.food?.price) ?? ''
+const foodCatalog = computed(() => services.value?.catalogs?.food ?? [])
+
+const foodOptions = computed<SelectFieldOption[]>(() => {
+  const addedNames = new Set(
+    (items.value.foods ?? [])
+      .map(item => (item.type ?? '').trim().toLowerCase())
+      .filter(Boolean),
+  )
+
+  return foodCatalog.value
+    .filter(item => !addedNames.has(item.name.trim().toLowerCase()))
+    .map(item => withCatalogPrice(item.name, item.price, String(item.id)))
+})
+
+function normalizeCalculationType(value: unknown): 'individual' | 'per_person' | null {
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const raw = value.trim().toLowerCase()
+  if (raw === 'individual' || raw === 'индивидуально') {
+    return 'individual'
+  }
+
+  if (raw === 'per_person' || raw === 'person' || raw === 'на всех') {
+    return 'per_person'
+  }
+
+  return null
 }
 
-function foodDraftPrice(row: FoodDraft): string {
-  return draftLinePrice(services.value?.catalogs?.food?.price, row.count)
+function foodCalculationType(foodId: string): 'individual' | 'per_person' | null {
+  const food = foodCatalog.value.find(item => String(item.id) === foodId)
+  if (!food) {
+    return null
+  }
+
+  const own = normalizeCalculationType(food.calculation_type)
+  if (own) {
+    return own
+  }
+
+  const name = food.name.trim().toLowerCase()
+  const sources = [
+    ...(services.value?.catalogs?.additionals ?? []),
+    ...hotelAdditionals.value,
+  ]
+  const additional = sources.find(item => item.name.trim().toLowerCase() === name)
+
+  return normalizeCalculationType(additional?.calculation_type)
+}
+
+function isIndividualFood(foodId: string): boolean {
+  return foodCalculationType(foodId) === 'individual'
+}
+
+function isPerPersonFood(foodId: string): boolean {
+  return foodCalculationType(foodId) === 'per_person'
+}
+
+function onFoodChange(row: FoodDraft, foodId: string | string[]) {
+  row.foodId = Array.isArray(foodId) ? foodId[0] ?? '' : foodId
+  row.hunterId = ''
+  row.hunterIds = []
+}
+
+function foodCatalogItem(foodId: string) {
+  return foodCatalog.value.find(item => String(item.id) === foodId)
+}
+
+function foodDraftUnitPrice(row: FoodDraft): string {
+  const catalog = foodCatalogItem(row.foodId)
+  if (!catalog) {
+    return ''
+  }
+
+  const calculationType = foodCalculationType(row.foodId)
+
+  return additionalSharePrice(
+    catalog.price,
+    calculationType,
+    calculationType === 'individual' ? row.hunterIds.length : undefined,
+  )
+}
+
+function foodDraftTotal(foodId: string): string {
+  return catalogPriceLabel(foodCatalogItem(foodId)?.price) ?? ''
+}
+
+function canSaveFoodDraft(row: FoodDraft): boolean {
+  const hasHunter = isPerPersonFood(row.foodId) || row.hunterIds.length > 0
+
+  return Boolean(row.foodId && hasHunter) && savingFoodKey.value === null
 }
 
 function formatServicePrice(price: unknown): string {
@@ -983,6 +1075,9 @@ function addFoodDraft() {
   expandBlock('food')
   foodDrafts.value.push({
     key: ++foodDraftKey,
+    foodId: '',
+    hunterId: '',
+    hunterIds: [],
     count: 1,
   })
 }
@@ -1028,30 +1123,44 @@ async function saveFoodDraft(row: FoodDraft) {
   }
 
   const code = booking.value?.code
-  const count = Number(row.count)
+  const foodId = Number(row.foodId)
+  const individual = isIndividualFood(row.foodId)
+  const perPerson = isPerPersonFood(row.foodId)
+  const hunterIds = (perPerson ? [] : row.hunterIds)
+    .map(Number)
+    .filter(id => Number.isInteger(id) && id > 0)
 
-  if (!code || savingFoodKey.value !== null) {
-    return
-  }
-
-  if (!Number.isInteger(count) || count < 1) {
-    notifications.error('Укажите количество', notifyOptions)
+  if (!code || !canSaveFoodDraft(row) || (!perPerson && hunterIds.length === 0)) {
     return
   }
 
   savingFoodKey.value = row.key
 
   try {
-    const response = await bookings.storeFood(code, { count })
+    const targets = perPerson ? [null] : hunterIds
+    const pending = [...hunterIds]
 
-    if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить питание', notifyOptions)
-      return
+    for (const hunterId of targets) {
+      const response = await bookings.storeFood(code, {
+        food_id: foodId,
+        count: 1,
+        ...(hunterId === null ? {} : { hunter_id: hunterId }),
+      })
+
+      if (!response.success || !response.data) {
+        notifications.error(response.message || 'Не удалось добавить питание', notifyOptions)
+        if (individual) {
+          row.hunterIds = pending.map(String)
+        }
+        return
+      }
+
+      upsertFoodItem(response.data)
+      pending.shift()
     }
 
-    upsertFoodItem(response.data)
     removeFoodDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
+    notifications.success('Услуга добавлена', notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
@@ -1252,6 +1361,28 @@ async function savePreparationDraft(row: PreparationDraft) {
   }
 }
 
+async function loadHotelAdditionals() {
+  try {
+    const response = await servicesApi.getAdditionals()
+    if (!('success' in response) || !response.success || !response.data) {
+      hotelAdditionals.value = []
+      return
+    }
+
+    const data = response.data
+    const list = Array.isArray(data)
+      ? data
+      : ('additionals' in data && Array.isArray(data.additionals) ? data.additionals : [])
+
+    hotelAdditionals.value = list.filter(item =>
+      item && typeof item === 'object' && 'name' in item && 'id' in item,
+    )
+  }
+  catch {
+    hotelAdditionals.value = []
+  }
+}
+
 async function loadServices(code: string) {
   const requestId = ++loadRequestId
   isLoading.value = true
@@ -1286,6 +1417,7 @@ async function loadServices(code: string) {
     }
 
     services.value = response.data
+    void loadHotelAdditionals()
     syncConfirmedSpendingLock(
       code,
       (response.data.items?.spendings ?? []).map(item => item.id),
@@ -1769,7 +1901,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div v-show="!isBlockCollapsed('food')">
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--food">
                   <span>Питание</span>
-                  <span>Количество чел</span>
+                  <span>Охотник</span>
                   <span>Цена на человека</span>
                   <span>Общая сумма</span>
                   <span></span>
@@ -1783,11 +1915,11 @@ function handleKeydown(event: KeyboardEvent) {
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <span class="add-services-modal__value">{{ item.type || 'Питание' }}</span>
                   </div>
-                  <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__value">{{ item.count }}</span>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <span class="add-services-modal__value">{{ item.calculation_type === 'per_person' ? 'Разделено на всех' : (item.hunter_name || '—') }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span class="add-services-modal__value">{{ foodUnitPriceLabel() }}</span>
+                    <span class="add-services-modal__value">{{ additionalSharePrice(item.price, item.calculation_type) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
@@ -1810,28 +1942,55 @@ function handleKeydown(event: KeyboardEvent) {
                   class="add-services-modal__form-row add-services-modal__form-row--food"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
-                    <span class="add-services-modal__value">Питание</span>
+                    <CommonSelectField
+                      :model-value="row.foodId"
+                      class="add-services-modal__select"
+                      placeholder="Питание"
+                      empty-text="список пуст"
+                      filled-hover
+                      no-margin
+                      :options="foodOptions"
+                      @update:model-value="onFoodChange(row, $event)"
+                    />
                   </div>
-                  <label class="add-services-modal__field add-services-modal__field--count">
-                    <input
-                      v-model.number="row.count"
-                      class="add-services-modal__control"
-                      type="number"
-                      min="1"
-                      step="1"
-                    >
-                  </label>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <CommonSelectField
+                      v-if="isIndividualFood(row.foodId)"
+                      v-model="row.hunterIds"
+                      class="add-services-modal__select"
+                      placeholder="Выберите охотников"
+                      filled-hover
+                      multiple
+                      no-margin
+                      :options="hunterOptions"
+                    />
+                    <span
+                      v-else-if="isPerPersonFood(row.foodId)"
+                      class="add-services-modal__value"
+                    >Разделено на всех</span>
+                    <CommonSelectField
+                      v-else
+                      v-model="row.hunterIds"
+                      class="add-services-modal__select"
+                      placeholder="Выберите охотников"
+                      filled-hover
+                      multiple
+                      no-margin
+                      :disabled="!row.foodId"
+                      :options="hunterOptions"
+                    />
+                  </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span v-if="foodUnitPriceLabel()" class="add-services-modal__value">{{ foodUnitPriceLabel() }}</span>
+                    <span v-if="foodDraftTotal(row.foodId)" class="add-services-modal__value">{{ foodDraftUnitPrice(row) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span v-if="foodDraftPrice(row)" class="add-services-modal__value">{{ foodDraftPrice(row) }}</span>
+                    <span v-if="foodDraftTotal(row.foodId)" class="add-services-modal__value">{{ foodDraftTotal(row.foodId) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
                       type="button"
                       class="add-services-modal__save"
-                      :disabled="savingFoodKey !== null || !row.count || row.count < 1"
+                      :disabled="!canSaveFoodDraft(row)"
                       @click="saveFoodDraft(row)"
                     >
                       Сохранить
@@ -2402,7 +2561,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .add-services-modal__form-row--food {
-  grid-template-columns: minmax(0, 1fr) 140px 170px 140px 220px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px 150px 220px;
 }
 
 .add-services-modal__form-row--food .add-services-modal__field--animal,

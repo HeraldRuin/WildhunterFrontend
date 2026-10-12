@@ -263,7 +263,7 @@ export function useBookingsApi() {
     )
   }
 
-  function storeFood(code: string, body: { count: number }) {
+  function storeFood(code: string, body: { food_id: number, count: number, hunter_id?: number }) {
     return apiFetch<ApiSuccessResponse<BookingServiceFoodItem> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/services/foods`,
       {
