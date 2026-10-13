@@ -104,10 +104,12 @@ const phone = computed({
 })
 
 const roleOptions = computed(() =>
-  roles.value.map(item => ({
-    value: item.code,
-    label: item.name,
-  })),
+  roles.value
+    .filter(item => item.name.trim().toLowerCase() !== 'редактор блогов')
+    .map(item => ({
+      value: item.code,
+      label: item.name,
+    })),
 )
 
 const rolePlaceholder = computed(() => {
