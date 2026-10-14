@@ -158,6 +158,23 @@ function fallbackIfIframeBlocked(url: string) {
   iframeReady.value = true
 }
 
+function isReturnToOwnSite(href: string): boolean {
+  if (!href || href === 'about:blank') {
+    return false
+  }
+
+  try {
+    return new URL(href).origin === window.location.origin
+  } catch {
+    return false
+  }
+}
+
+function returnToSite() {
+  resetPaymentUi()
+  emit('close')
+}
+
 function handleIframeLoad() {
   const url = paymentUrl.value
   const iframe = iframeRef.value
@@ -167,8 +184,15 @@ function handleIframeLoad() {
 
   try {
     const doc = iframe.contentDocument
+    const href = doc?.location?.href ?? ''
+
+    if (isReturnToOwnSite(href)) {
+      returnToSite()
+      return
+    }
+
     const blank = !doc
-      || doc.location.href === 'about:blank'
+      || href === 'about:blank'
       || !doc.body
       || (!doc.body.childElementCount && !doc.body.textContent?.trim())
 
