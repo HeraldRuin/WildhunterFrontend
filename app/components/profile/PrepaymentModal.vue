@@ -21,12 +21,14 @@ const paymentError = ref(false)
 const paymentUrl = ref<string | null>(null)
 const iframeReady = ref(false)
 const iframeRef = ref<HTMLIFrameElement | null>(null)
+const shieldRef = ref<HTMLElement | null>(null)
 const isOpen = computed(() => Boolean(props.booking))
 
 useBodyScrollLock(isOpen)
 
 let pollTimer: ReturnType<typeof setInterval> | undefined
 let iframeCheckTimer: ReturnType<typeof setTimeout> | undefined
+let iframeWatch = 0
 
 function stopPolling() {
   if (pollTimer) {
@@ -42,9 +44,17 @@ function clearIframeCheck() {
   }
 }
 
+function stopIframeWatch() {
+  if (iframeWatch) {
+    cancelAnimationFrame(iframeWatch)
+    iframeWatch = 0
+  }
+}
+
 function resetPaymentUi() {
   stopPolling()
   clearIframeCheck()
+  stopIframeWatch()
   paymentUrl.value = null
   paymentError.value = false
   iframeReady.value = false
@@ -155,7 +165,7 @@ function fallbackIfIframeBlocked(url: string) {
     return
   }
 
-  iframeReady.value = true
+  revealPaymentFrame()
 }
 
 function isReturnToOwnSite(href: string): boolean {
@@ -170,9 +180,55 @@ function isReturnToOwnSite(href: string): boolean {
   }
 }
 
+function concealPaymentFrame() {
+  const iframe = iframeRef.value
+  if (iframe) {
+    iframe.style.visibility = 'hidden'
+    iframe.src = 'about:blank'
+  }
+
+  shieldRef.value?.classList.remove('is-clear')
+  iframeReady.value = false
+}
+
 function returnToSite() {
+  concealPaymentFrame()
   resetPaymentUi()
   emit('close')
+}
+
+function revealPaymentFrame() {
+  const iframe = iframeRef.value
+  if (iframe) {
+    iframe.style.visibility = 'visible'
+  }
+
+  iframeReady.value = true
+}
+
+function watchIframeReturn() {
+  stopIframeWatch()
+
+  const tick = () => {
+    const iframe = iframeRef.value
+    if (!iframe || !paymentUrl.value) {
+      return
+    }
+
+    try {
+      const href = iframe.contentWindow?.location.href ?? ''
+      if (iframeReady.value && isReturnToOwnSite(href)) {
+        returnToSite()
+        return
+      }
+    } catch {
+      // Платёжная страница на другом домене: окно оставляем открытым.
+    }
+
+    iframeWatch = requestAnimationFrame(tick)
+  }
+
+  iframeWatch = requestAnimationFrame(tick)
 }
 
 function handleIframeLoad() {
@@ -205,10 +261,10 @@ function handleIframeLoad() {
     }
 
     clearIframeCheck()
-    iframeReady.value = true
+    revealPaymentFrame()
   } catch {
     clearIframeCheck()
-    iframeReady.value = true
+    revealPaymentFrame()
   }
 }
 
@@ -280,6 +336,7 @@ async function pay() {
 
     paymentUrl.value = nextPaymentUrl
     scheduleIframeFallback(nextPaymentUrl)
+    watchIframeReturn()
     startPolling()
   } catch (error) {
     paymentError.value = true
@@ -332,7 +389,11 @@ onUnmounted(() => {
               @load="handleIframeLoad"
             />
 
-            <div v-if="!iframeReady" class="prepayment-modal__loading">
+            <div
+              ref="shieldRef"
+              class="prepayment-modal__loading"
+              :class="{ 'is-clear': iframeReady }"
+            >
               <p v-if="paymentError" class="prepayment-modal__error">
                 Не удалось открыть оплату
               </p>
@@ -402,15 +463,22 @@ onUnmounted(() => {
   width: 100%;
   height: 70vh;
   border: 0;
+  visibility: hidden;
 }
 
 .prepayment-modal__loading {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--wh-white);
+}
+
+.prepayment-modal__loading.is-clear {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .prepayment-modal__error {
