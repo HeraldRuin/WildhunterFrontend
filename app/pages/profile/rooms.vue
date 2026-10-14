@@ -11,7 +11,7 @@ useHead({
   title: 'Управление номерами — WH',
 })
 
-const { rooms: roomsApi } = useApi()
+const { rooms: roomsApi, hotels: hotelsApi } = useApi()
 const authToken = useAuthToken()
 const ready = ref(false)
 
@@ -28,20 +28,31 @@ onBeforeMount(() => {
   ready.value = true
 })
 
-const hotelTitle = 'Хромой кабан-2'
+const hotelTitle = ref('')
 
-const breadcrumbs = [
+const breadcrumbs = computed(() => [
   { label: 'Главная', to: '/' },
-  { label: `Управление базой: ${hotelTitle}`, to: '/profile/base' },
+  {
+    label: hotelTitle.value
+      ? `Управление базой: ${hotelTitle.value}`
+      : 'Управление базой',
+    to: '/profile/base',
+  },
   { label: 'Управление номерами' },
-]
+])
 
 const { setProfileHeader } = useProfileHeader()
 
-setProfileHeader({
+watch(
   breadcrumbs,
-  title: 'Управление номерами',
-})
+  (items) => {
+    setProfileHeader({
+      breadcrumbs: items,
+      title: 'Управление номерами',
+    })
+  },
+  { immediate: true },
+)
 
 
 const route = useRoute()
@@ -126,6 +137,19 @@ function onRoomDeleted(id: number) {
   rooms.value = rooms.value.filter(room => room.id !== id)
 }
 
+async function loadHotelTitle(hotelId: number) {
+  try {
+    const response = await hotelsApi.getManageById(hotelId)
+
+    if ('success' in response && response.success) {
+      hotelTitle.value = response.data?.title?.trim() || ''
+    }
+  }
+  catch {
+    hotelTitle.value = ''
+  }
+}
+
 async function loadRooms() {
   isLoading.value = true
   loadError.value = ''
@@ -135,6 +159,12 @@ async function loadRooms() {
 
     if ('success' in response && response.success) {
       rooms.value = (response.data?.rooms ?? []).map(mapToRoomManageItem)
+
+      const hotelId = response.data?.hotel_id
+      if (hotelId) {
+        void loadHotelTitle(hotelId)
+      }
+
       return
     }
 

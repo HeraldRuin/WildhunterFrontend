@@ -12,7 +12,7 @@ definePageMeta({
 
 const route = useRoute()
 const notifications = useNotifications()
-const { rooms: roomsApi, media: mediaApi, services: servicesApi } = useApi()
+const { rooms: roomsApi, media: mediaApi, services: servicesApi, hotels: hotelsApi } = useApi()
 const authToken = useAuthToken()
 const ready = ref(false)
 
@@ -209,7 +209,33 @@ function revokeGalleryBlobUrls() {
   }
 }
 
-const hotelTitle = 'Хромой кабан-2'
+const hotelTitle = ref('')
+
+async function loadHotelTitle(id: string) {
+  try {
+    const response = await hotelsApi.getManageById(id)
+
+    if ('success' in response && response.success) {
+      hotelTitle.value = response.data?.title?.trim() || ''
+    }
+  }
+  catch {
+    hotelTitle.value = ''
+  }
+}
+
+watch(
+  hotelId,
+  (id) => {
+    if (!id) {
+      hotelTitle.value = ''
+      return
+    }
+
+    void loadHotelTitle(id)
+  },
+  { immediate: true },
+)
 
 const hotelEditTo = computed(() => (
   hotelId.value ? `/profile/base/${hotelId.value}` : '/profile/base'
@@ -243,7 +269,9 @@ const breadcrumbs = computed(() => {
   const items: BreadcrumbItem[] = [
     { label: 'Главная', to: '/' },
     { label: 'Управление базой', to: '/profile/base' },
-    { label: hotelTitle, to: hotelEditTo.value },
+    ...(hotelTitle.value
+      ? [{ label: hotelTitle.value, to: hotelEditTo.value }]
+      : []),
     { label: 'Управление номерами', to: roomsListTo.value },
   ]
 

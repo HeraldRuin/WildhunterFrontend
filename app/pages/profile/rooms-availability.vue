@@ -14,7 +14,7 @@ useHead({
 const SUMMARY_TAB_ID = 'summary'
 
 const route = useRoute()
-const { rooms: roomsApi } = useApi()
+const { rooms: roomsApi, hotels: hotelsApi } = useApi()
 const authToken = useAuthToken()
 const ready = ref(false)
 
@@ -36,12 +36,12 @@ const hotelId = computed(() => {
   return typeof raw === 'string' && raw ? raw : null
 })
 
-const hotelTitle = 'Хромой кабан-2'
+const hotelTitle = ref('')
 
 const breadcrumbs = computed(() => [
   { label: 'Главная', to: '/' },
   {
-    label: hotelTitle,
+    label: hotelTitle.value || 'Управление базой',
     to: hotelId.value ? `/profile/base/${hotelId.value}` : '/profile/base',
   },
   {
@@ -295,6 +295,19 @@ async function loadAvailability() {
   }
 }
 
+async function loadHotelTitle(id: number) {
+  try {
+    const response = await hotelsApi.getManageById(id)
+
+    if ('success' in response && response.success) {
+      hotelTitle.value = response.data?.title?.trim() || ''
+    }
+  }
+  catch {
+    hotelTitle.value = ''
+  }
+}
+
 async function loadRooms() {
   isLoadingRooms.value = true
   loadError.value = ''
@@ -306,6 +319,12 @@ async function loadRooms() {
       rooms.value = response.data?.rooms ?? []
       resolvedHotelId.value = response.data?.hotel_id ?? null
       activeTabId.value = SUMMARY_TAB_ID
+
+      const titleHotelId = resolvedHotelId.value ?? (hotelId.value ? Number(hotelId.value) : null)
+      if (titleHotelId) {
+        void loadHotelTitle(titleHotelId)
+      }
+
       await loadAvailability()
       return
     }
