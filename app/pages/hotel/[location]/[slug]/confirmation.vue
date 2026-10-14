@@ -604,6 +604,7 @@ async function confirmSaveBooking() {
                       loading="lazy"
                       decoding="async"
                     >
+                    <span v-else>Фото отсутствует</span>
                   </div>
                 </div>
 
@@ -1021,13 +1022,20 @@ async function confirmSaveBooking() {
 }
 
 .booking-confirmation__card-placeholder {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: auto;
   aspect-ratio: 287 / 191;
   border-radius: 12px;
-  background: var(--wh-gray-300);
+  background: #8a8a8a;
   overflow: hidden;
+  color: rgb(255 255 255 / 88%);
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
 }
 
 .booking-confirmation__cards:not(.booking-confirmation__cards--single) .booking-confirmation__card-placeholder {
