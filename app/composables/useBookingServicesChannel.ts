@@ -15,12 +15,37 @@ export function publishBookingServicesUpdated(payload: BookingServicesUpdatedPay
   }
 }
 
+export function bookingMatchesServicesUpdate(
+  booking: { id: number | string, code?: string | null } | null | undefined,
+  payload: BookingServicesUpdatedPayload,
+) {
+  if (!booking) {
+    return false
+  }
+
+  if (payload.code && booking.code && payload.code === booking.code) {
+    return true
+  }
+
+  return Number(payload.booking_id) === Number(booking.id)
+}
+
 export function useBookingServicesChannel(
-  bookingId: Ref<number | null>,
+  bookingId: Ref<number | string | null>,
   onUpdated: (payload: BookingServicesUpdatedPayload) => void,
+  bookingCode?: Ref<string | null | undefined>,
 ) {
   watch(servicesUpdate, (payload) => {
-    if (!payload || bookingId.value == null || payload.booking_id !== bookingId.value) {
+    if (!payload) {
+      return
+    }
+
+    const id = bookingId.value
+    const code = bookingCode?.value
+    const sameId = id != null && Number(payload.booking_id) === Number(id)
+    const sameCode = Boolean(code && payload.code && payload.code === code)
+
+    if (!sameId && !sameCode) {
       return
     }
 

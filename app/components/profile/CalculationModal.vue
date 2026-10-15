@@ -51,13 +51,15 @@ watch(
 useBookingServicesChannel(
   computed(() => (isOpen.value ? booking.value?.id ?? null : null)),
   (payload) => {
-    const code = booking.value?.code
-    if (!code || payload.code !== code) {
+    const current = booking.value
+    const code = current?.code
+    if (!code || !bookingMatchesServicesUpdate(current, payload)) {
       return
     }
 
     void refreshCalculation(code)
   },
+  computed(() => (isOpen.value ? booking.value?.code ?? null : null)),
 )
 
 function resetCalculation() {

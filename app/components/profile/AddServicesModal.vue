@@ -191,13 +191,15 @@ watch(
 useBookingServicesChannel(
   computed(() => (isOpen.value ? booking.value?.id ?? null : null)),
   (payload) => {
-    const code = booking.value?.code
-    if (!code || payload.code !== code) {
+    const current = booking.value
+    const code = current?.code
+    if (!code || !bookingMatchesServicesUpdate(current, payload)) {
       return
     }
 
     void refreshServices(code)
   },
+  computed(() => (isOpen.value ? booking.value?.code ?? null : null)),
 )
 
 function isAllowed(type: BookingServiceType): boolean {
@@ -1444,7 +1446,11 @@ async function refreshServices(code: string) {
       return
     }
 
-    services.value = response.data
+    services.value = {
+      ...services.value,
+      items: response.data.items,
+      preliminary_total: response.data.preliminary_total,
+    }
     syncConfirmedSpendingLock(
       code,
       (response.data.items?.spendings ?? []).map(item => item.id),
