@@ -25,6 +25,7 @@ const calculation = ref<BookingCalculatingData | null>(null)
 const openTooltipKey = ref<string | null>(null)
 let loadRequestId = 0
 let refreshRequestId = 0
+let refreshAfterLoad = false
 
 useBodyScrollLock(isOpen)
 
@@ -64,6 +65,7 @@ useBookingServicesChannel(
 
 function resetCalculation() {
   loadRequestId += 1
+  refreshAfterLoad = false
   isLoading.value = false
   loadError.value = ''
   calculation.value = null
@@ -98,6 +100,7 @@ onBeforeUnmount(() => {
 
 async function refreshCalculation(code: string) {
   if (isLoading.value) {
+    refreshAfterLoad = true
     return
   }
 
@@ -160,6 +163,10 @@ async function loadCalculation(code: string) {
   finally {
     if (requestId === loadRequestId) {
       isLoading.value = false
+      if (refreshAfterLoad && booking.value?.code === code) {
+        refreshAfterLoad = false
+        void refreshCalculation(code)
+      }
     }
   }
 }
