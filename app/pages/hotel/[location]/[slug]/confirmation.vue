@@ -339,7 +339,7 @@ const pageTitle = computed(() => {
     return 'Подтвердите бронирование вашего мероприятия'
   }
 
-  return 'ВАШЕ БРОНИРОВАНИЕ БЫЛО УСПЕШНО ОТПРАВЛЕНО!'
+  return 'ВАШЕ БРОНИРОВАНИЕ БЫЛО УСПЕШНО ОТПРАВЛЕНО БАЗЕ!'
 })
 
 const emailLine = computed(() => {
@@ -845,7 +845,7 @@ async function confirmSaveBooking() {
 .booking-confirmation__summary-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: stretch;
+  align-items: center;
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -854,9 +854,9 @@ async function confirmSaveBooking() {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
-  gap: 12px 20px;
-  padding: 20px 24px;
-  height: 94px;
+  gap: 4px 20px;
+  padding: 10px 24px;
+  height: 70px;
   border-radius: var(--wh-radius-lg);
   background: var(--wh-green);
   color: var(--wh-white);
@@ -867,12 +867,12 @@ async function confirmSaveBooking() {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  height: auto;
 }
 
 .booking-confirmation__summary-label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 500;
   font-style: normal;
@@ -913,7 +913,7 @@ async function confirmSaveBooking() {
   justify-content: center;
   width: auto;
   min-width: 360px;
-  height: 70px;
+  height: 94px;
   padding: 0 24px;
   border-radius: var(--wh-radius-lg);
   background: var(--wh-orange-500);
