@@ -35,6 +35,19 @@ export interface BookingServicesUpdatedPayload {
   code: string
 }
 
+let echo: Echo<'reverb'> | null = null
+let servicesUpdatedHandler: ((payload: BookingServicesUpdatedPayload) => void) | null = null
+
+export function listenBookingServicesUpdated(bookingId: number) {
+  if (!echo || !servicesUpdatedHandler || !Number.isFinite(bookingId)) {
+    return
+  }
+
+  const channel = echo.private(`bookings.${bookingId}`)
+  channel.stopListening('.booking.services.updated', servicesUpdatedHandler)
+  channel.listen('.booking.services.updated', servicesUpdatedHandler)
+}
+
 export function useBookingStatusChannel(
   onStatusUpdated: (payload: BookingStatusUpdatedPayload) => void,
   onInvitationUpdated?: (payload: BookingInvitationUpdatedPayload) => void,
@@ -47,7 +60,7 @@ export function useBookingStatusChannel(
   const subscribedBookingIds = new Set<number>()
   const gatheringListenedIds = new Set<number>()
   let gatheringBookingId: number | null = null
-  let echo: Echo<'reverb'> | null = null
+  servicesUpdatedHandler = onServicesUpdated ?? null
 
   function createEcho(): Echo<'reverb'> | null {
     if (!import.meta.client || echo) {
@@ -149,13 +162,10 @@ export function useBookingStatusChannel(
           channel.listen('.booking.invitation.updated', onInvitationUpdated)
         }
 
-        if (onServicesUpdated) {
-          channel.listen('.booking.services.updated', onServicesUpdated)
-        }
-
         subscribedBookingIds.add(bookingId)
       }
 
+      listenBookingServicesUpdated(bookingId)
       bindGatheringListener(bookingId)
     }
   }

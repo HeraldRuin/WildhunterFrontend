@@ -5,6 +5,7 @@ import type {
   BookingInvitationUpdatedPayload,
   BookingStatusUpdatedPayload,
 } from '~/composables/useBookingStatusChannel'
+import { listenBookingServicesUpdated } from '~/composables/useBookingStatusChannel'
 import type { BookingAction, BookingHistoryItem } from '~/types/booking'
 import { ROLE_BASE_ADMIN, ROLE_HUNTER } from '~/utils/roles'
 import { FINISHED_COLLECTION_MODAL_STATUSES, countPendingInvitations, mapBookingHistoryItem } from '~/utils/bookingHistory'
@@ -32,8 +33,16 @@ const {
   state: collectionModalState,
 } = useCollectionModal()
 const { open: openCancelBookingModal } = useCancelBookingModal()
-const { open: openAddServicesModal } = useAddServicesModal()
-const { open: openCalculationModal } = useCalculationModal()
+const {
+  open: openAddServicesModal,
+  isOpen: isAddServicesOpen,
+  booking: addServicesBooking,
+} = useAddServicesModal()
+const {
+  open: openCalculationModal,
+  isOpen: isCalculationOpen,
+  booking: calculationBooking,
+} = useCalculationModal()
 const { open: openConfirmModal } = useConfirmModal()
 
 const breadcrumbs = [
@@ -806,6 +815,21 @@ const { subscribe: subscribeToHistory } = useBookingHistoryChannel(() => {
 watch(
   () => historyResponse.value?.data?.bookings?.items.map(item => item.id) ?? [],
   syncSubscriptions,
+  { immediate: true },
+)
+
+watch(
+  () => [
+    isAddServicesOpen.value ? addServicesBooking.value?.id ?? null : null,
+    isCalculationOpen.value ? calculationBooking.value?.id ?? null : null,
+  ],
+  (ids) => {
+    for (const id of ids) {
+      if (id != null) {
+        listenBookingServicesUpdated(Number(id))
+      }
+    }
+  },
   { immediate: true },
 )
 
