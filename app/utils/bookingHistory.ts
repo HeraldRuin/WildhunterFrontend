@@ -64,13 +64,13 @@ const ACTION_VARIANT_MAP: Record<string, BookingActionVariant> = {
 
 const HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
   { id: 'open_collection', label: 'Управление сбором', variant: 'success' },
-  { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
+  { id: 'select_seat', label: 'Информация по размещению', variant: 'success' },
   { id: 'add_services', label: 'Дополнительные услуги', variant: 'success' },
 ]
 
 const INVITED_HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
   { id: 'open_collection', label: 'Список приглашенных', variant: 'success' },
-  { id: 'select_seat', label: 'Выбрать койко-место', variant: 'success' },
+  { id: 'select_seat', label: 'Информация по размещению', variant: 'success' },
 ]
 
 const HUNT_INFO_STATUSES = new Set(['paid', 'completed'])
