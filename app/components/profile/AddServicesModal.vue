@@ -415,19 +415,27 @@ function foodCalculationType(foodId: string): 'individual' | 'per_person' | null
     return null
   }
 
-  const own = normalizeCalculationType(food.calculation_type)
-  if (own) {
-    return own
-  }
-
   const name = food.name.trim().toLowerCase()
   const sources = [
-    ...(services.value?.catalogs?.additionals ?? []),
+    food,
     ...hotelAdditionals.value,
+    ...(services.value?.catalogs?.additionals ?? []),
   ]
-  const additional = sources.find(item => item.name.trim().toLowerCase() === name)
 
-  return normalizeCalculationType(additional?.calculation_type)
+  for (const item of sources) {
+    const sameItem = 'id' in item && String(item.id) === foodId
+    const sameName = item.name.trim().toLowerCase() === name
+    if (!sameItem && !sameName) {
+      continue
+    }
+
+    const type = normalizeCalculationType(item.calculation_type)
+    if (type) {
+      return type
+    }
+  }
+
+  return null
 }
 
 function isIndividualFood(foodId: string): boolean {
@@ -1426,7 +1434,7 @@ async function loadServices(code: string) {
     }
 
     services.value = response.data
-    void loadHotelAdditionals()
+    await loadHotelAdditionals()
     syncConfirmedSpendingLock(
       code,
       (response.data.items?.spendings ?? []).map(item => item.id),
