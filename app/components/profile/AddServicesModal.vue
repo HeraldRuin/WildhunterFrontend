@@ -103,6 +103,7 @@ const collapsedBlocks = ref(new Set<ServiceBlockId>())
 const lockedSpendingIds = ref(new Set<number>())
 
 let loadRequestId = 0
+let refreshRequestId = 0
 let preparationDraftKey = 0
 let foodDraftKey = 0
 let additionalDraftKey = 0
@@ -184,6 +185,18 @@ watch(
     }
 
     void loadServices(code)
+  },
+)
+
+useBookingServicesChannel(
+  computed(() => (isOpen.value ? booking.value?.id ?? null : null)),
+  (payload) => {
+    const code = booking.value?.code
+    if (!code || payload.code !== code) {
+      return
+    }
+
+    void refreshServices(code)
   },
 )
 
@@ -1410,6 +1423,34 @@ async function loadHotelAdditionals() {
   }
   catch {
     hotelAdditionals.value = []
+  }
+}
+
+async function refreshServices(code: string) {
+  if (isLoading.value || !services.value) {
+    return
+  }
+
+  const requestId = ++refreshRequestId
+
+  try {
+    const response = await bookings.services(code)
+
+    if (requestId !== refreshRequestId || booking.value?.code !== code) {
+      return
+    }
+
+    if (!response.success || !response.data) {
+      return
+    }
+
+    services.value = response.data
+    syncConfirmedSpendingLock(
+      code,
+      (response.data.items?.spendings ?? []).map(item => item.id),
+    )
+  }
+  catch {
   }
 }
 
