@@ -2,7 +2,9 @@ import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
 
 export interface BookingHistoryUpdatedPayload {
-  action: 'added' | 'removed'
+  booking_id?: number
+  code?: string
+  action: 'added' | 'removed' | 'updated'
 }
 
 export function useBookingHistoryChannel(
