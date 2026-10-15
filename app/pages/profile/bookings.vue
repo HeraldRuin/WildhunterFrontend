@@ -765,6 +765,7 @@ const { syncSubscriptions, setGatheringSubscription } = useBookingStatusChannel(
   applyBookingStatusUpdate,
   applyBookingInvitationUpdate,
   applyBookingGatheringCompleted,
+  publishBookingServicesUpdated,
 )
 
 watch(

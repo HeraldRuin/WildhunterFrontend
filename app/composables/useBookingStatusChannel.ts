@@ -30,10 +30,16 @@ export interface BookingInvitationUpdatedPayload {
   is_accepted: boolean
 }
 
+export interface BookingServicesUpdatedPayload {
+  booking_id: number
+  code: string
+}
+
 export function useBookingStatusChannel(
   onStatusUpdated: (payload: BookingStatusUpdatedPayload) => void,
   onInvitationUpdated?: (payload: BookingInvitationUpdatedPayload) => void,
   onGatheringCompleted?: (payload: BookingGatheringCompletedPayload) => void,
+  onServicesUpdated?: (payload: BookingServicesUpdatedPayload) => void,
 ) {
   const config = useRuntimeConfig()
   const { authorizationHeader } = useAuthToken()
@@ -141,6 +147,10 @@ export function useBookingStatusChannel(
 
         if (onInvitationUpdated) {
           channel.listen('.booking.invitation.updated', onInvitationUpdated)
+        }
+
+        if (onServicesUpdated) {
+          channel.listen('.booking.services.updated', onServicesUpdated)
         }
 
         subscribedBookingIds.add(bookingId)

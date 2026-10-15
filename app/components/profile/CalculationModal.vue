@@ -24,6 +24,7 @@ const loadError = ref('')
 const calculation = ref<BookingCalculatingData | null>(null)
 const openTooltipKey = ref<string | null>(null)
 let loadRequestId = 0
+let refreshRequestId = 0
 
 useBodyScrollLock(isOpen)
 
@@ -44,6 +45,18 @@ watch(
     }
 
     void loadCalculation(code)
+  },
+)
+
+useBookingServicesChannel(
+  computed(() => (isOpen.value ? booking.value?.id ?? null : null)),
+  (payload) => {
+    const code = booking.value?.code
+    if (!code || payload.code !== code) {
+      return
+    }
+
+    void refreshCalculation(code)
   },
 )
 
@@ -80,6 +93,31 @@ watch(openTooltipKey, (key) => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocumentClick)
 })
+
+async function refreshCalculation(code: string) {
+  if (isLoading.value) {
+    return
+  }
+
+  const requestId = ++refreshRequestId
+
+  try {
+    const response = await bookings.calculating(code)
+
+    if (requestId !== refreshRequestId || booking.value?.code !== code) {
+      return
+    }
+
+    if (!response.success || !response.data) {
+      return
+    }
+
+    calculation.value = response.data
+    loadError.value = ''
+  }
+  catch {
+  }
+}
 
 async function loadCalculation(code: string) {
   const requestId = ++loadRequestId
