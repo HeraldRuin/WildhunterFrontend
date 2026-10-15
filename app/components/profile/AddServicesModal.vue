@@ -465,7 +465,16 @@ function foodDraftPeople(row: FoodDraft): number {
 }
 
 function foodDraftUnitPrice(row: FoodDraft): string {
-  return catalogPriceLabel(foodCatalogItem(row.foodId)?.price) ?? ''
+  const catalog = foodCatalogItem(row.foodId)
+  if (!catalog) {
+    return ''
+  }
+
+  if (isPerPersonFood(row.foodId)) {
+    return catalogPriceLabel(catalog.unit_price) ?? ''
+  }
+
+  return catalogPriceLabel(catalog.price) ?? ''
 }
 
 function foodDraftTotal(row: FoodDraft): string {
@@ -479,6 +488,10 @@ function foodDraftTotal(row: FoodDraft): string {
 }
 
 function foodSavedUnitPrice(item: BookingServiceFoodItem): string {
+  if (normalizeCalculationType(item.calculation_type) === 'per_person') {
+    return catalogPriceLabel(item.unit_price) ?? '—'
+  }
+
   const name = (item.type ?? '').trim().toLowerCase()
   const catalog = foodCatalog.value.find(entry => entry.name.trim().toLowerCase() === name)
   return catalogPriceLabel(catalog?.price) ?? '—'

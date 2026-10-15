@@ -521,6 +521,7 @@ export interface BookingServiceFoodCatalog {
   name: string
   price: number
   calculation_type?: 'individual' | 'per_person' | null
+  unit_price?: number | null
   is_visible?: boolean | number | null
 }
 
@@ -566,6 +567,7 @@ export interface BookingServiceFoodItem {
   type?: string
   count: number
   price: number
+  unit_price?: number | null
   calculation_type?: string | null
   hunter_id?: number | null
   hunter_name?: string
