@@ -22,6 +22,9 @@ const props = withDefaults(defineProps<{
   emptyText?: string
 
   multiple?: boolean
+
+  /** Список открывается, выбор не меняется */
+  readonly?: boolean
 }>(), {
   label: '',
   placeholder: 'Выберите',
@@ -32,6 +35,7 @@ const props = withDefaults(defineProps<{
   filledHover: false,
   emptyText: '',
   multiple: false,
+  readonly: false,
 })
 
 const model = defineModel<string | string[]>({ default: '' })
@@ -67,7 +71,13 @@ const selectedLabel = computed(() => {
   return option.triggerLabel ?? option.label
 })
 
-const triggerLabel = computed(() => selectedLabel.value || props.placeholder)
+const triggerLabel = computed(() => {
+  if (props.readonly) {
+    return props.placeholder
+  }
+
+  return selectedLabel.value || props.placeholder
+})
 
 function selectedValues(): string[] {
   if (Array.isArray(model.value)) {
@@ -107,6 +117,10 @@ function toggle() {
 }
 
 function select(value: string) {
+  if (props.readonly) {
+    return
+  }
+
   if (props.multiple) {
     const current = selectedValues()
     model.value = current.includes(value)

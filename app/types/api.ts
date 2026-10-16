@@ -571,6 +571,8 @@ export interface BookingServiceFoodItem {
   calculation_type?: string | null
   hunter_id?: number | null
   hunter_name?: string
+  hunter_ids?: number[] | null
+  hunters?: Array<{ id: number, name?: string | null }> | null
 }
 
 export interface BookingServiceAdditionalItem {

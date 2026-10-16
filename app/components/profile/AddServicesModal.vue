@@ -502,6 +502,95 @@ function foodDraftTotal(row: FoodDraft): string {
   return formatHotelPriceLabel(Math.round(price * foodDraftPeople(row) * serviceDays()))
 }
 
+function hunterNameById(hunterId: number): string {
+  return hunterOptions.value.find(option => option.value === String(hunterId))?.label ?? ''
+}
+
+function foodItemHunterIds(item: BookingServiceFoodItem): string[] {
+  const ids = new Set<string>()
+
+  for (const hunter of item.hunters ?? []) {
+    if (Number.isInteger(hunter.id) && hunter.id > 0) {
+      ids.add(String(hunter.id))
+    }
+  }
+
+  for (const hunterId of item.hunter_ids ?? []) {
+    if (Number.isInteger(hunterId) && hunterId > 0) {
+      ids.add(String(hunterId))
+    }
+  }
+
+  if (item.hunter_id != null && item.hunter_id > 0) {
+    ids.add(String(item.hunter_id))
+  }
+
+  return [...ids]
+}
+
+function isSavedIndividualFood(item: BookingServiceFoodItem): boolean {
+  return normalizeCalculationType(item.calculation_type) === 'individual' || foodItemHunterIds(item).length > 0
+}
+
+const foodDisplayRows = computed(() => {
+  const rows: Array<{ key: string, items: BookingServiceFoodItem[] }> = []
+  const grouped = new Map<string, { key: string, items: BookingServiceFoodItem[] }>()
+
+  for (const item of items.value.foods ?? []) {
+    if (!isSavedIndividualFood(item) || normalizeCalculationType(item.calculation_type) === 'per_person') {
+      rows.push({ key: `food-${item.id}`, items: [item] })
+      continue
+    }
+
+    const key = `food-individual-${(item.type ?? '').trim().toLowerCase()}`
+    const group = grouped.get(key)
+    if (group) {
+      group.items.push(item)
+      continue
+    }
+
+    const row = { key, items: [item] }
+    grouped.set(key, row)
+    rows.push(row)
+  }
+
+  return rows
+})
+
+function savedFoodHunterIds(itemsInRow: BookingServiceFoodItem[]): string[] {
+  return [...new Set(itemsInRow.flatMap(foodItemHunterIds))]
+}
+
+function savedFoodHunterOptions(itemsInRow: BookingServiceFoodItem[]): SelectFieldOption[] {
+  const labels = new Map<string, string>()
+
+  for (const item of itemsInRow) {
+    for (const hunter of item.hunters ?? []) {
+      const name = hunter.name?.trim() || hunterNameById(hunter.id)
+      if (name) {
+        labels.set(String(hunter.id), name)
+      }
+    }
+
+    if (item.hunter_id != null && item.hunter_id > 0) {
+      const name = item.hunter_name?.trim() || hunterNameById(item.hunter_id)
+      if (name) {
+        labels.set(String(item.hunter_id), name)
+      }
+    }
+  }
+
+  return savedFoodHunterIds(itemsInRow).map(id => ({
+    value: id,
+    label: labels.get(id) || hunterNameById(Number(id)) || id,
+  }))
+}
+
+function savedFoodTotal(itemsInRow: BookingServiceFoodItem[]): string {
+  const total = itemsInRow.reduce((sum, item) => sum + (Number(item.price) || 0), 0)
+  return formatServicePrice(total)
+}
+
 function foodSavedUnitPrice(item: BookingServiceFoodItem): string {
   if (normalizeCalculationType(item.calculation_type) === 'per_person') {
     return catalogPriceLabel(item.unit_price) ?? '—'
@@ -1200,7 +1289,13 @@ async function saveFoodDraft(row: FoodDraft) {
         return
       }
 
-      upsertFoodItem(response.data)
+      const savedHunterId = hunterId ?? response.data.hunter_id ?? null
+      upsertFoodItem({
+        ...response.data,
+        calculation_type: response.data.calculation_type ?? (individual ? 'individual' : perPerson ? 'per_person' : null),
+        hunter_id: savedHunterId,
+        hunter_name: response.data.hunter_name || (savedHunterId ? hunterNameById(savedHunterId) : '') || undefined,
+      })
       pending.shift()
     }
 
@@ -1303,6 +1398,28 @@ function removeServiceItem(serviceId: number, list: DeletableServiceList) {
     { [list]: current.filter(item => item.id !== serviceId) },
     -preliminaryPart(list, removed?.price),
   )
+}
+
+async function deleteFoodItems(serviceIds: number[]) {
+  for (const serviceId of serviceIds) {
+    await deleteBookingService(serviceId, 'foods')
+  }
+}
+
+function requestFoodRowDeletion(foodItems: BookingServiceFoodItem[]) {
+  const serviceIds = foodItems
+    .map(item => item.id)
+    .filter(serviceId => canDeleteService('foods', serviceId))
+
+  if (!serviceIds.length || deletingServiceId.value !== null) {
+    return
+  }
+
+  openConfirmModal({
+    title: 'Вы уверены, что хотите удалить питание?',
+    confirmLabel: 'Удалить',
+    onConfirm: () => deleteFoodItems(serviceIds),
+  })
 }
 
 function requestServiceDeletion(serviceId: number, title: string, list: DeletableServiceList) {
@@ -1985,29 +2102,40 @@ function handleKeydown(event: KeyboardEvent) {
                 </div>
                 <div class="add-services-modal__block-list">
                 <div
-                  v-for="item in items.foods"
-                  :key="item.id"
+                  v-for="row in foodDisplayRows"
+                  :key="row.key"
                   class="add-services-modal__form-row add-services-modal__form-row--food"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
-                    <span class="add-services-modal__value">{{ item.type || 'Питание' }}</span>
+                    <span class="add-services-modal__value">{{ row.items[0]?.type || 'Питание' }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--hunter">
-                    <span class="add-services-modal__value">{{ item.calculation_type === 'per_person' ? 'Разделено на всех' : (item.hunter_name || '—') }}</span>
+                    <CommonSelectField
+                      v-if="row.items[0] && isSavedIndividualFood(row.items[0]) && normalizeCalculationType(row.items[0].calculation_type) !== 'per_person' && savedFoodHunterIds(row.items).length"
+                      :model-value="savedFoodHunterIds(row.items)"
+                      class="add-services-modal__select"
+                      placeholder="Выбранные охотники"
+                      filled-hover
+                      multiple
+                      readonly
+                      no-margin
+                      :options="savedFoodHunterOptions(row.items)"
+                    />
+                    <span v-else class="add-services-modal__value">{{ row.items[0]?.calculation_type === 'per_person' ? 'Разделено на всех' : (row.items[0]?.hunter_name || '—') }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span class="add-services-modal__value">{{ foodSavedUnitPrice(item) }}</span>
+                    <span class="add-services-modal__value">{{ row.items[0] ? foodSavedUnitPrice(row.items[0]) : '—' }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
+                    <span class="add-services-modal__value">{{ savedFoodTotal(row.items) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
-                      v-if="canDeleteService('foods', item.id)"
+                      v-if="row.items[0] && canDeleteService('foods', row.items[0].id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
-                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить питание?', 'foods')"
+                      @click="requestFoodRowDeletion(row.items)"
                     >
                       Удалить
                     </button>
