@@ -583,7 +583,7 @@ onBeforeUnmount(() => {
           >
             <div class="animals-manage__table">
               <div class="animals-manage__head">
-                <span class="animals-manage__col animals-manage__col--name">Животное</span>
+                <span class="animals-manage__col animals-manage__col--name">Животное для охоты</span>
                 <span class="animals-manage__col animals-manage__col--hunters">Мин. кол-во охотников</span>
                 <span class="animals-manage__col animals-manage__col--hunters">Макс. кол-во охотников</span>
                 <span class="animals-manage__col animals-manage__col--actions-head" aria-hidden="true" />
