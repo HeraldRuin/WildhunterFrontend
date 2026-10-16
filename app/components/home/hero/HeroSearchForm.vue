@@ -26,12 +26,6 @@ function getDefaultCheckIn() {
 
 const stayMinDate = computed(() => getDefaultCheckIn())
 
-function getDefaultCheckOut() {
-  const tomorrow = startOfDay(new Date())
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  return tomorrow
-}
-
 function queryString(key: string): string {
   const value = route.query[key]
   return Array.isArray(value) ? String(value[0] || '') : String(value || '')
@@ -59,14 +53,10 @@ function adultsFromQuery() {
 const location = ref(hasSearchQuery() ? queryString('location') : '')
 const animal = ref(hasSearchQuery() ? queryString('animal') : '')
 const checkIn = ref<Date | null>(
-  hasSearchQuery()
-    ? (parseDisplayDate(queryString('checkIn')) ?? getDefaultCheckIn())
-    : getDefaultCheckIn(),
+  hasSearchQuery() ? parseDisplayDate(queryString('checkIn')) : null,
 )
 const checkOut = ref<Date | null>(
-  hasSearchQuery()
-    ? (parseDisplayDate(queryString('checkOut')) ?? getDefaultCheckOut())
-    : getDefaultCheckOut(),
+  hasSearchQuery() ? parseDisplayDate(queryString('checkOut')) : null,
 )
 const adultsCount = ref(hasSearchQuery() ? adultsFromQuery() : 1)
 
@@ -77,8 +67,8 @@ function hydrateFromRoute() {
 
   location.value = queryString('location')
   animal.value = queryString('animal')
-  checkIn.value = parseDisplayDate(queryString('checkIn')) ?? getDefaultCheckIn()
-  checkOut.value = parseDisplayDate(queryString('checkOut')) ?? getDefaultCheckOut()
+  checkIn.value = parseDisplayDate(queryString('checkIn'))
+  checkOut.value = parseDisplayDate(queryString('checkOut'))
   adultsCount.value = adultsFromQuery()
 }
 
@@ -215,16 +205,7 @@ const dateRangeLabel = computed(() => {
   return `${checkInLabel.value} - ${checkOutLabel.value}`
 })
 
-const hasCustomDates = computed(() => {
-  if (!checkIn.value || !checkOut.value) {
-    return false
-  }
-
-  return !(
-    startOfDay(checkIn.value).getTime() === getDefaultCheckIn().getTime()
-    && startOfDay(checkOut.value).getTime() === getDefaultCheckOut().getTime()
-  )
-})
+const hasCustomDates = computed(() => Boolean(checkIn.value && checkOut.value))
 
 const isAnyDropdownOpen = computed(() =>
   isLocationOpen.value || isAnimalOpen.value || isGuestsOpen.value || isDatesOpen.value,
@@ -489,8 +470,8 @@ function clearGuests(event: MouseEvent) {
 
 function clearDates(event: MouseEvent) {
   event.stopPropagation()
-  checkIn.value = getDefaultCheckIn()
-  checkOut.value = getDefaultCheckOut()
+  checkIn.value = null
+  checkOut.value = null
   closeDatesDropdown()
 }
 

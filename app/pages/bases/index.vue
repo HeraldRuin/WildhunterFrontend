@@ -2,12 +2,7 @@
 import type { HotelSearchBody, LocationItem, OfferItem } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { mapHotelOfferToItem } from '~/api/hotels'
-import {
-  formatDisplayDate,
-  getDefaultStayCheckIn,
-  getDefaultStayCheckOut,
-  parseDisplayDateToApiDate,
-} from '~/utils/date'
+import { parseDisplayDateToApiDate } from '~/utils/date'
 import { getHotelPath } from '~/utils/hotel'
 import {
   DEFAULT_MAP_CENTER,
@@ -52,19 +47,6 @@ const CATALOG_PER_PAGE = 12
 function queryString(key: string): string {
   const value = route.query[key]
   return Array.isArray(value) ? String(value[0] || '') : String(value || '')
-}
-
-if (!queryString('checkIn') || !queryString('checkOut')) {
-  await navigateTo({
-    path: '/bases',
-    query: {
-      ...route.query,
-      checkIn: queryString('checkIn') || formatDisplayDate(getDefaultStayCheckIn()),
-      checkOut: queryString('checkOut') || formatDisplayDate(getDefaultStayCheckOut()),
-      guests: queryString('guests') || '1',
-    },
-    replace: true,
-  })
 }
 
 function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {
@@ -536,14 +518,6 @@ function searchQueryForHotel() {
     if (value) {
       query[key] = value
     }
-  }
-
-  if (!query.checkIn) {
-    query.checkIn = formatDisplayDate(getDefaultStayCheckIn())
-  }
-
-  if (!query.checkOut) {
-    query.checkOut = formatDisplayDate(getDefaultStayCheckOut())
   }
 
   if (!query.guests) {

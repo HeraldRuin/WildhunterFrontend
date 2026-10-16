@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { BreadcrumbItem } from '~/types/breadcrumb'
-import { formatDisplayDate, getDefaultStayCheckIn, getDefaultStayCheckOut } from '~/utils/date'
 import { getHotelPath } from '~/utils/hotel'
 import { DEFAULT_MAP_CENTER, parseMapCoordinates, type MapHotelItem } from '~/utils/map'
 
@@ -195,14 +194,6 @@ function searchQueryForHotel() {
   }
 
   if (route.path.startsWith('/bases')) {
-    if (!query.checkIn) {
-      query.checkIn = formatDisplayDate(getDefaultStayCheckIn())
-    }
-
-    if (!query.checkOut) {
-      query.checkOut = formatDisplayDate(getDefaultStayCheckOut())
-    }
-
     if (!query.guests) {
       query.guests = '1'
     }

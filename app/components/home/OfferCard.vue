@@ -2,11 +2,6 @@
 import type { OfferItem } from '~/types/api'
 import { featureFlags, FAVORITE_NOTIFICATION_GROUP } from '~/config/features'
 import { FAVORITE_REGISTRATION_MESSAGE } from '~/composables/useFavoriteAuthModal'
-import {
-  formatDisplayDate,
-  getDefaultStayCheckIn,
-  getDefaultStayCheckOut,
-} from '~/utils/date'
 import { formatHotelPrice, getHotelPath } from '~/utils/hotel'
 import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
 import { packItemsByWidth } from '~/utils/packItems'
@@ -34,14 +29,6 @@ function searchQueryForHotel() {
   }
 
   if (route.path.startsWith('/bases')) {
-    if (!query.checkIn) {
-      query.checkIn = formatDisplayDate(getDefaultStayCheckIn())
-    }
-
-    if (!query.checkOut) {
-      query.checkOut = formatDisplayDate(getDefaultStayCheckOut())
-    }
-
     if (!query.guests) {
       query.guests = '1'
     }
