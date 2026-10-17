@@ -92,6 +92,13 @@ function normalizeAvailabilityDateKey(value: string) {
   return value.slice(0, 10)
 }
 
+function isPastCalendarDate(date: Date) {
+  const today = new Date()
+  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  return dayStart.getTime() < todayStart.getTime()
+}
+
 const availabilityDays = ref<RoomAvailabilityDay[]>([])
 const availabilityByDate = computed(() => {
   const map = new Map<string, RoomAvailabilityDay>()
@@ -130,6 +137,7 @@ const calendarDays = computed(() =>
       badgeText: isSummaryTab.value ? null : (event?.title ?? null),
       badgeClass: resolveBadgeClass(event),
       isCheckoutDay: Boolean(event?.is_checkout_day),
+      isPast: isPastCalendarDate(day.date),
       canEdit: Boolean(event) && !isSummaryTab.value && !event?.extendedProps?.is_summary,
     }
   }),
@@ -490,6 +498,7 @@ onMounted(() => {
               'rooms-availability__cell--outside': !day.isCurrentMonth,
               'rooms-availability__cell--editable': day.canEdit,
               'rooms-availability__cell--checkout': day.isCheckoutDay,
+              'rooms-availability__cell--past': day.isPast,
             }"
             @click="onDayClick(day)"
           >
@@ -791,6 +800,19 @@ onMounted(() => {
 
 .rooms-availability__cell--outside .rooms-availability__day-num {
   opacity: 0.35;
+}
+
+.rooms-availability__cell--past .rooms-availability__day-num,
+.rooms-availability__cell--past .rooms-availability__note,
+.rooms-availability__cell--past .rooms-availability__note-link,
+.rooms-availability__cell--past .rooms-availability__note-link:hover,
+.rooms-availability__cell--past .rooms-availability__note-status {
+  color: var(--wh-gray-400);
+}
+
+.rooms-availability__cell--past .rooms-availability__badge {
+  background: var(--wh-gray-400);
+  color: var(--wh-white);
 }
 
 .rooms-availability__day-num {
