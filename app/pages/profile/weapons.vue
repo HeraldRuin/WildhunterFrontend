@@ -482,9 +482,16 @@ function addWeaponRow() {
   weapons.value.push(createEmptyWeapon())
 }
 
+function normalizeLicenseSeries(value: string) {
+  return value
+    .replace(/[^0-9A-Za-zА-Яа-яЁё]/g, '')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
 function snapshotWeapon(weapon: UserWeapon) {
   return JSON.stringify({
-    hunter_license_series: weapon.hunter_license_series.trim(),
+    hunter_license_series: normalizeLicenseSeries(weapon.hunter_license_series),
     hunter_license_number: weapon.hunter_license_number.trim(),
     hunter_license_date: resolveLicenseDateForApi(weapon.hunter_license_date),
     weapon_type_id: String(weapon.weapon_type_id),
@@ -526,7 +533,7 @@ function showWeaponFieldErrors(weapon: UserWeapon, index: number) {
 
 function buildWeaponPayload(weapon: UserWeapon) {
   return {
-    hunter_license_series: weapon.hunter_license_series.trim(),
+    hunter_license_series: normalizeLicenseSeries(weapon.hunter_license_series),
     hunter_license_number: weapon.hunter_license_number.trim(),
     hunter_license_date: resolveLicenseDateForApi(weapon.hunter_license_date),
     weapon_type_id: weapon.weapon_type_id ? Number(weapon.weapon_type_id) : null,
@@ -544,10 +551,7 @@ function setLicenseDateFieldRef(index: number, el: Element | ComponentPublicInst
 }
 
 function onLicenseSeriesUpdate(weapon: UserWeapon, value: string) {
-  weapon.hunter_license_series = value
-    .replace(/[^0-9A-Za-zА-Яа-яЁё]/g, '')
-    .toUpperCase()
-    .slice(0, 255)
+  weapon.hunter_license_series = normalizeLicenseSeries(value)
   clearFieldError('hunter_license_series')
 }
 
@@ -1245,10 +1249,10 @@ const hasNewWeapon = computed(() =>
                   <div class="profile-weapon__number-fields">
                     <CommonFormField
                       no-margin
-                      :max-length="255"
+                      :max-length="2"
                       label="Серия"
                       placeholder="GF"
-                      :model-value="card.weapon.hunter_license_series"
+                      :model-value="normalizeLicenseSeries(card.weapon.hunter_license_series)"
                       :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_series') : ''"
                       @update:model-value="onLicenseSeriesUpdate(card.weapon, $event)"
                     />
