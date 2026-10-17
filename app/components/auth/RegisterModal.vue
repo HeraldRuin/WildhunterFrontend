@@ -292,6 +292,16 @@ watch(isOpen, (open) => {
           <h2 id="register-modal-title" class="register-modal__title">Регистрация</h2>
 
           <form class="register-modal__form" novalidate @submit.prevent="handleSubmit">
+            <CommonSelectField
+              v-model="role"
+              no-margin
+              :placeholder="rolePlaceholder"
+              :options="roleOptions"
+              :disabled="rolesLoading || !!rolesError || isSubmitting"
+              :error="getFieldError('role') || rolesError"
+              @update:model-value="clearFieldError('role')"
+            />
+
             <CommonFormField
               v-if="isBaseAdmin"
               id="register-base-name"
@@ -325,16 +335,6 @@ watch(isOpen, (open) => {
                 @update:model-value="lastName = $event; clearFieldError('last_name')"
               />
             </div>
-
-            <CommonSelectField
-              v-model="role"
-              no-margin
-              :placeholder="rolePlaceholder"
-              :options="roleOptions"
-              :disabled="rolesLoading || !!rolesError || isSubmitting"
-              :error="getFieldError('role') || rolesError"
-              @update:model-value="clearFieldError('role')"
-            />
 
             <CommonFormField
               id="register-phone"
