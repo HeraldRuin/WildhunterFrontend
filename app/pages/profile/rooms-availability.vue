@@ -68,7 +68,7 @@ watch(
 const rooms = ref<ManagedRoom[]>([])
 const resolvedHotelId = ref<number | null>(null)
 const roomSelectOptions = computed(() => [
-  { value: SUMMARY_TAB_ID, label: 'Сводный' },
+  { value: SUMMARY_TAB_ID, label: 'Свободные номера' },
   ...rooms.value.map(room => ({
     value: String(room.id),
     label: room.title,
