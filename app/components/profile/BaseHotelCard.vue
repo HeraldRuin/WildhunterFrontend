@@ -282,13 +282,6 @@ async function removeHotel() {
           </button>
           <button
             type="button"
-            class="base-hotel-card__btn base-hotel-card__btn--secondary"
-            :disabled="isDeleting || isTogglingVisibility"
-          >
-            Копировать
-          </button>
-          <button
-            type="button"
             class="base-hotel-card__btn base-hotel-card__btn--danger"
             :disabled="isDeleting || isTogglingVisibility"
             @click="requestDelete"
@@ -506,7 +499,7 @@ async function removeHotel() {
   }
 
   .base-hotel-card__btn:nth-child(n + 3) {
-    flex: 1 1 calc(50% - 4px);
+    flex: 1 1 calc(33.333% - 4px);
   }
 }
 </style>

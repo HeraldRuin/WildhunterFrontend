@@ -284,6 +284,13 @@ async function toggleVisibility() {
           </NuxtLink>
           <button
             type="button"
+            class="room-manage-card__btn room-manage-card__btn--secondary"
+            :disabled="isDeleting || isTogglingVisibility"
+          >
+            Копировать
+          </button>
+          <button
+            type="button"
             class="room-manage-card__btn room-manage-card__btn--danger"
             :disabled="isDeleting || isTogglingVisibility"
             @click="requestDelete"
@@ -502,7 +509,7 @@ async function toggleVisibility() {
   }
 
   .room-manage-card__btn:nth-child(n + 3) {
-    flex: 1 1 calc(33.333% - 4px);
+    flex: 1 1 calc(50% - 4px);
   }
 }
 </style>
