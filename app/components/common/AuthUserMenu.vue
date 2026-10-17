@@ -1,13 +1,49 @@
 <script setup lang="ts">
 const { user, isAuthenticated, logout } = useAuth()
+const { isBaseAdmin } = useUserRole()
+const { hotels: hotelsApi } = useApi()
 
 const menuRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
 const hoveredKey = ref<string | null>(null)
+const baseTitle = useState('auth-user-base-title', () => '')
+const baseTitleUserId = useState<number | null>('auth-user-base-title-user', () => null)
+
+async function loadBaseTitle() {
+  const userId = user.value?.id ?? null
+
+  if (!isAuthenticated.value || !isBaseAdmin.value || !userId) {
+    baseTitle.value = ''
+    baseTitleUserId.value = null
+    return
+  }
+
+  if (baseTitleUserId.value === userId && baseTitle.value) {
+    return
+  }
+
+  try {
+    const response = await hotelsApi.getManage()
+    baseTitleUserId.value = userId
+    baseTitle.value = response.success
+      ? response.data.find(item => item.title?.trim())?.title.trim() ?? ''
+      : ''
+  } catch {
+    baseTitle.value = ''
+  }
+}
+
+watch([isBaseAdmin, () => user.value?.id, isAuthenticated], () => {
+  void loadBaseTitle()
+}, { immediate: true })
 
 const displayName = computed(() => {
   if (!user.value) {
     return 'Профиль'
+  }
+
+  if (isBaseAdmin.value && baseTitle.value) {
+    return baseTitle.value
   }
 
   const fullName = [user.value.first_name, user.value.last_name].filter(Boolean).join(' ')
