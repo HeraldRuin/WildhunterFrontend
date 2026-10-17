@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+  closeOtherSelects,
+  registerOpenSelect,
+  unregisterOpenSelect,
+} from './selectFieldClosers'
+
 export interface SelectFieldOption {
   value: string
   label: string
@@ -95,6 +101,16 @@ function isSelected(value: string): boolean {
   return model.value === value
 }
 
+function closeDropdown() {
+  if (!isOpen.value) {
+    return
+  }
+
+  isOpen.value = false
+  hoveredValue.value = null
+  unregisterOpenSelect(closeDropdown)
+}
+
 function toggle() {
   if (isTriggerDisabled.value) {
     return
@@ -104,12 +120,14 @@ function toggle() {
     return
   }
 
-  isOpen.value = !isOpen.value
-
-  if (!isOpen.value) {
-    hoveredValue.value = null
+  if (isOpen.value) {
+    closeDropdown()
     return
   }
+
+  closeOtherSelects(closeDropdown)
+  isOpen.value = true
+  registerOpenSelect(closeDropdown)
 
   if (overlay) {
     updateOverlayPosition()
@@ -130,8 +148,7 @@ function select(value: string) {
   }
 
   model.value = value
-  isOpen.value = false
-  hoveredValue.value = null
+  closeDropdown()
 }
 
 function handleDocumentClick(event: MouseEvent) {
@@ -141,8 +158,7 @@ function handleDocumentClick(event: MouseEvent) {
     return
   }
 
-  isOpen.value = false
-  hoveredValue.value = null
+  closeDropdown()
 }
 
 function updateOverlayPosition() {
@@ -203,6 +219,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  unregisterOpenSelect(closeDropdown)
   document.removeEventListener('click', handleDocumentClick)
 
   if (!overlay) {
