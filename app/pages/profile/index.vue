@@ -614,13 +614,11 @@ async function handleSubmit() {
                 placeholder="дд.мм.гггг"
                 autocomplete="bday"
                 date-only
-                cursor-pointer
                 :model-value="profile?.birthday ?? ''"
                 :error="getFieldError('birthday')"
                 :readonly="isFormLoading || isSubmitting"
                 :reveal="revealValues"
                 :open="isBirthdayOpen"
-                @click.stop="toggleBirthdayCalendar"
                 @update:model-value="setProfileField('birthday', $event)"
               >
                 <template #trailing>
