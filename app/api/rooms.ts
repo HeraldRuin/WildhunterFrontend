@@ -228,6 +228,15 @@ export function useRoomsApi() {
     )
   }
 
+  function copy(roomId: number | string) {
+    return apiFetch<RoomManageDetailResponse>(
+      `/rooms/${encodeURIComponent(String(roomId))}/copy`,
+      {
+        method: 'POST',
+      },
+    )
+  }
+
   function deleteManage(roomId: number | string) {
     return apiFetch<RoomManageDeleteResponse>(
       `/rooms/${encodeURIComponent(String(roomId))}`,
@@ -246,6 +255,7 @@ export function useRoomsApi() {
     storeAvailability,
     publish,
     hide,
+    copy,
     deleteManage,
   }
 }

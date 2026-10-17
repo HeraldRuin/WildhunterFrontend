@@ -137,6 +137,10 @@ function onRoomDeleted(id: number) {
   rooms.value = rooms.value.filter(room => room.id !== id)
 }
 
+function onRoomCopied(room: RoomManageItem) {
+  rooms.value = [room, ...rooms.value.filter(item => item.id !== room.id)]
+}
+
 async function loadHotelTitle(hotelId: number) {
   try {
     const response = await hotelsApi.getManageById(hotelId)
@@ -218,6 +222,7 @@ onMounted(() => {
         :item="room"
         @visibility-changed="status => onVisibilityChanged(room.id, status)"
         @deleted="onRoomDeleted"
+        @copied="onRoomCopied"
       />
     </div>
 

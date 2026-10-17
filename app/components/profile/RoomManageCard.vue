@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ManagedRoomDetail } from '~/api/rooms'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 import { shouldShowOfferImage, shouldUseCustomOfferPlaceholder } from '~/utils/image'
 
@@ -21,6 +22,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   visibilityChanged: [status: RoomManageStatus]
   deleted: [id: number]
+  copied: [room: RoomManageItem]
 }>()
 
 const route = useRoute()
@@ -38,6 +40,9 @@ const editTo = computed(() => {
 
 const isDeleting = ref(false)
 const isTogglingVisibility = ref(false)
+const isCopying = ref(false)
+
+const isBusy = computed(() => isDeleting.value || isTogglingVisibility.value || isCopying.value)
 
 const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
@@ -96,8 +101,55 @@ function normalizeStatus(status: string): RoomManageStatus {
   return status === 'publish' ? 'publish' : 'draft'
 }
 
+function mapCopiedRoom(room: ManagedRoomDetail): RoomManageItem {
+  const updatedAt = new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date()).replace(',', '')
+
+  return {
+    id: room.id,
+    title: room.title,
+    image: room.image_url ?? '',
+    quantity: Number(room.number) || 0,
+    price: Number(room.price) || 0,
+    status: room.status === 'publish' ? 'publish' : 'draft',
+    updatedAt,
+  }
+}
+
+async function copyRoom() {
+  if (isBusy.value) {
+    return
+  }
+
+  isCopying.value = true
+
+  try {
+    const response = await roomsApi.copy(props.item.id)
+
+    if ('success' in response && response.success && response.data?.id) {
+      notifications.success(response.message || 'Номер скопирован')
+      emit('copied', mapCopiedRoom(response.data))
+      return
+    }
+
+    notifications.error(extractErrorMessage(response, 'Не удалось скопировать номер'))
+  }
+  catch (error) {
+    const data = (error as { data?: unknown }).data
+    notifications.error(extractErrorMessage(data, 'Не удалось скопировать номер'))
+  }
+  finally {
+    isCopying.value = false
+  }
+}
+
 function requestDelete() {
-  if (isDeleting.value || isTogglingVisibility.value) {
+  if (isBusy.value) {
     return
   }
 
@@ -141,7 +193,7 @@ async function removeRoom() {
 }
 
 async function toggleVisibility() {
-  if (isTogglingVisibility.value || isDeleting.value) {
+  if (isBusy.value) {
     return
   }
 
@@ -285,14 +337,16 @@ async function toggleVisibility() {
           <button
             type="button"
             class="room-manage-card__btn room-manage-card__btn--secondary"
-            :disabled="isDeleting || isTogglingVisibility"
+            :disabled="isBusy"
+            :aria-busy="isCopying"
+            @click="copyRoom"
           >
             Копировать
           </button>
           <button
             type="button"
             class="room-manage-card__btn room-manage-card__btn--danger"
-            :disabled="isDeleting || isTogglingVisibility"
+            :disabled="isBusy"
             @click="requestDelete"
           >
             Удалить
@@ -301,7 +355,7 @@ async function toggleVisibility() {
             type="button"
             class="room-manage-card__btn"
             :class="item.status === 'publish' ? 'room-manage-card__btn--secondary' : 'room-manage-card__btn--success'"
-            :disabled="isTogglingVisibility || isDeleting"
+            :disabled="isBusy"
             :aria-busy="isTogglingVisibility"
             @click="toggleVisibility"
           >
