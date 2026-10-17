@@ -190,12 +190,14 @@ export function maskDotDateInput(value: string) {
   day = clampPart(day, 31)
   month = clampPart(month, 12)
 
-  if (!hasDayDot && !month && !year) {
-    return day
+  const keepTrailingDot = cleaned.endsWith('.')
+
+  if (!month && !year) {
+    return keepTrailingDot && day ? `${day}.` : day
   }
 
-  if (!hasMonthDot && !year) {
-    return `${day}.${month}`
+  if (!year) {
+    return keepTrailingDot ? `${day}.${month}.` : `${day}.${month}`
   }
 
   return `${day}.${month}.${year}`
