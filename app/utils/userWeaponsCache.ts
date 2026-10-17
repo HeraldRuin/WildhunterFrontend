@@ -73,6 +73,7 @@ export function readUserWeaponsCache(userId: number): UserWeapon[] | null {
   return cached.map(weapon => ({
     ...weapon,
     id: weapon.id == null || Number.isNaN(Number(weapon.id)) ? null : Number(weapon.id),
+    hunter_license_series: String(weapon.hunter_license_series ?? ''),
     hunter_license_number: String(weapon.hunter_license_number ?? ''),
     hunter_license_date: String(weapon.hunter_license_date ?? ''),
     weapon_type_id: String(weapon.weapon_type_id ?? ''),
@@ -86,6 +87,7 @@ export function writeUserWeaponsCache(userId: number, list: UserWeapon[]) {
     .filter(weapon => !weapon.isNew)
     .map(weapon => ({
       id: weapon.id,
+      hunter_license_series: weapon.hunter_license_series,
       hunter_license_number: weapon.hunter_license_number,
       hunter_license_date: weapon.hunter_license_date,
       weapon_type_id: weapon.weapon_type_id,

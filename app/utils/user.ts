@@ -251,6 +251,7 @@ export function normalizeWeapons(value: unknown): UserWeapon[] {
 
     return {
       id: typeof source.id === 'number' ? source.id : source.id ? Number(source.id) : null,
+      hunter_license_series: String(source.hunter_license_series ?? ''),
       hunter_license_number: String(source.hunter_license_number ?? ''),
       hunter_license_date: parsedDate
         ? formatBirthdayDate(parsedDate)
@@ -295,6 +296,7 @@ export function normalizeUserProfile(data: unknown, uploadsOrigin = ''): Profile
 export function createEmptyWeapon(): UserWeapon {
   return {
     id: null,
+    hunter_license_series: '',
     hunter_license_number: '',
     hunter_license_date: '',
     weapon_type_id: '',

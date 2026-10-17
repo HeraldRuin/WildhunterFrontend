@@ -21,6 +21,7 @@ export interface SaveUserWeaponPayload {
   hunter_billet_rf_subject?: string | null
   hunter_billet_issue_date?: string | null
   identity_document?: string | null
+  hunter_license_series?: string | null
   hunter_license_number?: string | null
   hunter_license_date?: string | null
   weapon_type_id?: number | null

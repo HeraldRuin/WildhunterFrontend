@@ -1,5 +1,6 @@
 export interface UserWeapon {
   id: number | null
+  hunter_license_series: string
   hunter_license_number: string
   hunter_license_date: string
   weapon_type_id: string

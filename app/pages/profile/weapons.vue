@@ -23,6 +23,7 @@ type WeaponField =
   | 'hunter_billet_rf_subject'
   | 'hunter_billet_issue_date'
   | 'identity_document'
+  | 'hunter_license_series'
   | 'hunter_license_number'
   | 'hunter_license_date'
   | 'weapon_type_id'
@@ -483,6 +484,7 @@ function addWeaponRow() {
 
 function snapshotWeapon(weapon: UserWeapon) {
   return JSON.stringify({
+    hunter_license_series: weapon.hunter_license_series.trim(),
     hunter_license_number: weapon.hunter_license_number.trim(),
     hunter_license_date: resolveLicenseDateForApi(weapon.hunter_license_date),
     weapon_type_id: String(weapon.weapon_type_id),
@@ -524,6 +526,7 @@ function showWeaponFieldErrors(weapon: UserWeapon, index: number) {
 
 function buildWeaponPayload(weapon: UserWeapon) {
   return {
+    hunter_license_series: weapon.hunter_license_series.trim(),
     hunter_license_number: weapon.hunter_license_number.trim(),
     hunter_license_date: resolveLicenseDateForApi(weapon.hunter_license_date),
     weapon_type_id: weapon.weapon_type_id ? Number(weapon.weapon_type_id) : null,
@@ -538,6 +541,19 @@ function setLicenseDateFieldRef(index: number, el: Element | ComponentPublicInst
   }
 
   licenseDateFieldRefs.delete(index)
+}
+
+function onLicenseSeriesUpdate(weapon: UserWeapon, value: string) {
+  weapon.hunter_license_series = value
+    .replace(/[^0-9A-Za-zА-Яа-яЁё]/g, '')
+    .toUpperCase()
+    .slice(0, 255)
+  clearFieldError('hunter_license_series')
+}
+
+function onLicenseNumberUpdate(weapon: UserWeapon, value: string) {
+  weapon.hunter_license_number = value.replace(/\D/g, '').slice(0, 11)
+  clearFieldError('hunter_license_number')
 }
 
 function displayLicenseDate(value: string) {
@@ -1226,15 +1242,28 @@ const hasNewWeapon = computed(() =>
                 class="profile-weapon__date-block"
               >
                 <div class="profile-weapon__row">
-                  <CommonFormField
-                    label="Номер"
-                    placeholder="Например, РК 12345678"
-                    document-number-kind="license"
-                    no-margin
-                    :model-value="card.weapon.hunter_license_number"
-                    :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_number') : ''"
-                    @update:model-value="card.weapon.hunter_license_number = $event; clearFieldError('hunter_license_number')"
-                  />
+                  <div class="profile-weapon__number-fields">
+                    <CommonFormField
+                      no-margin
+                      :max-length="255"
+                      label="Серия"
+                      placeholder="GF"
+                      :model-value="card.weapon.hunter_license_series"
+                      :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_series') : ''"
+                      @update:model-value="onLicenseSeriesUpdate(card.weapon, $event)"
+                    />
+                    <CommonFormField
+                      no-margin
+                      digits-only
+                      :max-length="11"
+                      label="Номер"
+                      placeholder="0000000"
+                      :model-value="card.weapon.hunter_license_number"
+                      :error="showWeaponFieldErrors(card.weapon, card.index) ? getFieldError('hunter_license_number') : ''"
+                      :readonly="!card.weapon.hunter_license_series"
+                      @update:model-value="onLicenseNumberUpdate(card.weapon, $event)"
+                    />
+                  </div>
                   <CommonFormField
                     label="Дата"
                     placeholder="дд.мм.гггг"
@@ -1762,6 +1791,13 @@ const hasNewWeapon = computed(() =>
   gap: 12px;
 }
 
+.profile-weapon__number-fields {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+
 .profile-weapon__calendar-icon {
   display: flex;
   align-items: center;
@@ -1859,7 +1895,8 @@ const hasNewWeapon = computed(() =>
     max-width: none;
   }
 
-  .profile-weapon__row {
+  .profile-weapon__row,
+  .profile-weapon__number-fields {
     grid-template-columns: 1fr;
   }
 
