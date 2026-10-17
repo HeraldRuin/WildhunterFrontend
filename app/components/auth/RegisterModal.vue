@@ -10,6 +10,7 @@ const notifications = useNotifications()
 
 const firstName = ref('')
 const lastName = ref('')
+const baseName = ref('')
 const role = ref('')
 const phoneDigits = ref('')
 const email = ref('')
@@ -82,6 +83,7 @@ async function loadRoles() {
 function resetForm() {
   firstName.value = ''
   lastName.value = ''
+  baseName.value = ''
   role.value = ''
   phoneDigits.value = ''
   email.value = ''
@@ -111,6 +113,15 @@ const roleOptions = computed(() =>
       label: item.name,
     })),
 )
+
+const isBaseAdmin = computed(() => {
+  if (role.value === 'baseadmin') {
+    return true
+  }
+
+  const selected = roles.value.find(item => item.code === role.value)
+  return selected?.name.trim().toLowerCase() === 'администратор базы'
+})
 
 const rolePlaceholder = computed(() => {
   if (rolesLoading.value) {
@@ -177,15 +188,24 @@ async function handleSubmit() {
   isSubmitting.value = true
 
   try {
-    const response = await auth.register({
-      first_name: firstName.value.trim(),
-      last_name: lastName.value.trim(),
-      email: email.value.trim(),
-      password: password.value,
-      phone: phone.value,
-      role: role.value,
-      term: acceptTerms.value,
-    })
+    const response = await auth.register(isBaseAdmin.value
+      ? {
+          base_name: baseName.value.trim(),
+          email: email.value.trim(),
+          password: password.value,
+          phone: phone.value,
+          role: role.value,
+          term: acceptTerms.value,
+        }
+      : {
+          first_name: firstName.value.trim(),
+          last_name: lastName.value.trim(),
+          email: email.value.trim(),
+          password: password.value,
+          phone: phone.value,
+          role: role.value,
+          term: acceptTerms.value,
+        })
 
     if (response.success) {
       const { setCurrentPassword } = useCurrentPassword()
@@ -272,7 +292,18 @@ watch(isOpen, (open) => {
           <h2 id="register-modal-title" class="register-modal__title">Регистрация</h2>
 
           <form class="register-modal__form" novalidate @submit.prevent="handleSubmit">
-            <div class="register-modal__row">
+            <CommonFormField
+              v-if="isBaseAdmin"
+              id="register-base-name"
+              placeholder="Название базы"
+              autocomplete="organization"
+              no-margin
+              :model-value="baseName"
+              :error="getFieldError('base_name')"
+              :disabled="isSubmitting"
+              @update:model-value="baseName = $event; clearFieldError('base_name')"
+            />
+            <div v-else class="register-modal__row">
               <CommonFormField
                 id="register-first-name"
                 placeholder="Имя"

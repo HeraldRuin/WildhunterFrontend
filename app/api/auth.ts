@@ -8,8 +8,9 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
-  first_name: string
-  last_name: string
+  first_name?: string | null
+  last_name?: string | null
+  base_name?: string | null
   email: string
   password: string
   phone: string
