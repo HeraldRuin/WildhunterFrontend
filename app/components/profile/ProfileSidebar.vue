@@ -12,9 +12,40 @@ interface NavItem {
 }
 
 const route = useRoute()
-const { user, logout } = useAuth()
+const { user, isAuthenticated, logout } = useAuth()
 const { profile } = useProfile()
 const { isBaseAdmin } = useUserRole()
+const { hotels: hotelsApi } = useApi()
+const baseTitle = useState('auth-user-base-title', () => '')
+const baseTitleUserId = useState<number | null>('auth-user-base-title-user', () => null)
+
+async function loadBaseTitle() {
+  const userId = user.value?.id ?? null
+
+  if (!isAuthenticated.value || !isBaseAdmin.value || !userId) {
+    baseTitle.value = ''
+    baseTitleUserId.value = null
+    return
+  }
+
+  if (baseTitleUserId.value === userId && baseTitle.value) {
+    return
+  }
+
+  try {
+    const response = await hotelsApi.getManage()
+    baseTitleUserId.value = userId
+    baseTitle.value = response.success
+      ? response.data.find(item => item.title?.trim())?.title.trim() ?? ''
+      : ''
+  } catch {
+    baseTitle.value = ''
+  }
+}
+
+watch([isBaseAdmin, () => user.value?.id, isAuthenticated], () => {
+  void loadBaseTitle()
+}, { immediate: true })
 
 const hunterProfileNavItem: NavItem = {
   label: 'Мой профиль',
@@ -210,6 +241,10 @@ onUnmounted(() => {
 })
 
 const displayName = computed(() => {
+  if (isBaseAdmin.value) {
+    return baseTitle.value
+  }
+
   const profileUser = profile.value
 
   if (profileUser) {
@@ -323,8 +358,8 @@ async function goHome(event: MouseEvent) {
 
       <div class="profile-sidebar__meta">
         <span v-if="roleName" class="profile-sidebar__role">{{ roleName }}</span>
-        <h2 class="profile-sidebar__name">{{ displayName }}</h2>
-        <p v-if="memberSince" class="profile-sidebar__since">Участник с: {{ memberSince }}</p>
+        <h2 v-if="displayName" class="profile-sidebar__name">{{ displayName }}</h2>
+        <p v-if="memberSince && !isBaseAdmin" class="profile-sidebar__since">Участник с: {{ memberSince }}</p>
       </div>
     </div>
 
