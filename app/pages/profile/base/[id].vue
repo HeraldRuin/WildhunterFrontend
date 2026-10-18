@@ -662,7 +662,7 @@ async function loadLocations() {
 }
 
 function attributeGroupTitle(group: HotelRoomAttribute) {
-  return `Атрибут: ${group.name}`
+  return group.name
 }
 
 function termLabel(term: HotelRoomAttributeTerm) {
@@ -1313,6 +1313,7 @@ watch(activeEditTab, (tab) => {
                     placeholder="Название отеля"
                     no-margin
                   />
+                  <!--
                   <div class="base-edit__rating">
                     <span class="base-edit__rating-label">Рейтинг</span>
                     <div
@@ -1362,6 +1363,7 @@ watch(activeEditTab, (tab) => {
                       </button>
                     </div>
                   </div>
+                  -->
                 </div>
                 <CommonFormField
                   v-model="editContent"
@@ -1369,7 +1371,7 @@ watch(activeEditTab, (tab) => {
                   label="Описание"
                   placeholder=""
                   multiline
-                  :rows="4"
+                  :rows="12"
                   no-margin
                 />
               </div>
@@ -3012,10 +3014,10 @@ button.base-edit__nav-save:hover:not(:disabled) {
   display: flex;
 }
 
-.base-edit__form-content :deep(.form-field__input--textarea) {
+.base-edit__form-content :deep(.form-field__input.form-field__input--textarea) {
   width: 100%;
-  min-height: 340px;
-  height: 340px;
+  min-height: 420px;
+  height: 420px;
   resize: none;
   box-sizing: border-box;
 }
