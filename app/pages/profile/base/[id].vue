@@ -64,6 +64,7 @@ const attributeGroups = ref<HotelRoomAttribute[]>([])
 const attributesLoading = ref(false)
 const attributesError = ref('')
 const selectedTermIds = ref<number[]>([])
+const expandedAttrGroupIds = ref<number[]>([])
 const huntingMethods = ref<HuntingMethod[]>([])
 const huntingMethodsLoading = ref(false)
 const huntingMethodsError = ref('')
@@ -663,6 +664,21 @@ async function loadLocations() {
 
 function attributeGroupTitle(group: HotelRoomAttribute) {
   return group.name
+}
+
+function isAttrGroupOpen(groupId: number) {
+  return expandedAttrGroupIds.value.includes(groupId)
+}
+
+function toggleAttrGroup(groupId: number) {
+  if (isAttrGroupOpen(groupId)) {
+    expandedAttrGroupIds.value = expandedAttrGroupIds.value.filter(id => id !== groupId)
+  }
+  else {
+    expandedAttrGroupIds.value = [...expandedAttrGroupIds.value, groupId]
+  }
+
+  scheduleAttrPagesUpdate()
 }
 
 function termLabel(term: HotelRoomAttributeTerm) {
@@ -1867,11 +1883,31 @@ watch(activeEditTab, (tab) => {
                   :key="group.id"
                   class="base-edit__attr-block"
                 >
-                  <h3 class="base-edit__attr-title">
-                    {{ attributeGroupTitle(group) }}
-                  </h3>
+                  <button
+                    type="button"
+                    class="base-edit__attr-head"
+                    :aria-expanded="isAttrGroupOpen(group.id)"
+                    @click="toggleAttrGroup(group.id)"
+                  >
+                    <span class="base-edit__attr-title">{{ attributeGroupTitle(group) }}</span>
+                    <span
+                      class="base-edit__attr-toggle"
+                      :class="{ 'base-edit__attr-toggle--open': isAttrGroupOpen(group.id) }"
+                    >
+                      <svg class="base-edit__attr-chevron" viewBox="0 0 12 8" aria-hidden="true">
+                        <path
+                          d="M1 2 6 6.5 11 2"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </button>
 
-                  <div class="base-edit__attr-body">
+                  <div v-if="isAttrGroupOpen(group.id)" class="base-edit__attr-body">
                     <label
                       v-for="term in group.terms"
                       :key="term.id"
@@ -2631,6 +2667,24 @@ button.base-edit__nav-save:hover:not(:disabled) {
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 8px;
+  background: var(--wh-white);
+  box-sizing: border-box;
+}
+
+.base-edit__attr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 
 .base-edit__attr-title {
@@ -2641,7 +2695,36 @@ button.base-edit__nav-save:hover:not(:disabled) {
   font-weight: 700;
   line-height: 1.3;
   letter-spacing: 0.02em;
+  text-align: left;
   text-transform: uppercase;
+}
+
+.base-edit__attr-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 6px;
+  background: var(--wh-white);
+  color: var(--wh-gray-700);
+}
+
+.base-edit__attr-head:hover .base-edit__attr-toggle {
+  border-color: #4aa3d9;
+  color: #4aa3d9;
+}
+
+.base-edit__attr-chevron {
+  width: 12px;
+  height: 8px;
+  transition: transform 0.2s ease;
+}
+
+.base-edit__attr-toggle--open .base-edit__attr-chevron {
+  transform: rotate(180deg);
 }
 
 .base-edit__attr-body {
@@ -2809,7 +2892,7 @@ button.base-edit__nav-save:hover:not(:disabled) {
 
 .base-edit__form-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px 24px;
   align-items: start;
 }
