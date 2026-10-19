@@ -118,7 +118,7 @@ async function loadMapHotels() {
       items = slug ? await locationApi.getLocationHotelItems(slug) : []
     }
     else if (searchRequest.value.catalog) {
-      items = await hotelsApi.getHotelOfferItems()
+      items = await hotelsApi.getHotelOfferItems({ all: true })
     }
     else {
       items = await fetchAllSearchHotels(searchRequest.value.body)

@@ -159,7 +159,7 @@ const { data: searchResult, refresh, pending: searchPending } = useAsyncData(
   async () => {
     try {
       if (searchRequest.value.catalog) {
-        return toCatalogResult(await hotelsApi.getHotelOfferItems())
+        return toCatalogResult(await hotelsApi.getHotelOfferItems({ all: true }))
       }
 
       const response = await searchApi.searchHotels(
