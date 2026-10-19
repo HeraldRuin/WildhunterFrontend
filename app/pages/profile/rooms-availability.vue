@@ -138,7 +138,7 @@ const calendarDays = computed(() =>
       badgeClass: resolveBadgeClass(event),
       isCheckoutDay: Boolean(event?.is_checkout_day),
       isPast: isPastCalendarDate(day.date),
-      canEdit: Boolean(event) && !isSummaryTab.value && !event?.extendedProps?.is_summary,
+      canEdit: Boolean(event) && !isSummaryTab.value && !event?.extendedProps?.is_summary && !isPastCalendarDate(day.date),
     }
   }),
 )
@@ -169,9 +169,8 @@ function resolveBadgeClass(event?: RoomAvailabilityDay | null) {
   return 'rooms-availability__badge--available'
 }
 
-function bookingNumberText(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
-  const prefix = isSummaryTab.value ? 'Бронь' : 'Б'
-  return `${prefix}${booking.booking_number ?? ''}`
+function bookingPrefix() {
+  return isSummaryTab.value ? 'Бронь' : 'Б'
 }
 
 function bookingHistoryTo(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
@@ -251,7 +250,7 @@ function buildDefaultDayEvent(date: Date): RoomAvailabilityDay {
 }
 
 function onDayClick(day: typeof calendarDays.value[number]) {
-  if (isSummaryTab.value || !day.isCurrentMonth) {
+  if (isSummaryTab.value || !day.isCurrentMonth || day.isPast) {
     return
   }
 
@@ -502,9 +501,17 @@ onMounted(() => {
             }"
             @click="onDayClick(day)"
           >
-            <span class="rooms-availability__day-num">{{ day.date.getDate() }}</span>
+            <div class="rooms-availability__cell-top">
+              <span
+                v-if="isSummaryTab && day.isCurrentMonth && day.event && !day.isPast"
+                class="rooms-availability__free"
+              >
+                Свободно <span class="rooms-availability__free-count">{{ day.event.number }}</span>
+              </span>
+              <span class="rooms-availability__day-num">{{ day.date.getDate() }}</span>
+            </div>
 
-            <template v-if="day.isCurrentMonth && day.event">
+            <template v-if="day.isCurrentMonth && day.event && !day.isPast">
               <div
                 v-if="day.bookings.length"
                 class="rooms-availability__bookings"
@@ -515,6 +522,7 @@ onMounted(() => {
                   class="rooms-availability__note"
                   :class="{ 'rooms-availability__note--checkout': booking.is_checkout }"
                 >
+                  <span class="rooms-availability__note-prefix">{{ bookingPrefix() }}</span>
                   <NuxtLink
                     :to="bookingHistoryTo(booking)"
                     target="_blank"
@@ -522,7 +530,7 @@ onMounted(() => {
                     class="rooms-availability__note-link"
                     @click.stop
                   >
-                    {{ bookingNumberText(booking) }}
+                    {{ booking.booking_number ?? '' }}
                   </NuxtLink>
                   <template v-if="booking.is_checkout"> (В)</template>
                   <span
@@ -815,9 +823,42 @@ onMounted(() => {
   color: var(--wh-white);
 }
 
+.rooms-availability__cell-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+  min-height: 14px;
+}
+
+.rooms-availability__free {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: auto;
+  color: var(--wh-gray-400);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.rooms-availability__free-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #ff9800;
+  color: var(--wh-white);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
 .rooms-availability__day-num {
-  align-self: flex-end;
-  margin-bottom: 4px;
   color: var(--wh-gray-900);
   font-size: 14px;
   font-weight: 600;
@@ -826,24 +867,34 @@ onMounted(() => {
 
 .rooms-availability__bookings {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 2px 10px;
+  width: 100%;
   max-width: 100%;
+  padding-left: 6px;
+  box-sizing: border-box;
 }
 
 .rooms-availability__note {
-  max-width: 100%;
+  flex: 0 1 auto;
+  max-width: calc(50% - 1px);
   color: var(--wh-gray-900);
   font-size: 11px;
   font-weight: 500;
   line-height: 1.2;
-  text-align: center;
+  text-align: left;
   overflow-wrap: anywhere;
 }
 
 .rooms-availability__note--checkout {
   color: #5e6d77;
+}
+
+.rooms-availability__note-prefix {
+  color: var(--wh-gray-900);
+  font-weight: 600;
 }
 
 .rooms-availability__note-link {
