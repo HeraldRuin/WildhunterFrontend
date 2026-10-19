@@ -356,7 +356,7 @@ const emailLine = computed(() => {
     : 'Информация о бронировании отправлена'
 })
 
-const bookingsLink = '/profile/bookings'
+const bookingsLink = '/profile/bookings/'
 
 function getResponseMessage(error: unknown) {
   if (!error || typeof error !== 'object') {

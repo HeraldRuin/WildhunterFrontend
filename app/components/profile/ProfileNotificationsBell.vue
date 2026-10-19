@@ -110,7 +110,7 @@ function bookingsTarget(
   }
 
   const query = params.toString()
-  return query ? `/profile/bookings?${query}` : '/profile/bookings'
+  return query ? `/profile/bookings/?${query}` : '/profile/bookings/'
 }
 
 function resolveNotificationTarget(item: InboxNotification): string | null {
@@ -194,7 +194,7 @@ async function selectItem(id: string) {
     url.searchParams.forEach((value, key) => {
       query[key] = value
     })
-    await navigateTo({ path: '/profile/bookings', query })
+    await navigateTo({ path: '/profile/bookings/', query })
     return
   }
 

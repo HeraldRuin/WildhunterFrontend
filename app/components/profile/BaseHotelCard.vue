@@ -265,7 +265,7 @@ async function removeHotel() {
 
         <div class="base-hotel-card__actions">
           <NuxtLink
-            :to="`/profile/base/${item.id}`"
+            :to="`/profile/base/${item.id}/`"
             class="base-hotel-card__btn base-hotel-card__btn--primary"
           >
             Редактировать

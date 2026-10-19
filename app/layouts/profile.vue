@@ -30,7 +30,7 @@ const profileScrollLock = computed(() => {
     return true
   }
 
-  const path = route.path
+  const path = route.path.length > 1 ? route.path.replace(/\/+$/, '') : route.path
   return (
     /^\/profile\/base\/[^/]+\/?$/.test(path)
     || /^\/rooms\/[^/]+\/?$/.test(path)

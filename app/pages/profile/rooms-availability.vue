@@ -4,7 +4,7 @@ import { formatApiDate, getCalendarDays, getWeekdayNames } from '~/utils/date'
 
 definePageMeta({
   layout: 'profile',
-  path: '/rooms/availability',
+  path: '/rooms/availability/',
 })
 
 useHead({
@@ -42,11 +42,11 @@ const breadcrumbs = computed(() => [
   { label: 'Главная', to: '/' },
   {
     label: hotelTitle.value || 'Управление базой',
-    to: hotelId.value ? `/profile/base/${hotelId.value}` : '/profile/base',
+    to: hotelId.value ? `/profile/base/${hotelId.value}/` : '/profile/base/',
   },
   {
     label: 'Управление номерами',
-    to: hotelId.value ? { path: '/rooms', query: { hotelId: hotelId.value } } : '/rooms',
+    to: hotelId.value ? { path: '/rooms/', query: { hotelId: hotelId.value } } : '/rooms/',
   },
   { label: 'Наличие' },
 ])
@@ -175,7 +175,7 @@ function bookingPrefix() {
 
 function bookingHistoryTo(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
   return {
-    path: '/profile/bookings',
+    path: '/profile/bookings/',
     query: { booking_id: String(booking.id) },
   }
 }

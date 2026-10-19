@@ -4,7 +4,7 @@ import type { RoomManageItem } from '~/components/profile/RoomManageCard.vue'
 
 definePageMeta({
   layout: 'profile',
-  path: '/rooms',
+  path: '/rooms/',
 })
 
 useHead({
@@ -36,7 +36,7 @@ const breadcrumbs = computed(() => [
     label: hotelTitle.value
       ? `Управление базой: ${hotelTitle.value}`
       : 'Управление базой',
-    to: '/profile/base',
+    to: '/profile/base/',
   },
   { label: 'Управление номерами' },
 ])
@@ -119,7 +119,7 @@ function extractErrorMessage(source: unknown, fallback: string) {
 function addRoom() {
   const hotelId = route.query.hotelId
   void navigateTo({
-    path: '/rooms/new',
+    path: '/rooms/new/',
     query: typeof hotelId === 'string' && hotelId ? { hotelId } : undefined,
   })
 }

@@ -86,7 +86,7 @@ function addBase() {
     return
   }
 
-  void navigateTo('/profile/base/new')
+  void navigateTo('/profile/base/new/')
 }
 
 function onHotelDeleted(id: number) {

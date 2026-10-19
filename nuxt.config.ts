@@ -75,6 +75,30 @@ export default defineNuxtConfig({
       yandexMapsApiKey: process.env.NUXT_PUBLIC_YANDEX_MAPS_API_KEY || '',
     },
   },
+  hooks: {
+    'pages:extend'(pages) {
+      const applyTrailingSlash = (items: Array<{ path?: string, children?: Array<{ path?: string, children?: unknown[] }> }>) => {
+        for (const page of items) {
+          if (
+            page.path === '/profile'
+            || page.path?.startsWith('/profile/')
+            || page.path === '/rooms'
+            || page.path?.startsWith('/rooms/')
+          ) {
+            if (!page.path.endsWith('/')) {
+              page.path = `${page.path}/`
+            }
+          }
+
+          if (page.children?.length) {
+            applyTrailingSlash(page.children)
+          }
+        }
+      }
+
+      applyTrailingSlash(pages)
+    },
+  },
   routeRules: {
     '/profile': { ssr: false },
     '/profile/**': { ssr: false },

@@ -31,7 +31,7 @@ type GalleryItem = {
 const editTabs: { id: BaseHotelEditTab, label: string }[] = [
   { id: 'content', label: 'Контент базы' },
   { id: 'places', label: 'Места' },
-  { id: 'pricing', label: 'Ценообразование' },
+  { id: 'pricing', label: 'Информация о заезде' },
   { id: 'attributes', label: 'Атрибуты' },
   { id: 'hunting', label: 'Способ охоты' },
   { id: 'jaeger', label: 'Егерь' },
@@ -449,7 +449,7 @@ const basePublicTo = computed(() => {
 const breadcrumbs = computed(() => {
   const items: Array<{ label: string, to?: string }> = [
     { label: 'Главная', to: '/' },
-    { label: 'Управление базой', to: '/profile/base' },
+    { label: 'Управление базой', to: '/profile/base/' },
   ]
 
   if (!isCreateMode.value) {
@@ -1096,7 +1096,7 @@ async function saveHotel() {
       )
 
       if (isCreateMode.value && response.data.id) {
-        await navigateTo(`/profile/base/${response.data.id}`, { replace: true })
+        await navigateTo(`/profile/base/${response.data.id}/`, { replace: true })
       }
 
       return
@@ -1776,7 +1776,7 @@ watch(activeEditTab, (tab) => {
               <section class="base-edit__pricing-block" aria-label="Ценообразование">
                 <CommonFormField
                   v-model="editPrice"
-                  label="Стоимость"
+                  label="Минимальная стоимость проживания от"
                   placeholder="0"
                   amount-only
                   no-margin

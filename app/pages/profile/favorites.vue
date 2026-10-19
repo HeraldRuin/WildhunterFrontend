@@ -4,7 +4,7 @@ import type { OfferItem } from '~/types/api'
 definePageMeta({
   layout: 'profile',
   middleware: 'auth',
-  path: '/profile/favorites',
+  path: '/profile/favorites/',
 })
 
 useHead({

@@ -54,10 +54,10 @@ const displayName = computed(() => {
 const route = useRoute()
 
 const allNavItems = [
-  { label: 'Бронирования', to: '/profile/bookings' },
-  { label: 'Мой профиль', to: '/profile' },
-  { label: 'Изменить пароль', to: '/profile/password' },
-  { label: 'Избранное', to: '/profile/favorites' },
+  { label: 'Бронирования', to: '/profile/bookings/' },
+  { label: 'Мой профиль', to: '/profile/' },
+  { label: 'Изменить пароль', to: '/profile/password/' },
+  { label: 'Избранное', to: '/profile/favorites/' },
 ]
 
 const navItems = computed(() => {
@@ -69,7 +69,7 @@ const navItems = computed(() => {
   }
 
   return allNavItems.filter(
-    item => item.to !== '/profile/bookings',
+    item => item.to !== '/profile/bookings/',
   )
 })
 
@@ -141,7 +141,7 @@ onUnmounted(() => {
         :class="{ 'auth-user-menu__trigger--open': isOpen }"
       >
         <NuxtLink
-          to="/profile"
+          to="/profile/"
           class="auth-user-menu__content"
           @click="closeMenu"
         >

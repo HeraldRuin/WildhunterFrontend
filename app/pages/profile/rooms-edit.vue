@@ -7,7 +7,7 @@ import { extractMediaIdFromUrl, shouldShowOfferImage } from '~/utils/image'
 
 definePageMeta({
   layout: 'profile',
-  path: '/rooms/:id',
+  path: '/rooms/:id/',
 })
 
 const route = useRoute()
@@ -38,7 +38,7 @@ const hotelId = computed(() => {
 })
 
 const roomsListTo = computed(() => (
-  hotelId.value ? { path: '/rooms', query: { hotelId: hotelId.value } } : '/rooms'
+  hotelId.value ? { path: '/rooms/', query: { hotelId: hotelId.value } } : '/rooms/'
 ))
 
 type RoomEditTab = 'content' | 'pricing' | 'attributes'
@@ -302,7 +302,7 @@ watch(
 )
 
 const hotelEditTo = computed(() => (
-  hotelId.value ? `/profile/base/${hotelId.value}` : '/profile/base'
+  hotelId.value ? `/profile/base/${hotelId.value}/` : '/profile/base/'
 ))
 
 const pageTitle = computed(() => (
@@ -325,14 +325,14 @@ const roomEditTo = computed(() => {
   }
 
   return hotelId.value
-    ? { path: `/rooms/${roomId.value}`, query: { hotelId: hotelId.value } }
-    : `/rooms/${roomId.value}`
+    ? { path: `/rooms/${roomId.value}/`, query: { hotelId: hotelId.value } }
+    : `/rooms/${roomId.value}/`
 })
 
 const breadcrumbs = computed(() => {
   const items: BreadcrumbItem[] = [
     { label: 'Главная', to: '/' },
-    { label: 'Управление базой', to: '/profile/base' },
+    { label: 'Управление базой', to: '/profile/base/' },
     ...(hotelTitle.value
       ? [{ label: hotelTitle.value, to: hotelEditTo.value }]
       : []),
@@ -837,8 +837,8 @@ function buildSavePayload(galleryIds: number[]): RoomManageUpdatePayload {
 
 function roomEditPath(id: number) {
   return hotelId.value
-    ? { path: `/rooms/${id}`, query: { hotelId: hotelId.value } }
-    : `/rooms/${id}`
+    ? { path: `/rooms/${id}/`, query: { hotelId: hotelId.value } }
+    : `/rooms/${id}/`
 }
 
 async function saveRoom() {

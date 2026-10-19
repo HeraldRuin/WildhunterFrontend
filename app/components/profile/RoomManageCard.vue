@@ -33,7 +33,7 @@ const { open: openConfirmModal } = useConfirmModal()
 const editTo = computed(() => {
   const hotelId = route.query.hotelId
   return {
-    path: `/rooms/${props.item.id}`,
+    path: `/rooms/${props.item.id}/`,
     query: typeof hotelId === 'string' && hotelId ? { hotelId } : undefined,
   }
 })

@@ -49,64 +49,64 @@ watch([isBaseAdmin, () => user.value?.id, isAuthenticated], () => {
 
 const hunterProfileNavItem: NavItem = {
   label: 'Мой профиль',
-  to: '/profile',
+  to: '/profile/',
   iconSrc: '/icons/user-profile.svg',
   navigateOnOpen: true,
   children: [
-    { label: 'Изменить пароль', to: '/profile/password' },
+    { label: 'Изменить пароль', to: '/profile/password/' },
   ],
 }
 
 const baseNavItems: NavItem[] = [
-  { label: 'Бронирования', to: '/profile/bookings', iconSrc: '/icons/iconoir_clock-solid.png' },
+  { label: 'Бронирования', to: '/profile/bookings/', iconSrc: '/icons/iconoir_clock-solid.png' },
   {
     label: 'Документы охотника',
     labelShort: 'Оружие',
-    to: '/profile/weapons',
+    to: '/profile/weapons/',
     iconSrc: '/icons/material-symbols_license-rounded.png',
   },
-  { label: 'Избранное', to: '/profile/favorites', iconSrc: '/icons/favorites.svg' },
+  { label: 'Избранное', to: '/profile/favorites/', iconSrc: '/icons/favorites.svg' },
 ]
 
 const servicesNavChildren = [
-  { label: 'Организация охоты', to: '/profile/services/hunting' },
-  { label: 'Трофеи и штрафы', to: '/profile/services/trophies' },
-  { label: 'Доп услуги', to: '/profile/services/extra' },
+  { label: 'Организация охоты', to: '/profile/services/hunting/' },
+  { label: 'Трофеи и штрафы', to: '/profile/services/trophies/' },
+  { label: 'Доп услуги', to: '/profile/services/extra/' },
 ]
 
 const baseAdminExtraNavItems: NavItem[] = [
   {
     label: 'Управление базой',
     labelShort: 'База',
-    to: '/profile/base',
+    to: '/profile/base/',
     iconSrc: '/icons/base-building.svg',
   },
   {
     label: 'Управление номерами',
     labelShort: 'Номера',
-    to: '/rooms',
+    to: '/rooms/',
     iconSrc: '/icons/rooms-manage.svg',
   },
   {
     label: 'Доступные номера',
     labelShort: 'Доступность',
-    to: '/rooms/availability',
+    to: '/rooms/availability/',
     iconSrc: '/icons/rooms-availability.svg',
   },
   {
     label: 'Животные',
-    to: '/profile/animals',
+    to: '/profile/animals/',
     iconSrc: '/icons/animal-face.svg',
   },
   {
     label: 'Услуги',
-    to: '/profile/services',
+    to: '/profile/services/',
     iconSrc: '/icons/services.svg',
     children: servicesNavChildren,
   },
   {
     label: 'Таймеры',
-    to: '/profile/timers',
+    to: '/profile/timers/',
     iconSrc: '/icons/timers.svg',
   },
 ]
@@ -119,7 +119,7 @@ const navItems = computed<NavItem[]>(() => {
   if (isBaseAdmin.value) {
     return [
       ...baseNavItems.filter(
-        item => item.to !== '/profile/weapons' && item.to !== '/profile/favorites',
+        item => item.to !== '/profile/weapons/' && item.to !== '/profile/favorites/',
       ),
       ...baseAdminExtraNavItems,
     ]
@@ -136,21 +136,35 @@ function isSubmenuOpen(to: string) {
   return Boolean(openSubmenus.value[to])
 }
 
+function stripTrailingSlash(path: string) {
+  if (path.length > 1 && path.endsWith('/')) {
+    return path.slice(0, -1)
+  }
+
+  return path
+}
+
 function isOnExpandableNavItem(path: string, item: NavItem) {
   if (!item.children?.length) {
     return false
   }
 
-  if (item.children.some(child => path === child.to || path.startsWith(`${child.to}/`))) {
+  const current = stripTrailingSlash(path)
+  const itemPath = stripTrailingSlash(item.to)
+
+  if (item.children.some((child) => {
+    const childPath = stripTrailingSlash(child.to)
+    return current === childPath || current.startsWith(`${childPath}/`)
+  })) {
     return true
   }
 
   // `/profile` — префикс почти всех пунктов меню, поэтому не раскрываем по самому родителю
-  if (item.to === '/profile') {
+  if (itemPath === '/profile') {
     return false
   }
 
-  return path === item.to || path.startsWith(`${item.to}/`)
+  return current === itemPath || current.startsWith(`${itemPath}/`)
 }
 
 watch(
@@ -288,23 +302,27 @@ const allNavPaths = computed(() => [
 ])
 
 function isActive(to: string) {
-  if (to === '/profile') {
-    return route.path === '/profile' || route.path === '/profile/'
+  const current = stripTrailingSlash(route.path)
+  const target = stripTrailingSlash(to)
+
+  if (target === '/profile') {
+    return current === '/profile'
   }
 
-  if (route.path === to) {
+  if (current === target) {
     return true
   }
 
-  if (!route.path.startsWith(`${to}/`)) {
+  if (!current.startsWith(`${target}/`)) {
     return false
   }
 
-  const hasLongerMatch = allNavPaths.value.some(
-    path => path !== to
-      && path.startsWith(`${to}/`)
-      && (route.path === path || route.path.startsWith(`${path}/`)),
-  )
+  const hasLongerMatch = allNavPaths.value.some((path) => {
+    const candidate = stripTrailingSlash(path)
+    return candidate !== target
+      && candidate.startsWith(`${target}/`)
+      && (current === candidate || current.startsWith(`${candidate}/`))
+  })
 
   return !hasLongerMatch
 }

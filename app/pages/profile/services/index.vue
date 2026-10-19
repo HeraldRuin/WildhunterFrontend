@@ -4,7 +4,7 @@ definePageMeta({
   middleware: 'baseadmin',
 })
 
-await navigateTo('/profile/services/hunting', { replace: true })
+await navigateTo('/profile/services/hunting/', { replace: true })
 </script>
 
 <template>
