@@ -115,7 +115,7 @@ const navItems = [
 
 .header__user-menu :deep(.auth-user-menu__content) {
   max-width: 180px;
-  padding: 12px 10px 12px 12px;
+  padding: 14px 10px 10px 12px;
 }
 
 .header__user-menu :deep(.auth-user-menu__name) {

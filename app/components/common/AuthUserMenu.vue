@@ -242,7 +242,7 @@ onUnmounted(() => {
   gap: 10px;
   min-width: 0;
   max-width: 220px;
-  padding: 10px 12px;
+  padding: 12px 12px 8px;
   color: inherit;
   text-decoration: none;
 }
