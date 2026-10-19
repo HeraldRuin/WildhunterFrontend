@@ -561,7 +561,14 @@ function onLicenseNumberUpdate(weapon: UserWeapon, value: string) {
 }
 
 function displayLicenseDate(value: string) {
-  const parsed = parseBirthdayDate(value)
+  const trimmed = value.trim()
+  const complete = /^\d{4}-\d{2}-\d{2}/.test(trimmed) || /^\d{2}\.\d{2}\.\d{4}$/.test(trimmed)
+
+  if (!complete) {
+    return value
+  }
+
+  const parsed = parseBirthdayDate(trimmed)
   return parsed ? formatBirthdayDate(parsed) : value
 }
 
