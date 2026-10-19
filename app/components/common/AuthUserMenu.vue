@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { user, isAuthenticated, logout } = useAuth()
 const { isBaseAdmin } = useUserRole()
+const { profile, loadProfile } = useProfile()
 const { hotels: hotelsApi } = useApi()
 
 const menuRef = ref<HTMLElement | null>(null)
@@ -8,13 +9,26 @@ const isOpen = ref(false)
 const hoveredKey = ref<string | null>(null)
 const baseTitle = useState('auth-user-base-title', () => '')
 const baseTitleUserId = useState<number | null>('auth-user-base-title-user', () => null)
+const baseLabelPending = useState('auth-user-base-label-pending', () => false)
 
 async function loadBaseTitle() {
   const userId = user.value?.id ?? null
 
-  if (!isAuthenticated.value || !isBaseAdmin.value || !userId) {
+  if (baseLabelPending.value) {
+    return
+  }
+
+  if (!isAuthenticated.value || !userId) {
     baseTitle.value = ''
     baseTitleUserId.value = null
+    return
+  }
+
+  if (!isBaseAdmin.value && !profile.value) {
+    await loadProfile()
+  }
+
+  if (!isBaseAdmin.value) {
     return
   }
 
@@ -30,10 +44,11 @@ async function loadBaseTitle() {
       : ''
   } catch {
     baseTitle.value = ''
+    baseTitleUserId.value = null
   }
 }
 
-watch([isBaseAdmin, () => user.value?.id, isAuthenticated], () => {
+watch([isBaseAdmin, () => user.value?.id, isAuthenticated, baseLabelPending], () => {
   void loadBaseTitle()
 }, { immediate: true })
 
@@ -42,7 +57,7 @@ const displayName = computed(() => {
     return 'Профиль'
   }
 
-  if (isBaseAdmin.value && baseTitle.value) {
+  if (baseLabelPending.value || isBaseAdmin.value || baseTitle.value) {
     return baseTitle.value
   }
 
@@ -101,6 +116,7 @@ async function handleLogout() {
 
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
+  void loadBaseTitle()
 })
 
 onUnmounted(() => {

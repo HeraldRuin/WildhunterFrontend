@@ -8,6 +8,14 @@ import {
   unwrapProfilePayload,
 } from '~/utils/user'
 
+function roleCodeFromUser(user: AuthUser, source: Record<string, unknown>) {
+  if (typeof user.role === 'string' && user.role.trim()) {
+    return user.role.trim()
+  }
+
+  return extractRoleCode(source) || extractRoleCode(user as unknown as Record<string, unknown>) || null
+}
+
 function normalizeAuthUser(user: AuthUser | undefined, uploadsOrigin = '') {
   if (!user) {
     return undefined
@@ -21,8 +29,8 @@ function normalizeAuthUser(user: AuthUser | undefined, uploadsOrigin = '') {
     last_name: String(source.last_name ?? user.last_name ?? ''),
     email: String(source.email ?? user.email ?? ''),
     avatar: resolveAvatarUrl(source, [user.avatar], uploadsOrigin),
-    role: user.role ?? extractRoleCode(source) ?? null,
-    role_name: user.role_name ?? extractRoleName(source) ?? null,
+    role: roleCodeFromUser(user, source),
+    role_name: (typeof user.role_name === 'string' ? user.role_name.trim() : '') || extractRoleName(source) || null,
     created_at: user.created_at ?? extractCreatedAt(source) ?? null,
   }
 }
@@ -53,6 +61,9 @@ export function useAuth() {
       const { invalidateProfileCache, loadProfile } = useProfile()
       const { setCurrentPassword } = useCurrentPassword()
 
+      const baseLabelPending = useState('auth-user-base-label-pending', () => false)
+      baseLabelPending.value = true
+
       authToken.setSession({
         token: response.token,
         token_type: response.token_type,
@@ -61,9 +72,15 @@ export function useAuth() {
 
       setCurrentPassword(password)
 
-      if (normalizedUser?.id) {
-        invalidateProfileCache(normalizedUser.id)
-        await loadProfile(true)
+      try {
+        if (normalizedUser?.id) {
+          invalidateProfileCache(normalizedUser.id)
+          await loadProfile(true)
+        }
+
+        await resolveBaseTitle(normalizedUser?.id ?? null)
+      } finally {
+        baseLabelPending.value = false
       }
 
       return { success: true as const }
@@ -90,6 +107,38 @@ export function useAuth() {
       invalidateProfileCache(normalizedUser.id)
       void loadProfile(true)
     }
+  }
+
+  async function resolveBaseTitle(userId: number | null) {
+    const baseTitle = useState('auth-user-base-title', () => '')
+    const baseTitleUserId = useState<number | null>('auth-user-base-title-user', () => null)
+
+    if (!userId) {
+      baseTitle.value = ''
+      baseTitleUserId.value = null
+      return
+    }
+
+    try {
+      const { hotels } = useApi()
+      const response = await hotels.getManage()
+      const title = response.success
+        ? response.data.find(item => item.title?.trim())?.title.trim() ?? ''
+        : ''
+
+      if (title) {
+        baseTitleUserId.value = userId
+        baseTitle.value = title
+        return
+      }
+    } catch {
+      baseTitle.value = ''
+      baseTitleUserId.value = null
+      return
+    }
+
+    baseTitle.value = ''
+    baseTitleUserId.value = null
   }
 
   async function logout() {
