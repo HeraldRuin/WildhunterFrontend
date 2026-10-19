@@ -18,6 +18,7 @@ import { useUserApi, type AvatarHistoryItem } from '~/api/user'
 import type { ProfileUser } from '~/types/user'
 
 const { user } = useAuth()
+const { isBaseAdmin } = useUserRole()
 const { profile, pending, error, loadProfile, saveProfile } = useProfile()
 const { getAvatarHistory } = useUserApi()
 const notifications = useNotifications()
@@ -540,6 +541,7 @@ async function handleSubmit() {
         <div class="profile-form__grid">
           <div class="profile-form__column">
             <CommonFormField
+              v-if="!isBaseAdmin"
               id="nickname"
               label="Ник"
               placeholder="Ник пользователя"
@@ -562,7 +564,7 @@ async function handleSubmit() {
               @update:model-value="setProfileField('email', $event)"
             />
 
-            <div class="profile-form__row">
+            <div v-if="!isBaseAdmin" class="profile-form__row">
               <CommonFormField
                 id="first-name"
                 label="Имя"
@@ -604,6 +606,7 @@ async function handleSubmit() {
 
           <div class="profile-form__column">
             <div
+              v-if="!isBaseAdmin"
               ref="birthdayFieldRef"
               class="profile-form__birthday"
               :class="{ 'profile-form__birthday--open': isBirthdayOpen }"
@@ -650,6 +653,7 @@ async function handleSubmit() {
             </div>
 
             <CommonFormField
+              v-if="!isBaseAdmin"
               id="bio"
               label="Обо мне"
               placeholder="Расскажите о себе"
