@@ -893,6 +893,7 @@ onMounted(() => {
 }
 
 .rooms-availability__note-prefix {
+  margin-right: 3px;
   color: var(--wh-gray-900);
   font-weight: 600;
 }
