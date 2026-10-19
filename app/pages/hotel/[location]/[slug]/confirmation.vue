@@ -852,7 +852,7 @@ async function confirmSaveBooking() {
 
 .booking-confirmation__summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) max-content;
   align-items: center;
   gap: 4px 20px;
   padding: 10px 24px;
@@ -897,6 +897,7 @@ async function confirmSaveBooking() {
   align-items: center;
   min-height: 28px;
   padding: 4px 12px;
+  white-space: nowrap;
   border-radius: 999px;
   background: var(--wh-orange-500);
   font-family: 'Inter', system-ui, sans-serif;
@@ -1364,7 +1365,7 @@ async function confirmSaveBooking() {
   }
 
   .booking-confirmation__summary {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) max-content;
     height: auto;
     gap: 8px 8px;
     padding: 16px 12px;
