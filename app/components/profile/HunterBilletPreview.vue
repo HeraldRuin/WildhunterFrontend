@@ -597,6 +597,11 @@ function onNumberModelUpdate(value: string) {
   z-index: 1;
 }
 
+.hunter-billet__system:has(.hunter-billet__birthday-field--open),
+.hunter-billet__footer:has(.hunter-billet__issue-field--open) {
+  z-index: 2;
+}
+
 .hunter-billet__header {
   margin-bottom: 20px;
   text-align: center;
