@@ -339,7 +339,7 @@ async function handleFavoriteClick(event: MouseEvent) {
     <div class="offer-card__body">
       <div class="offer-card__row">
         <h3 class="offer-card__title">{{ item.title }}</h3>
-        <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽</p>
+        <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽/сутки</p>
       </div>
       <div
         ref="animalsRowRef"
@@ -558,7 +558,7 @@ async function handleFavoriteClick(event: MouseEvent) {
   margin: 0;
   flex-shrink: 0;
   font-family: "Inter", sans-serif;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 120%;
   letter-spacing: -0.05em;
