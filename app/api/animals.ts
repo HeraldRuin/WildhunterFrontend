@@ -7,11 +7,17 @@ import type {
 } from '~/types/api'
 import { useApiClient } from './client'
 
+export interface ManagedAnimalHuntType {
+  code: string
+  title: string
+}
+
 export interface ManagedAnimal {
   id: number
   title: string
   hunters_count: number
   max_hunters_count?: number
+  hunt_type?: ManagedAnimalHuntType | null
 }
 
 export interface AvailableAnimal {

@@ -60,6 +60,10 @@ const isListBusy = computed(() =>
   busyAnimalId.value != null || isAdding.value || isSavingAll.value,
 )
 
+function isIndividualHunt(animal: AnimalRow) {
+  return animal.hunt_type?.code === 'individual'
+}
+
 function toAnimalRow(item: ManagedAnimal): AnimalRow {
   const maxHuntersCount = item.max_hunters_count ?? item.hunters_count
 
@@ -68,6 +72,7 @@ function toAnimalRow(item: ManagedAnimal): AnimalRow {
     title: item.title,
     hunters_count: item.hunters_count,
     max_hunters_count: maxHuntersCount,
+    hunt_type: item.hunt_type ?? null,
     huntersCountInput: String(item.hunters_count),
     maxHuntersCountInput: String(maxHuntersCount),
   }
@@ -584,8 +589,12 @@ onBeforeUnmount(() => {
             <div class="animals-manage__table">
               <div class="animals-manage__head">
                 <span class="animals-manage__col animals-manage__col--name">Животное для охоты</span>
-                <span class="animals-manage__col animals-manage__col--hunters">Мин. кол-во охотников</span>
-                <span class="animals-manage__col animals-manage__col--hunters">Макс. кол-во охотников</span>
+                <span class="animals-manage__col animals-manage__col--hunt-type">Тип охоты</span>
+                <div class="animals-manage__hunters-head">
+                  <span class="animals-manage__hunters-head-title">кол-во охотников при индивидуальной и групповой охоте</span>
+                  <span class="animals-manage__hunters-head-label">Мин.</span>
+                  <span class="animals-manage__hunters-head-label">Макс.</span>
+                </div>
                 <span class="animals-manage__col animals-manage__col--actions-head" aria-hidden="true" />
               </div>
 
@@ -596,6 +605,7 @@ onBeforeUnmount(() => {
                   class="animals-manage__row"
                 >
                   <span class="animals-manage__col animals-manage__col--name">{{ animal.title }}</span>
+                  <span class="animals-manage__col animals-manage__col--hunt-type">{{ animal.hunt_type?.title }}</span>
 
                   <div class="animals-manage__col animals-manage__col--hunters">
                     <input
@@ -603,7 +613,7 @@ onBeforeUnmount(() => {
                       type="text"
                       inputmode="numeric"
                       :value="animal.huntersCountInput"
-                      :disabled="isListBusy"
+                      :disabled="isListBusy || isIndividualHunt(animal)"
                       :aria-label="`Минимальное количество охотников: ${animal.title}`"
                       @keydown="onHuntersKeydown"
                       @input="onHuntersCountInput(animal, 'huntersCountInput', $event)"
@@ -616,7 +626,7 @@ onBeforeUnmount(() => {
                       type="text"
                       inputmode="numeric"
                       :value="animal.maxHuntersCountInput"
-                      :disabled="isListBusy"
+                      :disabled="isListBusy || isIndividualHunt(animal)"
                       :aria-label="`Максимальное количество охотников: ${animal.title}`"
                       @keydown="onHuntersKeydown"
                       @input="onHuntersCountInput(animal, 'maxHuntersCountInput', $event)"
@@ -824,6 +834,7 @@ onBeforeUnmount(() => {
     minmax(0, 1fr)
     max-content
     max-content
+    max-content
     max-content;
   column-gap: 10px;
 }
@@ -838,8 +849,32 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
 }
 
-.animals-manage__head .animals-manage__col--hunters {
+.animals-manage__head .animals-manage__col--hunt-type {
   white-space: nowrap;
+}
+
+.animals-manage__hunters-head {
+  display: grid;
+  grid-column: 3 / 5;
+  grid-template-columns: subgrid;
+  row-gap: 6px;
+  justify-items: center;
+}
+
+.animals-manage__hunters-head-title {
+  grid-column: 1 / -1;
+  max-width: 280px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.animals-manage__hunters-head-label {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
 }
 
 .animals-manage__col--actions-head {
@@ -889,10 +924,18 @@ onBeforeUnmount(() => {
   word-break: break-word;
 }
 
+.animals-manage__col--hunt-type,
 .animals-manage__col--hunters {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.animals-manage__col--hunt-type {
+  padding-right: 36px;
+  font-size: 14px;
+  color: var(--wh-black-text, #1c211c);
+  white-space: nowrap;
 }
 
 .animals-manage__col--actions {
@@ -1074,8 +1117,17 @@ onBeforeUnmount(() => {
     display: none;
   }
 
-  .animals-manage__head .animals-manage__col--hunters {
+  .animals-manage__head .animals-manage__col--hunt-type {
     white-space: nowrap;
+  }
+
+  .animals-manage__hunters-head {
+    grid-column: auto;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .animals-manage__hunters-head-title {
+    max-width: none;
   }
 
   .animals-manage__list {
@@ -1090,8 +1142,10 @@ onBeforeUnmount(() => {
     padding: 14px 16px;
   }
 
-  .animals-manage__row .animals-manage__col--name {
+  .animals-manage__row .animals-manage__col--name,
+  .animals-manage__row .animals-manage__col--hunt-type {
     grid-column: 1 / -1;
+    justify-content: flex-start;
   }
 
   .animals-manage__row .animals-manage__col--hunters {
