@@ -68,12 +68,6 @@ const baseNavItems: NavItem[] = [
   { label: 'Избранное', to: '/profile/favorites/', iconSrc: '/icons/favorites.svg' },
 ]
 
-const servicesNavChildren = [
-  { label: 'Организация охоты', to: '/profile/services/hunting/' },
-  { label: 'Трофеи и штрафы', to: '/profile/services/trophies/' },
-  { label: 'Доп услуги', to: '/profile/services/extra/' },
-]
-
 const baseAdminExtraNavItems: NavItem[] = [
   {
     label: 'Управление базой',
@@ -86,28 +80,26 @@ const baseAdminExtraNavItems: NavItem[] = [
     labelShort: 'Номера',
     to: '/rooms/',
     iconSrc: '/icons/rooms-manage.svg',
+    navigateOnOpen: true,
+    children: [
+      { label: 'Доступные номера', to: '/rooms/availability/' },
+    ],
   },
   {
-    label: 'Доступные номера',
-    labelShort: 'Доступность',
-    to: '/rooms/availability/',
-    iconSrc: '/icons/rooms-availability.svg',
-  },
-  {
-    label: 'Животные',
-    to: '/profile/animals/',
+    label: 'Организация охоты',
+    to: '/profile/services/hunting/',
     iconSrc: '/icons/animal-face.svg',
+    navigateOnOpen: true,
+    children: [
+      { label: 'Животные', to: '/profile/animals/' },
+      { label: 'Таймеры', to: '/profile/timers/' },
+      { label: 'Трофеи и штрафы', to: '/profile/services/trophies/' },
+    ],
   },
   {
     label: 'Услуги',
-    to: '/profile/services/',
+    to: '/profile/services/extra/',
     iconSrc: '/icons/services.svg',
-    children: servicesNavChildren,
-  },
-  {
-    label: 'Таймеры',
-    to: '/profile/timers/',
-    iconSrc: '/icons/timers.svg',
   },
 ]
 
@@ -164,7 +156,29 @@ function isOnExpandableNavItem(path: string, item: NavItem) {
     return false
   }
 
-  return current === itemPath || current.startsWith(`${itemPath}/`)
+  if (current !== itemPath && !current.startsWith(`${itemPath}/`)) {
+    return false
+  }
+
+  const ownedByOtherItem = navItems.value.some((other) => {
+    if (other.to === item.to) {
+      return false
+    }
+
+    const otherPaths = [
+      other.to,
+      ...(other.children?.map(child => child.to) ?? []),
+    ]
+
+    return otherPaths.some((path) => {
+      const otherPath = stripTrailingSlash(path)
+
+      return otherPath.length > itemPath.length
+        && (current === otherPath || current.startsWith(`${otherPath}/`))
+    })
+  })
+
+  return !ownedByOtherItem
 }
 
 watch(
@@ -209,12 +223,12 @@ function toggleSubmenu(to: string) {
 
 async function handleParentNavClick(item: NavItem) {
   if (item.navigateOnOpen) {
-    if (isSubmenuOpen(item.to)) {
+    const onParentPage = route.path === item.to || route.path === `${item.to}/`
+
+    if (isSubmenuOpen(item.to) && onParentPage) {
       openSubmenus.value[item.to] = false
       return
     }
-
-    const onParentPage = route.path === item.to || route.path === `${item.to}/`
 
     if (onParentPage) {
       if (isCompactSidebar.value) {
@@ -616,7 +630,8 @@ async function goHome(event: MouseEvent) {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 10px 0;
+  margin-right: -16px;
+  padding: 10px 16px 10px 0;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -634,7 +649,7 @@ async function goHome(event: MouseEvent) {
   background: transparent;
   color: rgba(255, 255, 255, 0.9);
   font: inherit;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -654,6 +669,7 @@ async function goHome(event: MouseEvent) {
 .profile-sidebar__nav-text {
   flex: 1;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .profile-sidebar__chevron {
@@ -848,7 +864,8 @@ async function goHome(event: MouseEvent) {
     width: 100%;
     min-width: 0;
     min-height: 0;
-    padding: 0 0 8px;
+    margin-right: -16px;
+    padding: 0 16px 8px 0;
     overflow-y: auto;
   }
 
@@ -974,7 +991,8 @@ async function goHome(event: MouseEvent) {
 
   .profile-sidebar__nav {
     width: 100%;
-    padding: 12px 0;
+    margin-right: -16px;
+    padding: 12px 16px 12px 0;
   }
 
   .profile-sidebar__nav-link {
