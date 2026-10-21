@@ -962,7 +962,14 @@ onBeforeUnmount(() => {
   border-color: var(--wh-field-border-active, rgba(0, 0, 0, 0.45));
 }
 
-.animals-manage__input:disabled,
+.animals-manage__input:disabled {
+  opacity: 1;
+  background: var(--wh-white);
+  color: var(--wh-black-text, #1c211c);
+  -webkit-text-fill-color: var(--wh-black-text, #1c211c);
+  cursor: default;
+}
+
 .animals-manage__btn:disabled {
   opacity: 0.65;
   cursor: default;
