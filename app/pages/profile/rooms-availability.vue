@@ -99,7 +99,15 @@ function isPastCalendarDate(date: Date) {
   return dayStart.getTime() < todayStart.getTime()
 }
 
+interface SummaryRoomOffer {
+  roomId: number
+  title: string
+  price: number
+  number: number
+}
+
 const availabilityDays = ref<RoomAvailabilityDay[]>([])
+const summaryOffersByDate = ref(new Map<string, SummaryRoomOffer[]>())
 const availabilityByDate = computed(() => {
   const map = new Map<string, RoomAvailabilityDay>()
   for (const day of availabilityDays.value) {
@@ -134,6 +142,7 @@ const calendarDays = computed(() =>
       key,
       event: event ?? null,
       bookings: event?.bookings ?? [],
+      freeRooms: isSummaryTab.value ? (summaryOffersByDate.value.get(key) ?? []) : [],
       badgeText: isSummaryTab.value ? null : (event?.title ?? null),
       badgeClass: resolveBadgeClass(event),
       isCheckoutDay: Boolean(event?.is_checkout_day),
@@ -170,8 +179,61 @@ function resolveBadgeClass(event?: RoomAvailabilityDay | null) {
 }
 
 function bookingPrefix() {
-  return isSummaryTab.value ? 'Бронь' : 'Б'
+  return 'Б'
 }
+
+function formatOfferPrice(price: number, count: number) {
+  const formatted = Math.round(price)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return `${formatted} руб x ${count}`
+}
+
+async function loadSummaryRoomOffers() {
+  const roomList = rooms.value
+  const { start, end } = periodRange.value
+  const map = new Map<string, SummaryRoomOffer[]>()
+
+  const results = await Promise.all(roomList.map(async (room) => {
+    try {
+      const response = await roomsApi.getAvailability({
+        id: room.id,
+        start,
+        end,
+      })
+      return { room, response }
+    }
+    catch {
+      return { room, response: null }
+    }
+  }))
+
+  for (const { room, response } of results) {
+    if (!response || !('success' in response) || !response.success) {
+      continue
+    }
+
+    for (const day of response.data ?? []) {
+      if (day.active === 0 || day.number <= 0) {
+        continue
+      }
+
+      const key = normalizeAvailabilityDateKey(day.start)
+      const offers = map.get(key) ?? []
+      offers.push({
+        roomId: room.id,
+        title: room.title,
+        price: day.price,
+        number: day.number,
+      })
+      map.set(key, offers)
+    }
+  }
+
+  return map
+}
+
+let availabilityRequestId = 0
 
 function bookingHistoryTo(booking: NonNullable<RoomAvailabilityDay['bookings']>[number]) {
   return {
@@ -274,15 +336,29 @@ async function loadAvailability() {
     return
   }
 
+  const requestId = ++availabilityRequestId
+  const summaryTab = isSummaryTab.value
+
   isLoadingAvailability.value = true
   availabilityError.value = ''
 
   try {
+    const summaryOffersPromise = summaryTab
+      ? loadSummaryRoomOffers()
+      : Promise.resolve(new Map<string, SummaryRoomOffer[]>())
+
     const response = await roomsApi.getAvailability({
       id: activeTabId.value,
       start: periodRange.value.start,
       end: periodRange.value.end,
     })
+    const offers = await summaryOffersPromise
+
+    if (requestId !== availabilityRequestId) {
+      return
+    }
+
+    summaryOffersByDate.value = offers
 
     if ('success' in response && response.success) {
       availabilityDays.value = response.data ?? []
@@ -290,15 +366,23 @@ async function loadAvailability() {
     }
 
     availabilityDays.value = []
+    summaryOffersByDate.value = new Map()
     availabilityError.value = extractErrorMessage(response, 'Не удалось загрузить календарь')
   }
   catch (error) {
+    if (requestId !== availabilityRequestId) {
+      return
+    }
+
     availabilityDays.value = []
+    summaryOffersByDate.value = new Map()
     const data = (error as { data?: unknown }).data
     availabilityError.value = extractErrorMessage(data, 'Не удалось загрузить календарь')
   }
   finally {
-    isLoadingAvailability.value = false
+    if (requestId === availabilityRequestId) {
+      isLoadingAvailability.value = false
+    }
   }
 }
 
@@ -513,7 +597,7 @@ onMounted(() => {
 
             <template v-if="day.isCurrentMonth && day.event && !day.isPast">
               <div
-                v-if="day.bookings.length"
+                v-if="!isSummaryTab && day.bookings.length"
                 class="rooms-availability__bookings"
               >
                 <span
@@ -543,6 +627,20 @@ onMounted(() => {
                     {{ bookingStatusText(booking) }}
                   </span>
                 </span>
+              </div>
+
+              <div
+                v-if="isSummaryTab && day.freeRooms.length"
+                class="rooms-availability__offers"
+              >
+                <div
+                  v-for="offer in day.freeRooms"
+                  :key="offer.roomId"
+                  class="rooms-availability__offer"
+                >
+                  <span class="rooms-availability__offer-title">{{ offer.title }}</span>
+                  <span class="rooms-availability__offer-price">{{ formatOfferPrice(offer.price, offer.number) }}</span>
+                </div>
               </div>
 
               <span
@@ -790,8 +888,49 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
+.rooms-availability__layout--summary .rooms-availability__grid {
+  grid-template-rows: repeat(6, minmax(140px, auto));
+}
+
 .rooms-availability__layout--summary .rooms-availability__cell {
+  align-items: stretch;
+  height: auto;
+  min-height: 140px;
   cursor: default;
+}
+
+.rooms-availability__offers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.rooms-availability__offer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rooms-availability__offer-title {
+  color: var(--wh-gray-900);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.rooms-availability__offer-price {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--wh-green);
+  color: var(--wh-white);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .rooms-availability__cell--editable {
