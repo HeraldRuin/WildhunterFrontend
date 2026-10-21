@@ -473,6 +473,9 @@ onMounted(() => {
 <template>
   <div v-if="ready" class="profile-page">
     <ProfilePageBreadcrumbs />
+    <p class="rooms-availability__mobile-note">
+      Этот раздел недоступен на экране мобильного устройства
+    </p>
     <div class="rooms-availability__toolbar-shell">
       <div class="rooms-availability__toolbar">
         <div class="rooms-availability__toolbar-controls">
@@ -687,6 +690,16 @@ onMounted(() => {
   box-sizing: border-box;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   overflow: hidden;
+}
+
+.rooms-availability__mobile-note {
+  display: none;
+  margin: 24px 0;
+  color: var(--wh-gray-900);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .rooms-availability__toolbar-shell {
@@ -1174,6 +1187,17 @@ onMounted(() => {
     max-height: none;
     overflow: visible;
     padding: 16px 20px 32px;
+  }
+
+  .rooms-availability__mobile-note {
+    display: block;
+  }
+
+  .rooms-availability__toolbar-shell,
+  .rooms-availability__status,
+  .rooms-availability__loading,
+  .rooms-availability__layout {
+    display: none;
   }
 
   .rooms-availability__toolbar-controls {
