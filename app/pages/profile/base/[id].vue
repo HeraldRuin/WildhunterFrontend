@@ -1782,14 +1782,14 @@ watch(activeEditTab, (tab) => {
                   no-margin
                 />
 
-                <label class="base-edit__pricing-toggle">
+                <!-- <label class="base-edit__pricing-toggle">
                   <input
                     v-model="editEnableExtraPrice"
                     type="checkbox"
                   >
                   <span class="base-edit__pricing-checkmark" />
                   <span class="base-edit__pricing-toggle-label">Включить дополнительную стоимость</span>
-                </label>
+                </label> -->
 
                 <div
                   v-if="editEnableExtraPrice"
