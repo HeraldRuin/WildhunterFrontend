@@ -1320,8 +1320,9 @@ const hasNewWeapon = computed(() =>
                 v-model="card.weapon.weapon_type_id"
                 label="Тип оружия"
                 placeholder="Добавить оружие"
+                empty-text="список пуст"
                 :options="weaponTypes"
-                :disabled="weaponTypesLoading || !weaponTypes.length"
+                :disabled="weaponTypesLoading"
                 :error="showWeaponFieldErrors(card.weapon, card.index)
                   ? (getFieldError('weapon_type_id') || weaponTypesError)
                   : ''"
@@ -1332,8 +1333,9 @@ const hasNewWeapon = computed(() =>
                 v-model="card.weapon.caliber"
                 label="Калибр"
                 placeholder="Добавить калибр"
+                empty-text="список пуст"
                 :options="calibers"
-                :disabled="calibersLoading || !calibers.length"
+                :disabled="calibersLoading"
                 :error="showWeaponFieldErrors(card.weapon, card.index)
                   ? (getFieldError('caliber_id') || calibersError)
                   : ''"
