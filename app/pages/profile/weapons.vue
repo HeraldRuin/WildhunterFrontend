@@ -23,6 +23,7 @@ type WeaponField =
   | 'hunter_billet_rf_subject'
   | 'hunter_billet_issue_date'
   | 'identity_document'
+  | 'birthday'
   | 'hunter_license_series'
   | 'hunter_license_number'
   | 'hunter_license_date'
@@ -203,11 +204,16 @@ function currentPatronymic() {
   return String(profile.value?.patronymic ?? '').trim()
 }
 
+function currentBirthday() {
+  return String(profile.value?.birthday ?? '').trim()
+}
+
 function serializeHunterBilletState() {
   return JSON.stringify({
     ...currentHunterBilletData(),
     identityDocument: currentIdentityDocument(),
     patronymic: currentPatronymic(),
+    birthday: currentBirthday(),
   })
 }
 
@@ -216,6 +222,7 @@ function parseHunterBilletSnapshot() {
     return JSON.parse(hunterBilletSnapshot.value || '{}') as Partial<HunterBilletData> & {
       identityDocument?: string
       patronymic?: string
+      birthday?: string
     }
   } catch {
     return {}
@@ -240,6 +247,11 @@ function isIdentityDocumentDirty() {
 function isPatronymicDirty() {
   const snap = parseHunterBilletSnapshot()
   return currentPatronymic() !== String(snap.patronymic ?? '').trim()
+}
+
+function isBirthdayDirty() {
+  const snap = parseHunterBilletSnapshot()
+  return currentBirthday() !== String(snap.birthday ?? '').trim()
 }
 
 const isHunterBilletDirty = computed(() => {
@@ -1012,8 +1024,9 @@ async function saveHunterBillet() {
   const billetDirty = isHunterBilletFieldsDirty()
   const identityDirty = isIdentityDocumentDirty()
   const patronymicDirty = isPatronymicDirty()
+  const birthdayDirty = isBirthdayDirty()
 
-  if (!billetDirty && !identityDirty && !patronymicDirty) {
+  if (!billetDirty && !identityDirty && !patronymicDirty && !birthdayDirty) {
     hunterBilletPreviewRef.value?.finishSave()
     return
   }
@@ -1021,6 +1034,7 @@ async function saveHunterBillet() {
   const billet = currentHunterBilletData()
   const identityDocument = currentIdentityDocument()
   const patronymic = currentPatronymic()
+  const birthday = currentBirthday()
 
   savingHunterBillet.value = true
 
@@ -1031,11 +1045,14 @@ async function saveHunterBillet() {
 
   try {
     // Сначала персональные данные через POST /user.
-    if (identityDirty || patronymicDirty || (billetDirty && identityDocument)) {
+    if (identityDirty || patronymicDirty || birthdayDirty || (billetDirty && identityDocument)) {
       const response = await saveProfile({
         email: profile.value.email,
         identity_document: identityDocument,
         patronymic,
+        ...(birthdayDirty
+          ? { birthday: birthday ? resolveLicenseDateForApi(birthday) : '' }
+          : {}),
       })
 
       if (!('success' in response) || !response.success) {
@@ -1046,9 +1063,11 @@ async function saveHunterBillet() {
       }
 
       clearFieldError('identity_document')
+      clearFieldError('birthday')
       patchCachedProfile({
         identity_document: identityDocument,
         patronymic,
+        ...(birthdayDirty ? { birthday } : {}),
       })
     }
 
