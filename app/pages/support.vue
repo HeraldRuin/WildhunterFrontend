@@ -20,7 +20,7 @@ useHead({
           src: 'https://chatrag.ru/embed.js',
           tagPosition: 'bodyClose',
           domain: 'https://chatrag.ru',
-          widgetKey: chatragWidgetKey,
+          'widget-key': chatragWidgetKey,
         },
       ]
     : [],
