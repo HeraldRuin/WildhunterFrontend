@@ -4,6 +4,8 @@ definePageMeta({
   path: '/support',
 })
 
+const { public: { chatragWidgetKey } } = useRuntimeConfig()
+
 useHead({
   title: 'Поддержка',
   meta: [
@@ -12,6 +14,16 @@ useHead({
       content: 'Напишите в службу поддержки Wild Hunter — мы проконсультируем вас и ответим на вопросы.',
     },
   ],
+  script: chatragWidgetKey
+    ? [
+        {
+          src: 'https://chatrag.ru/embed.js',
+          tagPosition: 'bodyClose',
+          domain: 'https://chatrag.ru',
+          widgetKey: chatragWidgetKey,
+        },
+      ]
+    : [],
 })
 
 const { contact } = useApi()

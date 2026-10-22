@@ -73,6 +73,7 @@ export default defineNuxtConfig({
 
       mapProvider: process.env.NUXT_PUBLIC_MAP_PROVIDER || 'leaflet',
       yandexMapsApiKey: process.env.NUXT_PUBLIC_YANDEX_MAPS_API_KEY || '',
+      chatragWidgetKey: process.env.NUXT_PUBLIC_CHATRAG_WIDGET_KEY || '',
     },
   },
   hooks: {
