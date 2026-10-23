@@ -5,6 +5,7 @@ import { kakStatOkhotnikomPolnoeRukovodstvoContent } from '~/content/blog/kak-st
 import { kogdaNachinaetsyaOkhotnichiySezon2026Content } from '~/content/blog/kogda-nachinaetsya-okhotnichiy-sezon-2026'
 import { kogdaZakanchivaetsyaSezonOkhoty2026Content } from '~/content/blog/kogda-zakanchivaetsya-sezon-okhoty-2026'
 import { kudaPoekhatNaOkhotuContent } from '~/content/blog/kuda-poekhat-na-okhotu'
+import { okhotnichiPorodySobakContent } from '~/content/blog/okhotnichi-porody-sobak'
 import { okhotaNaKosulyuPravilaSposobySekretyContent } from '~/content/blog/okhota-na-kosulyu-pravila-sposoby-sekrety'
 import { ohotnichiiTuryContent } from '~/content/blog/ohotnichii-tury'
 import { okhotaNaLosyaSposobySekretyTaktikaContent } from '~/content/blog/okhota-na-losya-sposoby-sekrety-taktika'
@@ -25,6 +26,16 @@ export type BlogPost = {
 }
 
 export const blogPosts: BlogPost[] = [
+  {
+    slug: 'okhotnichi-porody-sobak',
+    title: 'Охотничьи породы собак',
+    pageTitle: 'Охотничьи породы собак: выбор под разные виды охоты и основы начальной дрессировки в полевых условиях',
+    seoTitle: 'Охотничьи породы собак | wild-hunter.ru',
+    description: 'Ключевые особенности и классификация охотничьих пород ✔️ Критерии выбора породы под конкретный вид охоты ✔️ Содержание охотничьих собак в современных условиях',
+    date: '23.10.2026 г.',
+    image: '/images/blog/okhota-na-losya-laika.jpg',
+    content: okhotnichiPorodySobakContent,
+  },
   {
     slug: 'chto-takoe-zagonnaya-okhota',
     title: 'Что такое загонная охота',
