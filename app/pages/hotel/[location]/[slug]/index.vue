@@ -516,7 +516,7 @@ function handleRetryHotelLoad() {
                   <img
                     class="hotel-amenities__icon"
                     src="/icons/carbon_checkmark-filled.png"
-                    alt=""
+                    alt="Есть"
                     width="18"
                     height="18"
                     aria-hidden="true"

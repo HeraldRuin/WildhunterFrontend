@@ -96,7 +96,7 @@ async function handleSubmit() {
     <div v-if="!plain" class="community-block__media" aria-hidden="true">
       <img
         :src="variant === 'centered' ? '/images/communutu2-bg.jpg' : '/images/community-bg.png'"
-        alt=""
+        :alt="variant === 'centered' ? 'Охотничий лес' : 'Олень в поле'"
         loading="lazy"
       >
     </div>

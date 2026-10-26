@@ -157,6 +157,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     <SearchHero
       :title="heroTitle"
       background-image="/images/communutu2-bg.jpg"
+      background-alt="Охотничий лес"
       hide-search
     />
 

@@ -74,7 +74,7 @@ function toggleItem(id: number) {
               </span>
               <img
                 :src="openId === item.id ? faqIconMinus : faqIconPlus"
-                alt=""
+                :alt="openId === item.id ? 'Свернуть' : 'Развернуть'"
                 width="40"
                 height="40"
                 class="faq-block__icon"

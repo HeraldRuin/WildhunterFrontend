@@ -1,13 +1,15 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   title?: string
   hideSearch?: boolean
   backgroundImage?: string
+  backgroundAlt?: string
   loading?: boolean
 }>(), {
   title: undefined,
   hideSearch: false,
   backgroundImage: undefined,
+  backgroundAlt: '',
   loading: false,
 })
 
@@ -15,15 +17,6 @@ const emit = defineEmits<{
   search: [payload: Record<string, string>]
 }>()
 
-const backgroundStyle = computed(() => {
-  if (!props.backgroundImage) {
-    return undefined
-  }
-
-  return {
-    backgroundImage: `url(${props.backgroundImage})`,
-  }
-})
 </script>
 
 <template>
@@ -33,8 +26,13 @@ const backgroundStyle = computed(() => {
       'search-top--compact': hideSearch,
       'search-top--image': Boolean(backgroundImage),
     }"
-    :style="backgroundStyle"
   >
+    <img
+      v-if="backgroundImage"
+      class="search-top__bg"
+      :src="backgroundImage"
+      :alt="backgroundAlt"
+    >
     <div class="search-top__inner">
       <HomeHeroHeader />
 
@@ -76,9 +74,16 @@ const backgroundStyle = computed(() => {
 
 .search-top--image {
   background-color: transparent;
-  background-position: center 52%;
-  background-size: cover;
-  background-repeat: no-repeat;
+}
+
+.search-top__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 52%;
+  z-index: 0;
 }
 
 .search-top__inner {

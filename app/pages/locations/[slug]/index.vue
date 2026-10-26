@@ -381,6 +381,7 @@ function handleFiltersReset() {
     <SearchHero
       :title="locationName || 'Область'"
       background-image="/images/communutu2-bg.jpg"
+      background-alt="Охотничий лес"
       hide-search
     />
 

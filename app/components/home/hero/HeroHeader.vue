@@ -70,7 +70,7 @@ onUnmounted(() => {
       >
         <img
           src="/icons/material-symbols_menu-rounded.png"
-          alt=""
+          alt="Меню"
           width="34"
           height="34"
           aria-hidden="true"
