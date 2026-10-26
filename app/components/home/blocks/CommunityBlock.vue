@@ -162,8 +162,8 @@ async function handleSubmit() {
           </button>
 
           <div v-if="variant !== 'centered'" class="community-block__social">
-            <a href="https://t.me/wild_hunter_ru" class="community-block__social-btn">Telegram</a>
-            <a href="https://vk.ru/wild_hunter_ru" class="community-block__social-btn">vk</a>
+            <a href="https://t.me/wild_hunter_ru" class="community-block__social-btn" rel="nofollow">Telegram</a>
+            <a href="https://vk.ru/wild_hunter_ru" class="community-block__social-btn" rel="nofollow">vk</a>
           </div>
         </form>
       </div>
