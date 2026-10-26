@@ -182,7 +182,7 @@ function prefetchBasesPage() {
 
 @media (--wh-mobile) {
   .best-offers__track {
-    --best-offers-card-width: 345px;
+    --best-offers-card-width: 100%;
     --best-offers-card-height: 325px;
   }
 }
