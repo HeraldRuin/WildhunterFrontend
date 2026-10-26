@@ -607,16 +607,18 @@ function handleRetryHotelLoad() {
       class="hotel-page__map"
       aria-label="Расположение базы на карте"
     >
-      <SearchBasesMap
-        :lat="hotelMapPoint.lat"
-        :lng="hotelMapPoint.lng"
-        :zoom="12"
-        :markers="hotelMapMarkers"
-        :active-id="displayHotel.id"
-        :show-zoom-control="false"
-        :scroll-wheel-zoom="false"
-        :dragging="false"
-      />
+      <ClientOnly>
+        <SearchBasesMap
+          :lat="hotelMapPoint.lat"
+          :lng="hotelMapPoint.lng"
+          :zoom="12"
+          :markers="hotelMapMarkers"
+          :active-id="displayHotel.id"
+          :show-zoom-control="false"
+          :scroll-wheel-zoom="false"
+          :dragging="false"
+        />
+      </ClientOnly>
 
       <div
         v-if="hotelMapAddress || hotelMapCoordsLabel"
