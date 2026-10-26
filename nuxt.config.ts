@@ -116,6 +116,11 @@ export default defineNuxtConfig({
     },
   },
   routeRules: {
+    '/page/home-page-v2': { redirect: { to: '/', statusCode: 301 } },
+    '/page/space': { redirect: { to: '/', statusCode: 301 } },
+    '/page/polzovatelskoe-soglashenie': { redirect: { to: '/', statusCode: 301 } },
+    '/page/home-tour-agency': { redirect: { to: '/', statusCode: 301 } },
+    '/hotel': { redirect: { to: '/', statusCode: 301 } },
     '/profile': { ssr: false },
     '/profile/**': { ssr: false },
     '/rooms': { ssr: false },
