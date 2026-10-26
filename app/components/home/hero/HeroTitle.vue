@@ -1,9 +1,9 @@
 <template>
   <div class="hero-title">
-    <h1 class="hero-title__heading">
+    <p class="hero-title__heading">
       <span>Онлайн-платформа</span>
       <span>для настоящих <br class="hero-title__break">охотников</span>
-    </h1>
+    </p>
   </div>
 </template>
 
