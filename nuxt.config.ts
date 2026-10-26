@@ -17,6 +17,9 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
+      htmlAttrs: {
+        lang: 'ru',
+      },
       title: 'WH — Охотничьи базы',
       titleTemplate: '%s | wild-hunter.ru',
       link: [
