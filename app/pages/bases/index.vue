@@ -39,12 +39,18 @@ useHead({
 })
 
 const route = useRoute()
+const { params: basesSearchParams, setParams } = useBasesSearchParams()
 const { search: searchApi, hotels: hotelsApi, location: locationApi } = useApi()
 
 const DEFAULT_PRICE_BOUNDS = { min: 0, max: 15000 }
 const CATALOG_PER_PAGE = 12
 
 function queryString(key: string): string {
+  const stored = basesSearchParams.value[key as keyof typeof basesSearchParams.value]
+  if (stored) {
+    return stored
+  }
+
   const value = route.query[key]
   return Array.isArray(value) ? String(value[0] || '') : String(value || '')
 }
@@ -140,11 +146,11 @@ const searchRequest = computed(() => {
     : buildHotelSearchBody({
         filters: filters.value,
         priceBounds: priceBounds.value,
-        locationId: route.query.location ? Number(route.query.location) : undefined,
-        animalId: route.query.animal ? Number(route.query.animal) : undefined,
+        locationId: queryString('location') ? Number(queryString('location')) : undefined,
+        animalId: queryString('animal') ? Number(queryString('animal')) : undefined,
         checkIn: parseDisplayDateToApiDate(queryString('checkIn')) || undefined,
         checkOut: parseDisplayDateToApiDate(queryString('checkOut')) || undefined,
-        adults: route.query.guests ? Number(route.query.guests) : undefined,
+        adults: queryString('guests') ? Number(queryString('guests')) : undefined,
       })
 
   return {
@@ -359,19 +365,6 @@ watch(totalPages, (pages) => {
   }
 })
 
-function toSearchQuery(payload: Record<string, string>) {
-  const query: Record<string, string> = {}
-
-  for (const key of ['location', 'animal', 'checkIn', 'checkOut', 'guests'] as const) {
-    const value = payload[key]?.trim()
-    if (value) {
-      query[key] = value
-    }
-  }
-
-  return query
-}
-
 async function handleSearch(payload: Record<string, string>) {
   if (isButtonSearching.value) {
     return
@@ -381,10 +374,10 @@ async function handleSearch(payload: Record<string, string>) {
   isButtonSearching.value = true
 
   try {
-    await navigateTo({
-      path: '/bases',
-      query: toSearchQuery(payload),
-    })
+    setParams(payload)
+    if (route.fullPath !== '/bases') {
+      await navigateTo('/bases')
+    }
     await refresh()
   }
   finally {
@@ -591,7 +584,7 @@ function handleMapOpen(id: number) {
           </span>
           <NuxtLink
             v-else
-            :to="{ path: '/bases/map', query: route.query }"
+            to="/bases/map"
             class="bases-page__toolbar-link bases-page__map-link"
           >
             Показать на карте

@@ -16,6 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const { params: basesSearchParams } = useBasesSearchParams()
 const { location: locationApi, animals: animalsApi } = useApi()
 
 const maxAdults = 20
@@ -27,11 +28,25 @@ function getDefaultCheckIn() {
 const stayMinDate = computed(() => getDefaultCheckIn())
 
 function queryString(key: string): string {
+  if (route.path === '/bases' || route.path.startsWith('/bases/')) {
+    const stored = basesSearchParams.value[key as keyof typeof basesSearchParams.value]
+    if (stored) {
+      return stored
+    }
+  }
+
   const value = route.query[key]
   return Array.isArray(value) ? String(value[0] || '') : String(value || '')
 }
 
 function hasSearchQuery() {
+  if (route.path === '/bases' || route.path.startsWith('/bases/')) {
+    const stored = basesSearchParams.value
+    if (stored.location || stored.animal || stored.checkIn || stored.checkOut || stored.guests) {
+      return true
+    }
+  }
+
   return (
     'location' in route.query
     || 'animal' in route.query
@@ -79,6 +94,11 @@ watch(
     route.query.checkIn,
     route.query.checkOut,
     route.query.guests,
+    basesSearchParams.value.location,
+    basesSearchParams.value.animal,
+    basesSearchParams.value.checkIn,
+    basesSearchParams.value.checkOut,
+    basesSearchParams.value.guests,
   ],
   () => {
     hydrateFromRoute()

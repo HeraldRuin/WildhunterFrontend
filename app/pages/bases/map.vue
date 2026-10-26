@@ -15,21 +15,24 @@ useHead({
 })
 
 const route = useRoute()
+const { params: basesSearchParams, setParams } = useBasesSearchParams()
 const { search: searchApi, hotels: hotelsApi, location: locationApi } = useApi()
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
   { label: 'Главная', to: '/' },
   {
     label: 'Базы',
-    to: {
-      path: '/bases',
-      query: route.query,
-    },
+    to: '/bases',
   },
   { label: 'Карта' },
 ])
 
 function queryString(key: string): string {
+  const stored = basesSearchParams.value[key as keyof typeof basesSearchParams.value]
+  if (stored) {
+    return stored
+  }
+
   const value = route.query[key]
   return Array.isArray(value) ? String(value[0] || '') : String(value || '')
 }
@@ -41,12 +44,12 @@ const searchRequest = computed(() => {
   const body: HotelSearchBody = {}
 
   if (!catalog) {
-    if (route.query.location) {
-      body.location_id = Number(route.query.location)
+    if (queryString('location')) {
+      body.location_id = Number(queryString('location'))
     }
 
-    if (route.query.animal) {
-      body.animal_id = Number(route.query.animal)
+    if (queryString('animal')) {
+      body.animal_id = Number(queryString('animal'))
     }
 
     const checkIn = parseDisplayDateToApiDate(queryString('checkIn'))
@@ -59,15 +62,22 @@ const searchRequest = computed(() => {
       body.check_out = checkOut
     }
 
-    if (route.query.guests) {
-      body.adults = Number(route.query.guests)
+    if (queryString('guests')) {
+      body.adults = Number(queryString('guests'))
     }
   }
 
   return {
     catalog,
     body,
-    key: route.fullPath,
+    key: [
+      basesSearchParams.value.location,
+      basesSearchParams.value.animal,
+      basesSearchParams.value.checkIn,
+      basesSearchParams.value.checkOut,
+      basesSearchParams.value.guests,
+      route.fullPath,
+    ].join('|'),
   }
 })
 
@@ -155,27 +165,14 @@ watch(
   },
 )
 
-function toSearchQuery(payload: Record<string, string>) {
-  const query: Record<string, string> = {}
-
-  for (const key of ['location', 'animal', 'checkIn', 'checkOut', 'guests'] as const) {
-    const value = payload[key]?.trim()
-    if (value) {
-      query[key] = value
-    }
-  }
-
-  return query
-}
-
 async function handleSearch(payload: Record<string, string>) {
   isLoading.value = true
 
   try {
-    await navigateTo({
-      path: '/bases/map',
-      query: toSearchQuery(payload),
-    })
+    setParams(payload)
+    if (route.path !== '/bases/map') {
+      await navigateTo('/bases/map')
+    }
     await loadMapHotels()
   }
   catch {

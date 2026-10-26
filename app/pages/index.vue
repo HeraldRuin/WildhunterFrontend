@@ -50,6 +50,7 @@ const { data: reviewItems } = useAsyncData(
 )
 
 const isSearching = ref(false)
+const { setParams } = useBasesSearchParams()
 
 async function handleSearch(payload: Record<string, string>) {
   if (isSearching.value) {
@@ -59,10 +60,8 @@ async function handleSearch(payload: Record<string, string>) {
   isSearching.value = true
 
   try {
-    await navigateTo({
-      path: '/bases',
-      query: payload,
-    })
+    setParams(payload)
+    await navigateTo('/bases')
   }
   catch {
     isSearching.value = false

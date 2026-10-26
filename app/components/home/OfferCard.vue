@@ -11,8 +11,16 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
+const { params: basesSearchParams } = useBasesSearchParams()
 
 function queryParam(key: string): string {
+  if (route.path.startsWith('/bases')) {
+    const stored = basesSearchParams.value[key as keyof typeof basesSearchParams.value]
+    if (stored) {
+      return stored
+    }
+  }
+
   const raw = route.query[key]
   return Array.isArray(raw) ? String(raw[0] || '') : String(raw || '')
 }
