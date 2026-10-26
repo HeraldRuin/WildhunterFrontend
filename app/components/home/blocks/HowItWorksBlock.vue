@@ -70,6 +70,7 @@ const steps = [
                   :y1="index % 2 === 0 ? 19 : 111"
                   :x2="100"
                   :y2="index % 2 === 0 ? 111 : 19"
+                  vector-effect="non-scaling-stroke"
                 />
               </svg>
 
@@ -78,7 +79,7 @@ const steps = [
                 viewBox="0 0 100 100"
                 preserveAspectRatio="none"
               >
-                <line x1="50" y1="0" x2="50" y2="100" />
+                <line x1="50" y1="0" x2="50" y2="100" vector-effect="non-scaling-stroke" />
               </svg>
             </div>
           </div>
@@ -203,7 +204,6 @@ const steps = [
   stroke: currentColor;
   stroke-width: 2;
   stroke-dasharray: 5 5;
-  vector-effect: non-scaling-stroke;
 }
 
 .how-it-works__text {
