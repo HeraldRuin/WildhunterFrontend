@@ -189,10 +189,6 @@ const steps = [
   overflow: visible;
 }
 
-.how-it-works__line line {
-  vector-effect: non-scaling-stroke;
-}
-
 .how-it-works__arrow {
   flex-shrink: 0;
 }
