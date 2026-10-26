@@ -29,7 +29,18 @@ export async function fetchHotelDetail(params: HotelDetailParams): Promise<Hotel
       }
     }
   }
-  catch {
+  catch (error: unknown) {
+    const statusCode = error && typeof error === 'object' && 'statusCode' in error
+      ? Number((error as { statusCode?: number }).statusCode)
+      : 0
+
+    if (statusCode === 404) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Страница не найдена',
+        fatal: true,
+      })
+    }
   }
 
   return null
@@ -78,7 +89,6 @@ export function useHotelDetail(params: MaybeRefOrGetter<HotelDetailParams>) {
     () => fetchHotelDetail(resolved.value),
     {
       watch: [resolved],
-      lazy: true,
       getCachedData: (key, nuxtApp) => getCachedHotelData(key, nuxtApp),
     },
   )

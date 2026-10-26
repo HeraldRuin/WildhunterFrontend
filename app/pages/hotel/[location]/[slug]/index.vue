@@ -21,7 +21,29 @@ const hotelParams = computed(() => ({
   hotelSlug: String(route.params.slug || ''),
 }))
 
-const { data: hotel, pending: hotelPending, refresh: refreshHotel } = useHotelDetail(hotelParams)
+const { data: hotel, pending: hotelPending, error: hotelError, refresh: refreshHotel } = await useHotelDetail(hotelParams)
+
+function throwHotelNotFound() {
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Страница не найдена',
+    fatal: true,
+  })
+}
+
+if (hotelError.value?.statusCode === 404) {
+  throwHotelNotFound()
+}
+
+watch(hotelError, (error) => {
+  if (error?.statusCode === 404) {
+    showError({
+      statusCode: 404,
+      statusMessage: 'Страница не найдена',
+      fatal: true,
+    })
+  }
+})
 const placeholderHotel = computed(() => createMockHotelDetail(hotelParams.value))
 const isHotelLoading = computed(() => hotelPending.value && !hotel.value)
 const hasHotelError = computed(() => !hotelPending.value && !hotel.value)
