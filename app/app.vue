@@ -35,6 +35,11 @@ useHead(() => {
   }
 
   return {
+    meta: [{
+      name: 'robots',
+      key: 'robots',
+      content: 'index, follow',
+    }],
     link: [{
       rel: 'canonical',
       key: 'canonical',
