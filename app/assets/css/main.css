@@ -165,3 +165,7 @@ select {
   background-color: #e8883a !important;
   color: #ffffff !important;
 }
+
+#chatbase-widget .cb-powered {
+  display: none !important;
+}
