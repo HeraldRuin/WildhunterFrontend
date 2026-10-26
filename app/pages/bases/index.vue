@@ -566,7 +566,10 @@ function handleMapOpen(id: number) {
             Фильтры
           </button>
 
-          <p class="bases-page__title">
+          <p
+            v-show="isResultsLoading || offerItems.length > 0"
+            class="bases-page__title"
+          >
             <span>Найдено баз:</span>
             <span
               class="bases-page__count"
@@ -819,10 +822,12 @@ function handleMapOpen(id: number) {
 
 .bases-page__filters-btn {
   display: none;
+  grid-column: 1;
   justify-self: start;
 }
 
 .bases-page__map-link {
+  grid-column: 3;
   justify-self: end;
 }
 
