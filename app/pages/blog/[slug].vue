@@ -37,6 +37,7 @@ function onBodyClick(event: MouseEvent) {
 }
 
 useHead({
+  titleTemplate: '%s',
   title: post.seoTitle || pageTitle,
   meta: [
     {

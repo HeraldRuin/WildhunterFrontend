@@ -29,6 +29,7 @@ definePageMeta({
 })
 
 useHead({
+  titleTemplate: '%s',
   title: 'Охотничьи туры в России | wild-hunter.ru',
   meta: [
     {

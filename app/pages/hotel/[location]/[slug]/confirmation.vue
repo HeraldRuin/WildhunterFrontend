@@ -62,6 +62,7 @@ const isPreview = computed(() => {
 })
 
 useHead(() => ({
+  titleTemplate: '%s',
   title: isPreview.value
     ? 'Подтверждение бронирования — WH'
     : 'Бронирование отправлено — WH',

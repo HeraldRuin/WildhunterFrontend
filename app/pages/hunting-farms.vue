@@ -14,6 +14,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ]
 
 useHead({
+  titleTemplate: '%s',
   title: 'Добавить охотхозяйство в каталог | wild-hunter.ru',
   meta: [
     {

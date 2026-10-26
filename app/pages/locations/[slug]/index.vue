@@ -244,6 +244,7 @@ const locationSeo = computed(() => locationSeoBySlug[locationSlug.value] ?? null
 useHead(() => {
   if (locationSeo.value) {
     return {
+      titleTemplate: '%s',
       title: locationSeo.value.title,
       meta: [
         {
@@ -255,6 +256,7 @@ useHead(() => {
   }
 
   return {
+    titleTemplate: '%s',
     title: locationName.value
       ? `${locationName.value} — WH`
       : 'Область — WH',

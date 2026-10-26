@@ -112,6 +112,7 @@ const locationName = computed(() => {
 })
 
 useHead(() => ({
+  titleTemplate: '%s',
   title: locationName.value
     ? `${locationName.value} — карта — WH`
     : 'Базы на карте — WH',

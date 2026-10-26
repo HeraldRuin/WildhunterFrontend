@@ -4,6 +4,7 @@ definePageMeta({
 })
 
 useHead({
+  titleTemplate: '%s',
   title: 'Согласие на обработку персональных данных',
   meta: [
     {

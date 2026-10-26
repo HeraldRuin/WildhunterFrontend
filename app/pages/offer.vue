@@ -4,6 +4,7 @@ definePageMeta({
 })
 
 useHead({
+  titleTemplate: '%s',
   title: 'Оферта',
   meta: [
     {

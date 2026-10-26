@@ -3,6 +3,10 @@ definePageMeta({
   layout: 'home',
 })
 
+useHead({
+  title: 'Организуйте охоту с понятными расходами для каждого',
+})
+
 const { reviews, location, hotels } = useApi()
 
 function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {

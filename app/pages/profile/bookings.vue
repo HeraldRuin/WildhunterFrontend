@@ -16,6 +16,7 @@ definePageMeta({
 })
 
 useHead({
+  titleTemplate: '%s',
   title: 'Бронирования — WH',
 })
 

@@ -14,6 +14,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ]
 
 useHead({
+  titleTemplate: '%s',
   title: 'Для охотников',
   meta: [
     {

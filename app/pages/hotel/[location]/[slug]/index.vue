@@ -104,6 +104,7 @@ const breadcrumbs = computed(() => {
 })
 
 useHead({
+  titleTemplate: '%s',
   title: pageTitle,
 })
 

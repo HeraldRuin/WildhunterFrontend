@@ -5,6 +5,7 @@ definePageMeta({
 })
 
 useHead({
+  titleTemplate: '%s',
   title: 'Изменить пароль — WH',
 })
 

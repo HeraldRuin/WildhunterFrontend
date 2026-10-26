@@ -545,6 +545,7 @@ watch(
 const showForm = computed(() => isCreateMode.value || Boolean(hotel.value))
 
 useHead({
+  titleTemplate: '%s',
   title: () => `${pageTitle.value} — WH`,
 })
 

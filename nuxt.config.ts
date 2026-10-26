@@ -18,6 +18,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'WH — Охотничьи базы',
+      titleTemplate: '%s | wild-hunter.ru',
       link: [
         {
           rel: 'icon',

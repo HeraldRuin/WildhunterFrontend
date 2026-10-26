@@ -12,6 +12,7 @@ definePageMeta({
 })
 
 useHead({
+  titleTemplate: '%s',
   title: 'Трофеи и штрафы — WH',
 })
 

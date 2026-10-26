@@ -8,6 +8,7 @@ definePageMeta({
 })
 
 useHead({
+  titleTemplate: '%s',
   title: 'Избранное — WH',
 })
 

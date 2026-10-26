@@ -7,6 +7,7 @@ definePageMeta({
 setResponseStatus(404)
 
 useHead({
+  titleTemplate: '%s',
   title: '404 — Страница не найдена',
 })
 </script>

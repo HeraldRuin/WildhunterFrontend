@@ -13,6 +13,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ]
 
 useHead({
+  titleTemplate: '%s',
   title: 'Блог',
   meta: [
     {

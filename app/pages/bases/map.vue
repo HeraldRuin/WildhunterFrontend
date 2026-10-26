@@ -11,6 +11,7 @@ definePageMeta({
 })
 
 useHead({
+  titleTemplate: '%s',
   title: 'Базы на карте — WH',
 })
 

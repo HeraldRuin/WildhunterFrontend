@@ -365,6 +365,7 @@ watch(
 )
 
 useHead({
+  titleTemplate: '%s',
   title: () => `${pageTitle.value} — WH`,
 })
 

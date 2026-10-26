@@ -10,6 +10,7 @@ definePageMeta({
 })
 
 useHead({
+  titleTemplate: '%s',
   title: 'Организация охоты — WH',
 })
 

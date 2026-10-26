@@ -7,6 +7,7 @@ definePageMeta({
 })
 
 useHead({
+  titleTemplate: '%s',
   title: 'Животные — WH',
 })
 

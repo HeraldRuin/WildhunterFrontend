@@ -47,6 +47,7 @@ if (import.meta.client && isBaseAdmin.value) {
 }
 
 useHead({
+  titleTemplate: '%s',
   title: 'Лицензия на оружие — WH',
 })
 
