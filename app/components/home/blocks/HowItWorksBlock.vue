@@ -50,13 +50,13 @@ const steps = [
             >
               <div class="how-it-works__connector-desktop">
                 <svg class="how-it-works__line" viewBox="0 0 100 2" preserveAspectRatio="none" aria-hidden="true">
-                  <line x1="0" y1="1" x2="100" y2="1" pathLength="100" stroke="currentColor" stroke-width="2" stroke-dasharray="18 8" vector-effect="non-scaling-stroke" />
+                  <line x1="0" y1="1" x2="100" y2="1" stroke="currentColor" stroke-width="2" stroke-dasharray="18 8" vector-effect="non-scaling-stroke" />
                 </svg>
                 <svg class="how-it-works__arrow" width="8" height="10" viewBox="0 0 8 10" aria-hidden="true">
                   <path d="M1 1l5 4-5 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
                 <svg class="how-it-works__line" viewBox="0 0 100 2" preserveAspectRatio="none" aria-hidden="true">
-                  <line x1="0" y1="1" x2="100" y2="1" pathLength="100" stroke="currentColor" stroke-width="2" stroke-dasharray="18 8" vector-effect="non-scaling-stroke" />
+                  <line x1="0" y1="1" x2="100" y2="1" stroke="currentColor" stroke-width="2" stroke-dasharray="18 8" vector-effect="non-scaling-stroke" />
                 </svg>
               </div>
 

@@ -110,7 +110,7 @@ async function handleSubmit() {
       </div>
     </section>
 
-    <main class="support-content container">
+    <div class="support-content container">
       <h1>Поддержка</h1>
       <p class="support-content__lead">
         Напишите нам, и мы проконсультируем вас и ответим на вопросы.
@@ -170,7 +170,7 @@ async function handleSubmit() {
           Отправить
         </CommonSaveButton>
       </form>
-    </main>
+    </div>
 
     <LayoutAppFooter />
   </div>

@@ -80,7 +80,7 @@ async function handleSearch(payload: Record<string, string>) {
       </div>
     </section>
 
-    <main class="blog-article__main">
+    <div class="blog-article__main">
       <div class="container blog-article__frame">
         <AppBreadcrumbs
           :items="breadcrumbs"
@@ -107,7 +107,7 @@ async function handleSearch(payload: Record<string, string>) {
         />
         </div>
       </div>
-    </main>
+    </div>
 
     <LayoutAppFooter />
   </div>

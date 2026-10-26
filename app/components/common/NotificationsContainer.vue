@@ -25,7 +25,8 @@ const icons: Record<NotificationType, { path: string, viewBox?: string }> = {
 
 <template>
   <Teleport to="body">
-    <TransitionGroup name="notif" tag="div" class="notif-container">
+    <div class="notif-container">
+    <TransitionGroup name="notif">
       <div
         v-for="n in notifications"
         :key="n.id"
@@ -76,6 +77,7 @@ const icons: Record<NotificationType, { path: string, viewBox?: string }> = {
         </button>
       </div>
     </TransitionGroup>
+    </div>
   </Teleport>
 </template>
 

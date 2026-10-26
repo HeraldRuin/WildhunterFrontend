@@ -1668,7 +1668,6 @@ onMounted(() => {
 .hotel-booking-confirm__card {
   position: relative;
   width: 480px;
-  min-width: min(100%, var(--wh-auth-modal-width));
   max-width: 100%;
   padding: 56px 36px 36px;
   border-radius: var(--wh-radius);

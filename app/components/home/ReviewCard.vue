@@ -77,6 +77,7 @@ onUnmounted(() => {
         <div
           v-if="normalizedRating > 0 || item.ratingText"
           class="review-card__rating"
+          role="img"
           :aria-label="`Рейтинг: ${normalizedRating} из ${maxRating}`"
         >
           <div v-if="normalizedRating > 0" class="review-card__stars">

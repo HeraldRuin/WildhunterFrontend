@@ -56,7 +56,7 @@ async function handleSearch(payload: Record<string, string>) {
       </div>
     </section>
 
-    <main class="blog-listing">
+    <div class="blog-listing">
       <!-- <div class="blog-listing__bg" aria-hidden="true" /> -->
       <div class="container blog-listing__frame">
         <AppBreadcrumbs
@@ -95,7 +95,7 @@ async function handleSearch(payload: Record<string, string>) {
         </div>
         </div>
       </div>
-    </main>
+    </div>
 
     <LayoutAppFooter />
   </div>

@@ -480,7 +480,7 @@ watch(isOpen, (open) => {
 .register-modal__card {
   position: relative;
   width: 789px;
-  min-width: min(100%, var(--wh-auth-modal-width));
+  max-width: 100%;
   padding: 40px 36px 32px;
   border-radius: var(--wh-radius);
   background: var(--wh-white);

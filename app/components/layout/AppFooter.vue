@@ -44,7 +44,7 @@ const legalLinks = [
           :key="column.title"
           class="footer__column"
         >
-          <h4 class="footer__title">
+          <h3 class="footer__title">
             <NuxtLink
               v-if="column.to"
               :to="column.to"
@@ -55,7 +55,7 @@ const legalLinks = [
             <template v-else>
               {{ column.title }}
             </template>
-          </h4>
+          </h3>
           <NuxtLink
             v-for="link in column.links"
             :key="link.to"
@@ -67,7 +67,7 @@ const legalLinks = [
         </div>
 
         <div class="footer__column">
-          <h4 class="footer__title">Контакты</h4>
+          <h3 class="footer__title">Контакты</h3>
           <a href="tel:+74994509596" class="footer__link">8 (499) 450-95-96</a>
           <a href="mailto:online@wild-hunter.ru" class="footer__link">online@wild-hunter.ru</a>
           <a href="mailto:wh.online@yandex.ru" class="footer__link">wh.online@yandex.ru</a>
@@ -75,10 +75,10 @@ const legalLinks = [
         </div>
 
         <div class="footer__column footer__column--social">
-          <h4 class="footer__title">
+          <h3 class="footer__title">
             Присоединиться<br>
             к нашему сообществу
-          </h4>
+          </h3>
           <div class="footer__socials">
             <LayoutAppSocialLinks />
           </div>

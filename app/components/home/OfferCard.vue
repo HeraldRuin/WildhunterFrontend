@@ -298,9 +298,10 @@ async function handleFavoriteClick(event: MouseEvent) {
 </script>
 
 <template>
+  <div class="offer-card">
   <NuxtLink
     :to="hotelLink"
-    class="offer-card"
+    class="offer-card__link"
     @mouseenter="prefetchTargetPage"
     @focus="prefetchTargetPage"
   >
@@ -309,27 +310,6 @@ async function handleFavoriteClick(event: MouseEvent) {
       <div v-else-if="showCustomPlaceholder" class="offer-card__placeholder" aria-hidden="true">
         <span>Фото отсутствует</span>
       </div>
-      <button
-        v-if="!isBaseAdmin"
-        type="button"
-        class="offer-card__favorite"
-        :class="{ 'offer-card__favorite--active': isFavorite }"
-        :aria-label="isFavorite ? 'Убрать из избранного' : 'В избранное'"
-        :aria-pressed="isFavorite"
-        :disabled="isFavoriteLoading"
-        @click="handleFavoriteClick"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-            fill="currentColor"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
       <div
         v-if="item.location || item.rating > 0"
         class="offer-card__rating"
@@ -389,10 +369,33 @@ async function handleFavoriteClick(event: MouseEvent) {
       </div>
     </div>
   </NuxtLink>
+  <button
+    v-if="!isBaseAdmin"
+    type="button"
+    class="offer-card__favorite"
+    :class="{ 'offer-card__favorite--active': isFavorite }"
+    :aria-label="isFavorite ? 'Убрать из избранного' : 'В избранное'"
+    :aria-pressed="isFavorite"
+    :disabled="isFavoriteLoading"
+    @click="handleFavoriteClick"
+  >
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+        fill="currentColor"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
+  </div>
 </template>
 
 <style scoped>
 .offer-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -401,6 +404,14 @@ async function handleFavoriteClick(event: MouseEvent) {
   border: 1px solid var(--wh-gray-200);
   border-radius: var(--wh-radius);
   background: #ffffff;
+}
+
+.offer-card__link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
 }
 
 .offer-card__media {
