@@ -506,15 +506,16 @@ async function handleFavoriteClick(event: MouseEvent) {
   position: absolute;
   right: 14px;
   bottom: 14px;
+  left: 14px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
-  max-width: calc(100% - 28px);
 }
 
 .offer-card__score-row {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 6px;
 }
@@ -539,6 +540,8 @@ async function handleFavoriteClick(event: MouseEvent) {
 .offer-card__location-badge {
   margin: 0;
   max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 400;
