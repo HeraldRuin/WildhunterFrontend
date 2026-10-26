@@ -60,6 +60,9 @@ const hoverRating = ref(0)
 const galleryItems = ref<GalleryItem[]>([])
 const galleryInputRef = ref<HTMLInputElement | null>(null)
 const selectedGalleryIndex = ref<number | null>(null)
+const mainPhoto = ref<GalleryItem | null>(null)
+const mainPhotoInputRef = ref<HTMLInputElement | null>(null)
+const mainPhotoSelected = ref(false)
 const attributeGroups = ref<HotelRoomAttribute[]>([])
 const attributesLoading = ref(false)
 const attributesError = ref('')
@@ -336,6 +339,44 @@ function openGalleryPicker() {
   galleryInputRef.value?.click()
 }
 
+function openMainPhotoPicker() {
+  mainPhotoInputRef.value?.click()
+}
+
+function revokePhotoBlob(item: GalleryItem | null | undefined) {
+  if (item?.url.startsWith('blob:')) {
+    URL.revokeObjectURL(item.url)
+  }
+}
+
+function onMainPhotoSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = Array.from(input.files ?? []).find(item => item.type.startsWith('image/'))
+  input.value = ''
+
+  if (!file) {
+    return
+  }
+
+  revokePhotoBlob(mainPhoto.value)
+  mainPhoto.value = {
+    id: null,
+    url: URL.createObjectURL(file),
+    file,
+  }
+  mainPhotoSelected.value = false
+}
+
+function toggleMainPhotoSelected() {
+  mainPhotoSelected.value = !mainPhotoSelected.value
+}
+
+function removeMainPhoto() {
+  revokePhotoBlob(mainPhoto.value)
+  mainPhoto.value = null
+  mainPhotoSelected.value = false
+}
+
 function onGalleryFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement
   const files = Array.from(input.files ?? []).filter(file => file.type.startsWith('image/'))
@@ -425,6 +466,26 @@ async function uploadPendingGalleryItems() {
   }
 
   galleryItems.value = nextItems
+}
+
+async function uploadPendingMainPhoto() {
+  const item = mainPhoto.value
+  if (!item || item.id != null || !item.file) {
+    return
+  }
+
+  const uploaded = await mediaApi.store(item.file)
+  const previousUrl = item.url
+
+  mainPhoto.value = {
+    id: uploaded.id,
+    url: uploaded.url || item.url,
+    file: null,
+  }
+
+  if (previousUrl.startsWith('blob:')) {
+    URL.revokeObjectURL(previousUrl)
+  }
 }
 
 const pageTitle = computed(() => {
@@ -835,6 +896,8 @@ function revokeGalleryBlobUrls() {
       URL.revokeObjectURL(item.url)
     }
   }
+
+  revokePhotoBlob(mainPhoto.value)
 }
 
 function resetForm() {
@@ -844,6 +907,8 @@ function resetForm() {
   editContent.value = ''
   hoverRating.value = 0
   galleryItems.value = []
+  mainPhoto.value = null
+  mainPhotoSelected.value = false
   selectedGalleryIndex.value = null
   selectedTermIds.value = []
   selectedHuntingMethodIds.value = []
@@ -907,6 +972,7 @@ function fillFormFromHotel(item: ManagedHotelDetail) {
   editRating.value = Math.min(5, Math.max(0, Math.round(Number(item.star_rate) || 0)))
   editContent.value = item.content ?? ''
   selectedGalleryIndex.value = null
+  mainPhotoSelected.value = false
 
   const galleryFromApi = (item.gallery ?? [])
     .map((galleryItem) => {
@@ -949,6 +1015,24 @@ function fillFormFromHotel(item: ManagedHotelDetail) {
   }
   else {
     galleryItems.value = []
+  }
+
+  if (shouldShowOfferImage(item.image_url)) {
+    mainPhoto.value = {
+      id: item.image_id ?? extractMediaIdFromUrl(item.image_url),
+      url: item.image_url!,
+      file: null,
+    }
+  }
+  else if (item.image_id) {
+    mainPhoto.value = {
+      id: item.image_id,
+      url: '',
+      file: null,
+    }
+  }
+  else {
+    mainPhoto.value = null
   }
 
   policyItemIdSeq = 0
@@ -1016,10 +1100,7 @@ function fillFormFromHotel(item: ManagedHotelDetail) {
 function buildSavePayload(galleryIds: number[]): HotelManageUpdatePayload {
   const current = hotel.value
   const uniqueGalleryIds = uniquePositiveIds(galleryIds)
-  const currentImageId = current?.image_id ?? null
-  const imageId = uniqueGalleryIds.includes(currentImageId ?? -1)
-    ? currentImageId
-    : (uniqueGalleryIds[0] ?? null)
+  const imageId = mainPhoto.value?.id ?? null
 
   return {
     title: editTitle.value.trim(),
@@ -1079,6 +1160,7 @@ async function saveHotel() {
   isSaving.value = true
 
   try {
+    await uploadPendingMainPhoto()
     await uploadPendingGalleryItems()
 
     const galleryIds = galleryItems.value.map(item => item.id)
@@ -1391,6 +1473,72 @@ watch(activeEditTab, (tab) => {
                   no-margin
                 />
               </div>
+
+              <section class="base-edit__gallery" aria-label="Главное фото">
+                <h3 class="base-edit__gallery-title">Главное фото</h3>
+
+                <div
+                  v-if="mainPhoto?.url"
+                  class="base-edit__gallery-item"
+                  :class="{ 'base-edit__gallery-item--selected': mainPhotoSelected }"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Главное фото"
+                  @click="toggleMainPhotoSelected"
+                  @keydown.enter.prevent="toggleMainPhotoSelected"
+                  @keydown.space.prevent="toggleMainPhotoSelected"
+                >
+                  <img
+                    :src="mainPhoto.url"
+                    alt="Главное фото"
+                    class="base-edit__gallery-image"
+                  >
+                  <button
+                    v-if="mainPhotoSelected"
+                    type="button"
+                    class="base-edit__gallery-remove"
+                    aria-label="Удалить главное фото"
+                    @click.stop="removeMainPhoto"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M9 3.75A1.75 1.75 0 0 1 10.75 2h2.5A1.75 1.75 0 0 1 15 3.75V5h3.25a.75.75 0 0 1 0 1.5H5.75a.75.75 0 0 1 0-1.5H9V3.75Zm1.5.25v1h3v-1a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z" />
+                      <path d="M6.3 8.05c.08-.33.38-.55.72-.55h10c.34 0 .64.22.72.55l1.05 12.1A2.25 2.25 0 0 1 16.55 22.5H7.45a2.25 2.25 0 0 1-2.24-2.4L6.3 8.05Zm3.45 2.7a.75.75 0 0 0-1.5.1l.4 7a.75.75 0 0 0 1.5-.09l-.4-7Zm5.5-.1a.75.75 0 0 0-1.5.09l.4 7a.75.75 0 0 0 1.5-.1l-.4-7Z" />
+                    </svg>
+                  </button>
+                </div>
+
+                <input
+                  ref="mainPhotoInputRef"
+                  type="file"
+                  class="base-edit__gallery-input"
+                  accept="image/*"
+                  @change="onMainPhotoSelected"
+                >
+
+                <button
+                  type="button"
+                  class="base-edit__gallery-btn"
+                  @click="openMainPhotoPicker"
+                >
+                  <svg
+                    class="base-edit__gallery-btn-icon"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                      d="M12 8v8M8 12h8"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  Загрузить главное фото
+                </button>
+              </section>
 
               <section class="base-edit__gallery" aria-label="Галерея">
                 <h3 class="base-edit__gallery-title">Галерея</h3>
