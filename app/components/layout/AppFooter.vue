@@ -278,6 +278,7 @@ const legalLinks = [
 
   .footer__title {
     margin-bottom: 4px;
+    font-size: clamp(14px, 4.4vw, 20px);
   }
 
   .footer__column--social {
@@ -290,6 +291,7 @@ const legalLinks = [
 
   .footer__column--social .footer__title {
     max-width: none;
+    font-size: 20px;
   }
 
   .footer__socials {
