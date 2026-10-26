@@ -9,16 +9,14 @@ const requestHostname = useRequestURL().hostname
 const requestEvent = import.meta.server ? useRequestEvent() : null
 
 function canonicalHref(path: string) {
-  const collapsed = path.replace(/\/{2,}/g, '/') || '/'
-  const withoutTrailingSlash = collapsed.length > 1
-    ? collapsed.replace(/\/+$/, '')
-    : '/'
+  const collapsed = path.replace(/\/{2,}/g, '/').toLowerCase() || '/'
+  const bare = collapsed.length > 1 ? collapsed.replace(/\/+$/, '') : '/'
 
-  if (withoutTrailingSlash === '/') {
+  if (bare === '/') {
     return 'https://wild-hunter.ru'
   }
 
-  return `https://wild-hunter.ru${withoutTrailingSlash}`
+  return `https://wild-hunter.ru${bare}/`
 }
 
 useHead(() => {
