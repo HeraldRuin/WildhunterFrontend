@@ -34,11 +34,16 @@ useHead(() => {
     return {}
   }
 
+  const hotelQuery = route.query.hotel
+  const hotelValue = Array.isArray(hotelQuery) ? hotelQuery[0] : hotelQuery
+  const isLocationHotelMap = /^\/locations\/[^/]+\/map\/?$/.test(route.path)
+    && Boolean(hotelValue)
+
   return {
     meta: [{
       name: 'robots',
       key: 'robots',
-      content: 'index, follow',
+      content: isLocationHotelMap ? 'noindex, nofollow' : 'index, follow',
     }],
     link: [{
       rel: 'canonical',
