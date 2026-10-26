@@ -394,6 +394,7 @@ export interface BookingCalculationLine {
   total_cost: number
   my_cost: number
   has_tooltip?: boolean
+  due_to_me?: number
 }
 
 export interface BookingCalculatingData {

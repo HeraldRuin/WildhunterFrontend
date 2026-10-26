@@ -2,7 +2,6 @@
 import type { BookingCalculatingData, BookingCalculationLine } from '~/types/api'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 
-const TOOLTIP_TEXT = 'на человека'
 const CALCULATION_NOTIFICATION_GROUP = 'calculation'
 /** Ожидаемые состояния калькуляции — достаточно текста в модалке, без toast */
 const SILENT_CALCULATION_ERROR_CODES = new Set([
@@ -22,7 +21,6 @@ function shouldNotifyCalculationError(errorCode?: string) {
 const isLoading = ref(false)
 const loadError = ref('')
 const calculation = ref<BookingCalculatingData | null>(null)
-const openTooltipKey = ref<string | null>(null)
 let loadRequestId = 0
 let refreshRequestId = 0
 let refreshAfterLoad = false
@@ -36,6 +34,53 @@ const additionalServices = computed(() => [
 ])
 
 const showMyCosts = computed(() => !calculation.value?.is_baseAdmin)
+const columnCount = computed(() => (showMyCosts.value ? 3 : 2))
+
+const BASE_SUMMARY_NAMES = new Set(['Внесена предоплата', 'Остаток базе'])
+const HUNTER_PERSONAL_TOTAL_NAME = 'Итог охотникам'
+
+function isAccommodationLine(name: string) {
+  return name.toLowerCase().includes('прожив')
+}
+
+function sumLineCost(lines: BookingCalculationLine[], field: 'total_cost' | 'my_cost' | 'due_to_me') {
+  return lines.reduce((sum, line) => sum + (line[field] ?? 0), 0)
+}
+
+const baseAdminBlocks = computed(() => {
+  const data = calculation.value
+  if (!data) {
+    return null
+  }
+
+  const items = data.items ?? []
+  const summary = data.all_items ?? []
+  const huntServices = items.filter(item => !isAccommodationLine(item.name))
+  const trophies = data.trophy_show ? data.trophies ?? [] : []
+  const penalties = data.penalties_show ? data.penalties ?? [] : []
+  const huntLines = [...huntServices, ...trophies, ...penalties]
+  const baseRemainder = summary.filter(item => item.name === 'Остаток базе')
+  const spendings = data.spendings ?? []
+  const personalTotal = summary.find(item => item.name === HUNTER_PERSONAL_TOTAL_NAME) ?? null
+  const huntPaymentMy = sumLineCost(huntLines, 'my_cost')
+
+  return {
+    baseServices: items.filter(item => isAccommodationLine(item.name)),
+    basePrepayment: summary.filter(item => item.name === 'Внесена предоплата'),
+    baseRemainder,
+    huntServices,
+    huntSummary: summary.filter(item => !BASE_SUMMARY_NAMES.has(item.name) && item.name !== HUNTER_PERSONAL_TOTAL_NAME),
+    huntPayment: sumLineCost(huntLines, 'total_cost'),
+    huntPaymentMy,
+    personalGrand: (baseRemainder[0]?.my_cost ?? 0) + huntPaymentMy,
+    spendings,
+    dueToMeTotal: spendings.some(item => item.due_to_me != null) || personalTotal?.due_to_me != null
+      ? personalTotal?.due_to_me ?? sumLineCost(spendings, 'due_to_me')
+      : null,
+    personalTotal,
+    total: data.total ?? data.base_total ?? null,
+  }
+})
 
 watch(
   () => booking.value?.code,
@@ -69,34 +114,7 @@ function resetCalculation() {
   isLoading.value = false
   loadError.value = ''
   calculation.value = null
-  openTooltipKey.value = null
 }
-
-function toggleTooltip(key: string) {
-  openTooltipKey.value = openTooltipKey.value === key ? null : key
-}
-
-function onDocumentClick(event: MouseEvent) {
-  const target = event.target
-  if (target instanceof Element && target.closest('.calculation-modal__alert-wrap')) {
-    return
-  }
-
-  openTooltipKey.value = null
-}
-
-watch(openTooltipKey, (key) => {
-  if (key) {
-    document.addEventListener('click', onDocumentClick)
-    return
-  }
-
-  document.removeEventListener('click', onDocumentClick)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocumentClick)
-})
 
 async function refreshCalculation(code: string) {
   if (isLoading.value) {
@@ -191,7 +209,7 @@ const BOLD_LINE_NAMES = new Set(['Остаток базе', 'Итог охотн
 
 function lineName(name: string) {
   if (name === 'Остаток базе') {
-    return 'Остаток оплаты на базу'
+    return 'Остаток оплаты по базе'
   }
 
   if (name === 'Итог охотникам') {
@@ -234,135 +252,237 @@ function isBoldLine(name: string) {
               {{ loadError }}
             </div>
 
-            <table v-else-if="calculation" class="calculation-modal__table">
-              <thead>
-                <tr class="calculation-modal__section">
-                  <th>Услуги</th>
-                  <th>Общие расходы</th>
-                  <th v-if="showMyCosts">Мои личные расходы</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(item, index) in calculation.items"
-                  :key="lineKey(item, index)"
-                >
-                  <td>{{ item.name }}</td>
-                  <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
-                  <td v-if="showMyCosts">
-                    <span>{{ formatHotelPriceLabel(item.my_cost) }}</span>
-                    <span v-if="item.has_tooltip" class="calculation-modal__alert-wrap">
-                      <button
-                        type="button"
-                        class="calculation-modal__alert"
-                        :aria-expanded="openTooltipKey === lineKey(item, index)"
-                        :aria-label="TOOLTIP_TEXT"
-                        @click.stop="toggleTooltip(lineKey(item, index))"
-                      >
-                        !
-                      </button>
-                      <span
-                        v-if="openTooltipKey === lineKey(item, index)"
-                        class="calculation-modal__alert-popup"
-                        role="tooltip"
-                      >
-                        {{ TOOLTIP_TEXT }}
-                      </span>
-                    </span>
-                  </td>
-                </tr>
-
-                <template v-if="calculation.trophy_show">
-                  <tr class="calculation-modal__section">
-                    <td>Трофеи</td>
+            <div v-else-if="calculation && baseAdminBlocks" class="calculation-modal__blocks">
+              <div class="calculation-modal__block">
+              <table class="calculation-modal__table">
+                <thead>
+                  <tr class="calculation-modal__section calculation-modal__block-head">
+                    <th class="calculation-modal__block-title">Расходы по базе</th>
+                    <th>Коллективные расходы</th>
+                    <th v-if="showMyCosts">Мои личные расходы</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="calculation-modal__gap" aria-hidden="true">
+                    <td :colspan="columnCount"></td>
+                  </tr>
+                  <tr
+                    v-if="baseAdminBlocks.baseServices.length"
+                    class="calculation-modal__section"
+                  >
+                    <td>Услуги проживания на базе</td>
                     <td></td>
                     <td v-if="showMyCosts"></td>
                   </tr>
                   <tr
-                    v-for="(item, index) in calculation.trophies"
-                    :key="`trophy-${lineKey(item, index)}`"
+                    v-for="(item, index) in baseAdminBlocks.baseServices"
+                    :key="`base-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
                     <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                     <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
-                </template>
 
-                <template v-if="calculation.penalties_show">
+                  <template v-if="calculation.additional_services_show">
+                    <tr class="calculation-modal__section">
+                      <td>Дополнительные услуги базы</td>
+                      <td></td>
+                      <td v-if="showMyCosts"></td>
+                    </tr>
+                    <tr
+                      v-for="(item, index) in additionalServices"
+                      :key="`base-extra-${lineKey(item, index)}`"
+                    >
+                      <td>{{ item.name }}</td>
+                      <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                      <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
+                    </tr>
+                  </template>
+
+                  <template v-if="baseAdminBlocks.basePrepayment.length">
+                    <tr class="calculation-modal__section">
+                      <td>Предоплата</td>
+                      <td></td>
+                      <td v-if="showMyCosts"></td>
+                    </tr>
+                    <tr
+                      v-for="(item, index) in baseAdminBlocks.basePrepayment"
+                      :key="`base-prepay-${lineKey(item, index)}`"
+                    >
+                      <td>{{ lineName(item.name) }}</td>
+                      <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                      <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
+                    </tr>
+                  </template>
+
                   <tr class="calculation-modal__section">
-                    <td>Штрафы</td>
+                    <td>Итого по расходам базы</td>
                     <td></td>
                     <td v-if="showMyCosts"></td>
                   </tr>
                   <tr
-                    v-for="(item, index) in calculation.penalties"
-                    :key="`penalty-${lineKey(item, index)}`"
+                    v-for="(item, index) in baseAdminBlocks.baseRemainder"
+                    :key="`base-remainder-${lineKey(item, index)}`"
+                  >
+                    <td class="calculation-modal__total">{{ lineName(item.name) }}</td>
+                    <td class="calculation-modal__regular">{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                    <td v-if="showMyCosts" class="calculation-modal__owe">{{ formatHotelPriceLabel(item.my_cost) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              </div>
+
+              <div class="calculation-modal__block">
+              <table class="calculation-modal__table">
+                <thead>
+                  <tr class="calculation-modal__section calculation-modal__block-head">
+                    <th class="calculation-modal__block-title">Расходы по охоте</th>
+                    <th>Коллективные расходы</th>
+                    <th v-if="showMyCosts">Мои личные расходы</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="calculation-modal__gap" aria-hidden="true">
+                    <td :colspan="columnCount"></td>
+                  </tr>
+                  <tr
+                    v-if="baseAdminBlocks.huntServices.length"
+                    class="calculation-modal__section"
+                  >
+                    <td>Проведение охоты</td>
+                    <td></td>
+                    <td v-if="showMyCosts"></td>
+                  </tr>
+                  <tr
+                    v-for="(item, index) in baseAdminBlocks.huntServices"
+                    :key="`hunt-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
                     <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                     <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
-                </template>
 
-                <template v-if="calculation.additional_services_show">
-                  <tr class="calculation-modal__section">
-                    <td>Доп. услуги</td>
-                    <td></td>
-                    <td v-if="showMyCosts"></td>
-                  </tr>
+                  <template v-if="calculation.trophy_show">
+                    <tr class="calculation-modal__section">
+                      <td>Трофеи</td>
+                      <td></td>
+                      <td v-if="showMyCosts"></td>
+                    </tr>
+                    <tr
+                      v-for="(item, index) in calculation.trophies"
+                      :key="`hunt-trophy-${lineKey(item, index)}`"
+                    >
+                      <td>{{ item.name }}</td>
+                      <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                      <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
+                    </tr>
+                  </template>
+
+                  <template v-if="calculation.penalties_show">
+                    <tr class="calculation-modal__section">
+                      <td>Штрафы</td>
+                      <td></td>
+                      <td v-if="showMyCosts"></td>
+                    </tr>
+                    <tr
+                      v-for="(item, index) in calculation.penalties"
+                      :key="`hunt-penalty-${lineKey(item, index)}`"
+                    >
+                      <td>{{ item.name }}</td>
+                      <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                      <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
+                    </tr>
+                  </template>
+
                   <tr
-                    v-for="(item, index) in additionalServices"
-                    :key="`extra-${lineKey(item, index)}`"
+                    v-for="(item, index) in baseAdminBlocks.huntSummary"
+                    :key="`hunt-summary-${lineKey(item, index)}`"
+                    :class="{ 'calculation-modal__total': isBoldLine(item.name) }"
                   >
-                    <td>{{ item.name }}</td>
+                    <td>{{ lineName(item.name) }}</td>
                     <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                     <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
-                </template>
 
-                <template v-if="showMyCosts && calculation.spendings_show">
                   <tr class="calculation-modal__section">
-                    <td>Личные расходы охотников на мероприятии</td>
+                    <td>Итого по охоте</td>
                     <td></td>
-                    <td class="calculation-modal__owe">Я должен</td>
+                    <td v-if="showMyCosts"></td>
+                  </tr>
+                  <tr>
+                    <td class="calculation-modal__total">Итого оплата по охоте</td>
+                    <td class="calculation-modal__regular">{{ formatHotelPriceLabel(baseAdminBlocks.huntPayment) }}</td>
+                    <td v-if="showMyCosts" class="calculation-modal__owe">{{ formatHotelPriceLabel(baseAdminBlocks.huntPaymentMy) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              </div>
+
+              <div class="calculation-modal__block">
+              <table class="calculation-modal__table">
+                <thead>
+                  <tr class="calculation-modal__section calculation-modal__block-head">
+                    <th></th>
+                    <th>Коллективные расходы</th>
+                    <th v-if="showMyCosts">Мои личные расходы</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="calculation-modal__section calculation-modal__total calculation-modal__plain">
+                    <td class="calculation-modal__block-title">Всего базе</td>
+                    <td class="calculation-modal__block-title calculation-modal__grand">{{ baseAdminBlocks.total == null ? '' : formatHotelPriceLabel(baseAdminBlocks.total) }}</td>
+                    <td v-if="showMyCosts" class="calculation-modal__owe calculation-modal__grand">{{ formatHotelPriceLabel(baseAdminBlocks.personalGrand) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              </div>
+
+              <div v-if="showMyCosts && calculation.spendings_show" class="calculation-modal__block">
+              <table class="calculation-modal__table">
+                <thead>
+                  <tr class="calculation-modal__section calculation-modal__block-head">
+                    <th class="calculation-modal__block-title">Личные расходы охотников</th>
+                    <th>Коллективные расходы</th>
+                    <th>Мои личные расходы</th>
+                    <th>Мне должны</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="calculation-modal__gap" aria-hidden="true">
+                    <td colspan="4"></td>
+                  </tr>
+                  <tr class="calculation-modal__section">
+                    <td>Дополнительные расходы</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                   </tr>
                   <tr
-                    v-for="(item, index) in calculation.spendings"
+                    v-for="(item, index) in baseAdminBlocks.spendings"
                     :key="`spending-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
                     <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                     <td>{{ formatHotelPriceLabel(item.my_cost) }}</td>
+                    <td>{{ item.due_to_me == null ? '' : formatHotelPriceLabel(item.due_to_me) }}</td>
                   </tr>
-                </template>
+                  <tr class="calculation-modal__section">
+                    <td>Итого между охотниками</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td class="calculation-modal__total">Итого</td>
+                    <td class="calculation-modal__regular">{{ formatHotelPriceLabel(baseAdminBlocks.personalTotal?.total_cost ?? sumLineCost(baseAdminBlocks.spendings, 'total_cost')) }}</td>
+                    <td class="calculation-modal__regular">{{ formatHotelPriceLabel(baseAdminBlocks.personalTotal?.my_cost ?? sumLineCost(baseAdminBlocks.spendings, 'my_cost')) }}</td>
+                    <td class="calculation-modal__regular">{{ baseAdminBlocks.dueToMeTotal == null ? '' : formatHotelPriceLabel(baseAdminBlocks.dueToMeTotal) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              </div>
+            </div>
 
-                <tr class="calculation-modal__section">
-                  <td>Подытог</td>
-                  <td></td>
-                  <td v-if="showMyCosts"></td>
-                </tr>
-                <template
-                  v-for="(item, index) in calculation.all_items"
-                  :key="`total-${lineKey(item, index)}`"
-                >
-                  <tr v-if="showMyCosts && index === 1" class="calculation-modal__section">
-                    <td></td>
-                    <td></td>
-                    <td class="calculation-modal__owe">Я должен</td>
-                  </tr>
-                  <tr :class="{ 'calculation-modal__total': isBoldLine(item.name) }">
-                    <td>{{ lineName(item.name) }}</td>
-                    <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
-                    <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
-                  </tr>
-                  <tr v-if="item.name === 'Внесена предоплата'" class="calculation-modal__section">
-                    <td></td>
-                    <td></td>
-                    <td v-if="showMyCosts"></td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
@@ -434,6 +554,21 @@ function isBoldLine(name: string) {
   text-align: center;
 }
 
+.calculation-modal__blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px;
+  border: 1px solid var(--wh-gray-600);
+  border-radius: 8px;
+}
+
+.calculation-modal__block {
+  border: 1px solid #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
 .calculation-modal__table {
   width: 100%;
   border-collapse: collapse;
@@ -456,6 +591,21 @@ function isBoldLine(name: string) {
   font-weight: 700;
 }
 
+.calculation-modal__section th.calculation-modal__block-title,
+.calculation-modal__section td.calculation-modal__block-title {
+  color: #000;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.calculation-modal__gap td {
+  height: 12px;
+  padding: 0;
+  border: none;
+  background: var(--wh-white);
+}
+
 .calculation-modal__section th,
 .calculation-modal__section td {
   background: var(--wh-gray-450);
@@ -475,54 +625,41 @@ function isBoldLine(name: string) {
   border-right-color: #bcbcbc;
 }
 
+.calculation-modal__section.calculation-modal__block-head th {
+  background: var(--wh-white);
+  border: none;
+}
+
+.calculation-modal__section.calculation-modal__plain td {
+  background: var(--wh-white);
+  border-color: var(--wh-gray-200);
+}
+
+.calculation-modal__total,
 .calculation-modal__total td {
   font-weight: 700;
 }
 
+.calculation-modal__regular {
+  font-weight: 400;
+}
+
 .calculation-modal__table td:nth-child(2),
 .calculation-modal__table td:nth-child(3),
+.calculation-modal__table td:nth-child(4),
 .calculation-modal__table th:nth-child(2),
-.calculation-modal__table th:nth-child(3) {
-  width: 28%;
+.calculation-modal__table th:nth-child(3),
+.calculation-modal__table th:nth-child(4) {
+  width: 22%;
   white-space: nowrap;
 }
 
-.calculation-modal__alert-wrap {
-  position: relative;
-  display: inline-flex;
-  margin-left: 4px;
-}
-
-.calculation-modal__alert {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--wh-field-error);
-  font: inherit;
+.calculation-modal__table td:nth-child(2),
+.calculation-modal__table td:nth-child(3),
+.calculation-modal__table td:nth-child(4) {
+  font-size: 0.78rem;
   font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.calculation-modal__alert-popup {
-  position: absolute;
-  top: 50%;
-  left: calc(100% + 6px);
-  z-index: 2;
-  transform: translateY(-50%);
-  padding: 8px 10px;
-  border: 1px solid var(--wh-gray-200);
-  border-radius: 8px;
-  background: var(--wh-white);
-  box-shadow: var(--wh-shadow);
-  color: var(--wh-gray-900);
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.3;
-  white-space: nowrap;
+  text-align: right;
 }
 
 .calculation-modal__table td.calculation-modal__owe {
@@ -531,6 +668,10 @@ function isBoldLine(name: string) {
   font-weight: 700;
   text-align: right;
   white-space: nowrap;
+}
+
+.calculation-modal__table td.calculation-modal__grand {
+  font-size: 1.05rem;
 }
 
 .calculation-modal-enter-active,
