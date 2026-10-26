@@ -53,17 +53,17 @@ useHead(() => {
 
 const { public: { chatragWidgetKey } } = useRuntimeConfig()
 
-useHead({
-  script: chatragWidgetKey
-    ? [
-        {
-          src: 'https://chatrag.ru/embed.js',
-          tagPosition: 'bodyClose',
-          domain: 'https://chatrag.ru',
-          'widget-key': chatragWidgetKey,
-        },
-      ]
-    : [],
+onMounted(() => {
+  if (!chatragWidgetKey) {
+    return
+  }
+
+  const script = document.createElement('script')
+  script.src = 'https://chatrag.ru/embed.js'
+  script.async = true
+  script.setAttribute('domain', 'https://chatrag.ru')
+  script.setAttribute('widget-key', chatragWidgetKey)
+  document.body.appendChild(script)
 })
 </script>
 
