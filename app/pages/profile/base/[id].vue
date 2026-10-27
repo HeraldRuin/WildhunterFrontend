@@ -29,17 +29,17 @@ type GalleryItem = {
 }
 
 const editTabs: { id: BaseHotelEditTab, label: string }[] = [
-  { id: 'content', label: 'Контент базы' },
-  { id: 'places', label: 'Места' },
+  { id: 'content', label: 'О базе' },
+  { id: 'places', label: 'Расположение' },
   { id: 'pricing', label: 'Информация о заезде' },
-  { id: 'attributes', label: 'Атрибуты' },
+  { id: 'attributes', label: 'Особенности' },
   { id: 'hunting', label: 'Способ охоты' },
   { id: 'jaeger', label: 'Егерь' },
 ]
 
 const contentSubTabs: { id: ContentSubTab, label: string }[] = [
-  { id: 'content', label: 'Контент' },
-  { id: 'policy', label: 'Политика' },
+  { id: 'content', label: 'Информация' },
+  { id: 'policy', label: 'Условие' },
 ]
 
 const placesSubTabs: { id: PlacesSubTab, label: string }[] = [
@@ -1616,7 +1616,7 @@ watch(activeEditTab, (tab) => {
               <div class="base-edit__policy-table">
                 <div class="base-edit__policy-head" aria-hidden="true">
                   <span class="base-edit__policy-head-cell">Название</span>
-                  <span class="base-edit__policy-head-cell">Контент</span>
+                  <span class="base-edit__policy-head-cell">Содержание</span>
                   <span class="base-edit__policy-head-cell base-edit__policy-head-cell--action" />
                 </div>
 
@@ -1632,7 +1632,7 @@ watch(activeEditTab, (tab) => {
                   />
                   <CommonFormField
                     v-model="item.content"
-                    placeholder="Контент"
+                    placeholder="Содержание"
                     multiline
                     resizable
                     :rows="1"
