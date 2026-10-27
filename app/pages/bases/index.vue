@@ -139,6 +139,16 @@ function toCatalogResult(items: OfferItem[]): NormalizedSearchResult {
 
 const isCatalogMode = computed(() => !queryString('checkIn') && !queryString('checkOut'))
 
+const heroLocationId = computed(() => {
+  const id = Number(queryString('location'))
+  return Number.isFinite(id) && id > 0 ? String(id) : ''
+})
+
+const heroAnimalId = computed(() => {
+  const id = Number(queryString('animal'))
+  return Number.isFinite(id) && id > 0 ? String(id) : ''
+})
+
 const searchRequest = computed(() => {
   const catalog = isCatalogMode.value
 
@@ -296,7 +306,23 @@ const filteredCatalogItems = computed(() => {
 
     if (
       isCatalogMode.value
+      && heroLocationId.value
+      && !matchesRegionsFilter(item.locationId, [heroLocationId.value])
+    ) {
+      return false
+    }
+
+    if (
+      isCatalogMode.value
       && !matchesAnimalsFilter(item.animals, filters.value.animals)
+    ) {
+      return false
+    }
+
+    if (
+      isCatalogMode.value
+      && heroAnimalId.value
+      && !matchesAnimalsFilter(item.animals, [heroAnimalId.value])
     ) {
       return false
     }
