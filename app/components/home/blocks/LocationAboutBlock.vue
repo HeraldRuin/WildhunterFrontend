@@ -4,9 +4,11 @@ import { formatLocationInPrepositional } from '~/utils/location'
 const props = withDefaults(defineProps<{
   locationName?: string
   title?: string
+  headingTag?: 'h1' | 'h2'
 }>(), {
   locationName: '',
   title: undefined,
+  headingTag: 'h2',
 })
 
 const heading = computed(() => {
@@ -30,9 +32,12 @@ const paragraphs = [
 <template>
   <section class="location-about">
     <div class="container location-about__inner">
-      <h2 class="location-about__title">
+      <component
+        :is="headingTag"
+        class="location-about__title"
+      >
         {{ heading }}
-      </h2>
+      </component>
 
       <div class="location-about__content">
         <p

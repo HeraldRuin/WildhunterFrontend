@@ -3,7 +3,7 @@ import { locationSeoBySlug } from '~/content/location-seo'
 import type { HotelSearchBody, LocationItem, OfferItem, SearchLocation } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { formatApiDate, getDefaultStayCheckIn, getDefaultStayCheckOut } from '~/utils/date'
-import { getLocationMapPath } from '~/utils/location'
+import { formatLocationInPrepositional, getLocationMapPath } from '~/utils/location'
 import {
   countOffersByReviewRating,
   DEFAULT_SEARCH_FILTERS,
@@ -159,7 +159,6 @@ const { data: resolvedLocation, pending: locationPending } = useAsyncData(
     }
   },
   {
-    lazy: true,
     default: () => null as SearchLocation | null,
     watch: [locationSlug],
     getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
@@ -240,6 +239,48 @@ const locationName = computed(() => {
 })
 
 const locationSeo = computed(() => locationSeoBySlug[locationSlug.value] ?? null)
+
+const locationHuntingH1BySlug: Record<string, string> = {
+  'novgorodskaia-oblast': 'Охота в Новгородской области',
+  'tulskaia-oblast': 'Охота в Тульской области',
+  'leningradskaia-oblast': 'Охота в Ленинградской области',
+  'brianskaia-oblast': 'Охота в Брянской области',
+  'pskovskaia-oblast': 'Охота в Псковской области',
+  'murmanskaia-oblast': 'Охота в Мурманской области',
+  'arxangelskaia-oblast': 'Охота в Архангельской области',
+  'kostromskaia-oblast': 'Охота в Костромской области',
+  'kaliningradskaia-oblast': 'Охота в Калининградской области',
+  'ivanovskaia-oblast': 'Охота в Ивановской области',
+  'sverdlovskaia-oblast': 'Охота в Свердловской области',
+  'voronezskaia-oblast': 'Охота в Воронежской области',
+  'smolenskaia-oblast': 'Охота в Смоленской области',
+  'kurskaia-oblast': 'Охота в Курской области',
+  'riazanskaia-oblast': 'Охота в Рязанской области',
+  'orlovskaia-oblast': 'Охота в Орловской области',
+  'tambovskaia-oblast': 'Охота в Тамбовской области',
+  'belgorodskaia-oblast': 'Охота в Белгородской области',
+  'kaluzskaia-oblast': 'Охота в Калужской области',
+  'respublika-kareliia': 'Охота в Республике Карелия',
+}
+
+const locationHuntingH1 = computed(() => {
+  if (locationSeo.value) {
+    return ''
+  }
+
+  const fromSlug = locationHuntingH1BySlug[locationSlug.value]
+  if (fromSlug) {
+    return fromSlug
+  }
+
+  const name = locationName.value.trim()
+  if (!/область$/i.test(name)) {
+    return ''
+  }
+
+  const region = formatLocationInPrepositional(name)
+  return region ? `Охота в ${region}` : ''
+})
 
 useHead(() => {
   if (locationSeo.value) {
@@ -424,7 +465,7 @@ function handleFiltersReset() {
             </NuxtLink> -->
 
             <component
-              :is="locationSeo ? 'p' : 'h1'"
+              :is="locationSeo || locationHuntingH1 ? 'p' : 'h1'"
               v-if="countReady"
               class="location-page__title"
             >
@@ -496,6 +537,8 @@ function handleFiltersReset() {
     <HomeBlocksLocationAboutBlock
       v-else
       :location-name="locationName || 'Область'"
+      :title="locationHuntingH1 || undefined"
+      :heading-tag="locationHuntingH1 ? 'h1' : 'h2'"
     />
     <HomeBlocksCommunityBlock variant="centered" />
     <LayoutAppFooter />
