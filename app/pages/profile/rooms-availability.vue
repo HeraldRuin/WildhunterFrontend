@@ -125,8 +125,10 @@ const availabilityError = ref('')
 const periodRange = computed(() => {
   const year = viewDate.value.getFullYear()
   const month = viewDate.value.getMonth()
-  const start = new Date(year, month, 1)
-  const end = new Date(year, month + 1, 1)
+  const days = getCalendarDays(year, month)
+  const start = days[0]?.date ?? new Date(year, month, 1)
+  const last = days[days.length - 1]?.date ?? new Date(year, month + 1, 0)
+  const end = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1)
   return {
     start: formatApiDate(start),
     end: formatApiDate(end),
@@ -136,7 +138,7 @@ const periodRange = computed(() => {
 const calendarDays = computed(() =>
   getCalendarDays(viewDate.value.getFullYear(), viewDate.value.getMonth()).map(day => {
     const key = formatApiDate(day.date)
-    const event = day.isCurrentMonth ? availabilityByDate.value.get(key) : undefined
+    const event = availabilityByDate.value.get(key)
 
     return {
       ...day,
@@ -591,7 +593,7 @@ onMounted(() => {
           >
             <div class="rooms-availability__cell-top">
               <span
-                v-if="isSummaryTab && day.isCurrentMonth && day.event && !day.isPast"
+                v-if="isSummaryTab && day.event && !day.isPast"
                 class="rooms-availability__free"
               >
                 Свободно <span class="rooms-availability__free-count">{{ day.event.number }}</span>
@@ -599,7 +601,7 @@ onMounted(() => {
               <span class="rooms-availability__day-num">{{ day.date.getDate() }}</span>
             </div>
 
-            <template v-if="day.isCurrentMonth && day.event && !day.isPast">
+            <template v-if="day.event && !day.isPast">
               <div
                 v-if="!isSummaryTab && day.bookings.length"
                 class="rooms-availability__bookings"
