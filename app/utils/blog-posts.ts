@@ -1,4 +1,5 @@
 import { chtoTakoeZagonnayaOkhotaContent } from '~/content/blog/chto-takoe-zagonnaya-okhota'
+import { kakPoluchitOkhotnichijBiletContent } from '~/content/blog/kak-poluchit-okhotnichij-bilet'
 import { chtoVzyatNaOkhotuSpisokContent } from '~/content/blog/chto-vzyat-na-okhotu-spisok'
 import { kakoeOruzhieVybratNovichkuContent } from '~/content/blog/kakoe-oruzhie-vybrat-novichku'
 import { kakStatOkhotnikomPolnoeRukovodstvoContent } from '~/content/blog/kak-stat-okhotnikom-polnoe-rukovodstvo'
@@ -26,6 +27,16 @@ export type BlogPost = {
 }
 
 export const blogPosts: BlogPost[] = [
+  {
+    slug: 'kak-poluchit-okhotnichij-bilet',
+    title: 'Как получить охотничий билет в 2026 году',
+    pageTitle: 'Как получить охотничий билет в 2026 году: полная пошаговая инструкция',
+    seoTitle: 'Как получить охотничий билет | wild-hunter.ru',
+    description: 'Инструкция по получению охотничьего билета ✔️ Как подготовить документы и подать заявление ✔️ Кому могут отказать',
+    date: '28.10.2026 г.',
+    image: '/images/blog/kak-stat-step4.jpg',
+    content: kakPoluchitOkhotnichijBiletContent,
+  },
   {
     slug: 'okhotnichi-porody-sobak',
     title: 'Охотничьи породы собак',
