@@ -100,6 +100,10 @@ function isPastCalendarDate(date: Date) {
   return dayStart.getTime() < todayStart.getTime()
 }
 
+function weekdayColumn(date: Date) {
+  return (date.getDay() + 6) % 7 + 1
+}
+
 interface SummaryRoomOffer {
   roomId: number
   title: string
@@ -152,8 +156,17 @@ const calendarDays = computed(() =>
       isPast: isPastCalendarDate(day.date),
       canEdit: Boolean(event) && !isSummaryTab.value && !event?.extendedProps?.is_summary && !isPastCalendarDate(day.date),
     }
-  }),
+  }).filter(day => !day.isPast),
 )
+
+const leadingPastCount = computed(() => {
+  const firstDay = calendarDays.value[0]
+  if (!firstDay) {
+    return 0
+  }
+
+  return weekdayColumn(firstDay.date) - 1
+})
 
 function resolveBadgeClass(event?: RoomAvailabilityDay | null) {
   if (!event) {
@@ -580,6 +593,12 @@ onMounted(() => {
 
         <div class="rooms-availability__grid">
           <div
+            v-for="index in leadingPastCount"
+            :key="`past-${index}`"
+            class="rooms-availability__cell rooms-availability__cell--skipped"
+            aria-hidden="true"
+          />
+          <div
             v-for="day in calendarDays"
             :key="day.key"
             class="rooms-availability__cell"
@@ -593,7 +612,7 @@ onMounted(() => {
           >
             <div class="rooms-availability__cell-top">
               <span
-                v-if="isSummaryTab && day.event && !day.isPast"
+                v-if="isSummaryTab && day.isCurrentMonth && day.event && !day.isPast"
                 class="rooms-availability__free"
               >
                 Свободно <span class="rooms-availability__free-count">{{ day.event.number }}</span>
@@ -601,7 +620,7 @@ onMounted(() => {
               <span class="rooms-availability__day-num">{{ day.date.getDate() }}</span>
             </div>
 
-            <template v-if="day.event && !day.isPast">
+            <template v-if="day.isCurrentMonth && day.event && !day.isPast">
               <div
                 v-if="!isSummaryTab && day.bookings.length"
                 class="rooms-availability__bookings"
@@ -883,9 +902,9 @@ onMounted(() => {
 .rooms-availability__grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-template-rows: repeat(6, minmax(110px, 1fr));
+  grid-auto-rows: minmax(110px, auto);
   flex: 1 0 auto;
-  min-height: calc(6 * 110px);
+  min-height: 0;
   border-left: none;
 }
 
@@ -905,7 +924,7 @@ onMounted(() => {
 }
 
 .rooms-availability__layout--summary .rooms-availability__grid {
-  grid-template-rows: repeat(6, minmax(140px, auto));
+  grid-auto-rows: minmax(140px, auto);
 }
 
 .rooms-availability__layout--summary .rooms-availability__cell {
@@ -953,12 +972,16 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.rooms-availability__cell--outside {
-  background: #fafafa;
+.rooms-availability__cell--skipped {
+  background: var(--wh-gray-200);
 }
 
 .rooms-availability__cell--checkout {
   background: #f3f8fc;
+}
+
+.rooms-availability__cell--outside {
+  background: var(--wh-gray-200);
 }
 
 .rooms-availability__cell--outside .rooms-availability__day-num {
@@ -1175,8 +1198,8 @@ onMounted(() => {
   }
 
   .rooms-availability__grid {
-    grid-template-rows: repeat(6, minmax(96px, 1fr));
-    min-height: calc(6 * 96px);
+    grid-auto-rows: minmax(96px, auto);
+    min-height: 0;
   }
 
   .rooms-availability__cell {
