@@ -395,6 +395,7 @@ export interface BookingCalculationLine {
   my_cost: number
   has_tooltip?: boolean
   due_to_me?: number
+  place?: string | null
 }
 
 export interface BookingCalculatingData {
@@ -515,6 +516,7 @@ export interface BookingServiceAdditionalCatalog {
   price: number
   is_system?: boolean | number | null
   is_visible?: boolean | number | null
+  place?: string | null
 }
 
 export interface BookingServiceFoodCatalog {

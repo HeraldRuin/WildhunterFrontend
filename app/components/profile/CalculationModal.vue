@@ -27,20 +27,28 @@ let refreshAfterLoad = false
 
 useBodyScrollLock(isOpen)
 
-const additionalServices = computed(() => [
-  ...(calculation.value?.meals ?? []),
-  ...(calculation.value?.preparation ?? []),
-  ...(calculation.value?.addetionals ?? []),
-])
-
 const showMyCosts = computed(() => !calculation.value?.is_baseAdmin)
 const columnCount = computed(() => (showMyCosts.value ? 3 : 2))
 
 const BASE_SUMMARY_NAMES = new Set(['Внесена предоплата', 'Остаток базе'])
 const HUNTER_PERSONAL_TOTAL_NAME = 'Итог охотникам'
+const BASE_SERVICE_PLACE = 'base'
 
 function isAccommodationLine(name: string) {
   return name.toLowerCase().includes('прожив')
+}
+
+function isBasePlace(line: BookingCalculationLine) {
+  const place = line.place?.trim().toLowerCase()
+  return !place || place === BASE_SERVICE_PLACE
+}
+
+function extraServiceLines(data: BookingCalculatingData) {
+  return [
+    ...(data.meals ?? []),
+    ...(data.preparation ?? []),
+    ...(data.addetionals ?? []),
+  ]
 }
 
 function sumLineCost(lines: BookingCalculationLine[], field: 'total_cost' | 'my_cost' | 'due_to_me') {
@@ -55,10 +63,13 @@ const baseAdminBlocks = computed(() => {
 
   const items = data.items ?? []
   const summary = data.all_items ?? []
+  const extras = extraServiceLines(data)
+  const baseExtras = extras.filter(isBasePlace)
+  const huntExtras = extras.filter(line => !isBasePlace(line))
   const huntServices = items.filter(item => !isAccommodationLine(item.name))
   const trophies = data.trophy_show ? data.trophies ?? [] : []
   const penalties = data.penalties_show ? data.penalties ?? [] : []
-  const huntLines = [...huntServices, ...trophies, ...penalties]
+  const huntLines = [...huntServices, ...huntExtras, ...trophies, ...penalties]
   const baseRemainder = summary.filter(item => item.name === 'Остаток базе')
   const spendings = data.spendings ?? []
   const personalTotal = summary.find(item => item.name === HUNTER_PERSONAL_TOTAL_NAME) ?? null
@@ -66,9 +77,11 @@ const baseAdminBlocks = computed(() => {
 
   return {
     baseServices: items.filter(item => isAccommodationLine(item.name)),
+    baseExtras,
     basePrepayment: summary.filter(item => item.name === 'Внесена предоплата'),
     baseRemainder,
     huntServices,
+    huntExtras,
     huntSummary: summary.filter(item => !BASE_SUMMARY_NAMES.has(item.name) && item.name !== HUNTER_PERSONAL_TOTAL_NAME),
     huntPayment: sumLineCost(huntLines, 'total_cost'),
     huntPaymentMy,
@@ -283,14 +296,14 @@ function isBoldLine(name: string) {
                     <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
 
-                  <template v-if="calculation.additional_services_show">
+                  <template v-if="calculation.additional_services_show && baseAdminBlocks.baseExtras.length">
                     <tr class="calculation-modal__section">
                       <td>Дополнительные услуги базы</td>
                       <td></td>
                       <td v-if="showMyCosts"></td>
                     </tr>
                     <tr
-                      v-for="(item, index) in additionalServices"
+                      v-for="(item, index) in baseAdminBlocks.baseExtras"
                       :key="`base-extra-${lineKey(item, index)}`"
                     >
                       <td>{{ item.name }}</td>
@@ -361,6 +374,22 @@ function isBoldLine(name: string) {
                     <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                     <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
+
+                  <template v-if="calculation.additional_services_show && baseAdminBlocks.huntExtras.length">
+                    <tr class="calculation-modal__section">
+                      <td>Дополнительные расходы охоты</td>
+                      <td></td>
+                      <td v-if="showMyCosts"></td>
+                    </tr>
+                    <tr
+                      v-for="(item, index) in baseAdminBlocks.huntExtras"
+                      :key="`hunt-extra-${lineKey(item, index)}`"
+                    >
+                      <td>{{ item.name }}</td>
+                      <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                      <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
+                    </tr>
+                  </template>
 
                   <template v-if="calculation.trophy_show">
                     <tr class="calculation-modal__section">
