@@ -617,7 +617,7 @@ onMounted(() => {
               >
                 Свободно <span class="rooms-availability__free-count">{{ day.event.number }}</span>
               </span>
-              <span class="rooms-availability__day-num">{{ day.date.getDate() }}</span>
+              <span v-if="day.isCurrentMonth" class="rooms-availability__day-num">{{ day.date.getDate() }}</span>
             </div>
 
             <template v-if="day.isCurrentMonth && day.event && !day.isPast">
@@ -809,7 +809,7 @@ onMounted(() => {
   min-height: calc(6 * 110px);
   border: 1px solid var(--wh-gray-400);
   border-radius: var(--wh-radius);
-  background: var(--wh-white);
+  background: var(--wh-gray-200);
   overflow: auto;
   box-sizing: border-box;
 }
@@ -818,9 +818,8 @@ onMounted(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  flex: 1 0 auto;
+  flex: 0 0 auto;
   min-width: 0;
-  min-height: 100%;
   overflow: visible;
   box-sizing: border-box;
 }
@@ -902,9 +901,9 @@ onMounted(() => {
 .rooms-availability__grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-auto-rows: minmax(110px, auto);
-  flex: 1 0 auto;
-  min-height: 0;
+  grid-auto-rows: 110px;
+  align-content: start;
+  flex: 0 0 auto;
   border-left: none;
 }
 
@@ -915,22 +914,26 @@ onMounted(() => {
   align-items: center;
   justify-content: flex-start;
   gap: 6px;
+  height: 110px;
   min-height: 110px;
-  height: 100%;
+  max-height: 110px;
   padding: 8px 6px 10px;
   border-right: 1px solid var(--wh-gray-300);
   border-bottom: 1px solid var(--wh-gray-300);
+  background: var(--wh-white);
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .rooms-availability__layout--summary .rooms-availability__grid {
-  grid-auto-rows: minmax(140px, auto);
+  grid-auto-rows: 140px;
 }
 
 .rooms-availability__layout--summary .rooms-availability__cell {
   align-items: stretch;
-  height: auto;
+  height: 140px;
   min-height: 140px;
+  max-height: 140px;
   cursor: default;
 }
 
@@ -1198,12 +1201,13 @@ onMounted(() => {
   }
 
   .rooms-availability__grid {
-    grid-auto-rows: minmax(96px, auto);
-    min-height: 0;
+    grid-auto-rows: 96px;
   }
 
   .rooms-availability__cell {
+    height: 96px;
     min-height: 96px;
+    max-height: 96px;
   }
 }
 
