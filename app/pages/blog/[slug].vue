@@ -223,6 +223,15 @@ async function handleSearch(payload: Record<string, string>) {
   margin: 0 0 18px;
 }
 
+.blog-article__body :deep(.blog-aside) {
+  margin: 8px 0 28px;
+  padding: 16px 24px;
+  border-left: 3px solid var(--wh-orange-500);
+  background: #f6f4ef;
+  font-style: italic;
+  text-align: center;
+}
+
 .blog-article__body :deep(.blog-inline-title) {
   margin: 0 0 12px;
   font-family: 'Inter', system-ui, sans-serif;
