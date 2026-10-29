@@ -50,6 +50,7 @@ export interface SaveAdditionalServicePayload {
   count: number | null
   price: number
   is_system?: boolean
+  place?: string | null
 }
 
 export interface SystemServiceCatalogItem {

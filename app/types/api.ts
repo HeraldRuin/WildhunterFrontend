@@ -516,7 +516,7 @@ export interface BookingServiceAdditionalCatalog {
   price: number
   is_system?: boolean | number | null
   is_visible?: boolean | number | null
-  place?: string | null
+  place?: 'base' | 'hunt' | string | null
 }
 
 export interface BookingServiceFoodCatalog {

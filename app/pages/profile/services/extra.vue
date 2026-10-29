@@ -14,9 +14,13 @@ useHead({
   title: 'Услуги — WH',
 })
 
+const SERVICE_PLACE_BASE = 'base'
+const SERVICE_PLACE_HUNT = 'hunt'
+
 interface ExtraServiceRow {
   id: number
   name: string
+  place: string
   quantity: string
   calculationType: string
   cost: string
@@ -40,6 +44,10 @@ function canDeleteService(service: ExtraServiceRow) {
 }
 
 function hasQuantityAndType(service: ExtraServiceRow) {
+  if (!service.isSystem && !service.place.trim()) {
+    return false
+  }
+
   if (isMealsService(service)) {
     return true
   }
@@ -49,6 +57,15 @@ function hasQuantityAndType(service: ExtraServiceRow) {
   }
 
   return parseCount(service.quantity) != null && service.calculationType.trim() !== ''
+}
+
+function normalizePlace(value: unknown): string {
+  const place = String(value ?? '').trim().toLowerCase()
+  if (place === SERVICE_PLACE_HUNT) {
+    return SERVICE_PLACE_HUNT
+  }
+
+  return SERVICE_PLACE_BASE
 }
 
 function normalizeIsSystem(value: unknown): boolean {
@@ -81,6 +98,11 @@ setProfileHeader({
 const calculationTypeOptions: SelectFieldOption[] = [
   { value: 'individual', label: 'Индивидуально' },
   { value: 'per_person', label: 'На всех' },
+]
+
+const placeOptions: SelectFieldOption[] = [
+  { value: SERVICE_PLACE_BASE, label: 'На базе' },
+  { value: SERVICE_PLACE_HUNT, label: 'На охоте' },
 ]
 
 const services = ref<ExtraServiceRow[]>([])
@@ -140,6 +162,7 @@ function toServiceRow(item: ManagedAdditionalService | BookingServiceAdditionalC
   return {
     id: item.id,
     name: item.name,
+    place: normalizePlace(item.place),
     quantity: item.count == null ? '' : String(item.count),
     calculationType: item.calculation_type ?? '',
     cost: formatCost(item.price),
@@ -270,6 +293,7 @@ function buildPayload(service: ExtraServiceRow) {
     count,
     price,
     is_system: service.isSystem,
+    ...(service.isSystem ? {} : { place: service.place }),
   }
 }
 
@@ -325,6 +349,7 @@ function addService() {
   services.value.push({
     id: nextDraftId--,
     name: '',
+    place: SERVICE_PLACE_BASE,
     quantity: '',
     calculationType: '',
     cost: formatCost(0),
@@ -898,6 +923,21 @@ onBeforeUnmount(() => {
                     </div>
 
                     <div
+                      v-if="!service.isSystem"
+                      class="extra-services__field extra-services__field--place"
+                    >
+                      <span class="extra-services__field-label">Место</span>
+                      <CommonSelectField
+                        v-model="service.place"
+                        class="extra-services__select"
+                        placeholder="Выберите"
+                        no-margin
+                        :options="placeOptions"
+                        :disabled="busyServiceId === service.id"
+                      />
+                    </div>
+
+                    <div
                       v-if="!isMealsService(service) && !isFoodService(service)"
                       class="extra-services__field extra-services__field--qty"
                     >
@@ -1408,6 +1448,10 @@ onBeforeUnmount(() => {
   max-width: 100%;
 }
 
+.extra-services__field--place {
+  width: 148px;
+}
+
 .extra-services__field--qty {
   width: 96px;
 }
@@ -1576,6 +1620,12 @@ onBeforeUnmount(() => {
 
   .extra-services__field-label--mobile {
     display: block;
+  }
+
+  .extra-services__field--place {
+    flex: 0 1 148px;
+    width: auto;
+    min-width: 0;
   }
 
   .extra-services__field--qty {
@@ -1841,6 +1891,12 @@ onBeforeUnmount(() => {
     font-weight: 600;
     line-height: 1.2;
     color: var(--wh-black-text, #1c211c);
+  }
+
+  .extra-services__field--place {
+    flex: 0 1 148px;
+    width: auto;
+    min-width: 0;
   }
 
   .extra-services__field--qty {
