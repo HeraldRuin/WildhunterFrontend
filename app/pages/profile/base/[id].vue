@@ -34,7 +34,7 @@ const editTabs: { id: BaseHotelEditTab, label: string }[] = [
   { id: 'pricing', label: 'Информация о заезде' },
   { id: 'attributes', label: 'Особенности' },
   { id: 'hunting', label: 'Способ охоты' },
-  { id: 'jaeger', label: 'Егерь' },
+  // Вкладка «Егерь» временно скрыта
 ]
 
 const contentSubTabs: { id: ContentSubTab, label: string }[] = [
