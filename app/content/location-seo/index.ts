@@ -1,3 +1,4 @@
+import { kalugaLocationSeo } from './kaluzskaia-oblast'
 import { yaroslavlLocationSeo } from './iaroslavskaia-oblast'
 import { moscowLocationSeo } from './moskovskaia-oblast'
 import { tverLocationSeo } from './tverskaia-oblast'
@@ -7,6 +8,7 @@ import { vologdaLocationSeo } from './vologodskaia-oblast'
 
 export const locationSeoBySlug: Record<string, LocationSeoContent> = {
   'iaroslavskaia-oblast': yaroslavlLocationSeo,
+  'kaluzskaia-oblast': kalugaLocationSeo,
   'moskovskaia-oblast': moscowLocationSeo,
   'tverskaia-oblast': tverLocationSeo,
   'vladimirskaia-oblast': vladimirLocationSeo,
