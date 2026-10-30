@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import type { OrganisationAnimal, OrganisationPeriod } from '~/api/animals'
-import { formatApiDate, formatBirthdayDate, parseBirthdayDate } from '~/utils/date'
+import { addMonths, formatApiDate, formatBirthdayDate, parseBirthdayDate, startOfDay } from '~/utils/date'
 import { formatHotelPrice } from '~/utils/hotel'
 
 definePageMeta({
@@ -60,6 +60,8 @@ const busyPeriodId = ref<number | null>(null)
 const openDate = ref<OpenDateField | null>(null)
 const pickerDate = ref<Date | null>(null)
 const pickerActivePart = ref<'start' | 'end' | null>('start')
+const pickerViewDate = ref<Date | null>(null)
+const pickerMinDate = computed(() => startOfDay(new Date()))
 const dateFieldRefs = new Map<string, HTMLElement>()
 
 let nextDraftPeriodId = -1
@@ -252,8 +254,29 @@ function isDateOpen(periodId: number, field: DateField) {
 }
 
 function displayDate(value: string) {
-  const parsed = parseBirthdayDate(value)
+  const trimmed = value.trim()
+  const complete = /^\d{4}-\d{2}-\d{2}/.test(trimmed) || /^\d{2}\.\d{2}\.\d{4}$/.test(trimmed)
+
+  if (!complete) {
+    return value
+  }
+
+  const parsed = parseBirthdayDate(trimmed)
   return parsed ? formatBirthdayDate(parsed) : value
+}
+
+function onDateInput(period: HuntingPeriod, field: DateField, value: string) {
+  period[field] = value
+
+  if (!isDateOpen(period.id, field)) {
+    return
+  }
+
+  const parsed = parseBirthdayDate(value)
+
+  if (parsed && /^\d{2}\.\d{2}\.\d{4}$/.test(value.trim())) {
+    pickerDate.value = parsed
+  }
 }
 
 function closeDateCalendar() {
@@ -273,6 +296,9 @@ function toggleDateCalendar(period: HuntingPeriod, field: DateField) {
   openDate.value = { periodId: period.id, field }
   pickerDate.value = parseBirthdayDate(period[field])
   pickerActivePart.value = 'start'
+
+  const fromDate = field === 'to' ? parseBirthdayDate(period.from) : null
+  pickerViewDate.value = fromDate ? addMonths(fromDate, 1) : null
 }
 
 function onDateSelect(period: HuntingPeriod, field: DateField, date: Date) {
@@ -552,13 +578,12 @@ onBeforeUnmount(() => {
                 <span class="hunting-org__field-label">От</span>
                 <CommonFormField
                   no-margin
-                  cursor-pointer
-                  readonly
+                  date-only
                   placeholder="дд.мм.гггг"
                   :model-value="displayDate(period.from)"
                   :open="isDateOpen(period.id, 'from')"
                   :disabled="busyPeriodId === period.id"
-                  @click.stop="toggleDateCalendar(period, 'from')"
+                  @update:model-value="onDateInput(period, 'from', $event)"
                 >
                   <template #trailing>
                     <button
@@ -582,6 +607,7 @@ onBeforeUnmount(() => {
                         v-model:start="pickerDate"
                         v-model:active-part="pickerActivePart"
                         mode="single"
+                        :min-date="pickerMinDate"
                         @select="onDateSelect(period, 'from', $event)"
                       />
                     </div>
@@ -597,13 +623,12 @@ onBeforeUnmount(() => {
                 <span class="hunting-org__field-label">До</span>
                 <CommonFormField
                   no-margin
-                  cursor-pointer
-                  readonly
+                  date-only
                   placeholder="дд.мм.гггг"
                   :model-value="displayDate(period.to)"
                   :open="isDateOpen(period.id, 'to')"
                   :disabled="busyPeriodId === period.id"
-                  @click.stop="toggleDateCalendar(period, 'to')"
+                  @update:model-value="onDateInput(period, 'to', $event)"
                 >
                   <template #trailing>
                     <button
@@ -627,6 +652,8 @@ onBeforeUnmount(() => {
                         v-model:start="pickerDate"
                         v-model:active-part="pickerActivePart"
                         mode="single"
+                        :min-date="pickerMinDate"
+                        :view-date="pickerViewDate"
                         @select="onDateSelect(period, 'to', $event)"
                       />
                     </div>

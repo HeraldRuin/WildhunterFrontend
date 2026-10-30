@@ -13,11 +13,13 @@ const props = withDefaults(defineProps<{
   mode?: 'range' | 'single'
   minDate?: Date | null
   maxDate?: Date | null
+  viewDate?: Date | null
   unavailableDates?: string[]
 }>(), {
   mode: 'range',
   minDate: null,
   maxDate: null,
+  viewDate: null,
   unavailableDates: () => [],
 })
 
@@ -30,10 +32,52 @@ const start = defineModel<Date | null>('start', { default: null })
 const end = defineModel<Date | null>('end', { default: null })
 const activePart = defineModel<'start' | 'end' | null>('activePart', { default: 'start' })
 
-const viewMonth = ref(startOfDay(start.value ?? props.minDate ?? new Date()))
+function monthIndex(date: Date) {
+  return date.getFullYear() * 12 + date.getMonth()
+}
+
+function clampViewDate(date: Date) {
+  const candidate = startOfDay(date)
+
+  if (!props.minDate) {
+    return candidate
+  }
+
+  const min = startOfDay(props.minDate)
+
+  if (monthIndex(candidate) < monthIndex(min)) {
+    return min
+  }
+
+  return candidate
+}
+
+function initialViewDate() {
+  if (props.viewDate) {
+    return clampViewDate(props.viewDate)
+  }
+
+  return clampViewDate(start.value ?? props.minDate ?? new Date())
+}
+
+const viewMonth = ref(initialViewDate())
 const weekdays = getWeekdayNames()
 const isSingle = computed(() => props.mode === 'single')
 const hasDateLimits = computed(() => Boolean(props.minDate && props.maxDate))
+const canGoToPreviousMonth = computed(() => {
+  if (!props.minDate) {
+    return true
+  }
+
+  return monthIndex(viewMonth.value) - 1 >= monthIndex(props.minDate)
+})
+const canGoToPreviousYear = computed(() => {
+  if (!props.minDate) {
+    return true
+  }
+
+  return monthIndex(viewMonth.value) - 12 >= monthIndex(props.minDate)
+})
 
 const currentMonth = computed(() => new Date(viewMonth.value.getFullYear(), viewMonth.value.getMonth(), 1))
 
@@ -95,12 +139,17 @@ function getDayState(date: Date) {
 }
 
 function focusMonthForPart(part: 'start' | 'end' | null) {
+  if (props.viewDate) {
+    viewMonth.value = clampViewDate(props.viewDate)
+    return
+  }
+
   const target = part === 'end'
     ? (end.value ?? start.value)
     : (start.value ?? end.value)
 
   if (target) {
-    viewMonth.value = startOfDay(target)
+    viewMonth.value = clampViewDate(target)
     return
   }
 
@@ -210,6 +259,10 @@ function selectDate(date: Date) {
 }
 
 function goToPreviousMonth() {
+  if (!canGoToPreviousMonth.value) {
+    return
+  }
+
   viewMonth.value = addMonths(viewMonth.value, -1)
 }
 
@@ -218,6 +271,10 @@ function goToNextMonth() {
 }
 
 function goToPreviousYear() {
+  if (!canGoToPreviousYear.value) {
+    return
+  }
+
   viewMonth.value = addMonths(viewMonth.value, -12)
 }
 
@@ -237,6 +294,7 @@ function goToNextYear() {
               type="button"
               class="hero-search-calendar__nav"
               aria-label="Предыдущий год"
+              :disabled="!canGoToPreviousYear"
               @click="goToPreviousYear"
             >
               «
@@ -245,6 +303,7 @@ function goToNextYear() {
               type="button"
               class="hero-search-calendar__nav"
               aria-label="Предыдущий месяц"
+              :disabled="!canGoToPreviousMonth"
               @click="goToPreviousMonth"
             >
               ‹
@@ -379,8 +438,13 @@ function goToNextYear() {
   transition: opacity 0.15s ease;
 }
 
-.hero-search-calendar__nav:hover {
+.hero-search-calendar__nav:hover:not(:disabled) {
   opacity: 0.6;
+}
+
+.hero-search-calendar__nav:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
 }
 
 .hero-search-calendar__weekdays,
