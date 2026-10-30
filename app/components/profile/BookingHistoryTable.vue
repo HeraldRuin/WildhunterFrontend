@@ -134,7 +134,10 @@ const ADMIN_EVENT_TOTAL_STATUSES = new Set([
 
 function eventStayAndHuntTotal(item: BookingHistoryItem) {
   const stay = item.accommodation ? accommodationTotal(item.accommodation) : null
-  const hunt = item.hunt?.total ?? item.hunt?.priceTotal ?? null
+  const hunt = item.hunt?.totalWithServices
+    ?? item.hunt?.total
+    ?? item.hunt?.priceTotal
+    ?? null
 
   if (stay == null && hunt == null) return null
 
