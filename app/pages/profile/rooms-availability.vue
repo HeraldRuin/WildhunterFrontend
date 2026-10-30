@@ -289,12 +289,23 @@ function extractErrorMessage(source: unknown, fallback: string) {
   return fallback
 }
 
+const canGoToPreviousMonth = computed(() => {
+  const today = new Date()
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const previousMonthEnd = new Date(viewDate.value.getFullYear(), viewDate.value.getMonth(), 0)
+  return previousMonthEnd.getTime() >= todayStart.getTime()
+})
+
 function goToday() {
   const today = new Date()
   viewDate.value = new Date(today.getFullYear(), today.getMonth(), 1)
 }
 
 function shiftMonth(delta: number) {
+  if (delta < 0 && !canGoToPreviousMonth.value) {
+    return
+  }
+
   viewDate.value = new Date(
     viewDate.value.getFullYear(),
     viewDate.value.getMonth() + delta,
@@ -518,6 +529,7 @@ onMounted(() => {
                 type="button"
                 class="rooms-availability__nav-btn rooms-availability__nav-btn--arrow"
                 aria-label="Предыдущий месяц"
+                :disabled="!canGoToPreviousMonth"
                 @click="shiftMonth(-1)"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -854,9 +866,14 @@ onMounted(() => {
   transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
-.rooms-availability__nav-btn:hover {
+.rooms-availability__nav-btn:hover:not(:disabled) {
   border-color: var(--wh-orange-600);
   background: var(--wh-orange-600);
+}
+
+.rooms-availability__nav-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .rooms-availability__nav-btn--today {
