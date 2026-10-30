@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  AnimalsManageResponse,
   TrophyCostAnimal,
   TrophyCostEntityKind,
   TrophyCostItem,
@@ -25,6 +26,7 @@ interface PriceRow {
 interface TrophyAnimal {
   id: number
   title: string
+  status: string | null
   trophies: PriceRow[]
   fines: PriceRow[]
   preparations: PriceRow[]
@@ -126,14 +128,33 @@ function toPriceRow(item: TrophyCostItem): PriceRow {
   }
 }
 
-function toAnimalRow(animal: TrophyCostAnimal): TrophyAnimal {
+function statusByAnimalId(response: AnimalsManageResponse | null) {
+  const statuses = new Map<number, string | null>()
+
+  if (!response || !('success' in response) || !response.success) {
+    return statuses
+  }
+
+  for (const animal of response.data.animals ?? []) {
+    statuses.set(animal.id, animal.status ?? null)
+  }
+
+  return statuses
+}
+
+function toAnimalRow(animal: TrophyCostAnimal, fallbackStatus?: string | null): TrophyAnimal {
   return {
     id: animal.id,
     title: animal.title,
+    status: animal.status ?? fallbackStatus ?? null,
     trophies: (animal.trophies ?? []).map(toPriceRow),
     fines: (animal.fines ?? []).map(toPriceRow),
     preparations: (animal.preparations ?? []).map(toPriceRow),
   }
+}
+
+function isAnimalUnavailable(animal: Pick<TrophyAnimal, 'status'>) {
+  return Boolean(animal.status) && animal.status !== 'publish'
 }
 
 function extractErrorMessage(source: unknown, fallback: string) {
@@ -209,10 +230,16 @@ async function loadTrophyCost() {
   loadError.value = ''
 
   try {
-    const response = await animalsApi.getTrophyCost()
+    const [response, manageResponse] = await Promise.all([
+      animalsApi.getTrophyCost(),
+      animalsApi.getManage().catch(() => null),
+    ])
 
     if ('success' in response && response.success) {
-      animals.value = (response.data ?? []).map(toAnimalRow)
+      const statuses = statusByAnimalId(manageResponse)
+      animals.value = (response.data ?? []).map(animal =>
+        toAnimalRow(animal, statuses.get(animal.id)),
+      )
 
       if (
         selectedAnimalId.value == null
@@ -327,7 +354,15 @@ onMounted(() => {
           @click="selectAnimal(animal.id)"
         >
           <span class="trophy-cost__animal-dot" aria-hidden="true" />
-          <span class="trophy-cost__animal-label">{{ animal.title }}</span>
+          <span class="trophy-cost__animal-text">
+            <span class="trophy-cost__animal-label">{{ animal.title }}</span>
+            <span
+              v-if="isAnimalUnavailable(animal)"
+              class="trophy-cost__animal-unavailable"
+            >
+              Данное животное пока недоступно для охоты
+            </span>
+          </span>
         </button>
 
         <p v-if="!animals.length" class="trophy-cost__animals-empty">
@@ -343,6 +378,13 @@ onMounted(() => {
           :options="animalSelectOptions"
           :disabled="isBusy || !animalSelectOptions.length"
         />
+
+        <p
+          v-if="selectedAnimal && isAnimalUnavailable(selectedAnimal)"
+          class="trophy-cost__animal-unavailable trophy-cost__animal-unavailable--select"
+        >
+          Данное животное пока недоступно для охоты
+        </p>
 
         <p v-if="!animals.length" class="trophy-cost__animals-empty">
           Нет животных
@@ -649,7 +691,7 @@ onMounted(() => {
 
 .trophy-cost__animal {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   width: 100%;
   padding: 12px 14px;
@@ -672,13 +714,36 @@ onMounted(() => {
   flex-shrink: 0;
   width: 6px;
   height: 6px;
+  margin-top: 0.45em;
   border-radius: 50%;
   background-color: transparent;
+}
+
+.trophy-cost__animal-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .trophy-cost__animal-label {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.trophy-cost__animal-unavailable {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #dc2626;
+}
+
+.trophy-cost__animal--active .trophy-cost__animal-unavailable {
+  color: #fff;
+}
+
+.trophy-cost__animal-unavailable--select {
+  margin: 8px 0 0;
 }
 
 .trophy-cost__animal:hover:not(:disabled):not(.trophy-cost__animal--active),

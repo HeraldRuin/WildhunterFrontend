@@ -123,6 +123,7 @@ export interface TrophyCostItem {
 export interface TrophyCostAnimal {
   id: number
   title: string
+  status?: string | null
   trophies: TrophyCostItem[]
   fines: TrophyCostItem[]
   preparations: TrophyCostItem[]
