@@ -511,7 +511,22 @@ const serviceTabs: { id: ExtraServicesTab, label: string }[] = [
   { id: 'additional', label: 'Свои услуги' },
 ]
 
+const serviceTabOptions: SelectFieldOption[] = serviceTabs.map(tab => ({
+  value: tab.id,
+  label: tab.label,
+}))
+
 const activeTab = ref<ExtraServicesTab>('installed')
+
+const activeTabSelect = computed({
+  get: () => activeTab.value,
+  set: (value: string | string[]) => {
+    const next = Array.isArray(value) ? value[0] : value
+    if (next === 'installed' || next === 'additional') {
+      activeTab.value = next
+    }
+  },
+})
 const selectedInstalledServiceId = ref('')
 const systemServices = ref<SystemServiceCatalogItem[]>([])
 
@@ -804,6 +819,14 @@ onBeforeUnmount(() => {
           {{ tab.label }}
         </button>
       </nav>
+
+      <CommonSelectField
+        v-model="activeTabSelect"
+        class="extra-services__tab-select"
+        aria-label="Разделы услуг"
+        no-margin
+        :options="serviceTabOptions"
+      />
 
       <div class="extra-services__nav-action">
         <CommonSelectField
@@ -1118,6 +1141,12 @@ onBeforeUnmount(() => {
 
 .extra-services__nav-link:not(.extra-services__nav-link--active)::after {
   transition-duration: 0s;
+}
+
+.extra-services__tab-select {
+  display: none;
+  width: 100%;
+  min-width: 0;
 }
 
 .extra-services__add {
@@ -1821,7 +1850,11 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__nav {
-    gap: 20px;
+    display: none;
+  }
+
+  .extra-services__tab-select {
+    display: block;
   }
 
   .extra-services__nav-action {
@@ -1872,18 +1905,19 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__col--cost {
-    grid-column: 1;
+    grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 4px;
-    width: auto;
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
   .extra-services__field-label--mobile {
     display: block;
+    white-space: nowrap;
   }
 
   .extra-services__field-label {
@@ -1906,25 +1940,31 @@ onBeforeUnmount(() => {
   }
 
   .extra-services__field--type {
-    flex: 1 1 0;
-    width: auto;
+    flex: 1 1 100%;
+    width: 100%;
     min-width: 0;
   }
 
+  .extra-services__field--type :deep(.select-field__value) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .extra-services__col--actions {
-    grid-column: 2;
+    grid-column: 1 / -1;
     flex-shrink: 0;
     justify-content: flex-end;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     padding-bottom: 0;
-    width: auto;
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
   .extra-services__col--actions--single {
     justify-content: flex-end;
-    width: auto;
+    width: 100%;
   }
 
   .extra-services__col--actions--single .extra-services__btn {
