@@ -1598,13 +1598,13 @@ onBeforeUnmount(() => {
   color: rgba(0, 0, 0, 0.45);
 }
 
-@media (min-width: 1439px) {
+@media (min-width: 1704px) {
   .extra-services__name {
     min-width: 280px;
   }
 }
 
-@media (max-width: 1438px) {
+@media (max-width: 1703px) {
   .profile-page {
     overflow-x: hidden;
   }
