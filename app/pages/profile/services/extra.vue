@@ -56,7 +56,10 @@ function hasQuantityAndType(service: ExtraServiceRow) {
     return service.calculationType.trim() !== ''
   }
 
-  return parseCount(service.quantity) != null && service.calculationType.trim() !== ''
+  const quantity = service.quantity.trim()
+  const quantityOk = quantity === '' || parseCount(quantity) != null
+
+  return quantityOk && service.calculationType.trim() !== ''
 }
 
 function normalizePlace(value: unknown): string {
@@ -266,10 +269,11 @@ function buildPayload(service: ExtraServiceRow) {
     return null
   }
 
-  const count = isMealsService(service) || isFoodService(service)
+  const quantityRaw = service.quantity.trim()
+  const count = isMealsService(service) || isFoodService(service) || quantityRaw === ''
     ? null
     : parseCount(service.quantity)
-  if (!isMealsService(service) && !isFoodService(service) && count == null) {
+  if (!isMealsService(service) && !isFoodService(service) && quantityRaw !== '' && count == null) {
     return null
   }
 
@@ -369,7 +373,7 @@ async function saveService(service: ExtraServiceRow) {
     notifications.error(
       isMealsService(service)
         ? 'Заполните имя и корректную стоимость'
-        : 'Заполните имя, количество, тип расчёта и корректную стоимость',
+        : 'Заполните имя, тип расчёта и корректную стоимость',
     )
     return
   }
