@@ -126,6 +126,30 @@ function grandTotalLines(item: BookingHistoryItem) {
   return lines
 }
 
+const ADMIN_EVENT_TOTAL_STATUSES = new Set([
+  'confirmed',
+  'collection',
+  'prepayment_collection',
+])
+
+function eventStayAndHuntTotal(item: BookingHistoryItem) {
+  const stay = item.accommodation ? accommodationTotal(item.accommodation) : null
+  const hunt = item.hunt?.total ?? item.hunt?.priceTotal ?? null
+
+  if (stay == null && hunt == null) return null
+
+  return (stay ?? 0) + (hunt ?? 0)
+}
+
+function showAdminEventTotal(item: BookingHistoryItem) {
+  return Boolean(
+    props.showCustomer
+    && item.status.code
+    && ADMIN_EVENT_TOTAL_STATUSES.has(item.status.code)
+    && eventStayAndHuntTotal(item) != null,
+  )
+}
+
 function isPaymentVisibleStatus(code?: string) {
   return code === 'finish_bed_collection'
     || code === 'paid'
@@ -650,6 +674,12 @@ onBeforeUnmount(() => {
                   class="booking-table__payment-summary"
                 >
                   <div>Остаток доплаты базе: <span class="booking-table__payment-summary-value">{{ formatPrice(item.payment?.baseTotal ?? 0) }} руб.</span></div>
+                </div>
+                <div
+                  v-else-if="showAdminEventTotal(item)"
+                  class="booking-table__payment-summary"
+                >
+                  <div>Итоговая сумма за все мероприятие: <span class="booking-table__payment-summary-value">{{ formatPrice(eventStayAndHuntTotal(item) ?? 0) }} руб</span></div>
                 </div>
               </div>
             </td>
