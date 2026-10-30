@@ -309,7 +309,7 @@ function handleKeydown(event: KeyboardEvent) {
               Информация о мероприятии бронирования #{{ booking.number }}
             </template>
             <template v-else>
-              Сбор для брони #{{ booking.number }}
+              Корректировка сбора для брони #{{ booking.number }}
             </template>
           </h2>
 
