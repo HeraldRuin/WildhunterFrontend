@@ -71,12 +71,17 @@ function toAnimalRow(item: ManagedAnimal): AnimalRow {
   return {
     id: item.id,
     title: item.title,
+    status: item.status ?? null,
     hunters_count: item.hunters_count,
     max_hunters_count: maxHuntersCount,
     hunt_type: item.hunt_type ?? null,
     huntersCountInput: String(item.hunters_count),
     maxHuntersCountInput: String(maxHuntersCount),
   }
+}
+
+function isAnimalUnavailable(animal: Pick<ManagedAnimal, 'status'>) {
+  return Boolean(animal.status) && animal.status !== 'publish'
 }
 
 function extractErrorMessage(source: unknown, fallback: string) {
@@ -312,6 +317,7 @@ async function saveAllAnimals() {
 
         return toAnimalRow({
           ...updated,
+          status: updated.status ?? animal.status,
           max_hunters_count: updated.max_hunters_count ?? animal.max_hunters_count,
         })
       })
@@ -355,10 +361,12 @@ async function removeAnimal(animal: AnimalRow) {
 
     if ('success' in response && response.success) {
       animals.value = animals.value.filter(item => item.id !== animal.id)
-      available.value = [
-        ...available.value,
-        { id: animal.id, title: animal.title },
-      ].sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+      if (!isAnimalUnavailable(animal)) {
+        available.value = [
+          ...available.value,
+          { id: animal.id, title: animal.title },
+        ].sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+      }
       notifications.success(response.message || 'Животное удалено')
       return
     }
@@ -604,8 +612,17 @@ onBeforeUnmount(() => {
                   v-for="animal in animals"
                   :key="animal.id"
                   class="animals-manage__row"
+                  :class="{ 'animals-manage__row--unavailable': isAnimalUnavailable(animal) }"
                 >
-                  <span class="animals-manage__col animals-manage__col--name">{{ animal.title }}</span>
+                  <span class="animals-manage__col animals-manage__col--name">
+                    <span class="animals-manage__name">{{ animal.title }}</span>
+                    <span
+                      v-if="isAnimalUnavailable(animal)"
+                      class="animals-manage__unavailable"
+                    >
+                      Данное животное пока недоступно для охоты
+                    </span>
+                  </span>
                   <span class="animals-manage__col animals-manage__col--hunt-type">{{ animal.hunt_type?.title }}</span>
 
                   <div class="animals-manage__col animals-manage__col--hunters">
@@ -916,6 +933,9 @@ onBeforeUnmount(() => {
 }
 
 .animals-manage__col--name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
   font-size: 14px;
   font-weight: 400;
@@ -923,6 +943,18 @@ onBeforeUnmount(() => {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.animals-manage__row--unavailable .animals-manage__name,
+.animals-manage__row--unavailable .animals-manage__col--hunt-type {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.animals-manage__unavailable {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #dc2626;
 }
 
 .animals-manage__col--hunt-type,

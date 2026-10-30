@@ -15,6 +15,7 @@ export interface ManagedAnimalHuntType {
 export interface ManagedAnimal {
   id: number
   title: string
+  status?: string | null
   hunters_count: number
   max_hunters_count?: number
   hunt_type?: ManagedAnimalHuntType | null
