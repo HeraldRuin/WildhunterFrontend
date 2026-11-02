@@ -788,6 +788,7 @@ export interface BookingHistoryItemDto {
       price?: number | null
       price_total?: number | null
       price_per_person?: number | null
+      hunters_count?: number | null
     } | null
     rooms: BookingHistoryRoomDto[]
   }

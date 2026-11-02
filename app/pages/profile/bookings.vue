@@ -187,6 +187,22 @@ async function refreshHistory() {
   syncPendingInvitationsCount()
 }
 
+async function handleCollectionFinished(bookingCode: string) {
+  await refreshHistory()
+
+  const booking = bookings.value.find(item => item.code === bookingCode)
+  if (!booking?.status.code) {
+    return
+  }
+
+  if (
+    booking.status.code === 'finished_collection'
+    || FINISHED_COLLECTION_MODAL_STATUSES.has(booking.status.code)
+  ) {
+    await openFinishedCollectionModal(booking)
+  }
+}
+
 async function handleCollectionExtended() {
   await refreshHistory()
 
@@ -1257,6 +1273,7 @@ async function handleHunterRemoved(hunterId: number, done: () => void) {
       @extended="handleCollectionExtended"
       @invited="handleHunterInvited"
       @cancelled="refreshHistory"
+      @finished="handleCollectionFinished"
     />
     <ProfileInvitationModal
       :booking="invitationModalBooking"

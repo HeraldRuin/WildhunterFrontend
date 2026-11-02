@@ -17,6 +17,7 @@ let activeInviteBookingCode: string | null = null
 const emit = defineEmits<{
   extended: []
   cancelled: []
+  finished: [bookingCode: string]
   invited: [payload: { hunter: UserSearchItem }]
 }>()
 
@@ -48,6 +49,7 @@ const isSearching = ref(false)
 const searchError = ref('')
 const timerNow = ref(Date.now())
 const visibleInviteFieldCount = ref(4)
+const isFinishingCollection = ref(false)
 const INVITE_FIELDS_EXPAND_THRESHOLD = 5
 const INITIAL_EXPANDED_INVITE_FIELDS = 4
 let timerInterval: ReturnType<typeof setInterval> | undefined
@@ -170,6 +172,13 @@ const statsPanelParticipants = computed<CollectionParticipant[]>(() => {
 })
 
 const slotsTotal = computed(() => state.value?.slotsTotal ?? 0)
+
+const canFinishCollection = computed(() => {
+  const minHunters = state.value?.minHunters
+  const required = minHunters && minHunters > 0 ? minHunters : slotsTotal.value
+
+  return required > 0 && collectedCount.value >= required
+})
 
 const usesExpandedInviteFields = computed(() => {
   return slotsTotal.value > INVITE_FIELDS_EXPAND_THRESHOLD
@@ -624,6 +633,52 @@ function requestCollectionCancellation() {
     title: 'Вы уверены, что хотите отменить сбор?',
     confirmLabel: 'Отменить сбор',
     onConfirm: cancelCollection,
+    onCancel: () => {
+      setTimeout(reopen, 200)
+    },
+    transparentBackdrop: true,
+  })
+}
+
+async function finishCollection() {
+  const bookingCode = state.value?.bookingCode
+  if (!bookingCode || !canFinishCollection.value || isFinishingCollection.value) return
+
+  isFinishingCollection.value = true
+
+  try {
+    const response = await bookingsApi.finishCollection(bookingCode)
+
+    if (response.success) {
+      notifications.success(response.message || 'Сбор завершён')
+      clearInviteDraft(bookingCode)
+      emit('finished', bookingCode)
+      close()
+      return
+    }
+
+    notifications.error(response.message || 'Не удалось завершить сбор')
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось завершить сбор')
+    throw error
+  }
+  finally {
+    isFinishingCollection.value = false
+  }
+
+  throw new Error('finish_collection_failed')
+}
+
+function requestCollectionFinish() {
+  if (!canFinishCollection.value || isFinishingCollection.value) return
+
+  hide()
+  openConfirmModal({
+    title: 'Завершить сбор? Минимальное число охотников уже собрано.',
+    confirmLabel: 'Завершить сбор',
+    onConfirm: finishCollection,
     onCancel: () => {
       setTimeout(reopen, 200)
     },
@@ -1261,7 +1316,8 @@ function updateStatsPanelLayout() {
               <button
                 type="button"
                 class="collection-modal__btn"
-                disabled
+                :disabled="!canFinishCollection || isFinishingCollection"
+                @click="requestCollectionFinish"
               >
                 Завершить сбор
               </button>

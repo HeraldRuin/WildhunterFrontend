@@ -454,6 +454,9 @@ export function mapBookingHistoryItem(
           animal: details.animal?.title || '—',
           animalId: details.animal?.id,
           hunters: Number(details.total_hunting) || 0,
+          minHunters: details.animal?.hunters_count && details.animal.hunters_count > 0
+            ? Number(details.animal.hunters_count)
+            : undefined,
           pricePerHunter: details.animal?.price ?? null,
           priceTotal: details.animal?.price_total ?? null,
           pricePerPerson: details.animal?.price_per_person ?? null,

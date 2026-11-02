@@ -224,6 +224,9 @@ function buildMockState(booking: BookingHistoryItem): CollectionModalState {
     timerEndAt: booking.status.timerEndAt,
     timerExpired: booking.status.timer === '00 мин 00 сек',
     slotsTotal,
+    minHunters: booking.hunt?.minHunters && booking.hunt.minHunters > 0
+      ? booking.hunt.minHunters
+      : undefined,
     participants: invitedParticipants.length
       ? invitedParticipants
       : MOCK_PARTICIPANTS.slice(0, confirmedCount),

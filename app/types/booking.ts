@@ -58,6 +58,7 @@ export interface CollectionModalState {
   timerEndAt?: string
   timerExpired: boolean
   slotsTotal: number
+  minHunters?: number
   participants: CollectionParticipant[]
 }
 
@@ -87,6 +88,7 @@ export interface BookingHuntDetails {
   animal: string
   animalId?: number
   hunters: number
+  minHunters?: number
   pricePerHunter?: number | null
   priceTotal?: number | null
   pricePerPerson?: number | null
