@@ -658,7 +658,59 @@ async function installService(systemServiceId: number) {
 const scrollEl = ref<HTMLElement | null>(null)
 const listPageCount = ref(1)
 const listPageIndex = ref(0)
+const wrappedRowIds = ref(new Set<number>())
 let listResizeObserver: ResizeObserver | null = null
+
+function isServiceRowWrapped(row: HTMLElement) {
+  const nameCol = row.querySelector<HTMLElement>(':scope > .extra-services__col--name')
+  const items: HTMLElement[] = []
+
+  if (nameCol && getComputedStyle(nameCol).display === 'contents') {
+    nameCol.querySelectorAll<HTMLElement>(':scope > *').forEach(item => items.push(item))
+  }
+  else if (nameCol) {
+    items.push(nameCol)
+  }
+
+  row.querySelectorAll<HTMLElement>(
+    ':scope > .extra-services__col--cost, :scope > .extra-services__col--actions',
+  ).forEach(item => items.push(item))
+
+  const visible = items.filter(item => item.getClientRects().length > 0)
+  if (visible.length < 2) {
+    return false
+  }
+
+  const tops = visible.map(item => item.getBoundingClientRect().top)
+  const firstTop = Math.min(...tops)
+
+  return tops.some(top => top - firstTop > 40)
+}
+
+function syncWrappedRows() {
+  const root = scrollEl.value
+  if (!root) {
+    if (wrappedRowIds.value.size > 0) {
+      wrappedRowIds.value = new Set()
+    }
+    return
+  }
+
+  const next = new Set<number>()
+  root.querySelectorAll<HTMLElement>('.extra-services__row').forEach((row) => {
+    const id = Number(row.dataset.serviceId)
+    if (Number.isFinite(id) && isServiceRowWrapped(row)) {
+      next.add(id)
+    }
+  })
+
+  const current = wrappedRowIds.value
+  if (current.size === next.size && [...next].every(id => current.has(id))) {
+    return
+  }
+
+  wrappedRowIds.value = next
+}
 
 function getListMaxScroll(el: HTMLElement) {
   return Math.max(0, el.scrollHeight - el.clientHeight)
@@ -703,6 +755,7 @@ function updateListPages() {
   const pages = getListPageCount(el)
   listPageCount.value = pages
   listPageIndex.value = getListPageIndex(el, pages)
+  syncWrappedRows()
 }
 
 function scheduleListPagesUpdate() {
@@ -932,6 +985,8 @@ onBeforeUnmount(() => {
                   v-for="service in visibleServices"
                   :key="service.id"
                   class="extra-services__row"
+                  :class="{ 'extra-services__row--wrapped': wrappedRowIds.has(service.id) }"
+                  :data-service-id="service.id"
                 >
                   <div class="extra-services__col extra-services__col--name">
                     <div
@@ -1384,6 +1439,23 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
+.extra-services__list:has(.extra-services__row--wrapped) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: 12px;
+}
+
+.extra-services__row.extra-services__row--wrapped {
+  outline: 1px solid var(--wh-orange-500);
+  outline-offset: -1px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  width: auto;
+  margin: 0;
+}
+
 .extra-services__col--name {
   display: flex;
   align-items: flex-end;
@@ -1401,10 +1473,13 @@ onBeforeUnmount(() => {
 .extra-services__col--actions {
   display: flex;
   align-items: center;
+  align-self: stretch;
   justify-content: flex-end;
   gap: 8px;
-  padding-bottom: 1px;
+  box-sizing: border-box;
   width: 348px;
+  padding-top: calc(12px * 1.2 + 4px);
+  padding-bottom: 0;
 }
 
 .extra-services__visibility {
@@ -1468,7 +1543,9 @@ onBeforeUnmount(() => {
 }
 
 .extra-services__head .extra-services__col--actions {
+  align-self: center;
   justify-content: center;
+  padding-top: 0;
   padding-bottom: 0;
 }
 
@@ -1692,6 +1769,66 @@ onBeforeUnmount(() => {
   .extra-services__col--actions--single .extra-services__btn {
     flex: 0 0 auto;
     width: auto;
+  }
+}
+
+@media (max-width: 1703px) and (min-width: 1025px) {
+  .extra-services__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 16px;
+  }
+
+  .extra-services__col--name {
+    display: contents;
+  }
+
+  .extra-services__name {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 240px;
+    width: auto;
+    min-width: 180px;
+    max-width: 100%;
+  }
+
+  .extra-services__field--place {
+    flex: 0 0 148px;
+    width: 148px;
+    max-width: 100%;
+  }
+
+  .extra-services__field--qty {
+    flex: 0 0 96px;
+    width: 96px;
+    max-width: 100%;
+  }
+
+  .extra-services__field--type {
+    flex: 1 1 200px;
+    width: auto;
+    min-width: 180px;
+    max-width: 100%;
+  }
+
+  .extra-services__col--cost {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    flex: 1 1 140px;
+    width: auto;
+    min-width: 140px;
+    max-width: 100%;
+  }
+
+  .extra-services__col--actions {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
+    padding-bottom: 0;
   }
 }
 
@@ -1958,8 +2095,10 @@ onBeforeUnmount(() => {
   .extra-services__col--actions {
     grid-column: 1 / -1;
     flex-shrink: 0;
+    align-self: auto;
     justify-content: flex-end;
     flex-wrap: wrap;
+    padding-top: 0;
     padding-bottom: 0;
     width: 100%;
     max-width: 100%;
