@@ -8,7 +8,6 @@ import {
 } from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 import { countHuntsForHunters, resolveHuntingPerPerson } from '~/utils/hotelHunt'
-import { pluralizeRu } from '~/utils/pluralize'
 
 definePageMeta({
   layout: 'home',
@@ -185,12 +184,6 @@ function mapCheckoutToView(data: BookingCheckoutData | null) {
   }
 }
 
-function nightsCaption(count: number) {
-  const word = pluralizeRu(count, ['сутки', 'сутки', 'суток']).replace(/^\d+\s+/, '')
-
-  return word.charAt(0).toUpperCase() + word.slice(1)
-}
-
 function resolveDraftHuntCount(data: HotelBookingDraft) {
   if (data.huntCount != null && data.huntCount > 0) {
     return data.huntCount
@@ -288,16 +281,6 @@ const booking = computed(() => {
   }
 
   return draft.value ? mapDraftToView(draft.value) : null
-})
-
-const accommodationPerNight = computed(() => {
-  const current = booking.value
-
-  if (!current?.hasAccommodation || current.nights <= 0) {
-    return 0
-  }
-
-  return Math.round(current.accommodationTotal / current.nights)
 })
 
 const eventTotal = computed(() => {
@@ -554,20 +537,12 @@ async function confirmSaveBooking() {
                     <dd>{{ booking.checkOut }}</dd>
                   </div>
                   <div class="booking-confirmation__detail-row">
-                    <dt>{{ nightsCaption(booking.nights) }}</dt>
-                    <dd>{{ booking.nights }}</dd>
-                  </div>
-                  <div class="booking-confirmation__detail-row">
                     <dt>Взрослые</dt>
                     <dd>{{ booking.adults }}</dd>
                   </div>
                   <div v-if="booking.roomsCount > 0" class="booking-confirmation__detail-row">
                     <dt>Количество номеров</dt>
                     <dd>{{ booking.roomsCount }}</dd>
-                  </div>
-                  <div v-if="accommodationPerNight > 0" class="booking-confirmation__detail-row">
-                    <dt>Стоимость за сутки</dt>
-                    <dd>{{ formatHotelPriceLabel(accommodationPerNight) }}</dd>
                   </div>
                   <div
                     v-if="booking.adults >= 2 && booking.accommodationPerPerson != null"
@@ -664,11 +639,11 @@ async function confirmSaveBooking() {
           <h2 class="booking-confirmation__event-total-title">Предварительная смета по мероприятию</h2>
           <div class="booking-confirmation__event-total">
             <div v-if="eventPerPersonTotal > 0" class="booking-confirmation__event-total-row">
-              <span class="booking-confirmation__event-total-caption">Общая на одного человека</span>
+              <span class="booking-confirmation__event-total-caption">Общая сумма на одного человека</span>
               <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(eventPerPersonTotal) }}</span>
             </div>
             <div class="booking-confirmation__event-total-row">
-              <span class="booking-confirmation__event-total-caption">Общая за все мероприятие</span>
+              <span class="booking-confirmation__event-total-caption">Общая сумма за все мероприятие</span>
               <span class="booking-confirmation__event-total-value">{{ formatHotelPriceLabel(eventTotal) }}</span>
             </div>
           </div>
