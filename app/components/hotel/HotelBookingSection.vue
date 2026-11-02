@@ -189,6 +189,9 @@ const guestsHuntersMismatch = computed(() =>
 const ROOMS_EXCEED_GUESTS_MESSAGE = 'Количество номеров не может быть больше количества охотников'
 const INSUFFICIENT_CAPACITY_MESSAGE
   = 'Вместимость выбранных номеров меньше количества охотников. Увеличьте число номеров или выберите более вместительный вариант'
+const insufficientRoomCapacity = computed(() =>
+  hasSelectedRooms.value && selectedRoomsCapacity.value < stayAdults.value,
+)
 const isBookingBlocked = computed(() =>
   roomsExceedGuests.value
   || guestsHuntersMismatch.value
@@ -236,22 +239,9 @@ function resetHunters() {
   applyHuntersCount(DEFAULT_HUNTERS)
 }
 
-function warnIfInsufficientCapacity() {
-  if (!hasSelectedRooms.value || selectedRoomsCapacity.value >= stayAdults.value) {
-    return
-  }
-
-  if (apiMessage.value === INSUFFICIENT_CAPACITY_MESSAGE) {
-    return
-  }
-
-  showApiMessage(INSUFFICIENT_CAPACITY_MESSAGE)
-}
-
 function handleAdultsChange(adults: number) {
   stayAdults.value = adults
   syncHuntersFromGuests()
-  warnIfInsufficientCapacity()
 }
 
 function handleRoomSelectionChange(payload: {
@@ -265,7 +255,6 @@ function handleRoomSelectionChange(payload: {
 
   if (payload.hasSelectedRooms) {
     syncHuntersFromGuests()
-    warnIfInsufficientCapacity()
     return
   }
 
@@ -513,7 +502,6 @@ function validateRoomsAgainstGuests(adults: number, rooms: Array<{ room_id: numb
   }
 
   if (getSelectedRoomsCapacity(rooms) < adults) {
-    showApiMessage(INSUFFICIENT_CAPACITY_MESSAGE)
     return false
   }
 
@@ -1103,6 +1091,14 @@ onMounted(() => {
             @dates-change="handleStayDatesChange"
             @adults-change="handleAdultsChange"
           />
+
+          <p
+            v-if="insufficientRoomCapacity"
+            class="hotel-booking-section__rooms-error"
+            role="alert"
+          >
+            {{ INSUFFICIENT_CAPACITY_MESSAGE }}
+          </p>
 
           <p
             v-if="hasCheckedAvailability && !isCheckingAvailability && !availableRooms.length"
