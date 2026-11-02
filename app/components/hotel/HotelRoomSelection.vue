@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  'selection-change': [payload: { hasSelectedRooms: boolean, totalRooms: number }]
+  'selection-change': [payload: { hasSelectedRooms: boolean, totalRooms: number, totalCapacity: number }]
 }>()
 
 const needsFontAwesome = computed(() =>
@@ -62,6 +62,14 @@ const totalSelectedRooms = computed(() =>
 
 const hasSelectedRooms = computed(() => totalSelectedRooms.value > 0)
 
+const selectedRoomsCapacity = computed(() =>
+  props.rooms.reduce((sum, room) => {
+    const quantity = quantities.value[room.id] ?? 0
+
+    return sum + room.capacity * quantity
+  }, 0),
+)
+
 const selectedRoomsSummary = computed(() => {
   let roomsCount = 0
   let total = 0
@@ -93,11 +101,12 @@ watch(
 )
 
 watch(
-  totalSelectedRooms,
+  [totalSelectedRooms, selectedRoomsCapacity],
   () => {
     emit('selection-change', {
       hasSelectedRooms: hasSelectedRooms.value,
       totalRooms: totalSelectedRooms.value,
+      totalCapacity: selectedRoomsCapacity.value,
     })
   },
   { immediate: true },

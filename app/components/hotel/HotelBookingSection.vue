@@ -94,6 +94,7 @@ const animalAvailabilityStay = ref<{
 } | null>(null)
 const hasSelectedRooms = ref(false)
 const selectedRoomsCount = ref(0)
+const selectedRoomsCapacity = ref(0)
 const stayAdults = ref(1)
 const selectedAnimalId = ref('')
 const huntHunters = ref(1)
@@ -235,17 +236,36 @@ function resetHunters() {
   applyHuntersCount(DEFAULT_HUNTERS)
 }
 
+function warnIfInsufficientCapacity() {
+  if (!hasSelectedRooms.value || selectedRoomsCapacity.value >= stayAdults.value) {
+    return
+  }
+
+  if (apiMessage.value === INSUFFICIENT_CAPACITY_MESSAGE) {
+    return
+  }
+
+  showApiMessage(INSUFFICIENT_CAPACITY_MESSAGE)
+}
+
 function handleAdultsChange(adults: number) {
   stayAdults.value = adults
   syncHuntersFromGuests()
+  warnIfInsufficientCapacity()
 }
 
-function handleRoomSelectionChange(payload: { hasSelectedRooms: boolean, totalRooms: number }) {
+function handleRoomSelectionChange(payload: {
+  hasSelectedRooms: boolean
+  totalRooms: number
+  totalCapacity: number
+}) {
   hasSelectedRooms.value = payload.hasSelectedRooms
   selectedRoomsCount.value = payload.totalRooms
+  selectedRoomsCapacity.value = payload.totalCapacity
 
   if (payload.hasSelectedRooms) {
     syncHuntersFromGuests()
+    warnIfInsufficientCapacity()
     return
   }
 
@@ -661,6 +681,7 @@ async function handleCheck(payload: { checkIn: string, checkOut: string, adults:
   isCheckingAvailability.value = true
   hasSelectedRooms.value = false
   selectedRoomsCount.value = 0
+  selectedRoomsCapacity.value = 0
   resetHunters()
 
   try {
@@ -1078,7 +1099,7 @@ onMounted(() => {
             :hotel-id="hotel?.id ?? null"
             :loading="isCheckingAvailability"
             @check="handleCheck"
-            @clear="availableRooms = []; hasCheckedAvailability = false; hasSelectedRooms = false; selectedRoomsCount = 0; resetHunters()"
+            @clear="availableRooms = []; hasCheckedAvailability = false; hasSelectedRooms = false; selectedRoomsCount = 0; selectedRoomsCapacity = 0; resetHunters()"
             @dates-change="handleStayDatesChange"
             @adults-change="handleAdultsChange"
           />
