@@ -86,11 +86,11 @@ const baseAdminExtraNavItems: NavItem[] = [
     ],
   },
   {
-    label: 'Организация охоты',
+    label: 'Охота',
     to: '/profile/services/hunting/',
     iconSrc: '/icons/animal-face.svg',
-    navigateOnOpen: true,
     children: [
+      { label: 'Организация охоты', to: '/profile/services/hunting/' },
       { label: 'Животные', to: '/profile/animals/' },
       { label: 'Таймеры', to: '/profile/timers/' },
       { label: 'Трофеи и штрафы', to: '/profile/services/trophies/' },
