@@ -89,7 +89,7 @@ const ADD_SERVICES_ACTION: BookingAction = {
 
 const COMPLETE_EVENT_ACTION: BookingAction = {
   id: 'complete',
-  label: 'Оплата полностью получена. Завершить событие',
+  label: 'Завершить событие',
   variant: 'success',
 }
 
@@ -265,7 +265,7 @@ function mapActions(
           : action.code === 'open_invitation'
           ? 'Список приглашенных'
           : action.code === 'complete' && !isHunter
-            ? 'Оплата полностью получена. Завершить событие'
+            ? 'Завершить событие'
           : action.code === 'mark_paid' && !isHunter
             ? 'Подтвердить событие'
             : action.code === 'add_services'
