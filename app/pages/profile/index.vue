@@ -746,7 +746,7 @@ async function handleSubmit() {
                         :class="{
                           'profile-form__avatar-history-item--active': selectedAvatarId === item.id,
                         }"
-                        :title="`Фото #${item.id}`"
+                        :title="`Фото №${item.id}`"
                         @click="selectHistoryAvatar(item)"
                       >
                         <img :src="item.url" alt="">

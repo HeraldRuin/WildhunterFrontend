@@ -1233,7 +1233,7 @@ const hasNewWeapon = computed(() =>
               v-if="card.loading"
               class="profile-weapon__toggle"
             >
-              <h2 class="profile-weapon__title">Лицензия #{{ card.index + 1 }}</h2>
+              <h2 class="profile-weapon__title">Лицензия №{{ card.index + 1 }}</h2>
               <CommonSpinner
                 class="profile-weapon__spinner"
                 variant="ring"
@@ -1249,7 +1249,7 @@ const hasNewWeapon = computed(() =>
               :aria-expanded="isWeaponExpanded(card.index)"
               @click="toggleWeapon(card.index)"
             >
-              <h2 class="profile-weapon__title">Лицензия #{{ card.index + 1 }}</h2>
+              <h2 class="profile-weapon__title">Лицензия №{{ card.index + 1 }}</h2>
               <svg
                 class="profile-weapon__chevron"
                 viewBox="0 0 12 8"

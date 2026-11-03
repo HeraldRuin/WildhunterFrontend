@@ -890,7 +890,7 @@ function updateStatsPanelLayout() {
 
           <header class="collection-modal__header">
             <h2 id="collection-modal-title" class="collection-modal__title">
-              Открыт сбор для брони #{{ state.bookingNumber }}
+              Открыт сбор для брони №{{ state.bookingNumber }}
             </h2>
 
             <div

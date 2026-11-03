@@ -1709,7 +1709,7 @@ function handleKeydown(event: KeyboardEvent) {
 
           <div class="add-services-modal__header">
             <h2 id="add-services-modal-title" class="add-services-modal__title">
-              Добавить услуги для брони #{{ booking.number }}
+              Добавить услуги для брони №{{ booking.number }}
             </h2>
             <p v-if="isBaseAdmin" class="add-services-modal__estimate">
               Предварительная смета за услуги всего:

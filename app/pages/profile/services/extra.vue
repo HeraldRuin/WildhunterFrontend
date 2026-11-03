@@ -999,7 +999,7 @@ onBeforeUnmount(() => {
                         placeholder="Введите название услуги"
                         :model-value="service.name"
                         :disabled="service.isSystem || busyServiceId === service.id"
-                        :aria-label="`Имя услуги #${service.id}`"
+                        :aria-label="`Имя услуги №${service.id}`"
                         @update:model-value="updateServiceName(service, $event)"
                       />
                     </div>

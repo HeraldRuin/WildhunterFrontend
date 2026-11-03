@@ -391,7 +391,7 @@ onUnmounted(() => {
           <CommonModalCloseButton @click="close" />
 
           <h2 id="prepayment-modal-title" class="prepayment-modal__title">
-            Предоплата для брони #{{ booking.number }}
+            Предоплата для брони №{{ booking.number }}
           </h2>
 
           <div class="prepayment-modal__frame">

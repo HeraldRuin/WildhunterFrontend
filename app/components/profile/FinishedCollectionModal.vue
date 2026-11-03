@@ -306,10 +306,13 @@ function handleKeydown(event: KeyboardEvent) {
 
           <h2 id="finished-collection-modal-title" class="finished-collection-modal__title">
             <template v-if="isFinishedBooking(booking.status.code)">
-              Информация о мероприятии бронирования #{{ booking.number }}
+              Информация о мероприятии бронирования №{{ booking.number }}
+            </template>
+            <template v-else-if="booking.status.code === 'bed_collection'">
+              Информация о сборе для брони №{{ booking.number }}
             </template>
             <template v-else>
-              Корректировка сбора для брони #{{ booking.number }}
+              Корректировка сбора для брони №{{ booking.number }}
             </template>
           </h2>
 

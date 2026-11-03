@@ -240,11 +240,13 @@ function mapActions(
               ? 'Список приглашенных'
               : status === 'collection'
                 ? 'Сбор охотников'
-                : FINISHED_COLLECTION_MODAL_STATUSES.has(status) && isMasterHunter
-                  ? 'Управление сбором'
-                  : FINISHED_COLLECTION_MODAL_STATUSES.has(status)
-                    ? 'Сбор охотников'
-                    : 'Собрать охотников')
+                : status === 'bed_collection' && isMasterHunter
+                  ? 'Информация о сборе'
+                  : FINISHED_COLLECTION_MODAL_STATUSES.has(status) && isMasterHunter
+                    ? 'Управление сбором'
+                    : FINISHED_COLLECTION_MODAL_STATUSES.has(status)
+                      ? 'Сбор охотников'
+                      : 'Собрать охотников')
           : action.code === 'open_invitation'
           ? 'Список приглашенных'
           : action.code === 'complete' && !isHunter
