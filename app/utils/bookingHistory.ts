@@ -87,6 +87,12 @@ const ADD_SERVICES_ACTION: BookingAction = {
   variant: 'success',
 }
 
+const COMPLETE_EVENT_ACTION: BookingAction = {
+  id: 'complete',
+  label: 'Оплата полностью получена. Завершить событие',
+  variant: 'success',
+}
+
 function withMarkPaidFirst(actions: BookingAction[]): BookingAction[] {
   const markPaid = actions.filter(action => action.id === 'mark_paid')
   if (markPaid.length === 0) {
@@ -291,6 +297,16 @@ function mapActions(
     && !mapped.some(action => action.id === 'add_services')
   ) {
     mapped.push({ ...ADD_SERVICES_ACTION })
+  }
+
+  // Временно для тестов: кнопка есть сразу при статусе paid,
+  // даже если API не прислал complete до дня выезда.
+  if (
+    status === 'paid'
+    && !isHunter
+    && !mapped.some(action => action.id === 'complete')
+  ) {
+    mapped.unshift({ ...COMPLETE_EVENT_ACTION })
   }
 
   if (isHunter && status === 'finish_bed_collection') {
