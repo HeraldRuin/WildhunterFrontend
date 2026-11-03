@@ -723,7 +723,7 @@ onUnmounted(() => {
       :class="{ 'hero-search__field--open': isDatesOpen }"
       @click="onDatesFieldClick"
     >
-      <span class="hero-search__label">Даты поездки</span>
+      <span class="hero-search__label">Дата поездки</span>
       <div class="hero-search__control hero-search__dates-control">
         <span class="hero-search__date-part">{{ checkInLabel }}</span>
         <span class="hero-search__dates-sep" aria-hidden="true">-</span>
