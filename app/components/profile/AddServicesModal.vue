@@ -629,6 +629,17 @@ function savedFoodHunterOptions(itemsInRow: BookingServiceFoodItem[]): SelectFie
 }
 
 function savedFoodTotal(itemsInRow: BookingServiceFoodItem[]): string {
+  const item = itemsInRow[0]
+  if (item && normalizeCalculationType(item.calculation_type) !== 'per_person') {
+    const name = (item.type ?? '').trim().toLowerCase()
+    const catalog = foodCatalog.value.find(entry => entry.name.trim().toLowerCase() === name)
+    const unit = catalogUnitPrice(catalog?.price)
+    if (unit != null) {
+      const people = Math.max(savedFoodHunterIds(itemsInRow).length, 1)
+      return formatHotelPriceLabel(Math.round(unit * people * foodTimes()))
+    }
+  }
+
   const total = itemsInRow.reduce((sum, item) => sum + (Number(item.price) || 0), 0)
   return formatServicePrice(total)
 }
@@ -1324,7 +1335,7 @@ async function saveFoodDraft(row: FoodDraft) {
     for (const hunterId of targets) {
       const response = await bookings.storeFood(code, {
         food_id: foodId,
-        count: foodTimes(),
+        count: 1,
         ...(hunterId === null ? {} : { hunter_id: hunterId }),
       })
 
