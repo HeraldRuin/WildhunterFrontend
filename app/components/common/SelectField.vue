@@ -275,6 +275,7 @@ onUnmounted(() => {
       :class="{
         'select-field__list--overlay': overlay,
         'select-field--filled-hover': filledHover,
+        'select-field--readonly': readonly,
       }"
       :style="overlay ? overlayStyle : undefined"
       role="listbox"
@@ -477,6 +478,12 @@ onUnmounted(() => {
   color: var(--wh-field-error);
   text-align: left;
   user-select: none;
+}
+
+.select-field--readonly .select-field__option,
+.select-field--readonly .select-field__option:hover,
+.select-field--readonly .select-field__option:focus-visible {
+  cursor: not-allowed;
 }
 
 .select-field__option {
