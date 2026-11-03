@@ -240,7 +240,7 @@ function mapActions(
               ? 'Список приглашенных'
               : status === 'collection'
                 ? 'Сбор охотников'
-                : (status === 'bed_collection' || status === 'finish_bed_collection') && isMasterHunter
+                : READ_ONLY_COLLECTION_STATUSES.has(status) && isMasterHunter
                   ? 'Информация о сборе'
                   : FINISHED_COLLECTION_MODAL_STATUSES.has(status) && isMasterHunter
                     ? 'Управление сбором'
