@@ -584,8 +584,8 @@ function goToNextYear() {
   transform: translate(-50%, -50%);
   pointer-events: none;
   background:
-    linear-gradient(45deg, transparent calc(50% - 0.6px), currentColor calc(50% - 0.6px) calc(50% + 0.6px), transparent calc(50% + 0.6px)),
-    linear-gradient(-45deg, transparent calc(50% - 0.6px), currentColor calc(50% - 0.6px) calc(50% + 0.6px), transparent calc(50% + 0.6px));
+    linear-gradient(45deg, transparent calc(50% - 0.6px), var(--wh-field-error) calc(50% - 0.6px) calc(50% + 0.6px), transparent calc(50% + 0.6px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.6px), var(--wh-field-error) calc(50% - 0.6px) calc(50% + 0.6px), transparent calc(50% + 0.6px));
 }
 
 .hero-search-calendar__day--unavailable.hero-search-calendar__day--selected::after,
