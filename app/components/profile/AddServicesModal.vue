@@ -115,8 +115,10 @@ let penaltyDraftKey = 0
 useBodyScrollLock(isOpen)
 
 const allowedTypeSet = computed(() => new Set(services.value?.allowed_types ?? []))
+const servicesClosed = computed(() => booking.value?.status.code === 'completed')
 const masterHunterServicesLocked = computed(() =>
-  !isBaseAdmin.value
+  !servicesClosed.value
+  && !isBaseAdmin.value
   && Boolean(booking.value?.isMasterHunter)
   && CONFIRMED_EVENT_STATUSES.has(booking.value?.status.code ?? ''),
 )
@@ -263,6 +265,10 @@ function syncConfirmedSpendingLock(code: string, spendingIds: number[]) {
 }
 
 function canAddServiceType(type: BookingServiceType): boolean {
+  if (servicesClosed.value) {
+    return false
+  }
+
   if (!masterHunterServicesLocked.value) {
     return true
   }
@@ -271,6 +277,10 @@ function canAddServiceType(type: BookingServiceType): boolean {
 }
 
 function canDeleteService(list: DeletableServiceList, serviceId: number): boolean {
+  if (servicesClosed.value) {
+    return false
+  }
+
   if (!masterHunterServicesLocked.value) {
     return true
   }
@@ -1004,6 +1014,10 @@ function upsertSpendingItem(item: BookingServiceSpendingItem) {
 }
 
 async function saveSpendingDraft(row: SpendingDraft) {
+  if (!canAddServiceType('spending')) {
+    return
+  }
+
   const code = booking.value?.code
   const hunterId = Number(row.hunterId)
   const price = parseSpendingPrice(row.price)

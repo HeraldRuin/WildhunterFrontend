@@ -38,6 +38,7 @@ const {
   open: openAddServicesModal,
   isOpen: isAddServicesOpen,
   booking: addServicesBooking,
+  sync: syncAddServicesBooking,
 } = useAddServicesModal()
 const {
   open: openCalculationModal,
@@ -177,6 +178,18 @@ const {
   },
 )
 
+function syncOpenedAddServicesBooking() {
+  const openedCode = isAddServicesOpen.value ? addServicesBooking.value?.code : undefined
+  if (!openedCode) {
+    return
+  }
+
+  const updated = bookings.value.find(item => item.code === openedCode)
+  if (updated) {
+    syncAddServicesBooking(updated)
+  }
+}
+
 async function refreshHistory() {
   await refreshHistoryRaw()
 
@@ -185,6 +198,7 @@ async function refreshHistory() {
   }
 
   syncPendingInvitationsCount()
+  syncOpenedAddServicesBooking()
 }
 
 async function handleCollectionFinished(bookingCode: string) {
@@ -1127,6 +1141,10 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
   }
 
   if (action.id === 'add_services') {
+    if (booking.status.code === 'completed') {
+      return
+    }
+
     openAddServicesModal(booking)
     return
   }

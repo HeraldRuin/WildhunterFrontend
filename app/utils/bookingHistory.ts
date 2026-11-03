@@ -229,6 +229,10 @@ function mapActions(
       continue
     }
 
+    if (action.code === 'add_services' && status === 'completed') {
+      continue
+    }
+
     // Временно для тестов: кнопка видна сразу, когда бэкенд отдал complete (статус paid),
     // без ожидания последнего дня мероприятия.
     // if (action.code === 'complete' && !_lastEventDay) {

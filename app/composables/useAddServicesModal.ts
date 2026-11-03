@@ -14,10 +14,19 @@ export function useAddServicesModal() {
     booking.value = null
   }
 
+  function sync(item: BookingHistoryItem) {
+    if (!isOpen.value || booking.value?.code !== item.code) {
+      return
+    }
+
+    booking.value = item
+  }
+
   return {
     isOpen: readonly(isOpen),
     booking: readonly(booking),
     open,
     close,
+    sync,
   }
 }
