@@ -561,6 +561,7 @@ export interface BookingServicePreparationItem {
   id: number
   animal_id: number | null
   animal_title: string
+  type?: string | null
   count: number
   price: number
 }

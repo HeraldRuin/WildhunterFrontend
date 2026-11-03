@@ -17,6 +17,7 @@ import { formatHotelPriceLabel } from '~/utils/hotel'
 interface PreparationDraft {
   key: number
   animalId: string
+  preparationId: string
   count: number
 }
 
@@ -142,11 +143,10 @@ const preparationAnimalsForSelect = computed(() => {
   return preparationAnimals.value.filter(animal => animal.title.trim() === bookedTitle)
 })
 const preparationAnimalOptions = computed<SelectFieldOption[]>(() =>
-  preparationAnimalsForSelect.value.map(animal => withCatalogPrice(
-    animal.title,
-    animal.preparations?.[0]?.price,
-    String(animal.id),
-  )),
+  preparationAnimalsForSelect.value.map(animal => ({
+    value: String(animal.id),
+    label: animal.title,
+  })),
 )
 const additionalOptions = computed<SelectFieldOption[]>(() =>
   (services.value?.catalogs?.additionals ?? []).map(item => withCatalogPrice(
@@ -375,18 +375,50 @@ function penaltyDraftPrice(row: PenaltyDraft): string {
   return draftLinePrice(fine?.price)
 }
 
-function preparationUnitPrice(animalId: number | string | null | undefined): string {
+function preparationOptions(animalId: number | string | null | undefined) {
   if (animalId == null || animalId === '') {
-    return ''
+    return []
   }
 
   const animal = preparationAnimals.value.find(item => String(item.id) === String(animalId))
-  return catalogPriceLabel(animal?.preparations?.[0]?.price) ?? ''
+  return animal?.preparations ?? []
+}
+
+function preparationTypeOptions(animalId: string): SelectFieldOption[] {
+  return preparationOptions(animalId).map(item => withCatalogPrice(
+    item.type,
+    item.price,
+    String(item.id),
+  ))
+}
+
+function preparationTypeById(animalId: string, preparationId: string): string {
+  return preparationTypeOptions(animalId).find(option => option.value === preparationId)?.label ?? ''
+}
+
+function preparationUnitPrice(
+  animalId: number | string | null | undefined,
+  type?: string | null,
+): string {
+  const options = preparationOptions(animalId)
+  const match = type
+    ? options.find(item => item.type === type)
+    : options[0]
+
+  return catalogPriceLabel(match?.price) ?? ''
+}
+
+function selectedPreparation(row: PreparationDraft) {
+  return preparationOptions(row.animalId)
+    .find(item => String(item.id) === row.preparationId)
+}
+
+function preparationDraftUnitPrice(row: PreparationDraft): string {
+  return catalogPriceLabel(selectedPreparation(row)?.price) ?? ''
 }
 
 function preparationDraftPrice(row: PreparationDraft): string {
-  const animal = preparationAnimals.value.find(item => String(item.id) === row.animalId)
-  return draftLinePrice(animal?.preparations?.[0]?.price, row.count)
+  return draftLinePrice(selectedPreparation(row)?.price, row.count)
 }
 
 const foodCatalog = computed(() => services.value?.catalogs?.food ?? [])
@@ -1343,6 +1375,7 @@ function addPreparationDraft() {
   preparationDrafts.value.push({
     key: ++preparationDraftKey,
     animalId: bookedPreparationAnimalId(),
+    preparationId: '',
     count: 1,
   })
 }
@@ -1359,9 +1392,16 @@ function cancelPreparationDraft(key: number) {
   removePreparationDraft(key)
 }
 
-function preparationIdForAnimal(animalId: number): number | null {
-  const animal = preparationAnimals.value.find(item => item.id === animalId)
-  return animal?.preparations?.[0]?.id ?? null
+function onPreparationAnimalChange(row: PreparationDraft, animalId: string) {
+  row.animalId = animalId
+  row.preparationId = ''
+}
+
+function canSavePreparationDraft(row: PreparationDraft): boolean {
+  return Boolean(row.animalId && row.preparationId)
+    && Number.isInteger(Number(row.count))
+    && Number(row.count) >= 1
+    && savingPreparationKey.value === null
 }
 
 function upsertPreparationItem(item: BookingServicePreparationItem) {
@@ -1491,9 +1531,10 @@ async function savePreparationDraft(row: PreparationDraft) {
     return
   }
 
-  const preparationId = preparationIdForAnimal(animalId)
-  if (!preparationId) {
-    notifications.error('Для выбранного животного нет разделки', notifyOptions)
+  const preparationId = Number(row.preparationId)
+  const type = preparationTypeById(row.animalId, row.preparationId)
+  if (!Number.isInteger(preparationId) || preparationId < 1 || !type) {
+    notifications.error('Выберите тип разделки', notifyOptions)
     return
   }
 
@@ -1511,7 +1552,10 @@ async function savePreparationDraft(row: PreparationDraft) {
       return
     }
 
-    upsertPreparationItem(response.data)
+    upsertPreparationItem({
+      ...response.data,
+      type: response.data.type || type,
+    })
     removePreparationDraft(row.key)
     notifications.success(response.message || 'Услуга добавлена', notifyOptions)
   }
@@ -1976,6 +2020,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div v-show="!isBlockCollapsed('preparation')">
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--preparation">
                   <span>Животное</span>
+                  <span>Тип разделки</span>
                   <span>Количество</span>
                   <span>Цена на животное</span>
                   <span>Общая сумма</span>
@@ -1990,11 +2035,14 @@ function handleKeydown(event: KeyboardEvent) {
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <span class="add-services-modal__value">{{ item.animal_title }}</span>
                   </div>
+                  <div class="add-services-modal__field add-services-modal__field--type">
+                    <span class="add-services-modal__value">{{ item.type || '—' }}</span>
+                  </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
                     <span class="add-services-modal__value">{{ item.count }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span class="add-services-modal__value">{{ preparationUnitPrice(item.animal_id) }}</span>
+                    <span class="add-services-modal__value">{{ preparationUnitPrice(item.animal_id, item.type) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
@@ -2018,12 +2066,24 @@ function handleKeydown(event: KeyboardEvent) {
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
-                      v-model="row.animalId"
+                      :model-value="row.animalId"
                       class="add-services-modal__select"
                       placeholder="Выберите животное"
                       filled-hover
                       no-margin
                       :options="preparationAnimalOptions"
+                      @update:model-value="onPreparationAnimalChange(row, $event)"
+                    />
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--type">
+                    <CommonSelectField
+                      v-model="row.preparationId"
+                      class="add-services-modal__select"
+                      placeholder="Выберите тип разделки"
+                      filled-hover
+                      no-margin
+                      :disabled="!row.animalId"
+                      :options="preparationTypeOptions(row.animalId)"
                     />
                   </div>
                   <label class="add-services-modal__field add-services-modal__field--count">
@@ -2036,7 +2096,7 @@ function handleKeydown(event: KeyboardEvent) {
                     >
                   </label>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span v-if="preparationUnitPrice(row.animalId)" class="add-services-modal__value">{{ preparationUnitPrice(row.animalId) }}</span>
+                    <span v-if="preparationDraftUnitPrice(row)" class="add-services-modal__value">{{ preparationDraftUnitPrice(row) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span v-if="preparationDraftPrice(row)" class="add-services-modal__value">{{ preparationDraftPrice(row) }}</span>
@@ -2045,7 +2105,7 @@ function handleKeydown(event: KeyboardEvent) {
                     <button
                       type="button"
                       class="add-services-modal__save"
-                      :disabled="!row.animalId || savingPreparationKey !== null"
+                      :disabled="!canSavePreparationDraft(row)"
                       @click="savePreparationDraft(row)"
                     >
                       Сохранить
@@ -2762,7 +2822,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .add-services-modal__form-row--preparation {
-  grid-template-columns: minmax(0, 1fr) 120px 180px 150px 220px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 110px 150px 140px 200px;
 }
 
 .add-services-modal__form-row--preparation .add-services-modal__field--animal,
