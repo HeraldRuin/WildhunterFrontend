@@ -18,6 +18,7 @@ const { bookings } = useApi()
 const notifications = useNotifications()
 const isPaying = ref(false)
 const paymentError = ref(false)
+const paymentNotice = ref<string | null>(null)
 const paymentUrl = ref<string | null>(null)
 const iframeReady = ref(false)
 const iframeRef = ref<HTMLIFrameElement | null>(null)
@@ -57,6 +58,7 @@ function resetPaymentUi() {
   stopIframeWatch()
   paymentUrl.value = null
   paymentError.value = false
+  paymentNotice.value = null
   iframeReady.value = false
 }
 
@@ -275,6 +277,20 @@ function scheduleIframeFallback(url: string) {
   }, IFRAME_SAFETY_FALLBACK_MS)
 }
 
+function isAlreadyPaidMessage(message: string | undefined) {
+  return Boolean(message && /уже внесен/i.test(message))
+}
+
+function showPaymentFailure(message: string | undefined, fallback: string) {
+  if (isAlreadyPaidMessage(message)) {
+    paymentNotice.value = message || 'Предоплата уже внесена'
+    return
+  }
+
+  paymentError.value = true
+  notifications.error(message || fallback)
+}
+
 async function checkPaymentStatus() {
   if (!props.booking) {
     return
@@ -312,6 +328,7 @@ async function pay() {
 
   isPaying.value = true
   paymentError.value = false
+  paymentNotice.value = null
 
   try {
     const response = await bookings.markPrepaymentPaid(props.booking.code)
@@ -321,8 +338,7 @@ async function pay() {
     }
 
     if (!response.success) {
-      paymentError.value = true
-      notifications.error(response.message || 'Не удалось выполнить оплату')
+      showPaymentFailure(response.message, 'Не удалось выполнить оплату')
       return
     }
 
@@ -339,9 +355,8 @@ async function pay() {
     watchIframeReturn()
     startPolling()
   } catch (error) {
-    paymentError.value = true
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось выполнить оплату')
+    showPaymentFailure(data?.message, 'Не удалось выполнить оплату')
   } finally {
     isPaying.value = false
   }
@@ -394,7 +409,24 @@ onUnmounted(() => {
               class="prepayment-modal__loading"
               :class="{ 'is-clear': iframeReady }"
             >
-              <p v-if="paymentError" class="prepayment-modal__error">
+              <div v-if="paymentNotice" class="prepayment-modal__notice">
+                <span class="prepayment-modal__check" aria-hidden="true">
+                  <svg viewBox="0 0 64 64" fill="none">
+                    <circle cx="32" cy="32" r="32" fill="currentColor" />
+                    <path
+                      d="M18 33.5 27.2 42.5 46 22"
+                      stroke="#fff"
+                      stroke-width="4.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                <p class="prepayment-modal__notice-text">
+                  {{ paymentNotice }}
+                </p>
+              </div>
+              <p v-else-if="paymentError" class="prepayment-modal__error">
                 Не удалось открыть оплату
               </p>
               <CommonSpinner
@@ -481,10 +513,42 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
+.prepayment-modal__notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  max-width: 420px;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.prepayment-modal__check {
+  display: block;
+  width: 88px;
+  height: 88px;
+  color: var(--wh-green);
+}
+
+.prepayment-modal__check svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.prepayment-modal__notice-text {
+  margin: 0;
+  color: var(--wh-gray-900);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .prepayment-modal__error {
   margin: 0;
   color: var(--wh-gray-500);
   font-size: 0.95rem;
+  text-align: center;
 }
 
 .prepayment-modal-enter-active,
