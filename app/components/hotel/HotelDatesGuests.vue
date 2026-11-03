@@ -380,7 +380,7 @@ defineExpose({
     :class="{ 'hotel-dates-guests--dropdown-open': isAnyDropdownOpen }"
     :style="blocksStyle"
   >
-    <h2 class="hotel-dates-guests__title">Выберите даты и охоты</h2>
+    <h2 class="hotel-dates-guests__title">Выберите даты и охотников</h2>
 
     <form class="hotel-dates-guests__form" @submit.prevent="handleSubmit">
       <div class="hotel-dates-guests__panel">
