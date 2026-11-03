@@ -15,6 +15,13 @@ const route = useRoute()
 const { user, isAuthenticated, logout } = useAuth()
 const { profile } = useProfile()
 const { isBaseAdmin } = useUserRole()
+const { unreadCount } = useInboxNotifications()
+
+const bookingsNavPath = '/profile/bookings/'
+
+function hasBookingsAlert(item: NavItem) {
+  return isBaseAdmin.value && item.to === bookingsNavPath && unreadCount.value > 0
+}
 const { hotels: hotelsApi } = useApi()
 const baseTitle = useState('auth-user-base-title', () => '')
 const baseTitleUserId = useState<number | null>('auth-user-base-title-user', () => null)
@@ -491,6 +498,11 @@ async function goHome(event: MouseEvent) {
                   {{ item.label }}
                 </template>
               </span>
+              <span
+                v-if="hasBookingsAlert(item)"
+                class="profile-sidebar__alert"
+                title="Есть новые события по бронированиям"
+              >!</span>
             </NuxtLink>
 
             <template v-if="item.children?.length && isSubmenuOpen(item.to)">
@@ -740,6 +752,22 @@ async function goHome(event: MouseEvent) {
 
 .profile-sidebar__nav-label--short {
   display: none;
+}
+
+.profile-sidebar__alert {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: #e74c3c;
+  color: var(--wh-white);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .profile-sidebar__footer {
