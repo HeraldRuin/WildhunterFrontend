@@ -308,7 +308,27 @@ onUnmounted(() => {
           @mouseenter="hoveredValue = option.value"
           @click.stop="select(option.value)"
         >
-          <span class="select-field__option-dot" aria-hidden="true" />
+          <span
+            v-if="multiple"
+            class="select-field__option-check"
+            aria-hidden="true"
+          >
+            <svg
+              v-if="isSelected(option.value)"
+              class="select-field__option-check-icon"
+              viewBox="0 0 12 12"
+            >
+              <path
+                d="M2.2 6.1 4.7 8.6 9.8 3.4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+          <span v-else class="select-field__option-dot" aria-hidden="true" />
           <span class="select-field__option-label">{{ option.label }}</span>
           <span
             v-if="option.suffix"
@@ -488,6 +508,24 @@ onUnmounted(() => {
   background-color: transparent;
 }
 
+.select-field__option-check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #c4c4c4;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #e8883a;
+}
+
+.select-field__option-check-icon {
+  width: 12px;
+  height: 12px;
+}
+
 .select-field__option-label {
   flex: 1 1 auto;
   min-width: 0;
@@ -547,6 +585,17 @@ onUnmounted(() => {
 .select-field--filled-hover .select-field__option--hovered .select-field__option-dot,
 .select-field--filled-hover .select-field__option:focus-visible .select-field__option-dot {
   background-color: #ffffff;
+}
+
+.select-field__option--active .select-field__option-check,
+.select-field__option--filled:hover .select-field__option-check,
+.select-field__option--filled.select-field__option--hovered .select-field__option-check,
+.select-field__option--filled:focus-visible .select-field__option-check,
+.select-field--filled-hover .select-field__option:hover .select-field__option-check,
+.select-field--filled-hover .select-field__option--hovered .select-field__option-check,
+.select-field--filled-hover .select-field__option:focus-visible .select-field__option-check {
+  border-color: #ffffff;
+  background: #ffffff;
 }
 
 .select-field__error {
