@@ -20,7 +20,7 @@ const { unreadCount } = useInboxNotifications()
 const bookingsNavPath = '/profile/bookings/'
 
 function hasBookingsAlert(item: NavItem) {
-  return isBaseAdmin.value && item.to === bookingsNavPath && unreadCount.value > 0
+  return item.to === bookingsNavPath && unreadCount.value > 0
 }
 const { hotels: hotelsApi } = useApi()
 const baseTitle = useState('auth-user-base-title', () => '')
