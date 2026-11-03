@@ -308,7 +308,7 @@ function handleKeydown(event: KeyboardEvent) {
             <template v-if="isFinishedBooking(booking.status.code)">
               Информация о мероприятии бронирования №{{ booking.number }}
             </template>
-            <template v-else-if="booking.status.code === 'bed_collection'">
+            <template v-else-if="booking.status.code === 'bed_collection' || booking.status.code === 'finish_bed_collection'">
               Информация о сборе для брони №{{ booking.number }}
             </template>
             <template v-else>

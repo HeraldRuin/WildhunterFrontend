@@ -63,7 +63,7 @@ const ACTION_VARIANT_MAP: Record<string, BookingActionVariant> = {
 }
 
 const HUNTER_FINISH_BED_COLLECTION_ACTIONS: BookingAction[] = [
-  { id: 'open_collection', label: 'Управление сбором', variant: 'success' },
+  { id: 'open_collection', label: 'Информация о сборе', variant: 'success' },
   { id: 'select_seat', label: 'Информация по размещению', variant: 'success' },
   { id: 'add_services', label: 'Дополнительные услуги', variant: 'success' },
 ]
@@ -240,7 +240,7 @@ function mapActions(
               ? 'Список приглашенных'
               : status === 'collection'
                 ? 'Сбор охотников'
-                : status === 'bed_collection' && isMasterHunter
+                : (status === 'bed_collection' || status === 'finish_bed_collection') && isMasterHunter
                   ? 'Информация о сборе'
                   : FINISHED_COLLECTION_MODAL_STATUSES.has(status) && isMasterHunter
                     ? 'Управление сбором'
