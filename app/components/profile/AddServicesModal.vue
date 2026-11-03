@@ -499,7 +499,7 @@ function foodDraftTotal(row: FoodDraft): string {
     return ''
   }
 
-  return formatHotelPriceLabel(Math.round(price * foodDraftPeople(row) * serviceDays()))
+  return formatHotelPriceLabel(Math.round(price * foodDraftPeople(row) * foodTimes()))
 }
 
 function hunterNameById(hunterId: number): string {
@@ -620,8 +620,9 @@ const preliminaryTotalLabel = computed(() => {
   return formatHotelPriceLabel(total)
 })
 
-function serviceDays(): number {
-  return Math.max(1, Number(booking.value?.accommodation?.nights) || 1)
+function foodTimes(): number {
+  const nights = Number(booking.value?.accommodation?.nights) || 1
+  return Math.max(1, nights - 1)
 }
 
 function preliminaryPart(list: DeletableServiceList, price: unknown): number {
@@ -1277,7 +1278,7 @@ async function saveFoodDraft(row: FoodDraft) {
     for (const hunterId of targets) {
       const response = await bookings.storeFood(code, {
         food_id: foodId,
-        count: 1,
+        count: foodTimes(),
         ...(hunterId === null ? {} : { hunter_id: hunterId }),
       })
 
@@ -2097,6 +2098,7 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Питание</span>
                   <span>Охотник</span>
                   <span>Цена на человека</span>
+                  <span>Кол-во раз</span>
                   <span>Общая сумма</span>
                   <span></span>
                 </div>
@@ -2125,6 +2127,9 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
                     <span class="add-services-modal__value">{{ row.items[0] ? foodSavedUnitPrice(row.items[0]) : '—' }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__value">{{ foodTimes() }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span class="add-services-modal__value">{{ savedFoodTotal(row.items) }}</span>
@@ -2187,6 +2192,9 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
                     <span v-if="foodDraftUnitPrice(row)" class="add-services-modal__value">{{ foodDraftUnitPrice(row) }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__value">{{ foodTimes() }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span v-if="foodDraftTotal(row)" class="add-services-modal__value">{{ foodDraftTotal(row) }}</span>
@@ -2766,7 +2774,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .add-services-modal__form-row--food {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px 150px 220px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px 100px 150px 220px;
 }
 
 .add-services-modal__form-row--food .add-services-modal__field--animal,
