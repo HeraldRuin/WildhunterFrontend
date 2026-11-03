@@ -1813,7 +1813,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div
                   v-for="row in trophyDrafts"
                   :key="row.key"
-                  class="add-services-modal__form-row add-services-modal__form-row--trophy"
+                  class="add-services-modal__form-row add-services-modal__form-row--trophy add-services-modal__form-row--draft"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
@@ -1942,7 +1942,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div
                   v-for="row in penaltyDrafts"
                   :key="row.key"
-                  class="add-services-modal__form-row add-services-modal__form-row--penalty"
+                  class="add-services-modal__form-row add-services-modal__form-row--penalty add-services-modal__form-row--draft"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
@@ -2076,7 +2076,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div
                   v-for="row in preparationDrafts"
                   :key="row.key"
-                  class="add-services-modal__form-row add-services-modal__form-row--preparation"
+                  class="add-services-modal__form-row add-services-modal__form-row--preparation add-services-modal__form-row--draft"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
@@ -2223,7 +2223,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div
                   v-for="row in foodDrafts"
                   :key="row.key"
-                  class="add-services-modal__form-row add-services-modal__form-row--food"
+                  class="add-services-modal__form-row add-services-modal__form-row--food add-services-modal__form-row--draft"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
@@ -2370,7 +2370,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div
                   v-for="row in additionalDrafts"
                   :key="row.key"
-                  class="add-services-modal__form-row add-services-modal__form-row--additional"
+                  class="add-services-modal__form-row add-services-modal__form-row--additional add-services-modal__form-row--draft"
                 >
                   <div class="add-services-modal__field add-services-modal__field--name">
                     <CommonSelectField
@@ -2513,7 +2513,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div
                   v-for="row in spendingDrafts"
                   :key="row.key"
-                  class="add-services-modal__form-row add-services-modal__form-row--spending"
+                  class="add-services-modal__form-row add-services-modal__form-row--spending add-services-modal__form-row--draft"
                 >
                   <div class="add-services-modal__field add-services-modal__field--hunter">
                     <CommonSelectField
@@ -2685,8 +2685,10 @@ function handleKeydown(event: KeyboardEvent) {
 
 .add-services-modal__block-list {
   max-height: 260px;
+  margin-right: -12px;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .add-services-modal__block-head {
@@ -3055,14 +3057,35 @@ function handleKeydown(event: KeyboardEvent) {
   }
 
   .add-services-modal__header {
-    grid-template-columns: minmax(0, 1fr);
+    display: block;
+    padding-right: 0;
+    text-align: left;
+  }
+
+  .add-services-modal__title {
+    margin-bottom: 8px;
     padding-right: 108px;
   }
 
   .add-services-modal__estimate,
   .add-services-modal__estimate-value {
-    justify-self: start;
+    display: inline;
+    font-size: 0.82rem;
+    line-height: 1.3;
     white-space: normal;
+  }
+
+  .add-services-modal__estimate::after {
+    content: ' ';
+  }
+
+  .add-services-modal__estimate-value {
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .add-services-modal__columns.add-services-modal__form-row {
+    display: none;
   }
 
   .add-services-modal__columns--2,
@@ -3075,6 +3098,83 @@ function handleKeydown(event: KeyboardEvent) {
     display: grid;
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .add-services-modal__field::before {
+    color: var(--wh-gray-600);
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--trophy .add-services-modal__field--animal::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--penalty .add-services-modal__field--animal::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--preparation .add-services-modal__field--animal::before {
+    content: 'Животное';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--trophy .add-services-modal__field--type::before {
+    content: 'Тип трофея';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--trophy .add-services-modal__field--count::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--preparation .add-services-modal__field--count::before {
+    content: 'Количество';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--trophy .add-services-modal__field--price::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--penalty .add-services-modal__field--price::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--preparation .add-services-modal__field--price::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--food .add-services-modal__field--price::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--additional .add-services-modal__field--price::before {
+    content: 'Общая сумма';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--penalty .add-services-modal__field--type::before {
+    content: 'Тип штрафа';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--penalty .add-services-modal__field--hunter::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--food .add-services-modal__field--hunter::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--additional .add-services-modal__field--hunter::before {
+    content: 'Охотник';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--preparation .add-services-modal__field--type::before {
+    content: 'Тип разделки';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--preparation .add-services-modal__field--unit-price::before {
+    content: 'Цена на животное';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--food .add-services-modal__field--animal::before {
+    content: 'Питание';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--food .add-services-modal__field--unit-price::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--additional .add-services-modal__field--unit-price::before {
+    content: 'Цена на человека';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--food .add-services-modal__field--count::before {
+    content: 'Кол-во раз';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--additional .add-services-modal__field--name::before {
+    content: 'Название';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--spending .add-services-modal__field--hunter::before {
+    content: 'Кто платил';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--spending .add-services-modal__field--count::before {
+    content: 'Внесенная сумма';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--spending .add-services-modal__field--comment::before {
+    content: 'Комментарий';
   }
 
   .add-services-modal__field--animal,
