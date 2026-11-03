@@ -1716,7 +1716,7 @@ function handleKeydown(event: KeyboardEvent) {
                 <div v-show="!isBlockCollapsed('trophy')">
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--trophy">
                   <span>Животное</span>
-                  <span>Тип</span>
+                  <span>Тип трофея</span>
                   <span>Количество</span>
                   <span>Общая сумма</span>
                   <span></span>
