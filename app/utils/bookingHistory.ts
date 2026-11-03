@@ -190,15 +190,18 @@ function mapType(type: string): BookingType {
   return 'hotel'
 }
 
-function isCheckoutToday(endDate: string | null | undefined, now: number) {
+function isLastEventDay(endDate: string | null | undefined, now: number) {
   const checkout = endDate ? parseBirthdayDate(endDate) : null
   if (!checkout) return false
 
+  const lastDay = new Date(checkout)
+  lastDay.setDate(lastDay.getDate() - 1)
+
   const today = new Date(now)
 
-  return checkout.getFullYear() === today.getFullYear()
-    && checkout.getMonth() === today.getMonth()
-    && checkout.getDate() === today.getDate()
+  return lastDay.getFullYear() === today.getFullYear()
+    && lastDay.getMonth() === today.getMonth()
+    && lastDay.getDate() === today.getDate()
 }
 
 function mapActions(
@@ -208,7 +211,7 @@ function mapActions(
   isHunter = false,
   isMasterHunter = false,
   type: BookingType = 'hotel',
-  checkoutToday = false,
+  _lastEventDay = false,
 ): {
   actions: BookingAction[]
   paymentAction?: string
@@ -226,9 +229,11 @@ function mapActions(
       continue
     }
 
-    if (action.code === 'complete' && !checkoutToday) {
-      continue
-    }
+    // Временно для тестов: кнопка видна сразу, когда бэкенд отдал complete (статус paid),
+    // без ожидания последнего дня мероприятия.
+    // if (action.code === 'complete' && !_lastEventDay) {
+    //   continue
+    // }
 
     mapped.push({
       id: ACTION_ID_MAP[action.code],
@@ -422,7 +427,7 @@ export function mapBookingHistoryItem(
     Boolean(fallback?.isHunter),
     Boolean(item.is_master_hunter),
     type,
-    isCheckoutToday(item.details.end_date, now),
+    isLastEventDay(item.details.end_date, now),
   )
   const details = item.details
   const rooms = details.rooms || []
