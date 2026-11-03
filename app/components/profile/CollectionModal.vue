@@ -1880,9 +1880,9 @@ function updateStatsPanelLayout() {
 }
 
 .collection-modal__invite-all-btn {
-  min-height: 48px;
+  min-height: 40px;
   margin-left: auto;
-  padding: 12px 16px;
+  padding: 10px 16px;
   border: none;
   border-radius: 8px;
   background: var(--wh-orange-500);

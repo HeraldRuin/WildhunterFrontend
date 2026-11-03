@@ -427,7 +427,11 @@ function handleKeydown(event: KeyboardEvent) {
                   && !isReadOnlyCollectionStatus(booking.status.code)"
                 class="finished-collection-modal__actions"
               >
-                <button type="button" @click="startReplacing(invitation.invitationId)">
+                <button
+                  type="button"
+                  class="finished-collection-modal__replace"
+                  @click="startReplacing(invitation.invitationId)"
+                >
                   Заменить
                 </button>
                 <button
@@ -598,6 +602,17 @@ function handleKeydown(event: KeyboardEvent) {
   color: #4aa3d9;
   font: inherit;
   cursor: pointer;
+}
+
+.finished-collection-modal__actions .finished-collection-modal__replace {
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: var(--wh-green);
+  color: var(--wh-white);
+}
+
+.finished-collection-modal__actions .finished-collection-modal__replace:hover {
+  background: color-mix(in srgb, var(--wh-green) 88%, black);
 }
 
 .finished-collection-modal__actions .finished-collection-modal__delete {
