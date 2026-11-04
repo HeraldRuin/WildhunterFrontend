@@ -62,8 +62,6 @@ type DeletableServiceList = 'trophies' | 'penalties' | 'preparations' | 'foods' 
 type ServiceBlockId = 'trophy' | 'penalty' | 'preparation' | 'food' | 'addetional' | 'spending'
 
 const ADD_SERVICES_NOTIFICATION_GROUP = 'add-services'
-const CONFIRMED_EVENT_STATUSES = new Set(['paid', 'completed'])
-const CONFIRMED_SPENDING_LOCK_PREFIX = 'booking-confirmed-spending-ids:'
 
 const EMPTY_ITEMS: BookingServicesItems = {
   trophies: [],
@@ -101,7 +99,6 @@ const savingTrophyKey = ref<number | null>(null)
 const savingPenaltyKey = ref<number | null>(null)
 const deletingServiceId = ref<number | null>(null)
 const collapsedBlocks = ref(new Set<ServiceBlockId>())
-const lockedSpendingIds = ref(new Set<number>())
 
 let loadRequestId = 0
 let refreshRequestId = 0
@@ -116,12 +113,6 @@ useBodyScrollLock(isOpen)
 
 const allowedTypeSet = computed(() => new Set(services.value?.allowed_types ?? []))
 const servicesClosed = computed(() => booking.value?.status.code === 'completed')
-const masterHunterServicesLocked = computed(() =>
-  !servicesClosed.value
-  && !isBaseAdmin.value
-  && Boolean(booking.value?.isMasterHunter)
-  && CONFIRMED_EVENT_STATUSES.has(booking.value?.status.code ?? ''),
-)
 const items = computed(() => ({
   ...EMPTY_ITEMS,
   ...services.value?.items,
@@ -208,88 +199,12 @@ function isAllowed(type: BookingServiceType): boolean {
   return allowedTypeSet.value.has(type)
 }
 
-function confirmedSpendingLockKey(code: string) {
-  return `${CONFIRMED_SPENDING_LOCK_PREFIX}${code}`
+function canAddServiceType(_type: BookingServiceType): boolean {
+  return !servicesClosed.value
 }
 
-function readConfirmedSpendingIds(code: string): number[] | null {
-  if (!import.meta.client) {
-    return null
-  }
-
-  try {
-    const raw = localStorage.getItem(confirmedSpendingLockKey(code))
-    if (raw == null) {
-      return null
-    }
-
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) {
-      return null
-    }
-
-    return parsed.filter((id): id is number => Number.isInteger(id))
-  }
-  catch {
-    return null
-  }
-}
-
-function writeConfirmedSpendingIds(code: string, ids: number[]) {
-  if (!import.meta.client) {
-    return
-  }
-
-  try {
-    localStorage.setItem(confirmedSpendingLockKey(code), JSON.stringify(ids))
-  }
-  catch {
-    // Снимок остаётся в памяти на время этой сессии.
-  }
-}
-
-function syncConfirmedSpendingLock(code: string, spendingIds: number[]) {
-  if (!masterHunterServicesLocked.value) {
-    lockedSpendingIds.value = new Set()
-    return
-  }
-
-  const stored = readConfirmedSpendingIds(code)
-  const ids = stored ?? spendingIds
-
-  if (!stored) {
-    writeConfirmedSpendingIds(code, ids)
-  }
-
-  lockedSpendingIds.value = new Set(ids)
-}
-
-function canAddServiceType(type: BookingServiceType): boolean {
-  if (servicesClosed.value) {
-    return false
-  }
-
-  if (!masterHunterServicesLocked.value) {
-    return true
-  }
-
-  return type === 'spending'
-}
-
-function canDeleteService(list: DeletableServiceList, serviceId: number): boolean {
-  if (servicesClosed.value) {
-    return false
-  }
-
-  if (!masterHunterServicesLocked.value) {
-    return true
-  }
-
-  if (list !== 'spendings') {
-    return false
-  }
-
-  return !lockedSpendingIds.value.has(serviceId)
+function canDeleteService(_list: DeletableServiceList, _serviceId: number): boolean {
+  return !servicesClosed.value
 }
 
 function isBlockCollapsed(id: ServiceBlockId): boolean {
@@ -338,7 +253,6 @@ function resetServices() {
   savingPenaltyKey.value = null
   deletingServiceId.value = null
   collapsedBlocks.value = new Set()
-  lockedSpendingIds.value = new Set()
 }
 
 function catalogUnitPrice(price: unknown): number | null {
@@ -1638,10 +1552,6 @@ async function refreshServices(code: string) {
       items: response.data.items,
       preliminary_total: response.data.preliminary_total,
     }
-    syncConfirmedSpendingLock(
-      code,
-      (response.data.items?.spendings ?? []).map(item => item.id),
-    )
   }
   catch {
   }
@@ -1682,10 +1592,6 @@ async function loadServices(code: string) {
 
     services.value = response.data
     await loadHotelAdditionals()
-    syncConfirmedSpendingLock(
-      code,
-      (response.data.items?.spendings ?? []).map(item => item.id),
-    )
     loadError.value = ''
   }
   catch (error) {
