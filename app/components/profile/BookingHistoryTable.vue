@@ -74,6 +74,14 @@ function hasAccommodationTotals(accommodation: NonNullable<BookingHistoryItem['a
   return accommodation.total != null || accommodation.totalPerPerson != null
 }
 
+function bookedRoomsCount(accommodation: NonNullable<BookingHistoryItem['accommodation']>) {
+  if (accommodation.roomsTotal != null && accommodation.roomsTotal > 0) {
+    return accommodation.roomsTotal
+  }
+
+  return (accommodation.rooms ?? []).reduce((sum, room) => sum + room.quantity, 0)
+}
+
 function accommodationTotal(accommodation: NonNullable<BookingHistoryItem['accommodation']>) {
   if (accommodation.total != null) return accommodation.total
 
@@ -431,12 +439,11 @@ onBeforeUnmount(() => {
                         </template>
                       </div>
                       <div>
+                        Забронировано номеров: {{ bookedRoomsCount(item.accommodation) }}
                         <template
                           v-for="(room, roomIndex) in item.accommodation.rooms"
                           :key="`room-booked-${item.id}-${roomIndex}`"
                         >
-                          <template v-if="roomIndex > 0"><br></template>
-                          Забронировано номеров: {{ room.quantity }}
                           <template
                             v-if="
                               !showCustomer
