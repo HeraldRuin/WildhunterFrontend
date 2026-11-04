@@ -474,6 +474,7 @@ export type BookingPlacesMap = Record<
 export interface BookingPlacesData {
   rooms: BookingPlaceRoom[]
   places: BookingPlacesMap
+  is_all_places_assigned?: boolean
 }
 
 export type BookingPlacesResponse = ApiSuccessResponse<BookingPlacesData>

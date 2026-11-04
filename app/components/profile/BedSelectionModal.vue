@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import {
+  listenBookingPlacesUpdated,
+  stopListeningBookingPlacesUpdated,
+  type BookingPlacesUpdatedPayload,
+} from '~/composables/useBookingStatusChannel'
 import type {
   BookingPlaceAssignment,
   BookingPlaceRoom,
@@ -21,7 +26,24 @@ const notifications = useNotifications()
 const notifyOptions = { group: BED_SELECTION_NOTIFICATION_GROUP }
 
 const isOpen = computed(() => Boolean(props.booking))
-const canSelectBeds = computed(() => props.booking?.status.code === 'bed_collection')
+const eventStatusCode = ref<string | null>(null)
+const isAllPlacesAssigned = ref(false)
+const bookingStatusCode = computed(() => {
+  const fromEvent = eventStatusCode.value
+  const fromBooking = props.booking?.status.code ?? ''
+
+  if (fromEvent === 'paid' || fromBooking === 'paid') {
+    return 'paid'
+  }
+
+  return fromEvent || fromBooking
+})
+const canSelectBeds = computed(() => bookingStatusCode.value === 'bed_collection')
+const canChoosePlace = computed(() =>
+  canSelectBeds.value
+  && !isAllPlacesAssigned.value
+  && bookingStatusCode.value !== 'paid',
+)
 const isLoading = ref(false)
 const loadError = ref('')
 const selectingKey = ref<string | null>(null)
@@ -29,6 +51,7 @@ const placeRooms = ref<BookingPlaceRoom[]>([])
 const placesMap = ref<BookingPlacesMap>({})
 
 let loadRequestId = 0
+let placesRevision = 0
 
 useBodyScrollLock(isOpen)
 
@@ -95,8 +118,13 @@ watch(
       loadError.value = ''
       placeRooms.value = []
       placesMap.value = {}
+      isAllPlacesAssigned.value = false
+      eventStatusCode.value = null
       return
     }
+
+    isAllPlacesAssigned.value = false
+    eventStatusCode.value = null
 
     void loadPlaces(code)
   },
@@ -117,6 +145,7 @@ watch(
 
 async function loadPlaces(code: string, options: { silent?: boolean } = {}) {
   const requestId = ++loadRequestId
+  const revision = placesRevision
   if (!options.silent) {
     isLoading.value = true
     loadError.value = ''
@@ -138,9 +167,12 @@ async function loadPlaces(code: string, options: { silent?: boolean } = {}) {
     }
 
     placeRooms.value = Array.isArray(response.data.rooms) ? response.data.rooms : []
-    placesMap.value = (response.data.places && !Array.isArray(response.data.places))
-      ? response.data.places
-      : {}
+    if (revision === placesRevision) {
+      placesMap.value = normalizePlacesMap(response.data.places)
+      if (typeof response.data.is_all_places_assigned === 'boolean') {
+        isAllPlacesAssigned.value = response.data.is_all_places_assigned
+      }
+    }
     loadError.value = ''
   }
   catch (error) {
@@ -162,7 +194,7 @@ async function loadPlaces(code: string, options: { silent?: boolean } = {}) {
 
 async function selectPlace(place: PlaceRow) {
   const code = props.booking?.code
-  if (!code || !canSelectBeds.value || place.occupied || selectingKey.value) {
+  if (!code || !canChoosePlace.value || place.occupied || selectingKey.value) {
     return
   }
 
@@ -181,7 +213,6 @@ async function selectPlace(place: PlaceRow) {
     }
 
     notifications.success(response.message || 'Место выбрано', notifyOptions)
-    await loadPlaces(code, { silent: true })
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
@@ -209,7 +240,6 @@ async function cancelPlace(place: PlaceRow) {
     }
 
     notifications.success(response.message || 'Выбор места отменён', notifyOptions)
-    await loadPlaces(code, { silent: true })
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
@@ -223,6 +253,52 @@ async function cancelPlace(place: PlaceRow) {
 function close() {
   emit('close')
 }
+
+function normalizePlacesMap(places: unknown): BookingPlacesMap {
+  if (!places || typeof places !== 'object' || Array.isArray(places)) {
+    return {}
+  }
+
+  return places as BookingPlacesMap
+}
+
+function handlePlacesUpdated(payload: BookingPlacesUpdatedPayload) {
+  const booking = props.booking
+  if (!booking) {
+    return
+  }
+
+  const sameBooking = Number(payload.booking_id) === Number(booking.id)
+    || Boolean(payload.code && payload.code === booking.code)
+
+  if (!sameBooking) {
+    return
+  }
+
+  placesRevision += 1
+  placesMap.value = normalizePlacesMap(payload.places)
+  isAllPlacesAssigned.value = payload.is_all_places_assigned === true
+  if (typeof payload.status === 'string' && payload.status) {
+    eventStatusCode.value = payload.status
+  }
+}
+
+watch(
+  () => props.booking?.id,
+  (bookingId, _, onCleanup) => {
+    if (bookingId == null || !Number.isFinite(Number(bookingId))) {
+      return
+    }
+
+    const id = Number(bookingId)
+    listenBookingPlacesUpdated(id, handlePlacesUpdated)
+
+    onCleanup(() => {
+      stopListeningBookingPlacesUpdated(id)
+    })
+  },
+  { immediate: true },
+)
 
 function handleBackdropClick(event: MouseEvent) {
   if (event.target === event.currentTarget) {
@@ -372,7 +448,7 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
                       <span v-else>Отменить</span>
                     </button>
                     <button
-                      v-else-if="canSelectBeds"
+                      v-else-if="canChoosePlace"
                       type="button"
                       class="bed-selection-modal__select"
                       :disabled="Boolean(selectingKey)"

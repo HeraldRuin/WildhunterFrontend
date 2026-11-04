@@ -1,5 +1,6 @@
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
+import type { BookingPlacesMap } from '~/types/api'
 
 export interface BookingStatusUpdatedPayload {
   booking_id: number
@@ -35,8 +36,70 @@ export interface BookingServicesUpdatedPayload {
   code: string
 }
 
+export type BookingPlacesUpdatedAction = 'selected' | 'cancelled' | 'assigned'
+
+export interface BookingPlacesUpdatedPayload {
+  booking_id: number
+  code: string
+  action: BookingPlacesUpdatedAction
+  places: BookingPlacesMap
+  is_all_places_assigned: boolean
+  status: string
+}
+
 let echo: Echo<'reverb'> | null = null
 let servicesUpdatedHandler: ((payload: BookingServicesUpdatedPayload) => void) | null = null
+let placesUpdatedHandler: ((payload: BookingPlacesUpdatedPayload) => void) | null = null
+let placesListenedBookingId: number | null = null
+
+function bindPlacesListener() {
+  if (!echo || placesListenedBookingId == null || !placesUpdatedHandler) {
+    return
+  }
+
+  const channel = echo.private(`bookings.${placesListenedBookingId}`)
+  channel.stopListening('.booking.places.updated', placesUpdatedHandler)
+  channel.listen('.booking.places.updated', placesUpdatedHandler)
+}
+
+export function listenBookingPlacesUpdated(
+  bookingId: number,
+  handler: (payload: BookingPlacesUpdatedPayload) => void,
+) {
+  if (!Number.isFinite(bookingId)) {
+    return
+  }
+
+  if (
+    echo
+    && placesUpdatedHandler
+    && placesListenedBookingId != null
+    && (placesListenedBookingId !== bookingId || placesUpdatedHandler !== handler)
+  ) {
+    echo.private(`bookings.${placesListenedBookingId}`)
+      .stopListening('.booking.places.updated', placesUpdatedHandler)
+  }
+
+  placesListenedBookingId = bookingId
+  placesUpdatedHandler = handler
+  bindPlacesListener()
+}
+
+export function stopListeningBookingPlacesUpdated(bookingId?: number) {
+  const shouldStop = bookingId == null || bookingId === placesListenedBookingId
+
+  if (!shouldStop) {
+    return
+  }
+
+  if (echo && placesUpdatedHandler && placesListenedBookingId != null) {
+    echo.private(`bookings.${placesListenedBookingId}`)
+      .stopListening('.booking.places.updated', placesUpdatedHandler)
+  }
+
+  placesUpdatedHandler = null
+  placesListenedBookingId = null
+}
 
 export function listenBookingServicesUpdated(bookingId: number) {
   if (!echo || !servicesUpdatedHandler || !Number.isFinite(bookingId)) {
@@ -146,6 +209,10 @@ export function useBookingStatusChannel(
 
     for (const bookingId of [...subscribedBookingIds]) {
       if (!activeIds.has(bookingId)) {
+        if (bookingId === placesListenedBookingId) {
+          continue
+        }
+
         gatheringListenedIds.delete(bookingId)
         connection.leave(`bookings.${bookingId}`)
         subscribedBookingIds.delete(bookingId)
@@ -168,6 +235,8 @@ export function useBookingStatusChannel(
       listenBookingServicesUpdated(bookingId)
       bindGatheringListener(bookingId)
     }
+
+    bindPlacesListener()
   }
 
   function setGatheringSubscription(bookingId: number | null) {
