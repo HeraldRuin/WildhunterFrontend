@@ -67,7 +67,6 @@ interface PlaceRow {
 
 interface RoomSection {
   key: string
-  typeLabel: string
   nameLabel: string
   places: PlaceRow[]
 }
@@ -82,7 +81,6 @@ const rooms = computed<RoomSection[]>(() =>
 
       return {
         key: `${room.room_id}-${roomIndex}`,
-        typeLabel: roomType(room),
         nameLabel: roomName(room, roomIndex, roomsCount),
         places: Array.from({ length: placesPerRoom }, (_, placeIndex) => {
           const placeNumber = placeIndex + 1
@@ -312,10 +310,6 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-function roomType(room: BookingPlaceRoom) {
-  return `${room.number}-Х МЕСТНЫЙ`
-}
-
 function roomName(room: BookingPlaceRoom, roomIndex: number, roomsCount: number) {
   const title = room.title || 'Номер'
   return roomsCount > 1 ? `${title} №${roomIndex}` : title
@@ -409,11 +403,8 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
                 class="bed-selection-modal__room"
               >
                 <h3 class="bed-selection-modal__room-type">
-                  {{ room.typeLabel }}
-                </h3>
-                <div class="bed-selection-modal__room-name">
                   {{ room.nameLabel }}
-                </div>
+                </h3>
 
                 <div class="bed-selection-modal__places">
                   <div
@@ -549,12 +540,6 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
   font-size: 1.2rem;
   font-weight: 500;
   text-align: center;
-}
-
-.bed-selection-modal__room-name {
-  margin-bottom: 8px;
-  color: #1d3557;
-  font-size: 1rem;
 }
 
 .bed-selection-modal__places {
