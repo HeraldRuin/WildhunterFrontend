@@ -1195,9 +1195,11 @@ watch(activeEditTab, (tab) => {
                     aria-label="Удалить главное фото"
                     @click.stop="removeMainPhoto"
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M9 3.75A1.75 1.75 0 0 1 10.75 2h2.5A1.75 1.75 0 0 1 15 3.75V5h3.25a.75.75 0 0 1 0 1.5H5.75a.75.75 0 0 1 0-1.5H9V3.75Zm1.5.25v1h3v-1a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z" />
-                      <path d="M6.3 8.05c.08-.33.38-.55.72-.55h10c.34 0 .64.22.72.55l1.05 12.1A2.25 2.25 0 0 1 16.55 22.5H7.45a2.25 2.25 0 0 1-2.24-2.4L6.3 8.05Zm3.45 2.7a.75.75 0 0 0-1.5.1l.4 7a.75.75 0 0 0 1.5-.09l-.4-7Zm5.5-.1a.75.75 0 0 0-1.5.09l.4 7a.75.75 0 0 0 1.5-.1l-.4-7Z" />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4.5 7h15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                      <path d="M9.2 7V5.4A1.4 1.4 0 0 1 10.6 4h2.8a1.4 1.4 0 0 1 1.4 1.4V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M6.4 7.3 7.25 18.1A1.7 1.7 0 0 0 8.94 19.6h6.12a1.7 1.7 0 0 0 1.69-1.5L17.6 7.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M10.2 10.8v5M13.8 10.8v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                     </svg>
                   </button>
                 </div>
@@ -1257,15 +1259,16 @@ watch(activeEditTab, (tab) => {
                       class="room-edit__gallery-image"
                     >
                     <button
-                      v-if="selectedGalleryIndex === index"
                       type="button"
                       class="room-edit__gallery-remove"
                       aria-label="Удалить фото"
                       @click.stop="removeGalleryImage(index)"
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M9 3.75A1.75 1.75 0 0 1 10.75 2h2.5A1.75 1.75 0 0 1 15 3.75V5h3.25a.75.75 0 0 1 0 1.5H5.75a.75.75 0 0 1 0-1.5H9V3.75Zm1.5.25v1h3v-1a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z" />
-                        <path d="M6.3 8.05c.08-.33.38-.55.72-.55h10c.34 0 .64.22.72.55l1.05 12.1A2.25 2.25 0 0 1 16.55 22.5H7.45a2.25 2.25 0 0 1-2.24-2.4L6.3 8.05Zm3.45 2.7a.75.75 0 0 0-1.5.1l.4 7a.75.75 0 0 0 1.5-.09l-.4-7Zm5.5-.1a.75.75 0 0 0-1.5.09l.4 7a.75.75 0 0 0 1.5-.1l-.4-7Z" />
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4.5 7h15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                        <path d="M9.2 7V5.4A1.4 1.4 0 0 1 10.6 4h2.8a1.4 1.4 0 0 1 1.4 1.4V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M6.4 7.3 7.25 18.1A1.7 1.7 0 0 0 8.94 19.6h6.12a1.7 1.7 0 0 0 1.69-1.5L17.6 7.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M10.2 10.8v5M13.8 10.8v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
                       </svg>
                     </button>
                   </div>
@@ -1301,7 +1304,7 @@ watch(activeEditTab, (tab) => {
                       stroke-linecap="round"
                     />
                   </svg>
-                  Выбрать изображения
+                  Добавить изображение
                 </button>
               </section>
             </div>
