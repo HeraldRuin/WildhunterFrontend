@@ -7,6 +7,8 @@ export interface ManagedRoom {
   id: number
   title: string
   number: number
+  beds: number | null
+  adults: number | null
   price: number
   status: string
   image_url?: string

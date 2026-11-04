@@ -9,7 +9,8 @@ export interface RoomManageItem {
   id: number
   title: string
   image: string
-  quantity: number
+  beds: number | null
+  adults: number | null
   price: number
   status: RoomManageStatus
   updatedAt: string
@@ -48,6 +49,9 @@ const showImage = computed(() => shouldShowOfferImage(props.item.image))
 const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(props.item.image))
 
 const formattedPrice = computed(() => formatHotelPriceLabel(props.item.price))
+
+const bedsLabel = computed(() => props.item.beds == null ? '—' : String(props.item.beds))
+const adultsLabel = computed(() => props.item.adults == null ? '—' : String(props.item.adults))
 
 const statusLabel = computed(() => {
   switch (props.item.status) {
@@ -114,7 +118,8 @@ function mapCopiedRoom(room: ManagedRoomDetail): RoomManageItem {
     id: room.id,
     title: room.title,
     image: room.image_url ?? '',
-    quantity: Number(room.number) || 0,
+    beds: room.beds == null ? null : Number(room.beds),
+    adults: room.adults == null ? null : Number(room.adults),
     price: Number(room.price) || 0,
     status: room.status === 'publish' ? 'publish' : 'draft',
     updatedAt,
@@ -256,18 +261,32 @@ async function toggleVisibility() {
           <p class="room-manage-card__meta">
             <svg class="room-manage-card__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
-                d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"
+                d="M4 16.5V8.5M4 13.5h16M20 16.5V11a2 2 0 0 0-2-2H9.5"
                 stroke="currentColor"
                 stroke-width="1.7"
-              />
-              <path
-                d="M19.4 13a7.5 7.5 0 0 0 0-2l1.7-1.3-1.6-2.8-2 .8a7.6 7.6 0 0 0-1.7-1L15.4 4h-3.2L11.8 6.7a7.6 7.6 0 0 0-1.7 1l-2-.8-1.6 2.8L8.2 11a7.5 7.5 0 0 0 0 2l-1.7 1.3 1.6 2.8 2-.8a7.6 7.6 0 0 0 1.7 1l.4 2.7h3.2l.4-2.7a7.6 7.6 0 0 0 1.7-1l2 .8 1.6-2.8L19.4 13Z"
-                stroke="currentColor"
-                stroke-width="1.7"
+                stroke-linecap="round"
                 stroke-linejoin="round"
               />
+              <path
+                d="M8.2 11.2a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4Z"
+                stroke="currentColor"
+                stroke-width="1.7"
+              />
             </svg>
-            Количество: <span>{{ item.quantity }}</span>
+            Количество спальных мест: <span>{{ bedsLabel }}</span>
+          </p>
+
+          <p class="room-manage-card__meta">
+            <svg class="room-manage-card__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="8" r="2.6" stroke="currentColor" stroke-width="1.7" />
+              <path
+                d="M6.5 18.2c.7-2.4 2.6-3.7 5.5-3.7s4.8 1.3 5.5 3.7"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+            </svg>
+            Максимальное число взрослых: <span>{{ adultsLabel }}</span>
           </p>
 
           <p class="room-manage-card__meta">
