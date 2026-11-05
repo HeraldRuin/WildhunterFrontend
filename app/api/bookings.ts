@@ -273,6 +273,90 @@ export function useBookingsApi() {
     )
   }
 
+  function updateTrophy(
+    code: string,
+    serviceId: number,
+    body: { animal_id: number, trophy_id: number, type: string, count: number },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServiceTrophyItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/trophies/${serviceId}`,
+      {
+        method: 'PUT',
+        body,
+      },
+    )
+  }
+
+  function updatePenalty(
+    code: string,
+    serviceId: number,
+    body: { animal_id: number, penalty_id: number, type: string, hunter_id: number },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServicePenaltyItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/penalties/${serviceId}`,
+      {
+        method: 'PUT',
+        body,
+      },
+    )
+  }
+
+  function updatePreparation(
+    code: string,
+    serviceId: number,
+    body: { animal_id: number, preparation_id: number, count: number },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServicePreparationItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/preparations/${serviceId}`,
+      {
+        method: 'PUT',
+        body,
+      },
+    )
+  }
+
+  function updateFood(
+    code: string,
+    serviceId: number,
+    body: { count: number, food_id?: number, hunter_id?: number | null },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServiceFoodItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/foods/${serviceId}`,
+      {
+        method: 'PUT',
+        body,
+      },
+    )
+  }
+
+  function updateAdditional(
+    code: string,
+    serviceId: number,
+    body: { additional_id: number, name: string, count: number, hunter_id?: number | null },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServiceAdditionalItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/additionals/${serviceId}`,
+      {
+        method: 'PUT',
+        body,
+      },
+    )
+  }
+
+  function updateSpending(
+    code: string,
+    serviceId: number,
+    body: { hunter_id: number, price: number, comment: string },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServiceSpendingItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/spendings/${serviceId}`,
+      {
+        method: 'PUT',
+        body,
+      },
+    )
+  }
+
   function storeAdditional(
     code: string,
     body: { additional_id: number, name: string, count: number, hunter_id?: number },
@@ -382,6 +466,12 @@ export function useBookingsApi() {
     storePenalty,
     storePreparation,
     storeFood,
+    updateTrophy,
+    updatePenalty,
+    updatePreparation,
+    updateFood,
+    updateAdditional,
+    updateSpending,
     storeAdditional,
     storeSpending,
     deleteService,

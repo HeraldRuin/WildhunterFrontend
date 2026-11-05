@@ -16,6 +16,7 @@ import { formatHotelPriceLabel } from '~/utils/hotel'
 
 interface PreparationDraft {
   key: number
+  serviceId?: number
   animalId: string
   preparationId: string
   count: number
@@ -23,22 +24,23 @@ interface PreparationDraft {
 
 interface FoodDraft {
   key: number
+  serviceId?: number
   foodId: string
   hunterId: string
-  hunterIds: string[]
   count: number
 }
 
 interface AdditionalDraft {
   key: number
+  serviceId?: number
   additionalId: string
   hunterId: string
-  hunterIds: string[]
   count: number
 }
 
 interface SpendingDraft {
   key: number
+  serviceId?: number
   hunterId: string
   price: string
   comment: string
@@ -46,6 +48,7 @@ interface SpendingDraft {
 
 interface TrophyDraft {
   key: number
+  serviceId?: number
   animalId: string
   trophyId: string
   count: number
@@ -53,6 +56,7 @@ interface TrophyDraft {
 
 interface PenaltyDraft {
   key: number
+  serviceId?: number
   animalId: string
   penaltyId: string
   hunterId: string
@@ -93,12 +97,16 @@ const trophyDrafts = ref<TrophyDraft[]>([])
 const penaltyDrafts = ref<PenaltyDraft[]>([])
 const savingPreparationKey = ref<number | null>(null)
 const savingFoodKey = ref<number | null>(null)
+const savingFoodCountId = ref<number | null>(null)
+const savedFoodCounts = ref<Record<number, number>>({})
+const foodCountRequests = new Map<number, number>()
 const savingAdditionalKey = ref<number | null>(null)
 const savingSpendingKey = ref<number | null>(null)
 const savingTrophyKey = ref<number | null>(null)
 const savingPenaltyKey = ref<number | null>(null)
 const deletingServiceId = ref<number | null>(null)
 const collapsedBlocks = ref(new Set<ServiceBlockId>())
+const servicesBodyRef = ref<HTMLElement | null>(null)
 
 let loadRequestId = 0
 let refreshRequestId = 0
@@ -203,6 +211,178 @@ function canAddServiceType(_type: BookingServiceType): boolean {
   return !servicesClosed.value
 }
 
+const blockPageCount = ref<Record<ServiceBlockId, number>>({
+  trophy: 1,
+  penalty: 1,
+  preparation: 1,
+  food: 1,
+  addetional: 1,
+  spending: 1,
+})
+const blockPageIndex = ref<Record<ServiceBlockId, number>>({
+  trophy: 0,
+  penalty: 0,
+  preparation: 0,
+  food: 0,
+  addetional: 0,
+  spending: 0,
+})
+const blockListEls = new Map<ServiceBlockId, HTMLElement>()
+let blockListObserver: ResizeObserver | null = null
+
+function listMaxScroll(el: HTMLElement) {
+  return Math.max(0, el.scrollHeight - el.clientHeight)
+}
+
+function listPageCount(el: HTMLElement) {
+  const pageSize = el.clientHeight || 1
+  const maxScroll = listMaxScroll(el)
+
+  if (maxScroll <= 8) {
+    return 1
+  }
+
+  return Math.max(1, Math.ceil((maxScroll + pageSize) / pageSize))
+}
+
+function listPageIndex(el: HTMLElement, pageCount: number) {
+  if (pageCount <= 1) {
+    return 0
+  }
+
+  const maxScroll = listMaxScroll(el)
+  if (el.scrollTop >= maxScroll - 2) {
+    return pageCount - 1
+  }
+
+  return Math.min(
+    pageCount - 1,
+    Math.round((el.scrollTop / maxScroll) * (pageCount - 1)),
+  )
+}
+
+function updateBlockPages(id: ServiceBlockId) {
+  const el = blockListEls.get(id)
+  let pages = 1
+  let index = 0
+
+  if (el && el.clientHeight > 0) {
+    pages = listPageCount(el)
+    index = listPageIndex(el, pages)
+  }
+
+  if (blockPageCount.value[id] !== pages) {
+    blockPageCount.value = { ...blockPageCount.value, [id]: pages }
+  }
+
+  if (blockPageIndex.value[id] !== index) {
+    blockPageIndex.value = { ...blockPageIndex.value, [id]: index }
+  }
+}
+
+function scheduleBlockPages(id?: ServiceBlockId) {
+  const update = () => {
+    const ids: ServiceBlockId[] = id
+      ? [id]
+      : ['trophy', 'penalty', 'preparation', 'food', 'addetional', 'spending']
+
+    for (const blockId of ids) {
+      updateBlockPages(blockId)
+    }
+  }
+
+  void nextTick(() => {
+    update()
+    requestAnimationFrame(() => {
+      update()
+      requestAnimationFrame(update)
+    })
+  })
+}
+
+function setBlockListRef(id: ServiceBlockId, el: Element | null) {
+  const current = blockListEls.get(id) ?? null
+  const next = el instanceof HTMLElement ? el : null
+
+  if (current === next) {
+    return
+  }
+
+  if (current) {
+    blockListObserver?.unobserve(current)
+  }
+
+  if (next) {
+    blockListEls.set(id, next)
+    blockListObserver?.observe(next)
+  }
+  else {
+    blockListEls.delete(id)
+  }
+
+  scheduleBlockPages(id)
+}
+
+function onBlockListScroll(id: ServiceBlockId) {
+  const el = blockListEls.get(id)
+  if (!el) {
+    return
+  }
+
+  const pages = blockPageCount.value[id]
+  const index = listPageIndex(el, pages)
+  if (blockPageIndex.value[id] !== index) {
+    blockPageIndex.value = { ...blockPageIndex.value, [id]: index }
+  }
+}
+
+function scrollBlockToPage(id: ServiceBlockId, index: number) {
+  const el = blockListEls.get(id)
+  if (!el) {
+    return
+  }
+
+  const pageCount = blockPageCount.value[id]
+  if (pageCount <= 1) {
+    return
+  }
+
+  const maxScroll = listMaxScroll(el)
+  const top = Math.round((index / (pageCount - 1)) * maxScroll)
+  el.scrollTo({ top, behavior: 'smooth' })
+  blockPageIndex.value = { ...blockPageIndex.value, [id]: index }
+}
+
+const blockListRef = {
+  trophy: (el: Element | null) => setBlockListRef('trophy', el),
+  penalty: (el: Element | null) => setBlockListRef('penalty', el),
+  preparation: (el: Element | null) => setBlockListRef('preparation', el),
+  food: (el: Element | null) => setBlockListRef('food', el),
+  addetional: (el: Element | null) => setBlockListRef('addetional', el),
+  spending: (el: Element | null) => setBlockListRef('spending', el),
+} satisfies Record<ServiceBlockId, (el: Element | null) => void>
+
+function hasOpenDraft(id: ServiceBlockId): boolean {
+  switch (id) {
+    case 'trophy':
+      return trophyDrafts.value.length > 0
+    case 'penalty':
+      return penaltyDrafts.value.length > 0
+    case 'preparation':
+      return preparationDrafts.value.length > 0
+    case 'food':
+      return foodDrafts.value.length > 0
+    case 'addetional':
+      return additionalDrafts.value.length > 0
+    case 'spending':
+      return spendingDrafts.value.length > 0
+    default: {
+      const exhaustive: never = id
+      return exhaustive
+    }
+  }
+}
+
 function canDeleteService(_list: DeletableServiceList, _serviceId: number): boolean {
   return !servicesClosed.value
 }
@@ -247,6 +427,9 @@ function resetServices() {
   penaltyDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
+  savingFoodCountId.value = null
+  savedFoodCounts.value = {}
+  foodCountRequests.clear()
   savingAdditionalKey.value = null
   savingSpendingKey.value = null
   savingTrophyKey.value = null
@@ -348,17 +531,11 @@ function preparationDraftPrice(row: PreparationDraft): string {
 const foodCatalog = computed(() => services.value?.catalogs?.food ?? [])
 
 const foodOptions = computed<SelectFieldOption[]>(() => {
-  const addedNames = new Set(
-    (items.value.foods ?? [])
-      .map(item => (item.type ?? '').trim().toLowerCase())
-      .filter(Boolean),
-  )
-
   return foodCatalog.value
     .filter((item) => {
       const price = Number(item.price)
       const visible = item.is_visible !== false && item.is_visible !== 0 && item.is_visible !== '0'
-      return visible && Number.isFinite(price) && price > 0 && !addedNames.has(item.name.trim().toLowerCase())
+      return visible && Number.isFinite(price) && price > 0
     })
     .map(item => withCatalogPrice(item.name, item.price, String(item.id)))
 })
@@ -420,19 +597,10 @@ function isPerPersonFood(foodId: string): boolean {
 function onFoodChange(row: FoodDraft, foodId: string | string[]) {
   row.foodId = Array.isArray(foodId) ? foodId[0] ?? '' : foodId
   row.hunterId = ''
-  row.hunterIds = []
 }
 
 function foodCatalogItem(foodId: string) {
   return foodCatalog.value.find(item => String(item.id) === foodId)
-}
-
-function foodDraftPeople(row: FoodDraft): number {
-  if (isIndividualFood(row.foodId)) {
-    return Math.max(row.hunterIds.length, 1)
-  }
-
-  return 1
 }
 
 function foodDraftUnitPrice(row: FoodDraft): string {
@@ -448,114 +616,441 @@ function foodDraftUnitPrice(row: FoodDraft): string {
   return catalogPriceLabel(catalog.price) ?? ''
 }
 
+function foodDraftCount(row: FoodDraft): number | null {
+  const count = Number(row.count)
+  if (!Number.isInteger(count) || count < 1) {
+    return null
+  }
+
+  return count
+}
+
 function foodDraftTotal(row: FoodDraft): string {
   const catalog = foodCatalogItem(row.foodId)
   const price = Number(catalog?.price)
-  if (!catalog || !Number.isFinite(price)) {
+  const count = foodDraftCount(row)
+  if (!catalog || !Number.isFinite(price) || count == null) {
     return ''
   }
 
-  return formatHotelPriceLabel(Math.round(price * foodDraftPeople(row) * foodTimes()))
+  return formatHotelPriceLabel(Math.round(price * count))
 }
 
 function hunterNameById(hunterId: number): string {
   return hunterOptions.value.find(option => option.value === String(hunterId))?.label ?? ''
 }
 
-function foodItemHunterIds(item: BookingServiceFoodItem): string[] {
-  const ids = new Set<string>()
+function hunterIdFromItem(hunterId?: number | null, hunterName?: string | null): string {
+  if (hunterId != null && hunterId > 0) {
+    return String(hunterId)
+  }
 
-  for (const hunter of item.hunters ?? []) {
-    if (Number.isInteger(hunter.id) && hunter.id > 0) {
-      ids.add(String(hunter.id))
+  const name = hunterName?.trim().toLowerCase()
+  if (!name) {
+    return ''
+  }
+
+  return hunterOptions.value.find(option => option.label.trim().toLowerCase() === name)?.value ?? ''
+}
+
+function savedServiceMessage(serviceId: number | undefined, responseMessage?: string): string {
+  return serviceId != null ? 'Изменения сохранены' : (responseMessage || 'Услуга добавлена')
+}
+
+function savedServiceError(serviceId: number | undefined, fallback: string): string {
+  return serviceId != null ? 'Не удалось сохранить изменения' : fallback
+}
+
+function mealTakenHunterIds(mealName: string, exceptDraftKey?: number): Set<string> | 'all' {
+  const normalized = mealName.trim().toLowerCase()
+  const taken = new Set<string>()
+
+  const takeHunter = (hunterId: number | null | undefined, hunterName?: string | null) => {
+    if (hunterId != null && hunterId > 0) {
+      taken.add(String(hunterId))
+      return
+    }
+
+    const name = hunterName?.trim().toLowerCase()
+    if (!name) {
+      return
+    }
+
+    const match = hunterOptions.value.find(option => option.label.trim().toLowerCase() === name)
+    if (match) {
+      taken.add(match.value)
     }
   }
 
-  for (const hunterId of item.hunter_ids ?? []) {
-    if (Number.isInteger(hunterId) && hunterId > 0) {
-      ids.add(String(hunterId))
+  const editingFoodIds = new Set(
+    foodDrafts.value.flatMap(draft => draft.serviceId != null ? [draft.serviceId] : []),
+  )
+
+  for (const item of items.value.foods ?? []) {
+    if (editingFoodIds.has(item.id)) {
+      continue
     }
+
+    if ((item.type ?? '').trim().toLowerCase() !== normalized) {
+      continue
+    }
+
+    if (normalizeCalculationType(item.calculation_type) === 'per_person') {
+      return 'all'
+    }
+
+    takeHunter(item.hunter_id, item.hunter_name)
+    for (const hunter of item.hunters ?? []) {
+      takeHunter(hunter.id, hunter.name)
+    }
+    for (const hunterId of item.hunter_ids ?? []) {
+      takeHunter(hunterId)
+    }
+  }
+
+  for (const draft of foodDrafts.value) {
+    if (draft.key === exceptDraftKey || !draft.hunterId) {
+      continue
+    }
+
+    const draftName = foodCatalogItem(draft.foodId)?.name.trim().toLowerCase()
+    if (draftName === normalized) {
+      taken.add(draft.hunterId)
+    }
+  }
+
+  return taken
+}
+
+function mealHasFreeHunter(mealName: string, exceptDraftKey?: number): boolean {
+  const hunters = hunterOptions.value
+  if (hunters.length === 0) {
+    return true
+  }
+
+  const taken = mealTakenHunterIds(mealName, exceptDraftKey)
+  if (taken === 'all') {
+    return false
+  }
+
+  return hunters.some(option => !taken.has(option.value))
+}
+
+function foodOptionsFor(row: FoodDraft): SelectFieldOption[] {
+  return foodOptions.value.filter((option) => {
+    const name = foodCatalogItem(option.value)?.name ?? ''
+    return mealHasFreeHunter(name, row.key)
+  })
+}
+
+watch(
+  [() => items.value.foods, foodDrafts],
+  () => {
+    for (const row of foodDrafts.value) {
+      if (!row.foodId) {
+        continue
+      }
+
+      const name = foodCatalogItem(row.foodId)?.name ?? ''
+      if (!mealHasFreeHunter(name, row.key)) {
+        row.foodId = ''
+        row.hunterId = ''
+      }
+    }
+  },
+  { deep: true },
+)
+
+function foodHunterOptions(row: FoodDraft): SelectFieldOption[] {
+  const catalog = foodCatalogItem(row.foodId)
+  if (!catalog) {
+    return hunterOptions.value
+  }
+
+  const taken = mealTakenHunterIds(catalog.name, row.key)
+  if (taken === 'all') {
+    return []
+  }
+
+  return hunterOptions.value.filter(option => !taken.has(option.value))
+}
+
+const trophyRowEntries = computed(() => {
+  const entries: Array<{ key: string, item?: BookingServiceTrophyItem, draft?: TrophyDraft }> = []
+  for (const item of items.value.trophies ?? []) {
+    const draft = trophyDrafts.value.find(row => row.serviceId === item.id)
+    entries.push(draft ? { key: `trophy-edit-${item.id}`, draft } : { key: `trophy-${item.id}`, item })
+  }
+  for (const draft of trophyDrafts.value) {
+    if (draft.serviceId == null) {
+      entries.push({ key: `trophy-draft-${draft.key}`, draft })
+    }
+  }
+  return entries
+})
+
+const penaltyRowEntries = computed(() => {
+  const entries: Array<{ key: string, item?: BookingServicePenaltyItem, draft?: PenaltyDraft }> = []
+  for (const item of items.value.penalties ?? []) {
+    const draft = penaltyDrafts.value.find(row => row.serviceId === item.id)
+    entries.push(draft ? { key: `penalty-edit-${item.id}`, draft } : { key: `penalty-${item.id}`, item })
+  }
+  for (const draft of penaltyDrafts.value) {
+    if (draft.serviceId == null) {
+      entries.push({ key: `penalty-draft-${draft.key}`, draft })
+    }
+  }
+  return entries
+})
+
+const preparationRowEntries = computed(() => {
+  const entries: Array<{ key: string, item?: BookingServicePreparationItem, draft?: PreparationDraft }> = []
+  for (const item of items.value.preparations ?? []) {
+    const draft = preparationDrafts.value.find(row => row.serviceId === item.id)
+    entries.push(draft ? { key: `preparation-edit-${item.id}`, draft } : { key: `preparation-${item.id}`, item })
+  }
+  for (const draft of preparationDrafts.value) {
+    if (draft.serviceId == null) {
+      entries.push({ key: `preparation-draft-${draft.key}`, draft })
+    }
+  }
+  return entries
+})
+
+const foodRowEntries = computed(() => {
+  const entries: Array<{ key: string, item?: BookingServiceFoodItem, draft?: FoodDraft }> = []
+  for (const item of items.value.foods ?? []) {
+    const draft = foodDrafts.value.find(row => row.serviceId === item.id)
+    entries.push(draft ? { key: `food-edit-${item.id}`, draft } : { key: `food-${item.id}`, item })
+  }
+  for (const draft of foodDrafts.value) {
+    if (draft.serviceId == null) {
+      entries.push({ key: `food-draft-${draft.key}`, draft })
+    }
+  }
+  return entries
+})
+
+const additionalRowEntries = computed(() => {
+  const entries: Array<{ key: string, item?: BookingServiceAdditionalItem, draft?: AdditionalDraft }> = []
+  for (const item of items.value.additionals ?? []) {
+    const draft = additionalDrafts.value.find(row => row.serviceId === item.id)
+    entries.push(draft ? { key: `additional-edit-${item.id}`, draft } : { key: `additional-${item.id}`, item })
+  }
+  for (const draft of additionalDrafts.value) {
+    if (draft.serviceId == null) {
+      entries.push({ key: `additional-draft-${draft.key}`, draft })
+    }
+  }
+  return entries
+})
+
+const spendingRowEntries = computed(() => {
+  const entries: Array<{ key: string, item?: BookingServiceSpendingItem, draft?: SpendingDraft }> = []
+  for (const item of items.value.spendings ?? []) {
+    const draft = spendingDrafts.value.find(row => row.serviceId === item.id)
+    entries.push(draft ? { key: `spending-edit-${item.id}`, draft } : { key: `spending-${item.id}`, item })
+  }
+  for (const draft of spendingDrafts.value) {
+    if (draft.serviceId == null) {
+      entries.push({ key: `spending-draft-${draft.key}`, draft })
+    }
+  }
+  return entries
+})
+
+function foodHunterLabel(item: BookingServiceFoodItem): string {
+  if (normalizeCalculationType(item.calculation_type) === 'per_person') {
+    return 'Разделено на всех'
+  }
+
+  const name = item.hunter_name?.trim()
+  if (name) {
+    return name
   }
 
   if (item.hunter_id != null && item.hunter_id > 0) {
-    ids.add(String(item.hunter_id))
+    return hunterNameById(item.hunter_id) || '—'
   }
 
-  return [...ids]
+  return '—'
 }
 
-function isSavedIndividualFood(item: BookingServiceFoodItem): boolean {
-  return normalizeCalculationType(item.calculation_type) === 'individual' || foodItemHunterIds(item).length > 0
-}
-
-const foodDisplayRows = computed(() => {
-  const rows: Array<{ key: string, items: BookingServiceFoodItem[] }> = []
-  const grouped = new Map<string, { key: string, items: BookingServiceFoodItem[] }>()
-
-  for (const item of items.value.foods ?? []) {
-    if (!isSavedIndividualFood(item) || normalizeCalculationType(item.calculation_type) === 'per_person') {
-      rows.push({ key: `food-${item.id}`, items: [item] })
-      continue
-    }
-
-    const key = `food-individual-${(item.type ?? '').trim().toLowerCase()}`
-    const group = grouped.get(key)
-    if (group) {
-      group.items.push(item)
-      continue
-    }
-
-    const row = { key, items: [item] }
-    grouped.set(key, row)
-    rows.push(row)
+function savedFoodCount(item: BookingServiceFoodItem): number {
+  const edited = savedFoodCounts.value[item.id]
+  if (edited != null) {
+    return edited
   }
 
-  return rows
-})
-
-function savedFoodHunterIds(itemsInRow: BookingServiceFoodItem[]): string[] {
-  return [...new Set(itemsInRow.flatMap(foodItemHunterIds))]
-}
-
-function savedFoodHunterOptions(itemsInRow: BookingServiceFoodItem[]): SelectFieldOption[] {
-  const labels = new Map<string, string>()
-
-  for (const item of itemsInRow) {
-    for (const hunter of item.hunters ?? []) {
-      const name = hunter.name?.trim() || hunterNameById(hunter.id)
-      if (name) {
-        labels.set(String(hunter.id), name)
-      }
-    }
-
-    if (item.hunter_id != null && item.hunter_id > 0) {
-      const name = item.hunter_name?.trim() || hunterNameById(item.hunter_id)
-      if (name) {
-        labels.set(String(item.hunter_id), name)
-      }
-    }
+  const count = Number(item.count)
+  if (Number.isInteger(count) && count >= 1) {
+    return count
   }
 
-  return savedFoodHunterIds(itemsInRow).map(id => ({
-    value: id,
-    label: labels.get(id) || hunterNameById(Number(id)) || id,
-  }))
+  return foodTimes()
 }
 
-function savedFoodTotal(itemsInRow: BookingServiceFoodItem[]): string {
-  const item = itemsInRow[0]
-  if (item && normalizeCalculationType(item.calculation_type) !== 'per_person') {
-    const name = (item.type ?? '').trim().toLowerCase()
-    const catalog = foodCatalog.value.find(entry => entry.name.trim().toLowerCase() === name)
-    const unit = catalogUnitPrice(catalog?.price)
-    if (unit != null) {
-      const people = Math.max(savedFoodHunterIds(itemsInRow).length, 1)
-      return formatHotelPriceLabel(Math.round(unit * people * foodTimes()))
-    }
+function foodSavedUnitAmount(item: BookingServiceFoodItem): number | null {
+  if (normalizeCalculationType(item.calculation_type) === 'per_person') {
+    return catalogUnitPrice(item.unit_price)
   }
 
-  const total = itemsInRow.reduce((sum, item) => sum + (Number(item.price) || 0), 0)
-  return formatServicePrice(total)
+  const name = (item.type ?? '').trim().toLowerCase()
+  const catalog = foodCatalog.value.find(entry => entry.name.trim().toLowerCase() === name)
+  return catalogUnitPrice(catalog?.price)
+}
+
+function savedFoodTotal(item: BookingServiceFoodItem): string {
+  const unit = foodSavedUnitAmount(item)
+  if (unit != null) {
+    return formatHotelPriceLabel(Math.round(unit * savedFoodCount(item)))
+  }
+
+  return formatServicePrice(item.price)
+}
+
+function onFoodCountKeydown(event: KeyboardEvent) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return
+  }
+
+  const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter']
+  if (allowed.includes(event.key) || /^\d$/.test(event.key)) {
+    return
+  }
+
+  event.preventDefault()
+}
+
+function onFoodCountBeforeInput(event: InputEvent) {
+  if (event.inputType.startsWith('delete') || event.inputType.startsWith('history')) {
+    return
+  }
+
+  if (event.data != null && /\D/.test(event.data)) {
+    event.preventDefault()
+  }
+}
+
+function keepFoodCountDigits(event: Event) {
+  const input = event.target as HTMLInputElement
+  const digits = input.value.replace(/\D/g, '')
+  if (input.value !== digits) {
+    input.value = digits
+  }
+
+  return digits
+}
+
+function onFoodDraftCountInput(row: { count: number }, event: Event) {
+  const digits = keepFoodCountDigits(event)
+  row.count = digits === '' ? 0 : Number(digits)
+}
+
+function foodLinePrice(item: BookingServiceFoodItem, count: number): number {
+  const unit = foodSavedUnitAmount(item)
+  if (unit != null) {
+    return Math.round(unit * count)
+  }
+
+  const storedCount = Number(item.count)
+  const storedPrice = Number(item.price)
+  if (Number.isInteger(storedCount) && storedCount >= 1 && Number.isFinite(storedPrice)) {
+    return Math.round((storedPrice / storedCount) * count)
+  }
+
+  return Number.isFinite(storedPrice) ? Math.round(storedPrice) : 0
+}
+
+function applySavedFoodCount(itemId: number, count: number, price: number) {
+  if (!services.value) {
+    return
+  }
+
+  const foods = services.value.items.foods ?? []
+  const current = foods.find(food => food.id === itemId)
+  const previousPrice = Math.round(Number(current?.price) || 0)
+  const nextPrice = Math.round(price)
+
+  savedFoodCounts.value = {
+    ...savedFoodCounts.value,
+    [itemId]: count,
+  }
+
+  commitServiceItems({
+    foods: foods.map(food => (
+      food.id === itemId
+        ? { ...food, count, price: nextPrice }
+        : food
+    )),
+  }, nextPrice - previousPrice)
+}
+
+async function onSavedFoodCountChange(item: BookingServiceFoodItem, event: Event) {
+  const input = event.target as HTMLInputElement
+  const count = Number(input.value)
+  const previous = savedFoodCount(item)
+
+  if (!Number.isInteger(count) || count < 1) {
+    input.value = String(previous)
+    return
+  }
+
+  if (count === previous) {
+    return
+  }
+
+  const code = booking.value?.code
+  const current = services.value?.items.foods?.find(food => food.id === item.id)
+  if (!code || !current) {
+    input.value = String(previous)
+    return
+  }
+
+  const previousPrice = Math.round(Number(current.price) || 0)
+  const requestId = (foodCountRequests.get(item.id) ?? 0) + 1
+  foodCountRequests.set(item.id, requestId)
+  savingFoodCountId.value = item.id
+  applySavedFoodCount(item.id, count, foodLinePrice(current, count))
+
+  try {
+    const response = await bookings.updateFood(code, item.id, { count })
+
+    if (foodCountRequests.get(item.id) !== requestId) {
+      return
+    }
+
+    if (!response.success || !response.data) {
+      applySavedFoodCount(item.id, previous, previousPrice)
+      input.value = String(previous)
+      notifications.error(response.message || 'Не удалось сохранить количество', notifyOptions)
+      return
+    }
+
+    const savedCount = Number(response.data.count)
+    const appliedCount = Number.isInteger(savedCount) && savedCount >= 1 ? savedCount : count
+    const savedPrice = Number(response.data.price)
+    applySavedFoodCount(
+      item.id,
+      appliedCount,
+      Number.isFinite(savedPrice) ? savedPrice : foodLinePrice(current, appliedCount),
+    )
+  }
+  catch (error) {
+    if (foodCountRequests.get(item.id) !== requestId) {
+      return
+    }
+
+    applySavedFoodCount(item.id, previous, previousPrice)
+    input.value = String(previous)
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось сохранить количество', notifyOptions)
+  }
+  finally {
+    if (foodCountRequests.get(item.id) === requestId) {
+      savingFoodCountId.value = null
+    }
+  }
 }
 
 function foodSavedUnitPrice(item: BookingServiceFoodItem): string {
@@ -569,9 +1064,9 @@ function foodSavedUnitPrice(item: BookingServiceFoodItem): string {
 }
 
 function canSaveFoodDraft(row: FoodDraft): boolean {
-  const hasHunter = isPerPersonFood(row.foodId) || row.hunterIds.length > 0
+  const hasHunter = isPerPersonFood(row.foodId) || Boolean(row.hunterId)
 
-  return Boolean(row.foodId && hasHunter) && savingFoodKey.value === null
+  return Boolean(row.foodId && hasHunter && foodDraftCount(row) != null) && savingFoodKey.value === null
 }
 
 function formatServicePrice(price: unknown): string {
@@ -658,17 +1153,41 @@ function onTrophyAnimalChange(row: TrophyDraft, animalId: string) {
 }
 
 function addTrophyDraft() {
-  if (!canAddServiceType('trophy')) {
+  if (!canAddServiceType('trophy') || hasOpenDraft('trophy')) {
     return
   }
 
   expandBlock('trophy')
+  const key = ++trophyDraftKey
   trophyDrafts.value.push({
-    key: ++trophyDraftKey,
+    key,
     animalId: '',
     trophyId: '',
     count: 1,
   })
+  scrollDraftIntoView(`trophy-${key}`)
+}
+
+function startTrophyEdit(item: BookingServiceTrophyItem) {
+  if (!canAddServiceType('trophy') || hasOpenDraft('trophy')) {
+    return
+  }
+
+  const animalId = item.animal_id != null ? String(item.animal_id) : ''
+  const trophy = trophyAnimals.value
+    .find(animal => String(animal.id) === animalId)
+    ?.trophies
+    ?.find(entry => entry.type === item.type)
+  expandBlock('trophy')
+  const key = ++trophyDraftKey
+  trophyDrafts.value.push({
+    key,
+    serviceId: item.id,
+    animalId,
+    trophyId: trophy ? String(trophy.id) : '',
+    count: item.count || 1,
+  })
+  scrollDraftIntoView(`trophy-${key}`)
 }
 
 function removeTrophyDraft(key: number) {
@@ -731,25 +1250,35 @@ async function saveTrophyDraft(row: TrophyDraft) {
   savingTrophyKey.value = row.key
 
   try {
-    const response = await bookings.storeTrophy(code, {
+    const body = {
       animal_id: animalId,
       trophy_id: trophyId,
       type,
       count,
-    })
+    }
+    const response = row.serviceId
+      ? await bookings.updateTrophy(code, row.serviceId, body)
+      : await bookings.storeTrophy(code, body)
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить трофей', notifyOptions)
+      notifications.error(response.message || savedServiceError(row.serviceId, 'Не удалось добавить трофей'), notifyOptions)
       return
     }
 
-    upsertTrophyItem(response.data)
+    const animalTitle = trophyAnimals.value.find(animal => String(animal.id) === row.animalId)?.title ?? ''
+    upsertTrophyItem({
+      ...response.data,
+      animal_id: response.data.animal_id ?? animalId,
+      animal_title: response.data.animal_title || animalTitle,
+      type: response.data.type || type,
+      count: response.data.count ?? count,
+    })
     removeTrophyDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
+    notifications.success(savedServiceMessage(row.serviceId, response.message), notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить трофей', notifyOptions)
+    notifications.error(data?.message || savedServiceError(row.serviceId, 'Не удалось добавить трофей'), notifyOptions)
   }
   finally {
     savingTrophyKey.value = null
@@ -775,17 +1304,41 @@ function onPenaltyAnimalChange(row: PenaltyDraft, animalId: string) {
 }
 
 function addPenaltyDraft() {
-  if (!canAddServiceType('penalty')) {
+  if (!canAddServiceType('penalty') || hasOpenDraft('penalty')) {
     return
   }
 
   expandBlock('penalty')
+  const key = ++penaltyDraftKey
   penaltyDrafts.value.push({
-    key: ++penaltyDraftKey,
+    key,
     animalId: '',
     penaltyId: '',
     hunterId: '',
   })
+  scrollDraftIntoView(`penalty-${key}`)
+}
+
+function startPenaltyEdit(item: BookingServicePenaltyItem) {
+  if (!canAddServiceType('penalty') || hasOpenDraft('penalty')) {
+    return
+  }
+
+  const animalId = item.animal_id != null ? String(item.animal_id) : ''
+  const penalty = penaltyAnimals.value
+    .find(animal => String(animal.id) === animalId)
+    ?.fines
+    ?.find(entry => entry.type === item.type)
+  expandBlock('penalty')
+  const key = ++penaltyDraftKey
+  penaltyDrafts.value.push({
+    key,
+    serviceId: item.id,
+    animalId,
+    penaltyId: penalty ? String(penalty.id) : '',
+    hunterId: hunterIdFromItem(item.hunter_id, item.hunter_name),
+  })
+  scrollDraftIntoView(`penalty-${key}`)
 }
 
 function removePenaltyDraft(key: number) {
@@ -846,25 +1399,36 @@ async function savePenaltyDraft(row: PenaltyDraft) {
   savingPenaltyKey.value = row.key
 
   try {
-    const response = await bookings.storePenalty(code, {
+    const body = {
       animal_id: animalId,
       penalty_id: penaltyId,
       type,
       hunter_id: hunterId,
-    })
+    }
+    const response = row.serviceId
+      ? await bookings.updatePenalty(code, row.serviceId, body)
+      : await bookings.storePenalty(code, body)
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить штраф', notifyOptions)
+      notifications.error(response.message || savedServiceError(row.serviceId, 'Не удалось добавить штраф'), notifyOptions)
       return
     }
 
-    upsertPenaltyItem(response.data)
+    const animalTitle = penaltyAnimals.value.find(animal => String(animal.id) === row.animalId)?.title ?? ''
+    upsertPenaltyItem({
+      ...response.data,
+      animal_id: response.data.animal_id ?? animalId,
+      animal_title: response.data.animal_title || animalTitle,
+      type: response.data.type || type,
+      hunter_id: response.data.hunter_id ?? hunterId,
+      hunter_name: response.data.hunter_name || hunterNameById(hunterId),
+    })
     removePenaltyDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
+    notifications.success(savedServiceMessage(row.serviceId, response.message), notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить штраф', notifyOptions)
+    notifications.error(data?.message || savedServiceError(row.serviceId, 'Не удалось добавить штраф'), notifyOptions)
   }
   finally {
     savingPenaltyKey.value = null
@@ -872,13 +1436,36 @@ async function savePenaltyDraft(row: PenaltyDraft) {
 }
 
 function addSpendingDraft() {
+  if (!canAddServiceType('spending') || hasOpenDraft('spending')) {
+    return
+  }
+
   expandBlock('spending')
+  const key = ++spendingDraftKey
   spendingDrafts.value.push({
-    key: ++spendingDraftKey,
+    key,
     hunterId: '',
     price: '',
     comment: '',
   })
+  scrollDraftIntoView(`spending-${key}`)
+}
+
+function startSpendingEdit(item: BookingServiceSpendingItem) {
+  if (!canAddServiceType('spending') || hasOpenDraft('spending')) {
+    return
+  }
+
+  expandBlock('spending')
+  const key = ++spendingDraftKey
+  spendingDrafts.value.push({
+    key,
+    serviceId: item.id,
+    hunterId: hunterIdFromItem(item.hunter_id, item.hunter_name),
+    price: String(item.price ?? ''),
+    comment: item.comment ?? '',
+  })
+  scrollDraftIntoView(`spending-${key}`)
 }
 
 function removeSpendingDraft(key: number) {
@@ -955,24 +1542,33 @@ async function saveSpendingDraft(row: SpendingDraft) {
   savingSpendingKey.value = row.key
 
   try {
-    const response = await bookings.storeSpending(code, {
+    const body = {
       hunter_id: hunterId,
       price,
       comment,
-    })
+    }
+    const response = row.serviceId
+      ? await bookings.updateSpending(code, row.serviceId, body)
+      : await bookings.storeSpending(code, body)
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить трату', notifyOptions)
+      notifications.error(response.message || savedServiceError(row.serviceId, 'Не удалось добавить трату'), notifyOptions)
       return
     }
 
-    upsertSpendingItem(response.data)
+    upsertSpendingItem({
+      ...response.data,
+      hunter_id: response.data.hunter_id ?? hunterId,
+      hunter_name: response.data.hunter_name || hunterNameById(hunterId),
+      price: response.data.price ?? price,
+      comment: response.data.comment || comment,
+    })
     removeSpendingDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
+    notifications.success(savedServiceMessage(row.serviceId, response.message), notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить трату', notifyOptions)
+    notifications.error(data?.message || savedServiceError(row.serviceId, 'Не удалось добавить трату'), notifyOptions)
   }
   finally {
     savingSpendingKey.value = null
@@ -980,18 +1576,48 @@ async function saveSpendingDraft(row: SpendingDraft) {
 }
 
 function addAdditionalDraft() {
-  if (!canAddServiceType('addetional')) {
+  if (!canAddServiceType('addetional') || hasOpenDraft('addetional')) {
     return
   }
 
   expandBlock('addetional')
+  const key = ++additionalDraftKey
   additionalDrafts.value.push({
-    key: ++additionalDraftKey,
+    key,
     additionalId: '',
     hunterId: '',
-    hunterIds: [],
     count: 1,
   })
+  scrollDraftIntoView(`additional-${key}`)
+}
+
+function additionalIdByName(name?: string | null): string {
+  const normalized = name?.trim().toLowerCase()
+  if (!normalized) {
+    return ''
+  }
+
+  const match = (services.value?.catalogs?.additionals ?? [])
+    .find(entry => entry.name.trim().toLowerCase() === normalized)
+  return match ? String(match.id) : ''
+}
+
+function startAdditionalEdit(item: BookingServiceAdditionalItem) {
+  if (!canAddServiceType('addetional') || hasOpenDraft('addetional')) {
+    return
+  }
+
+  const perPerson = item.calculation_type === 'per_person'
+  expandBlock('addetional')
+  const key = ++additionalDraftKey
+  additionalDrafts.value.push({
+    key,
+    serviceId: item.id,
+    additionalId: additionalIdByName(item.type),
+    hunterId: perPerson ? '' : hunterIdFromItem(item.hunter_id, item.hunter_name),
+    count: item.count || 1,
+  })
+  scrollDraftIntoView(`additional-${key}`)
 }
 
 function removeAdditionalDraft(key: number) {
@@ -1010,10 +1636,6 @@ function additionalById(additionalId: string) {
   return (services.value?.catalogs?.additionals ?? []).find(entry => String(entry.id) === additionalId)
 }
 
-function isIndividualAdditional(additionalId: string): boolean {
-  return additionalById(additionalId)?.calculation_type === 'individual'
-}
-
 function isPerPersonAdditional(additionalId: string): boolean {
   return additionalById(additionalId)?.calculation_type === 'per_person'
 }
@@ -1021,7 +1643,6 @@ function isPerPersonAdditional(additionalId: string): boolean {
 function onAdditionalChange(row: AdditionalDraft, additionalId: string | string[]) {
   row.additionalId = Array.isArray(additionalId) ? additionalId[0] ?? '' : additionalId
   row.hunterId = ''
-  row.hunterIds = []
 }
 
 function additionalNameById(additionalId: number): string {
@@ -1071,16 +1692,58 @@ function additionalDraftUnitPrice(row: AdditionalDraft): string {
   return additionalSharePrice(
     catalog.price,
     catalog.calculation_type,
-    catalog.calculation_type === 'individual' ? row.hunterIds.length : undefined,
+    catalog.calculation_type === 'individual' ? 1 : undefined,
   )
 }
 
+function additionalStockLimit(additionalId: string): number | null {
+  const count = additionalById(additionalId)?.count
+  if (count == null) {
+    return null
+  }
+
+  const limit = Number(count)
+  if (!Number.isInteger(limit) || limit < 0) {
+    return null
+  }
+
+  return limit
+}
+
+function additionalUsedCount(additionalId: string): number {
+  const name = additionalById(additionalId)?.name.trim().toLowerCase()
+  if (!name) {
+    return 0
+  }
+
+  const editingIds = new Set(
+    additionalDrafts.value.flatMap(draft => draft.serviceId != null ? [draft.serviceId] : []),
+  )
+
+  return (items.value.additionals ?? [])
+    .filter(item => !editingIds.has(item.id) && (item.type ?? '').trim().toLowerCase() === name)
+    .length
+}
+
+function additionalStockExhausted(row: AdditionalDraft): boolean {
+  if (!row.additionalId) {
+    return false
+  }
+
+  const limit = additionalStockLimit(row.additionalId)
+  if (limit == null) {
+    return false
+  }
+
+  return additionalUsedCount(row.additionalId) >= limit
+}
+
 function canSaveAdditionalDraft(row: AdditionalDraft): boolean {
-  const hasHunter = isIndividualAdditional(row.additionalId)
-    ? row.hunterIds.length > 0
-    : isPerPersonAdditional(row.additionalId)
-      ? true
-      : Boolean(row.hunterId)
+  if (additionalStockExhausted(row)) {
+    return false
+  }
+
+  const hasHunter = isPerPersonAdditional(row.additionalId) || Boolean(row.hunterId)
 
   return Boolean(row.additionalId && hasHunter)
     && Number.isInteger(Number(row.count))
@@ -1119,73 +1782,103 @@ async function saveAdditionalDraft(row: AdditionalDraft) {
   const code = booking.value?.code
   const additionalId = Number(row.additionalId)
   const count = Number(row.count)
-  const individual = isIndividualAdditional(row.additionalId)
   const perPerson = isPerPersonAdditional(row.additionalId)
-  const hunterIds = (individual ? row.hunterIds : perPerson ? [] : [row.hunterId])
-    .map(Number)
-    .filter(id => Number.isInteger(id) && id > 0)
+  const hunterId = Number(row.hunterId)
 
-  if (!code || !canSaveAdditionalDraft(row) || (!perPerson && hunterIds.length === 0)) {
+  if (!code || !canSaveAdditionalDraft(row) || (!perPerson && !(Number.isInteger(hunterId) && hunterId > 0))) {
     return
   }
 
   const name = additionalNameById(additionalId)
-  if (!name) {
-    notifications.error('Выберите услугу', notifyOptions)
+  if (!name || additionalStockExhausted(row)) {
+    notifications.error(additionalStockExhausted(row) ? 'Недостаточное количество данной услуги на базе' : 'Выберите услугу', notifyOptions)
     return
   }
 
   savingAdditionalKey.value = row.key
 
   try {
-    const targets = perPerson ? [] : hunterIds
-    const pending = [...targets]
+    const body = {
+      additional_id: additionalId,
+      name,
+      count,
+      hunter_id: perPerson ? null : hunterId,
+    }
+    const response = row.serviceId
+      ? await bookings.updateAdditional(code, row.serviceId, body)
+      : await bookings.storeAdditional(code, {
+          additional_id: additionalId,
+          name,
+          count,
+          ...(perPerson ? {} : { hunter_id: hunterId }),
+        })
 
-    for (const hunterId of perPerson ? [null] : targets) {
-      const response = await bookings.storeAdditional(code, {
-        additional_id: additionalId,
-        name,
-        count,
-        ...(hunterId === null ? {} : { hunter_id: hunterId }),
-      })
-
-      if (!response.success || !response.data) {
-        notifications.error(response.message || 'Не удалось добавить услугу', notifyOptions)
-        if (individual) {
-          row.hunterIds = pending.map(String)
-        }
-        return
-      }
-
-      upsertAdditionalItem(response.data)
-      pending.shift()
+    if (!response.success || !response.data) {
+      notifications.error(response.message || savedServiceError(row.serviceId, 'Не удалось добавить услугу'), notifyOptions)
+      return
     }
 
+    upsertAdditionalItem({
+      ...response.data,
+      type: response.data.type || name,
+      calculation_type: response.data.calculation_type ?? (perPerson ? 'per_person' : 'individual'),
+      hunter_id: perPerson ? null : (response.data.hunter_id ?? hunterId),
+      hunter_name: perPerson ? undefined : (response.data.hunter_name || hunterNameById(hunterId)),
+    })
     removeAdditionalDraft(row.key)
-    notifications.success('Услуга добавлена', notifyOptions)
+    notifications.success(savedServiceMessage(row.serviceId, response.message), notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить услугу', notifyOptions)
+    notifications.error(data?.message || savedServiceError(row.serviceId, 'Не удалось добавить услугу'), notifyOptions)
   }
   finally {
     savingAdditionalKey.value = null
   }
 }
 
+function foodIdByName(name?: string | null): string {
+  const normalized = name?.trim().toLowerCase()
+  if (!normalized) {
+    return ''
+  }
+
+  const match = foodCatalog.value.find(entry => entry.name.trim().toLowerCase() === normalized)
+  return match ? String(match.id) : ''
+}
+
 function addFoodDraft() {
-  if (!canAddServiceType('food')) {
+  if (!canAddServiceType('food') || hasOpenDraft('food')) {
     return
   }
 
   expandBlock('food')
+  const key = ++foodDraftKey
   foodDrafts.value.push({
-    key: ++foodDraftKey,
+    key,
     foodId: '',
     hunterId: '',
-    hunterIds: [],
-    count: 1,
+    count: foodTimes(),
   })
+  scrollDraftIntoView(`food-${key}`)
+}
+
+function startFoodEdit(item: BookingServiceFoodItem) {
+  if (!canAddServiceType('food') || hasOpenDraft('food')) {
+    return
+  }
+
+  const perPerson = normalizeCalculationType(item.calculation_type) === 'per_person'
+  expandBlock('food')
+  const key = ++foodDraftKey
+  foodDrafts.value.push({
+    key,
+    serviceId: item.id,
+    foodId: foodIdByName(item.type),
+    hunterId: perPerson ? '' : hunterIdFromItem(item.hunter_id, item.hunter_name),
+    count: savedFoodCount(item),
+  })
+  scrollDraftIntoView(`food-${key}`)
 }
 
 function removeFoodDraft(key: number) {
@@ -1232,51 +1925,55 @@ async function saveFoodDraft(row: FoodDraft) {
   const foodId = Number(row.foodId)
   const individual = isIndividualFood(row.foodId)
   const perPerson = isPerPersonFood(row.foodId)
-  const hunterIds = (perPerson ? [] : row.hunterIds)
-    .map(Number)
-    .filter(id => Number.isInteger(id) && id > 0)
+  const hunterId = Number(row.hunterId)
+  const count = foodDraftCount(row)
 
-  if (!code || !canSaveFoodDraft(row) || (!perPerson && hunterIds.length === 0)) {
+  if (!code || count == null || !canSaveFoodDraft(row) || (!perPerson && !(Number.isInteger(hunterId) && hunterId > 0))) {
     return
   }
 
   savingFoodKey.value = row.key
 
   try {
-    const targets = perPerson ? [null] : hunterIds
-    const pending = [...hunterIds]
+    const response = row.serviceId
+      ? await bookings.updateFood(code, row.serviceId, {
+          food_id: foodId,
+          count,
+          hunter_id: perPerson ? null : hunterId,
+        })
+      : await bookings.storeFood(code, {
+          food_id: foodId,
+          count,
+          ...(perPerson ? {} : { hunter_id: hunterId }),
+        })
 
-    for (const hunterId of targets) {
-      const response = await bookings.storeFood(code, {
-        food_id: foodId,
-        count: 1,
-        ...(hunterId === null ? {} : { hunter_id: hunterId }),
-      })
-
-      if (!response.success || !response.data) {
-        notifications.error(response.message || 'Не удалось добавить питание', notifyOptions)
-        if (individual) {
-          row.hunterIds = pending.map(String)
-        }
-        return
-      }
-
-      const savedHunterId = hunterId ?? response.data.hunter_id ?? null
-      upsertFoodItem({
-        ...response.data,
-        calculation_type: response.data.calculation_type ?? (individual ? 'individual' : perPerson ? 'per_person' : null),
-        hunter_id: savedHunterId,
-        hunter_name: response.data.hunter_name || (savedHunterId ? hunterNameById(savedHunterId) : '') || undefined,
-      })
-      pending.shift()
+    if (!response.success || !response.data) {
+      notifications.error(response.message || savedServiceError(row.serviceId, 'Не удалось добавить питание'), notifyOptions)
+      return
     }
 
+    const savedHunterId = perPerson ? null : hunterId
+    const savedId = response.data.id || row.serviceId
+    savedFoodCounts.value = {
+      ...savedFoodCounts.value,
+      [savedId]: count,
+    }
+    upsertFoodItem({
+      ...response.data,
+      id: savedId,
+      type: response.data.type || foodCatalogItem(row.foodId)?.name,
+      count,
+      calculation_type: response.data.calculation_type ?? (individual ? 'individual' : perPerson ? 'per_person' : null),
+      hunter_id: savedHunterId,
+      hunter_name: perPerson ? undefined : (response.data.hunter_name || hunterNameById(hunterId) || undefined),
+    })
+
     removeFoodDraft(row.key)
-    notifications.success('Услуга добавлена', notifyOptions)
+    notifications.success(savedServiceMessage(row.serviceId, response.message), notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить питание', notifyOptions)
+    notifications.error(data?.message || savedServiceError(row.serviceId, 'Не удалось добавить питание'), notifyOptions)
   }
   finally {
     savingFoodKey.value = null
@@ -1306,17 +2003,38 @@ function bookedPreparationAnimalId(): string {
 }
 
 function addPreparationDraft() {
-  if (!canAddServiceType('preparation')) {
+  if (!canAddServiceType('preparation') || hasOpenDraft('preparation')) {
     return
   }
 
   expandBlock('preparation')
+  const key = ++preparationDraftKey
   preparationDrafts.value.push({
-    key: ++preparationDraftKey,
+    key,
     animalId: bookedPreparationAnimalId(),
     preparationId: '',
     count: 1,
   })
+  scrollDraftIntoView(`preparation-${key}`)
+}
+
+function startPreparationEdit(item: BookingServicePreparationItem) {
+  if (!canAddServiceType('preparation') || hasOpenDraft('preparation')) {
+    return
+  }
+
+  const animalId = item.animal_id != null ? String(item.animal_id) : ''
+  const preparation = preparationOptions(animalId).find(entry => entry.type === item.type)
+  expandBlock('preparation')
+  const key = ++preparationDraftKey
+  preparationDrafts.value.push({
+    key,
+    serviceId: item.id,
+    animalId,
+    preparationId: preparation ? String(preparation.id) : '',
+    count: item.count || 1,
+  })
+  scrollDraftIntoView(`preparation-${key}`)
 }
 
 function removePreparationDraft(key: number) {
@@ -1480,27 +2198,34 @@ async function savePreparationDraft(row: PreparationDraft) {
   savingPreparationKey.value = row.key
 
   try {
-    const response = await bookings.storePreparation(code, {
+    const body = {
       animal_id: animalId,
       preparation_id: preparationId,
       count,
-    })
+    }
+    const response = row.serviceId
+      ? await bookings.updatePreparation(code, row.serviceId, body)
+      : await bookings.storePreparation(code, body)
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить разделку', notifyOptions)
+      notifications.error(response.message || savedServiceError(row.serviceId, 'Не удалось добавить разделку'), notifyOptions)
       return
     }
 
+    const animalTitle = preparationAnimals.value.find(animal => String(animal.id) === row.animalId)?.title ?? ''
     upsertPreparationItem({
       ...response.data,
+      animal_id: response.data.animal_id ?? animalId,
+      animal_title: response.data.animal_title || animalTitle,
       type: response.data.type || type,
+      count: response.data.count ?? count,
     })
     removePreparationDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
+    notifications.success(savedServiceMessage(row.serviceId, response.message), notifyOptions)
   }
   catch (error) {
     const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить разделку', notifyOptions)
+    notifications.error(data?.message || savedServiceError(row.serviceId, 'Не удалось добавить разделку'), notifyOptions)
   }
   finally {
     savingPreparationKey.value = null
@@ -1547,6 +2272,7 @@ async function refreshServices(code: string) {
       return
     }
 
+    savedFoodCounts.value = {}
     services.value = {
       ...services.value,
       items: response.data.items,
@@ -1570,6 +2296,9 @@ async function loadServices(code: string) {
   penaltyDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
+  savingFoodCountId.value = null
+  savedFoodCounts.value = {}
+  foodCountRequests.clear()
   savingAdditionalKey.value = null
   savingSpendingKey.value = null
   savingTrophyKey.value = null
@@ -1610,6 +2339,37 @@ async function loadServices(code: string) {
   }
 }
 
+watch(
+  () => [
+    items.value.trophies.length,
+    items.value.penalties.length,
+    items.value.preparations.length,
+    items.value.foods.length,
+    items.value.additionals.length,
+    items.value.spendings.length,
+    trophyDrafts.value.length,
+    penaltyDrafts.value.length,
+    preparationDrafts.value.length,
+    foodDrafts.value.length,
+    additionalDrafts.value.length,
+    spendingDrafts.value.length,
+    isOpen.value,
+  ],
+  () => scheduleBlockPages(),
+)
+
+onMounted(() => {
+  blockListObserver = new ResizeObserver(() => scheduleBlockPages())
+  for (const el of blockListEls.values()) {
+    blockListObserver.observe(el)
+  }
+})
+
+onBeforeUnmount(() => {
+  blockListObserver?.disconnect()
+  blockListObserver = null
+})
+
 function handleBackdropClick(event: MouseEvent) {
   if (event.target === event.currentTarget) {
     close()
@@ -1620,6 +2380,40 @@ function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     close()
   }
+}
+
+function scrollDraftIntoView(draftId: string) {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const root = servicesBodyRef.value
+      const row = root?.querySelector<HTMLElement>(`[data-service-draft="${draftId}"]`)
+      if (!row) {
+        return
+      }
+
+      const scrollParentIntoView = (parent: HTMLElement) => {
+        const parentRect = parent.getBoundingClientRect()
+        const rowRect = row.getBoundingClientRect()
+        const padding = 8
+
+        if (rowRect.bottom > parentRect.bottom - padding) {
+          parent.scrollTop += rowRect.bottom - parentRect.bottom + padding
+        }
+        else if (rowRect.top < parentRect.top + padding) {
+          parent.scrollTop -= parentRect.top - rowRect.top + padding
+        }
+      }
+
+      const list = row.closest<HTMLElement>('.add-services-modal__block-list')
+      if (list) {
+        scrollParentIntoView(list)
+      }
+
+      if (root) {
+        scrollParentIntoView(root)
+      }
+    })
+  })
 }
 </script>
 
@@ -1650,7 +2444,7 @@ function handleKeydown(event: KeyboardEvent) {
             </p>
           </div>
 
-          <div class="add-services-modal__body">
+          <div ref="servicesBodyRef" class="add-services-modal__body">
             <div v-if="isLoading" class="add-services-modal__loading">
               <CommonSpinner size="md" label="Загрузка услуг" />
             </div>
@@ -1662,9 +2456,29 @@ function handleKeydown(event: KeyboardEvent) {
             <template v-else>
               <section
                 v-if="isAllowed('trophy')"
-                class="add-services-modal__block"
-                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('trophy') }"
+                class="add-services-modal__block-row"
               >
+                <div
+                  v-if="blockPageCount.trophy > 1 && !isBlockCollapsed('trophy')"
+                  class="add-services-modal__dots"
+                  role="tablist"
+                  aria-label="Страницы трофеев"
+                >
+                  <button
+                    v-for="page in blockPageCount.trophy"
+                    :key="page"
+                    type="button"
+                    class="add-services-modal__dot"
+                    :class="{ 'add-services-modal__dot--active': page - 1 === blockPageIndex.trophy }"
+                    :aria-label="`Страница ${page}`"
+                    :aria-current="page - 1 === blockPageIndex.trophy ? 'true' : undefined"
+                    @click="scrollBlockToPage('trophy', page - 1)"
+                  />
+                </div>
+                <div
+                  class="add-services-modal__block"
+                  :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('trophy') }"
+                >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Трофеи:</h3>
                   <div class="add-services-modal__block-actions">
@@ -1685,6 +2499,7 @@ function handleKeydown(event: KeyboardEvent) {
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить трофей"
+                      :disabled="hasOpenDraft('trophy')"
                       @click="addTrophyDraft"
                     >+</button>
                   </div>
@@ -1697,93 +2512,117 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Общая сумма</span>
                   <span></span>
                 </div>
-                <div class="add-services-modal__block-list">
                 <div
-                  v-for="item in items.trophies"
-                  :key="item.id"
+                  class="add-services-modal__block-list"
+                  :ref="blockListRef.trophy"
+                  @scroll="onBlockListScroll('trophy')"
+                >
+                <template
+                  v-for="entry in trophyRowEntries"
+                  :key="entry.key"
+                >
+                <div
+                  v-if="entry.item"
                   class="add-services-modal__form-row add-services-modal__form-row--trophy"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
-                    <span class="add-services-modal__value">{{ item.animal_title }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.animal_title }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--type">
-                    <span class="add-services-modal__value">{{ item.type }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.type }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__value">{{ item.count }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.count }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
+                    <span class="add-services-modal__value">{{ formatServicePrice(entry.item.price) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
-                      v-if="canDeleteService('trophies', item.id)"
+                      v-if="canAddServiceType('trophy')"
+                      type="button"
+                      class="add-services-modal__edit"
+                      aria-label="Редактировать трофей"
+                      :disabled="hasOpenDraft('trophy') || deletingServiceId !== null"
+                      @click="startTrophyEdit(entry.item)"
+                    >
+                      <svg class="add-services-modal__edit-icon" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M11.2 1.9a1.5 1.5 0 0 1 2.1 2.1L5.4 12.1 2.4 13l.9-3.1 7.9-8Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canDeleteService('trophies', entry.item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
-                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить трофей?', 'trophies')"
+                      @click="requestServiceDeletion(entry.item.id, 'Вы уверены, что хотите удалить трофей?', 'trophies')"
                     >
                       Удалить
                     </button>
                   </div>
                 </div>
                 <div
-                  v-for="row in trophyDrafts"
-                  :key="row.key"
+                  v-else-if="entry.draft"
                   class="add-services-modal__form-row add-services-modal__form-row--trophy add-services-modal__form-row--draft"
+                  :data-service-draft="`trophy-${entry.draft.key}`"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
-                      :model-value="row.animalId"
+                      :model-value="entry.draft.animalId"
                       class="add-services-modal__select"
                       placeholder="Животное"
                       filled-hover
                       no-margin
                       :options="trophyAnimalOptions"
-                      @update:model-value="onTrophyAnimalChange(row, $event)"
+                      @update:model-value="onTrophyAnimalChange(entry.draft, $event)"
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--type">
                     <CommonSelectField
-                      v-model="row.trophyId"
+                      v-model="entry.draft.trophyId"
                       class="add-services-modal__select"
                       placeholder="Тип"
                       filled-hover
                       no-margin
-                      :disabled="!row.animalId"
-                      :options="trophyTypeOptions(row.animalId)"
+                      :disabled="!entry.draft.animalId"
+                      :options="trophyTypeOptions(entry.draft.animalId)"
                     />
                   </div>
                   <label class="add-services-modal__field add-services-modal__field--count">
                     <input
-                      v-model.number="row.count"
                       class="add-services-modal__control"
-                      type="number"
-                      min="1"
-                      step="1"
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      :value="entry.draft.count || ''"
+                      @keydown="onFoodCountKeydown"
+                      @beforeinput="onFoodCountBeforeInput"
+                      @input="onFoodDraftCountInput(entry.draft, $event)"
                     >
                   </label>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span v-if="trophyDraftPrice(row)" class="add-services-modal__value">{{ trophyDraftPrice(row) }}</span>
+                    <span v-if="trophyDraftPrice(entry.draft)" class="add-services-modal__value">{{ trophyDraftPrice(entry.draft) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
                       type="button"
                       class="add-services-modal__save"
-                      :disabled="!canSaveTrophyDraft(row)"
-                      @click="saveTrophyDraft(row)"
+                      :disabled="!canSaveTrophyDraft(entry.draft)"
+                      @click="saveTrophyDraft(entry.draft)"
                     >
                       Сохранить
                     </button>
                     <button
                       type="button"
                       class="add-services-modal__cancel"
-                      :disabled="savingTrophyKey === row.key"
-                      @click="cancelTrophyDraft(row.key)"
+                      :disabled="savingTrophyKey === entry.draft.key"
+                      @click="cancelTrophyDraft(entry.draft.key)"
                     >
                       Отмена
                     </button>
                   </div>
+                </div>
+                </template>
                 </div>
                 </div>
                 </div>
@@ -1791,9 +2630,29 @@ function handleKeydown(event: KeyboardEvent) {
 
               <section
                 v-if="isAllowed('penalty')"
-                class="add-services-modal__block"
-                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('penalty') }"
+                class="add-services-modal__block-row"
               >
+                <div
+                  v-if="blockPageCount.penalty > 1 && !isBlockCollapsed('penalty')"
+                  class="add-services-modal__dots"
+                  role="tablist"
+                  aria-label="Страницы штрафов"
+                >
+                  <button
+                    v-for="page in blockPageCount.penalty"
+                    :key="page"
+                    type="button"
+                    class="add-services-modal__dot"
+                    :class="{ 'add-services-modal__dot--active': page - 1 === blockPageIndex.penalty }"
+                    :aria-label="`Страница ${page}`"
+                    :aria-current="page - 1 === blockPageIndex.penalty ? 'true' : undefined"
+                    @click="scrollBlockToPage('penalty', page - 1)"
+                  />
+                </div>
+                <div
+                  class="add-services-modal__block"
+                  :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('penalty') }"
+                >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Штрафы:</h3>
                   <div class="add-services-modal__block-actions">
@@ -1814,6 +2673,7 @@ function handleKeydown(event: KeyboardEvent) {
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить штраф"
+                      :disabled="hasOpenDraft('penalty')"
                       @click="addPenaltyDraft"
                     >+</button>
                   </div>
@@ -1826,66 +2686,85 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Общая сумма</span>
                   <span></span>
                 </div>
-                <div class="add-services-modal__block-list">
                 <div
-                  v-for="item in items.penalties"
-                  :key="item.id"
+                  class="add-services-modal__block-list"
+                  :ref="blockListRef.penalty"
+                  @scroll="onBlockListScroll('penalty')"
+                >
+                <template
+                  v-for="entry in penaltyRowEntries"
+                  :key="entry.key"
+                >
+                <div
+                  v-if="entry.item"
                   class="add-services-modal__form-row add-services-modal__form-row--penalty"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
-                    <span class="add-services-modal__value">{{ item.animal_title }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.animal_title }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--type">
-                    <span class="add-services-modal__value">{{ item.type }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.type }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--hunter">
-                    <span class="add-services-modal__value">{{ item.hunter_name }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.hunter_name }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
+                    <span class="add-services-modal__value">{{ formatServicePrice(entry.item.price) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
-                      v-if="canDeleteService('penalties', item.id)"
+                      v-if="canAddServiceType('penalty')"
+                      type="button"
+                      class="add-services-modal__edit"
+                      aria-label="Редактировать штраф"
+                      :disabled="hasOpenDraft('penalty') || deletingServiceId !== null"
+                      @click="startPenaltyEdit(entry.item)"
+                    >
+                      <svg class="add-services-modal__edit-icon" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M11.2 1.9a1.5 1.5 0 0 1 2.1 2.1L5.4 12.1 2.4 13l.9-3.1 7.9-8Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canDeleteService('penalties', entry.item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
-                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить штраф?', 'penalties')"
+                      @click="requestServiceDeletion(entry.item.id, 'Вы уверены, что хотите удалить штраф?', 'penalties')"
                     >
                       Удалить
                     </button>
                   </div>
                 </div>
                 <div
-                  v-for="row in penaltyDrafts"
-                  :key="row.key"
+                  v-else-if="entry.draft"
                   class="add-services-modal__form-row add-services-modal__form-row--penalty add-services-modal__form-row--draft"
+                  :data-service-draft="`penalty-${entry.draft.key}`"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
-                      :model-value="row.animalId"
+                      :model-value="entry.draft.animalId"
                       class="add-services-modal__select"
                       placeholder="Выберите животное"
                       filled-hover
                       no-margin
                       :options="penaltyAnimalOptions"
-                      @update:model-value="onPenaltyAnimalChange(row, $event)"
+                      @update:model-value="onPenaltyAnimalChange(entry.draft, $event)"
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--type">
                     <CommonSelectField
-                      v-model="row.penaltyId"
+                      v-model="entry.draft.penaltyId"
                       class="add-services-modal__select"
                       placeholder="Выберите тип штрафа"
                       filled-hover
                       no-margin
-                      :disabled="!row.animalId"
-                      :options="penaltyTypeOptions(row.animalId)"
+                      :disabled="!entry.draft.animalId"
+                      :options="penaltyTypeOptions(entry.draft.animalId)"
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--hunter">
                     <CommonSelectField
-                      v-model="row.hunterId"
+                      v-model="entry.draft.hunterId"
                       class="add-services-modal__select"
                       placeholder="Выберите охотника"
                       filled-hover
@@ -1894,26 +2773,28 @@ function handleKeydown(event: KeyboardEvent) {
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span v-if="penaltyDraftPrice(row)" class="add-services-modal__value">{{ penaltyDraftPrice(row) }}</span>
+                    <span v-if="penaltyDraftPrice(entry.draft)" class="add-services-modal__value">{{ penaltyDraftPrice(entry.draft) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
                       type="button"
                       class="add-services-modal__save"
-                      :disabled="!canSavePenaltyDraft(row)"
-                      @click="savePenaltyDraft(row)"
+                      :disabled="!canSavePenaltyDraft(entry.draft)"
+                      @click="savePenaltyDraft(entry.draft)"
                     >
                       Сохранить
                     </button>
                     <button
                       type="button"
                       class="add-services-modal__cancel"
-                      :disabled="savingPenaltyKey === row.key"
-                      @click="cancelPenaltyDraft(row.key)"
+                      :disabled="savingPenaltyKey === entry.draft.key"
+                      @click="cancelPenaltyDraft(entry.draft.key)"
                     >
                       Отмена
                     </button>
                   </div>
+                </div>
+                </template>
                 </div>
                 </div>
                 </div>
@@ -1921,9 +2802,29 @@ function handleKeydown(event: KeyboardEvent) {
 
               <section
                 v-if="isAllowed('preparation')"
-                class="add-services-modal__block"
-                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('preparation') }"
+                class="add-services-modal__block-row"
               >
+                <div
+                  v-if="blockPageCount.preparation > 1 && !isBlockCollapsed('preparation')"
+                  class="add-services-modal__dots"
+                  role="tablist"
+                  aria-label="Страницы разделки"
+                >
+                  <button
+                    v-for="page in blockPageCount.preparation"
+                    :key="page"
+                    type="button"
+                    class="add-services-modal__dot"
+                    :class="{ 'add-services-modal__dot--active': page - 1 === blockPageIndex.preparation }"
+                    :aria-label="`Страница ${page}`"
+                    :aria-current="page - 1 === blockPageIndex.preparation ? 'true' : undefined"
+                    @click="scrollBlockToPage('preparation', page - 1)"
+                  />
+                </div>
+                <div
+                  class="add-services-modal__block"
+                  :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('preparation') }"
+                >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Разделка:</h3>
                   <div class="add-services-modal__block-actions">
@@ -1944,6 +2845,7 @@ function handleKeydown(event: KeyboardEvent) {
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить разделку"
+                      :disabled="hasOpenDraft('preparation')"
                       @click="addPreparationDraft"
                     >+</button>
                   </div>
@@ -1957,99 +2859,123 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Общая сумма</span>
                   <span></span>
                 </div>
-                <div class="add-services-modal__block-list">
                 <div
-                  v-for="item in items.preparations"
-                  :key="item.id"
+                  class="add-services-modal__block-list"
+                  :ref="blockListRef.preparation"
+                  @scroll="onBlockListScroll('preparation')"
+                >
+                <template
+                  v-for="entry in preparationRowEntries"
+                  :key="entry.key"
+                >
+                <div
+                  v-if="entry.item"
                   class="add-services-modal__form-row add-services-modal__form-row--preparation"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
-                    <span class="add-services-modal__value">{{ item.animal_title }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.animal_title }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--type">
-                    <span class="add-services-modal__value">{{ item.type || '—' }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.type || '—' }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__value">{{ item.count }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.count }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span class="add-services-modal__value">{{ preparationUnitPrice(item.animal_id, item.type) }}</span>
+                    <span class="add-services-modal__value">{{ preparationUnitPrice(entry.item.animal_id, entry.item.type) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
+                    <span class="add-services-modal__value">{{ formatServicePrice(entry.item.price) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
-                      v-if="canDeleteService('preparations', item.id)"
+                      v-if="canAddServiceType('preparation')"
+                      type="button"
+                      class="add-services-modal__edit"
+                      aria-label="Редактировать разделку"
+                      :disabled="hasOpenDraft('preparation') || deletingServiceId !== null"
+                      @click="startPreparationEdit(entry.item)"
+                    >
+                      <svg class="add-services-modal__edit-icon" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M11.2 1.9a1.5 1.5 0 0 1 2.1 2.1L5.4 12.1 2.4 13l.9-3.1 7.9-8Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canDeleteService('preparations', entry.item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
-                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить разделку?', 'preparations')"
+                      @click="requestServiceDeletion(entry.item.id, 'Вы уверены, что хотите удалить разделку?', 'preparations')"
                     >
                       Удалить
                     </button>
                   </div>
                 </div>
                 <div
-                  v-for="row in preparationDrafts"
-                  :key="row.key"
+                  v-else-if="entry.draft"
                   class="add-services-modal__form-row add-services-modal__form-row--preparation add-services-modal__form-row--draft"
+                  :data-service-draft="`preparation-${entry.draft.key}`"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
-                      :model-value="row.animalId"
+                      :model-value="entry.draft.animalId"
                       class="add-services-modal__select"
                       placeholder="Выберите животное"
                       filled-hover
                       no-margin
                       :options="preparationAnimalOptions"
-                      @update:model-value="onPreparationAnimalChange(row, $event)"
+                      @update:model-value="onPreparationAnimalChange(entry.draft, $event)"
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--type">
                     <CommonSelectField
-                      v-model="row.preparationId"
+                      v-model="entry.draft.preparationId"
                       class="add-services-modal__select"
                       placeholder="Выберите тип разделки"
                       filled-hover
                       no-margin
-                      :disabled="!row.animalId"
-                      :options="preparationTypeOptions(row.animalId)"
+                      :disabled="!entry.draft.animalId"
+                      :options="preparationTypeOptions(entry.draft.animalId)"
                     />
                   </div>
                   <label class="add-services-modal__field add-services-modal__field--count">
                     <input
-                      v-model.number="row.count"
                       class="add-services-modal__control"
-                      type="number"
-                      min="1"
-                      step="1"
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      :value="entry.draft.count || ''"
+                      @keydown="onFoodCountKeydown"
+                      @beforeinput="onFoodCountBeforeInput"
+                      @input="onFoodDraftCountInput(entry.draft, $event)"
                     >
                   </label>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span v-if="preparationDraftUnitPrice(row)" class="add-services-modal__value">{{ preparationDraftUnitPrice(row) }}</span>
+                    <span v-if="preparationDraftUnitPrice(entry.draft)" class="add-services-modal__value">{{ preparationDraftUnitPrice(entry.draft) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span v-if="preparationDraftPrice(row)" class="add-services-modal__value">{{ preparationDraftPrice(row) }}</span>
+                    <span v-if="preparationDraftPrice(entry.draft)" class="add-services-modal__value">{{ preparationDraftPrice(entry.draft) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
                       type="button"
                       class="add-services-modal__save"
-                      :disabled="!canSavePreparationDraft(row)"
-                      @click="savePreparationDraft(row)"
+                      :disabled="!canSavePreparationDraft(entry.draft)"
+                      @click="savePreparationDraft(entry.draft)"
                     >
                       Сохранить
                     </button>
                     <button
                       type="button"
                       class="add-services-modal__cancel"
-                      :disabled="savingPreparationKey === row.key"
-                      @click="cancelPreparationDraft(row.key)"
+                      :disabled="savingPreparationKey === entry.draft.key"
+                      @click="cancelPreparationDraft(entry.draft.key)"
                     >
                       Отмена
                     </button>
                   </div>
+                </div>
+                </template>
                 </div>
                 </div>
                 </div>
@@ -2057,9 +2983,29 @@ function handleKeydown(event: KeyboardEvent) {
 
               <section
                 v-if="isAllowed('food')"
-                class="add-services-modal__block"
-                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('food') }"
+                class="add-services-modal__block-row"
               >
+                <div
+                  v-if="blockPageCount.food > 1 && !isBlockCollapsed('food')"
+                  class="add-services-modal__dots"
+                  role="tablist"
+                  aria-label="Страницы питания"
+                >
+                  <button
+                    v-for="page in blockPageCount.food"
+                    :key="page"
+                    type="button"
+                    class="add-services-modal__dot"
+                    :class="{ 'add-services-modal__dot--active': page - 1 === blockPageIndex.food }"
+                    :aria-label="`Страница ${page}`"
+                    :aria-current="page - 1 === blockPageIndex.food ? 'true' : undefined"
+                    @click="scrollBlockToPage('food', page - 1)"
+                  />
+                </div>
+                <div
+                  class="add-services-modal__block"
+                  :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('food') }"
+                >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Питание:</h3>
                   <div class="add-services-modal__block-actions">
@@ -2080,6 +3026,7 @@ function handleKeydown(event: KeyboardEvent) {
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить питание"
+                      :disabled="hasOpenDraft('food')"
                       @click="addFoodDraft"
                     >+</button>
                   </div>
@@ -2088,126 +3035,145 @@ function handleKeydown(event: KeyboardEvent) {
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--food">
                   <span>Питание</span>
                   <span>Охотник</span>
-                  <span>Цена на человека</span>
-                  <span>Кол-во раз</span>
+                  <span class="add-services-modal__column-price">Цена</span>
+                  <span class="add-services-modal__column-count">Кол-во раз</span>
                   <span>Общая сумма</span>
                   <span></span>
                 </div>
-                <div class="add-services-modal__block-list">
                 <div
-                  v-for="row in foodDisplayRows"
-                  :key="row.key"
+                  class="add-services-modal__block-list"
+                  :ref="blockListRef.food"
+                  @scroll="onBlockListScroll('food')"
+                >
+                <template
+                  v-for="entry in foodRowEntries"
+                  :key="entry.key"
+                >
+                <div
+                  v-if="entry.item"
                   class="add-services-modal__form-row add-services-modal__form-row--food"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
-                    <span class="add-services-modal__value">{{ row.items[0]?.type || 'Питание' }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.type || 'Питание' }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--hunter">
-                    <CommonSelectField
-                      v-if="row.items[0] && isSavedIndividualFood(row.items[0]) && normalizeCalculationType(row.items[0].calculation_type) !== 'per_person' && savedFoodHunterIds(row.items).length"
-                      :model-value="savedFoodHunterIds(row.items)"
-                      class="add-services-modal__select"
-                      placeholder="Выбранные охотники"
-                      filled-hover
-                      multiple
-                      readonly
-                      no-margin
-                      :options="savedFoodHunterOptions(row.items)"
-                    />
-                    <span v-else class="add-services-modal__value">{{ row.items[0]?.calculation_type === 'per_person' ? 'Разделено на всех' : (row.items[0]?.hunter_name || '—') }}</span>
+                    <span class="add-services-modal__value">{{ foodHunterLabel(entry.item) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span class="add-services-modal__value">{{ row.items[0] ? foodSavedUnitPrice(row.items[0]) : '—' }}</span>
+                    <span class="add-services-modal__value">{{ foodSavedUnitPrice(entry.item) }}</span>
                   </div>
-                  <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__value">{{ foodTimes() }}</span>
-                  </div>
+                  <label class="add-services-modal__field add-services-modal__field--count">
+                    <input
+                      class="add-services-modal__control"
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      :value="savedFoodCount(entry.item)"
+                      :disabled="servicesClosed || savingFoodCountId === entry.item.id"
+                      @keydown="onFoodCountKeydown"
+                      @beforeinput="onFoodCountBeforeInput"
+                      @input="keepFoodCountDigits"
+                      @change="onSavedFoodCountChange(entry.item, $event)"
+                    >
+                  </label>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span class="add-services-modal__value">{{ savedFoodTotal(row.items) }}</span>
+                    <span class="add-services-modal__value">{{ savedFoodTotal(entry.item) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
-                      v-if="row.items[0] && canDeleteService('foods', row.items[0].id)"
+                      v-if="canAddServiceType('food')"
+                      type="button"
+                      class="add-services-modal__edit"
+                      aria-label="Редактировать питание"
+                      :disabled="hasOpenDraft('food') || deletingServiceId !== null"
+                      @click="startFoodEdit(entry.item)"
+                    >
+                      <svg class="add-services-modal__edit-icon" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M11.2 1.9a1.5 1.5 0 0 1 2.1 2.1L5.4 12.1 2.4 13l.9-3.1 7.9-8Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canDeleteService('foods', entry.item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
-                      @click="requestFoodRowDeletion(row.items)"
+                      @click="requestFoodRowDeletion([entry.item])"
                     >
                       Удалить
                     </button>
                   </div>
                 </div>
                 <div
-                  v-for="row in foodDrafts"
-                  :key="row.key"
+                  v-else-if="entry.draft"
                   class="add-services-modal__form-row add-services-modal__form-row--food add-services-modal__form-row--draft"
+                  :data-service-draft="`food-${entry.draft.key}`"
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
-                      :model-value="row.foodId"
+                      :model-value="entry.draft.foodId"
                       class="add-services-modal__select"
                       placeholder="Питание"
                       empty-text="список пуст"
                       filled-hover
                       no-margin
-                      :options="foodOptions"
-                      @update:model-value="onFoodChange(row, $event)"
+                      :options="foodOptionsFor(entry.draft)"
+                      @update:model-value="onFoodChange(entry.draft, $event)"
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--hunter">
-                    <CommonSelectField
-                      v-if="isIndividualFood(row.foodId)"
-                      v-model="row.hunterIds"
-                      class="add-services-modal__select"
-                      placeholder="Выберите охотников"
-                      filled-hover
-                      multiple
-                      no-margin
-                      :options="hunterOptions"
-                    />
                     <span
-                      v-else-if="isPerPersonFood(row.foodId)"
+                      v-if="isPerPersonFood(entry.draft.foodId)"
                       class="add-services-modal__value"
                     >Разделено на всех</span>
                     <CommonSelectField
                       v-else
-                      v-model="row.hunterIds"
+                      v-model="entry.draft.hunterId"
                       class="add-services-modal__select"
-                      placeholder="Выберите охотников"
+                      placeholder="Выберите охотника"
                       filled-hover
-                      multiple
                       no-margin
-                      :disabled="!row.foodId"
-                      :options="hunterOptions"
+                      :disabled="!entry.draft.foodId"
+                      :options="foodHunterOptions(entry.draft)"
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span v-if="foodDraftUnitPrice(row)" class="add-services-modal__value">{{ foodDraftUnitPrice(row) }}</span>
+                    <span v-if="foodDraftUnitPrice(entry.draft)" class="add-services-modal__value">{{ foodDraftUnitPrice(entry.draft) }}</span>
                   </div>
-                  <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__value">{{ foodTimes() }}</span>
-                  </div>
+                  <label class="add-services-modal__field add-services-modal__field--count">
+                    <input
+                      class="add-services-modal__control"
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      :value="entry.draft.count || ''"
+                      @keydown="onFoodCountKeydown"
+                      @beforeinput="onFoodCountBeforeInput"
+                      @input="onFoodDraftCountInput(entry.draft, $event)"
+                    >
+                  </label>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span v-if="foodDraftTotal(row)" class="add-services-modal__value">{{ foodDraftTotal(row) }}</span>
+                    <span v-if="foodDraftTotal(entry.draft)" class="add-services-modal__value">{{ foodDraftTotal(entry.draft) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
                       type="button"
                       class="add-services-modal__save"
-                      :disabled="!canSaveFoodDraft(row)"
-                      @click="saveFoodDraft(row)"
+                      :disabled="!canSaveFoodDraft(entry.draft)"
+                      @click="saveFoodDraft(entry.draft)"
                     >
                       Сохранить
                     </button>
                     <button
                       type="button"
                       class="add-services-modal__cancel"
-                      :disabled="savingFoodKey === row.key"
-                      @click="cancelFoodDraft(row.key)"
+                      :disabled="savingFoodKey === entry.draft.key"
+                      @click="cancelFoodDraft(entry.draft.key)"
                     >
                       Отмена
                     </button>
                   </div>
+                </div>
+                </template>
                 </div>
                 </div>
                 </div>
@@ -2215,9 +3181,29 @@ function handleKeydown(event: KeyboardEvent) {
 
               <section
                 v-if="isAllowed('addetional')"
-                class="add-services-modal__block"
-                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('addetional') }"
+                class="add-services-modal__block-row"
               >
+                <div
+                  v-if="blockPageCount.addetional > 1 && !isBlockCollapsed('addetional')"
+                  class="add-services-modal__dots"
+                  role="tablist"
+                  aria-label="Страницы дополнительных услуг"
+                >
+                  <button
+                    v-for="page in blockPageCount.addetional"
+                    :key="page"
+                    type="button"
+                    class="add-services-modal__dot"
+                    :class="{ 'add-services-modal__dot--active': page - 1 === blockPageIndex.addetional }"
+                    :aria-label="`Страница ${page}`"
+                    :aria-current="page - 1 === blockPageIndex.addetional ? 'true' : undefined"
+                    @click="scrollBlockToPage('addetional', page - 1)"
+                  />
+                </div>
+                <div
+                  class="add-services-modal__block"
+                  :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('addetional') }"
+                >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Дополнительные услуги:</h3>
                   <div class="add-services-modal__block-actions">
@@ -2238,6 +3224,7 @@ function handleKeydown(event: KeyboardEvent) {
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить другое"
+                      :disabled="hasOpenDraft('addetional')"
                       @click="addAdditionalDraft"
                     >+</button>
                   </div>
@@ -2247,118 +3234,127 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Название</span>
                   <!-- <span>Количество</span> -->
                   <span>Охотник</span>
-                  <span>Цена на человека</span>
-                  <span>Общая сумма</span>
+                  <span class="add-services-modal__column-price">Цена</span>
+                  <span class="add-services-modal__column-total">Общая сумма</span>
                   <span></span>
                 </div>
-                <div class="add-services-modal__block-list">
                 <div
-                  v-for="item in items.additionals"
-                  :key="item.id"
+                  class="add-services-modal__block-list"
+                  :ref="blockListRef.addetional"
+                  @scroll="onBlockListScroll('addetional')"
+                >
+                <template
+                  v-for="entry in additionalRowEntries"
+                  :key="entry.key"
+                >
+                <div
+                  v-if="entry.item"
                   class="add-services-modal__form-row add-services-modal__form-row--additional"
                 >
                   <div class="add-services-modal__field add-services-modal__field--name">
-                    <span class="add-services-modal__value">{{ item.type }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.type }}</span>
                   </div>
-                  <!-- <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__value">{{ item.count }}</span>
-                  </div> -->
                   <div class="add-services-modal__field add-services-modal__field--hunter">
-                    <span class="add-services-modal__value">{{ item.calculation_type === 'per_person' ? 'Разделено на всех' : (item.hunter_name || '—') }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.calculation_type === 'per_person' ? 'Разделено на всех' : (entry.item.hunter_name || '—') }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span class="add-services-modal__value">{{ additionalSharePrice(item.price, item.calculation_type) }}</span>
+                    <span class="add-services-modal__value">{{ additionalSharePrice(entry.item.price, entry.item.calculation_type) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
-                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
+                    <span class="add-services-modal__value">{{ formatServicePrice(entry.item.price) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
-                      v-if="canDeleteService('additionals', item.id)"
+                      v-if="canAddServiceType('addetional')"
+                      type="button"
+                      class="add-services-modal__edit"
+                      aria-label="Редактировать услугу"
+                      :disabled="hasOpenDraft('addetional') || deletingServiceId !== null"
+                      @click="startAdditionalEdit(entry.item)"
+                    >
+                      <svg class="add-services-modal__edit-icon" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M11.2 1.9a1.5 1.5 0 0 1 2.1 2.1L5.4 12.1 2.4 13l.9-3.1 7.9-8Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canDeleteService('additionals', entry.item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
-                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить услугу?', 'additionals')"
+                      @click="requestServiceDeletion(entry.item.id, 'Вы уверены, что хотите удалить услугу?', 'additionals')"
                     >
                       Удалить
                     </button>
                   </div>
                 </div>
                 <div
-                  v-for="row in additionalDrafts"
-                  :key="row.key"
+                  v-else-if="entry.draft"
                   class="add-services-modal__form-row add-services-modal__form-row--additional add-services-modal__form-row--draft"
+                  :data-service-draft="`additional-${entry.draft.key}`"
                 >
                   <div class="add-services-modal__field add-services-modal__field--name">
                     <CommonSelectField
-                      :model-value="row.additionalId"
+                      :model-value="entry.draft.additionalId"
                       class="add-services-modal__select"
                       placeholder="Выберите услугу"
                       empty-text="список пуст"
                       filled-hover
                       no-margin
                       :options="additionalOptions"
-                      @update:model-value="onAdditionalChange(row, $event)"
+                      @update:model-value="onAdditionalChange(entry.draft, $event)"
                     />
                   </div>
-                  <!-- <label class="add-services-modal__field add-services-modal__field--count">
-                    <input
-                      v-model.number="row.count"
-                      class="add-services-modal__control"
-                      type="number"
-                      min="1"
-                      step="1"
-                    >
-                  </label> -->
-                  <div class="add-services-modal__field add-services-modal__field--hunter">
-                    <CommonSelectField
-                      v-if="isIndividualAdditional(row.additionalId)"
-                      v-model="row.hunterIds"
-                      class="add-services-modal__select"
-                      placeholder="Выберите охотников"
-                      filled-hover
-                      multiple
-                      no-margin
-                      :options="hunterOptions"
-                    />
-                    <span
-                      v-else-if="isPerPersonAdditional(row.additionalId)"
-                      class="add-services-modal__value"
-                    >Разделено на всех</span>
-                    <CommonSelectField
-                      v-else
-                      v-model="row.hunterId"
-                      class="add-services-modal__select"
-                      placeholder="Выберите охотника"
-                      filled-hover
-                      no-margin
-                      :options="hunterOptions"
-                    />
-                  </div>
-                  <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span v-if="additionalDraftPrice(row.additionalId)" class="add-services-modal__value">{{ additionalDraftUnitPrice(row) }}</span>
-                  </div>
-                  <div class="add-services-modal__field add-services-modal__field--price">
-                    <span v-if="additionalDraftPrice(row.additionalId)" class="add-services-modal__value">{{ additionalDraftPrice(row.additionalId) }}</span>
-                  </div>
+                  <p
+                    v-if="additionalStockExhausted(entry.draft)"
+                    class="add-services-modal__stock-empty"
+                  >
+                    Недостаточное количество данной услуги на базе
+                  </p>
+                  <template v-else>
+                    <div class="add-services-modal__field add-services-modal__field--hunter">
+                      <span
+                        v-if="isPerPersonAdditional(entry.draft.additionalId)"
+                        class="add-services-modal__value"
+                      >Разделено на всех</span>
+                      <CommonSelectField
+                        v-else
+                        v-model="entry.draft.hunterId"
+                        class="add-services-modal__select"
+                        placeholder="Выберите охотника"
+                        filled-hover
+                        no-margin
+                        :disabled="!entry.draft.additionalId"
+                        :options="hunterOptions"
+                      />
+                    </div>
+                    <div class="add-services-modal__field add-services-modal__field--unit-price">
+                      <span v-if="additionalDraftPrice(entry.draft.additionalId)" class="add-services-modal__value">{{ additionalDraftUnitPrice(entry.draft) }}</span>
+                    </div>
+                    <div class="add-services-modal__field add-services-modal__field--price">
+                      <span v-if="additionalDraftPrice(entry.draft.additionalId)" class="add-services-modal__value">{{ additionalDraftPrice(entry.draft.additionalId) }}</span>
+                    </div>
+                  </template>
                   <div class="add-services-modal__form-actions">
                     <button
+                      v-if="!additionalStockExhausted(entry.draft)"
                       type="button"
                       class="add-services-modal__save"
-                      :disabled="!canSaveAdditionalDraft(row)"
-                      @click="saveAdditionalDraft(row)"
+                      :disabled="!canSaveAdditionalDraft(entry.draft)"
+                      @click="saveAdditionalDraft(entry.draft)"
                     >
                       Сохранить
                     </button>
                     <button
                       type="button"
                       class="add-services-modal__cancel"
-                      :disabled="savingAdditionalKey === row.key"
-                      @click="cancelAdditionalDraft(row.key)"
+                      :disabled="savingAdditionalKey === entry.draft.key"
+                      @click="cancelAdditionalDraft(entry.draft.key)"
                     >
                       Отмена
                     </button>
                   </div>
+                </div>
+                </template>
                 </div>
                 </div>
                 </div>
@@ -2366,9 +3362,29 @@ function handleKeydown(event: KeyboardEvent) {
 
               <section
                 v-if="isAllowed('spending')"
-                class="add-services-modal__block"
-                :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('spending') }"
+                class="add-services-modal__block-row"
               >
+                <div
+                  v-if="blockPageCount.spending > 1 && !isBlockCollapsed('spending')"
+                  class="add-services-modal__dots"
+                  role="tablist"
+                  aria-label="Страницы трат"
+                >
+                  <button
+                    v-for="page in blockPageCount.spending"
+                    :key="page"
+                    type="button"
+                    class="add-services-modal__dot"
+                    :class="{ 'add-services-modal__dot--active': page - 1 === blockPageIndex.spending }"
+                    :aria-label="`Страница ${page}`"
+                    :aria-current="page - 1 === blockPageIndex.spending ? 'true' : undefined"
+                    @click="scrollBlockToPage('spending', page - 1)"
+                  />
+                </div>
+                <div
+                  class="add-services-modal__block"
+                  :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('spending') }"
+                >
                 <div class="add-services-modal__block-head">
                   <h3 class="add-services-modal__block-title">Личные затраты охотников:</h3>
                   <div class="add-services-modal__block-actions">
@@ -2389,6 +3405,7 @@ function handleKeydown(event: KeyboardEvent) {
                       type="button"
                       class="add-services-modal__add"
                       aria-label="Добавить трату"
+                      :disabled="hasOpenDraft('spending')"
                       @click="addSpendingDraft"
                     >+</button>
                   </div>
@@ -2400,41 +3417,60 @@ function handleKeydown(event: KeyboardEvent) {
                   <span>Комментарий</span>
                   <span></span>
                 </div>
-                <div class="add-services-modal__block-list">
                 <div
-                  v-for="item in items.spendings"
-                  :key="item.id"
+                  class="add-services-modal__block-list"
+                  :ref="blockListRef.spending"
+                  @scroll="onBlockListScroll('spending')"
+                >
+                <template
+                  v-for="entry in spendingRowEntries"
+                  :key="entry.key"
+                >
+                <div
+                  v-if="entry.item"
                   class="add-services-modal__form-row add-services-modal__form-row--spending"
                 >
                   <div class="add-services-modal__field add-services-modal__field--hunter">
-                    <span class="add-services-modal__value">{{ item.hunter_name || '—' }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.hunter_name || '—' }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
-                    <span class="add-services-modal__value">{{ formatServicePrice(item.price) }}</span>
+                    <span class="add-services-modal__value">{{ formatServicePrice(entry.item.price) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--comment">
-                    <span class="add-services-modal__value">{{ item.comment }}</span>
+                    <span class="add-services-modal__value">{{ entry.item.comment }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
                     <button
-                      v-if="canDeleteService('spendings', item.id)"
+                      v-if="canAddServiceType('spending')"
+                      type="button"
+                      class="add-services-modal__edit"
+                      aria-label="Редактировать трату"
+                      :disabled="hasOpenDraft('spending') || deletingServiceId !== null"
+                      @click="startSpendingEdit(entry.item)"
+                    >
+                      <svg class="add-services-modal__edit-icon" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M11.2 1.9a1.5 1.5 0 0 1 2.1 2.1L5.4 12.1 2.4 13l.9-3.1 7.9-8Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canDeleteService('spendings', entry.item.id)"
                       type="button"
                       class="add-services-modal__delete"
                       :disabled="deletingServiceId !== null"
-                      @click="requestServiceDeletion(item.id, 'Вы уверены, что хотите удалить трату?', 'spendings')"
+                      @click="requestServiceDeletion(entry.item.id, 'Вы уверены, что хотите удалить трату?', 'spendings')"
                     >
                       Удалить
                     </button>
                   </div>
                 </div>
                 <div
-                  v-for="row in spendingDrafts"
-                  :key="row.key"
+                  v-else-if="entry.draft"
                   class="add-services-modal__form-row add-services-modal__form-row--spending add-services-modal__form-row--draft"
+                  :data-service-draft="`spending-${entry.draft.key}`"
                 >
                   <div class="add-services-modal__field add-services-modal__field--hunter">
                     <CommonSelectField
-                      v-model="row.hunterId"
+                      v-model="entry.draft.hunterId"
                       class="add-services-modal__select"
                       placeholder="Выберите охотника"
                       filled-hover
@@ -2444,7 +3480,7 @@ function handleKeydown(event: KeyboardEvent) {
                   </div>
                   <label class="add-services-modal__field add-services-modal__field--count">
                     <input
-                      v-model="row.price"
+                      v-model="entry.draft.price"
                       class="add-services-modal__control"
                       type="text"
                       inputmode="decimal"
@@ -2453,7 +3489,7 @@ function handleKeydown(event: KeyboardEvent) {
                   </label>
                   <label class="add-services-modal__field add-services-modal__field--comment">
                     <input
-                      v-model="row.comment"
+                      v-model="entry.draft.comment"
                       class="add-services-modal__control"
                       type="text"
                       placeholder="Комментарий"
@@ -2463,20 +3499,22 @@ function handleKeydown(event: KeyboardEvent) {
                     <button
                       type="button"
                       class="add-services-modal__save"
-                      :disabled="!canSaveSpendingDraft(row)"
-                      @click="saveSpendingDraft(row)"
+                      :disabled="!canSaveSpendingDraft(entry.draft)"
+                      @click="saveSpendingDraft(entry.draft)"
                     >
                       Сохранить
                     </button>
                     <button
                       type="button"
                       class="add-services-modal__cancel"
-                      :disabled="savingSpendingKey === row.key"
-                      @click="cancelSpendingDraft(row.key)"
+                      :disabled="savingSpendingKey === entry.draft.key"
+                      @click="cancelSpendingDraft(entry.draft.key)"
                     >
                       Отмена
                     </button>
                   </div>
+                </div>
+                </template>
                 </div>
                 </div>
                 </div>
@@ -2589,8 +3627,21 @@ function handleKeydown(event: KeyboardEvent) {
   text-align: center;
 }
 
+.add-services-modal__block-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding-left: 22px;
+}
+
+.add-services-modal__block-row:has(.add-services-modal__dots) {
+  padding-left: 0;
+}
+
 .add-services-modal__block {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
   padding: 14px 16px 16px;
@@ -2603,9 +3654,36 @@ function handleKeydown(event: KeyboardEvent) {
 .add-services-modal__block-list {
   max-height: 260px;
   margin-right: -12px;
+  padding-right: 14px;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
+}
+
+.add-services-modal__dots {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 10px;
+}
+
+.add-services-modal__dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 1px solid rgb(28 33 28 / 25%);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.add-services-modal__dot--active {
+  border-color: #e8883a;
+  background: #e8883a;
 }
 
 .add-services-modal__block-head {
@@ -2682,9 +3760,14 @@ function handleKeydown(event: KeyboardEvent) {
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.add-services-modal__add:hover {
+.add-services-modal__add:hover:not(:disabled) {
   background: #4aa3d9;
   color: var(--wh-white);
+}
+
+.add-services-modal__add:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .add-services-modal__columns {
@@ -2778,6 +3861,16 @@ function handleKeydown(event: KeyboardEvent) {
   justify-self: stretch;
 }
 
+.add-services-modal__form-row--food .add-services-modal__column-price,
+.add-services-modal__form-row--food .add-services-modal__column-count {
+  text-align: center;
+}
+
+.add-services-modal__form-row--food .add-services-modal__field--unit-price .add-services-modal__value {
+  justify-content: center;
+  width: 100%;
+}
+
 .add-services-modal__form-row--additional {
   /* grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr) 220px; */
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px 150px 220px;
@@ -2787,6 +3880,28 @@ function handleKeydown(event: KeyboardEvent) {
 .add-services-modal__form-row--additional .add-services-modal__field--price {
   width: 100%;
   justify-self: stretch;
+}
+
+.add-services-modal__form-row--additional .add-services-modal__column-price,
+.add-services-modal__form-row--additional .add-services-modal__column-total {
+  text-align: center;
+}
+
+.add-services-modal__form-row--additional .add-services-modal__field--unit-price .add-services-modal__value,
+.add-services-modal__form-row--additional .add-services-modal__field--price .add-services-modal__value {
+  justify-content: center;
+  width: 100%;
+}
+
+.add-services-modal__stock-empty {
+  grid-column: 2 / 5;
+  margin: 0;
+  align-self: center;
+  text-align: center;
+  color: #dc3545;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .add-services-modal__form-row--additional .add-services-modal__field--count {
@@ -2930,6 +4045,36 @@ function handleKeydown(event: KeyboardEvent) {
   color: var(--wh-orange-500);
 }
 
+.add-services-modal__edit {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 8px;
+  background: var(--wh-white);
+  color: var(--wh-gray-600);
+  cursor: pointer;
+}
+
+.add-services-modal__edit:hover:not(:disabled) {
+  border-color: var(--wh-orange-500);
+  color: var(--wh-orange-500);
+}
+
+.add-services-modal__edit:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.add-services-modal__edit-icon {
+  width: 16px;
+  height: 16px;
+}
+
 .add-services-modal__delete {
   height: 38px;
   padding: 0 16px;
@@ -3017,6 +4162,10 @@ function handleKeydown(event: KeyboardEvent) {
     gap: 10px;
   }
 
+  .add-services-modal__stock-empty {
+    grid-column: auto;
+  }
+
   .add-services-modal__field::before {
     color: var(--wh-gray-600);
     font-size: 0.82rem;
@@ -3069,9 +4218,12 @@ function handleKeydown(event: KeyboardEvent) {
     content: 'Питание';
   }
 
-  .add-services-modal__form-row--draft.add-services-modal__form-row--food .add-services-modal__field--unit-price::before,
+  .add-services-modal__form-row--draft.add-services-modal__form-row--food .add-services-modal__field--unit-price::before {
+    content: 'Цена';
+  }
+
   .add-services-modal__form-row--draft.add-services-modal__form-row--additional .add-services-modal__field--unit-price::before {
-    content: 'Цена на человека';
+    content: 'Цена';
   }
 
   .add-services-modal__form-row--draft.add-services-modal__form-row--food .add-services-modal__field--count::before {
