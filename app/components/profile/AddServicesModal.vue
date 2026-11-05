@@ -97,9 +97,7 @@ const trophyDrafts = ref<TrophyDraft[]>([])
 const penaltyDrafts = ref<PenaltyDraft[]>([])
 const savingPreparationKey = ref<number | null>(null)
 const savingFoodKey = ref<number | null>(null)
-const savingFoodCountId = ref<number | null>(null)
 const savedFoodCounts = ref<Record<number, number>>({})
-const foodCountRequests = new Map<number, number>()
 const savingAdditionalKey = ref<number | null>(null)
 const savingSpendingKey = ref<number | null>(null)
 const savingTrophyKey = ref<number | null>(null)
@@ -427,9 +425,7 @@ function resetServices() {
   penaltyDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
-  savingFoodCountId.value = null
   savedFoodCounts.value = {}
-  foodCountRequests.clear()
   savingAdditionalKey.value = null
   savingSpendingKey.value = null
   savingTrophyKey.value = null
@@ -945,112 +941,6 @@ function keepFoodCountDigits(event: Event) {
 function onFoodDraftCountInput(row: { count: number }, event: Event) {
   const digits = keepFoodCountDigits(event)
   row.count = digits === '' ? 0 : Number(digits)
-}
-
-function foodLinePrice(item: BookingServiceFoodItem, count: number): number {
-  const unit = foodSavedUnitAmount(item)
-  if (unit != null) {
-    return Math.round(unit * count)
-  }
-
-  const storedCount = Number(item.count)
-  const storedPrice = Number(item.price)
-  if (Number.isInteger(storedCount) && storedCount >= 1 && Number.isFinite(storedPrice)) {
-    return Math.round((storedPrice / storedCount) * count)
-  }
-
-  return Number.isFinite(storedPrice) ? Math.round(storedPrice) : 0
-}
-
-function applySavedFoodCount(itemId: number, count: number, price: number) {
-  if (!services.value) {
-    return
-  }
-
-  const foods = services.value.items.foods ?? []
-  const current = foods.find(food => food.id === itemId)
-  const previousPrice = Math.round(Number(current?.price) || 0)
-  const nextPrice = Math.round(price)
-
-  savedFoodCounts.value = {
-    ...savedFoodCounts.value,
-    [itemId]: count,
-  }
-
-  commitServiceItems({
-    foods: foods.map(food => (
-      food.id === itemId
-        ? { ...food, count, price: nextPrice }
-        : food
-    )),
-  }, nextPrice - previousPrice)
-}
-
-async function onSavedFoodCountChange(item: BookingServiceFoodItem, event: Event) {
-  const input = event.target as HTMLInputElement
-  const count = Number(input.value)
-  const previous = savedFoodCount(item)
-
-  if (!Number.isInteger(count) || count < 1) {
-    input.value = String(previous)
-    return
-  }
-
-  if (count === previous) {
-    return
-  }
-
-  const code = booking.value?.code
-  const current = services.value?.items.foods?.find(food => food.id === item.id)
-  if (!code || !current) {
-    input.value = String(previous)
-    return
-  }
-
-  const previousPrice = Math.round(Number(current.price) || 0)
-  const requestId = (foodCountRequests.get(item.id) ?? 0) + 1
-  foodCountRequests.set(item.id, requestId)
-  savingFoodCountId.value = item.id
-  applySavedFoodCount(item.id, count, foodLinePrice(current, count))
-
-  try {
-    const response = await bookings.updateFood(code, item.id, { count })
-
-    if (foodCountRequests.get(item.id) !== requestId) {
-      return
-    }
-
-    if (!response.success || !response.data) {
-      applySavedFoodCount(item.id, previous, previousPrice)
-      input.value = String(previous)
-      notifications.error(response.message || 'Не удалось сохранить количество', notifyOptions)
-      return
-    }
-
-    const savedCount = Number(response.data.count)
-    const appliedCount = Number.isInteger(savedCount) && savedCount >= 1 ? savedCount : count
-    const savedPrice = Number(response.data.price)
-    applySavedFoodCount(
-      item.id,
-      appliedCount,
-      Number.isFinite(savedPrice) ? savedPrice : foodLinePrice(current, appliedCount),
-    )
-  }
-  catch (error) {
-    if (foodCountRequests.get(item.id) !== requestId) {
-      return
-    }
-
-    applySavedFoodCount(item.id, previous, previousPrice)
-    input.value = String(previous)
-    const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось сохранить количество', notifyOptions)
-  }
-  finally {
-    if (foodCountRequests.get(item.id) === requestId) {
-      savingFoodCountId.value = null
-    }
-  }
 }
 
 function foodSavedUnitPrice(item: BookingServiceFoodItem): string {
@@ -1653,6 +1543,28 @@ function additionalDraftPrice(additionalId: string): string {
   return catalogPriceLabel(additionalById(additionalId)?.price) ?? ''
 }
 
+function additionalDraftTotal(row: AdditionalDraft): string {
+  const unit = catalogUnitPrice(additionalById(row.additionalId)?.price)
+  const count = Number(row.count)
+  if (unit == null || !Number.isInteger(count) || count < 1) {
+    return ''
+  }
+
+  return formatHotelPriceLabel(Math.round(unit * count))
+}
+
+function additionalSavedCount(item: BookingServiceAdditionalItem): number {
+  const count = Number(item.count)
+  return Number.isInteger(count) && count >= 1 ? count : 1
+}
+
+function additionalSavedUnitPrice(item: BookingServiceAdditionalItem): string {
+  const price = Number(item.price)
+  const unit = Number.isFinite(price) ? price / additionalSavedCount(item) : item.price
+
+  return additionalSharePrice(unit, item.calculation_type) || '—'
+}
+
 function additionalHunterCount(): number {
   const fromCatalog = services.value?.catalogs?.hunters?.length ?? 0
   if (fromCatalog > 0) {
@@ -1710,19 +1622,20 @@ function additionalStockLimit(additionalId: string): number | null {
   return limit
 }
 
-function additionalUsedCount(additionalId: string): number {
+function additionalMatchingItems(additionalId: string, exceptServiceId?: number) {
   const name = additionalById(additionalId)?.name.trim().toLowerCase()
   if (!name) {
-    return 0
+    return []
   }
 
-  const editingIds = new Set(
-    additionalDrafts.value.flatMap(draft => draft.serviceId != null ? [draft.serviceId] : []),
+  return (items.value.additionals ?? []).filter(item =>
+    item.id !== exceptServiceId && (item.type ?? '').trim().toLowerCase() === name,
   )
+}
 
-  return (items.value.additionals ?? [])
-    .filter(item => !editingIds.has(item.id) && (item.type ?? '').trim().toLowerCase() === name)
-    .length
+function additionalRequestedCount(row: AdditionalDraft): number {
+  const count = Number(row.count)
+  return Number.isInteger(count) && count > 0 ? count : 0
 }
 
 function additionalStockExhausted(row: AdditionalDraft): boolean {
@@ -1735,7 +1648,11 @@ function additionalStockExhausted(row: AdditionalDraft): boolean {
     return false
   }
 
-  return additionalUsedCount(row.additionalId) >= limit
+  const saved = additionalMatchingItems(row.additionalId, row.serviceId)
+  const usedQuantity = saved.reduce((sum, item) => sum + additionalSavedCount(item), 0)
+  const usedRows = saved.length + (row.serviceId == null ? 1 : 0)
+
+  return usedRows > limit || usedQuantity + additionalRequestedCount(row) > limit
 }
 
 function canSaveAdditionalDraft(row: AdditionalDraft): boolean {
@@ -1858,7 +1775,7 @@ function addFoodDraft() {
     key,
     foodId: '',
     hunterId: '',
-    count: foodTimes(),
+    count: 1,
   })
   scrollDraftIntoView(`food-${key}`)
 }
@@ -2296,9 +2213,7 @@ async function loadServices(code: string) {
   penaltyDrafts.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
-  savingFoodCountId.value = null
   savedFoodCounts.value = {}
-  foodCountRequests.clear()
   savingAdditionalKey.value = null
   savingSpendingKey.value = null
   savingTrophyKey.value = null
@@ -3062,20 +2977,9 @@ function scrollDraftIntoView(draftId: string) {
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
                     <span class="add-services-modal__value">{{ foodSavedUnitPrice(entry.item) }}</span>
                   </div>
-                  <label class="add-services-modal__field add-services-modal__field--count">
-                    <input
-                      class="add-services-modal__control"
-                      type="text"
-                      inputmode="numeric"
-                      autocomplete="off"
-                      :value="savedFoodCount(entry.item)"
-                      :disabled="servicesClosed || savingFoodCountId === entry.item.id"
-                      @keydown="onFoodCountKeydown"
-                      @beforeinput="onFoodCountBeforeInput"
-                      @input="keepFoodCountDigits"
-                      @change="onSavedFoodCountChange(entry.item, $event)"
-                    >
-                  </label>
+                  <div class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__value">{{ savedFoodCount(entry.item) }}</span>
+                  </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span class="add-services-modal__value">{{ savedFoodTotal(entry.item) }}</span>
                   </div>
@@ -3232,9 +3136,9 @@ function scrollDraftIntoView(draftId: string) {
                 <div v-show="!isBlockCollapsed('addetional')">
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--additional">
                   <span>Название</span>
-                  <!-- <span>Количество</span> -->
                   <span>Охотник</span>
                   <span class="add-services-modal__column-price">Цена</span>
+                  <span class="add-services-modal__column-count">Количество</span>
                   <span class="add-services-modal__column-total">Общая сумма</span>
                   <span></span>
                 </div>
@@ -3258,7 +3162,10 @@ function scrollDraftIntoView(draftId: string) {
                     <span class="add-services-modal__value">{{ entry.item.calculation_type === 'per_person' ? 'Разделено на всех' : (entry.item.hunter_name || '—') }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--unit-price">
-                    <span class="add-services-modal__value">{{ additionalSharePrice(entry.item.price, entry.item.calculation_type) }}</span>
+                    <span class="add-services-modal__value">{{ additionalSavedUnitPrice(entry.item) }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--count">
+                    <span class="add-services-modal__value">{{ additionalSavedCount(entry.item) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">
                     <span class="add-services-modal__value">{{ formatServicePrice(entry.item.price) }}</span>
@@ -3330,8 +3237,20 @@ function scrollDraftIntoView(draftId: string) {
                     <div class="add-services-modal__field add-services-modal__field--unit-price">
                       <span v-if="additionalDraftPrice(entry.draft.additionalId)" class="add-services-modal__value">{{ additionalDraftUnitPrice(entry.draft) }}</span>
                     </div>
+                    <label class="add-services-modal__field add-services-modal__field--count">
+                      <input
+                        class="add-services-modal__control"
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        :value="entry.draft.count || ''"
+                        @keydown="onFoodCountKeydown"
+                        @beforeinput="onFoodCountBeforeInput"
+                        @input="onFoodDraftCountInput(entry.draft, $event)"
+                      >
+                    </label>
                     <div class="add-services-modal__field add-services-modal__field--price">
-                      <span v-if="additionalDraftPrice(entry.draft.additionalId)" class="add-services-modal__value">{{ additionalDraftPrice(entry.draft.additionalId) }}</span>
+                      <span v-if="additionalDraftTotal(entry.draft)" class="add-services-modal__value">{{ additionalDraftTotal(entry.draft) }}</span>
                     </div>
                   </template>
                   <div class="add-services-modal__form-actions">
@@ -3866,14 +3785,14 @@ function scrollDraftIntoView(draftId: string) {
   text-align: center;
 }
 
-.add-services-modal__form-row--food .add-services-modal__field--unit-price .add-services-modal__value {
+.add-services-modal__form-row--food .add-services-modal__field--unit-price .add-services-modal__value,
+.add-services-modal__form-row--food .add-services-modal__field--count .add-services-modal__value {
   justify-content: center;
   width: 100%;
 }
 
 .add-services-modal__form-row--additional {
-  /* grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr) 220px; */
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px 150px 220px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px 110px 150px 220px;
 }
 
 .add-services-modal__form-row--additional .add-services-modal__field--unit-price,
@@ -3883,18 +3802,20 @@ function scrollDraftIntoView(draftId: string) {
 }
 
 .add-services-modal__form-row--additional .add-services-modal__column-price,
+.add-services-modal__form-row--additional .add-services-modal__column-count,
 .add-services-modal__form-row--additional .add-services-modal__column-total {
   text-align: center;
 }
 
 .add-services-modal__form-row--additional .add-services-modal__field--unit-price .add-services-modal__value,
+.add-services-modal__form-row--additional .add-services-modal__field--count .add-services-modal__value,
 .add-services-modal__form-row--additional .add-services-modal__field--price .add-services-modal__value {
   justify-content: center;
   width: 100%;
 }
 
 .add-services-modal__stock-empty {
-  grid-column: 2 / 5;
+  grid-column: 2 / 6;
   margin: 0;
   align-self: center;
   text-align: center;
@@ -4224,6 +4145,10 @@ function scrollDraftIntoView(draftId: string) {
 
   .add-services-modal__form-row--draft.add-services-modal__form-row--additional .add-services-modal__field--unit-price::before {
     content: 'Цена';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--additional .add-services-modal__field--count::before {
+    content: 'Количество';
   }
 
   .add-services-modal__form-row--draft.add-services-modal__form-row--food .add-services-modal__field--count::before {
