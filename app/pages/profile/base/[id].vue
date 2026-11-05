@@ -1897,6 +1897,7 @@ watch(activeEditTab, (tab) => {
                   />
                 </div>
 
+                <!--
                 <div class="base-edit__pricing-row">
                   <div class="base-edit__pricing-field">
                     <CommonFormField
@@ -1923,6 +1924,7 @@ watch(activeEditTab, (tab) => {
                     </p>
                   </div>
                 </div>
+                -->
               </section>
 
               <section class="base-edit__pricing-block" aria-label="Ценообразование">
