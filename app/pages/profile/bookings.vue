@@ -1129,7 +1129,8 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
 
   if (action.id === 'complete') {
     openConfirmModal({
-      title: 'Это действие переведет бронь в статус «Завершено». Продолжить?',
+      title: 'Перед тем как завершить событие, убедитесь, что все участники охоты полностью рассчитались за мероприятие, все услуги оплачены, так как после этого действия что-либо подправить в услугах уже не будет возможности!',
+      confirmTone: 'success',
       onConfirm: () => completeBooking(booking),
     })
     return

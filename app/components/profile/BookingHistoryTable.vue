@@ -185,6 +185,38 @@ function paidConfirmationMessage(item: BookingHistoryItem) {
   return ''
 }
 
+const CENTERED_STATUSES_BY_LETTER_COUNT: Record<number, readonly string[]> = {
+  8: ['Отменено', 'Черновик'],
+  9: ['Завершено'],
+  10: ['Предоплата'],
+  11: ['Подтверждено', 'Приглашения'],
+  13: ['Сбор охотников'],
+  14: ['Сбор предоплаты', 'Выбор койко-мест'],
+  17: ['Койко-места выбраны'],
+}
+
+const TIMER_STATUS_LETTER_COUNTS = new Set([13, 14])
+
+function isCenteredStatus(item: BookingHistoryItem) {
+  if (paidConfirmationMessage(item)) return false
+
+  const label = item.status.label.trim()
+  const letterCount = label.replace(/[^a-zA-Zа-яА-ЯёЁ]/g, '').length
+  if (!CENTERED_STATUSES_BY_LETTER_COUNT[letterCount]?.includes(label)) return false
+
+  if (TIMER_STATUS_LETTER_COUNTS.has(letterCount)) return true
+
+  const status = item.status
+  return !(
+    status.timer
+    || status.timerHours
+    || status.paid
+    || status.subStatus
+    || status.collected
+    || status.collectionStatus
+  )
+}
+
 function isHuntOnlyBooking(item: BookingHistoryItem) {
   if (item.type === 'animal') {
     return Boolean(item.hunt)
@@ -430,13 +462,13 @@ onBeforeUnmount(() => {
                   >
                     <div class="booking-table__stay-grid">
                       <div>
-                        <template
+                        <div
                           v-for="(room, roomIndex) in item.accommodation.rooms"
                           :key="`room-${item.id}-${roomIndex}`"
+                          class="booking-table__room"
                         >
-                          <template v-if="roomIndex > 0"><br></template>
-                          {{ room.name }}<br>Вместимость номера: {{ room.capacity }} чел.<template v-if="room.beds != null"><br>Кол-во спальных мест: {{ room.beds }}</template>
-                        </template>
+                          {{ room.name }}<template v-if="room.beds != null"><br>Кол-во спальных мест: {{ room.beds }}</template>
+                        </div>
                       </div>
                       <div>
                         Забронировано номеров: {{ bookedRoomsCount(item.accommodation) }}
@@ -562,7 +594,11 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </td>
-            <td class="booking-table__status" data-label="Статус">
+            <td
+              class="booking-table__status"
+              :class="{ 'booking-table__status--centered': isCenteredStatus(item) }"
+              data-label="Статус"
+            >
               <div class="booking-table__value">
                 <div
                   v-if="paidConfirmationMessage(item)"
@@ -664,16 +700,7 @@ onBeforeUnmount(() => {
                   {{ item.paymentAction || 'Калькуляция' }}
                 </button>
                 <template v-else-if="showCustomer && item.prepaymentCollected">
-                  <div
-                    v-if="item.status.code !== 'paid' && item.status.code !== 'completed'"
-                    class="booking-table__status-label booking-table__status-label--confirmed"
-                  >
-                    Предоплата собрана
-                  </div>
-                  <div
-                    class="booking-table__payment-summary"
-                    :class="{ 'booking-table__payment-summary--after-badge': item.status.code !== 'paid' && item.status.code !== 'completed' }"
-                  >
+                  <div class="booking-table__payment-summary">
                     <div>Предоплата собрана: <span class="booking-table__payment-summary-value">{{ formatPrice(item.payment?.prepaidTotal ?? 0) }} руб</span></div>
                     <div>Остаток доплаты базе: <span class="booking-table__payment-summary-value">{{ formatPrice(item.payment?.baseTotal ?? 0) }} руб</span></div>
                     <div>Итоговая сумма за все мероприятие: <span class="booking-table__payment-summary-value">{{ formatPrice(item.payment?.total ?? 0) }} руб</span></div>
@@ -892,6 +919,11 @@ onBeforeUnmount(() => {
   max-width: 110px;
 }
 
+.booking-table td.booking-table__status--centered,
+.booking-table td.booking-table__status--centered .booking-table__value {
+  text-align: center;
+}
+
 .booking-table:has(.booking-table__paid-message) th:nth-child(5),
 .booking-table:has(.booking-table__paid-message) .booking-table__status {
   width: 190px;
@@ -918,10 +950,6 @@ onBeforeUnmount(() => {
   color: var(--wh-gray-900);
   font-size: 0.82rem;
   line-height: 1.45;
-}
-
-.booking-table__payment-summary--after-badge {
-  margin-top: 8px;
 }
 
 .booking-table__payment-summary-value {
@@ -983,6 +1011,7 @@ onBeforeUnmount(() => {
   margin-top: 6px;
   font-weight: 700;
   color: var(--wh-gray-900);
+  text-align: center;
 }
 
 .booking-table__details strong:first-child {
@@ -1047,6 +1076,10 @@ onBeforeUnmount(() => {
   border-radius: 4px;
 }
 
+.booking-table__room + .booking-table__room {
+  margin-top: 8px;
+}
+
 .booking-table__rooms > .booking-table__stay-grid {
   padding: 0;
   border: none;
@@ -1064,21 +1097,6 @@ onBeforeUnmount(() => {
   font-size: inherit;
   font-weight: 400;
   line-height: 1.45;
-}
-
-.booking-table__payment .booking-table__status-label {
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 3px;
-  background: var(--wh-gray-600);
-  color: var(--wh-white);
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.booking-table__payment .booking-table__status-label--confirmed {
-  background: #25a447;
 }
 
 .booking-table__status .booking-table__status-meta {
@@ -1102,9 +1120,11 @@ onBeforeUnmount(() => {
 }
 
 .booking-table__payment-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
   padding: 7px 14px;
   border-radius: 999px;
   border: 1.5px solid var(--wh-orange-500);

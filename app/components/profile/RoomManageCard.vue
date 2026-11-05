@@ -50,7 +50,6 @@ const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(pro
 
 const formattedPrice = computed(() => formatHotelPriceLabel(props.item.price))
 
-const bedsLabel = computed(() => props.item.beds == null ? '—' : String(props.item.beds))
 const adultsLabel = computed(() => props.item.adults == null ? '—' : String(props.item.adults))
 
 const statusLabel = computed(() => {
@@ -257,24 +256,6 @@ async function toggleVisibility() {
       <div class="room-manage-card__info">
         <div class="room-manage-card__body">
           <h2 class="room-manage-card__title">{{ item.title }}</h2>
-
-          <p class="room-manage-card__meta">
-            <svg class="room-manage-card__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M4 16.5V8.5M4 13.5h16M20 16.5V11a2 2 0 0 0-2-2H9.5"
-                stroke="currentColor"
-                stroke-width="1.7"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M8.2 11.2a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4Z"
-                stroke="currentColor"
-                stroke-width="1.7"
-              />
-            </svg>
-            Количество спальных мест: <span>{{ bedsLabel }}</span>
-          </p>
 
           <p class="room-manage-card__meta">
             <svg class="room-manage-card__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">

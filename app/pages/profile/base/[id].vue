@@ -1930,7 +1930,7 @@ watch(activeEditTab, (tab) => {
               <section class="base-edit__pricing-block" aria-label="Ценообразование">
                 <CommonFormField
                   v-model="editPrice"
-                  label="Минимальная стоимость проживания от"
+                  label="Минимальная стоимость проживания от, руб"
                   placeholder="0"
                   amount-only
                   no-margin

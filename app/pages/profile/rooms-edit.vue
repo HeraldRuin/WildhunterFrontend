@@ -1323,7 +1323,7 @@ watch(activeEditTab, (tab) => {
                 />
                 <CommonFormField
                   v-model="editRoomsCount"
-                  label="Количество комнат *"
+                  label="Количество *"
                   placeholder="1"
                   digits-only
                   required
@@ -1333,6 +1333,7 @@ watch(activeEditTab, (tab) => {
                 />
               </div>
 
+              <!--
               <div class="room-edit__pricing-field">
                 <CommonFormField
                   v-model="editMinStayDays"
@@ -1347,17 +1348,21 @@ watch(activeEditTab, (tab) => {
                   Оставьте пустым, если вам не нужно устанавливать опцию минимального количества дней пребывания
                 </p>
               </div>
+              -->
+
+              <!--
+              <CommonFormField
+                v-model="editBedsCount"
+                label="Количество спальных мест"
+                placeholder="1"
+                digits-only
+                :error="getFieldError('beds')"
+                no-margin
+                @update:model-value="clearFieldError('beds')"
+              />
+              -->
 
               <div class="room-edit__pricing-row">
-                <CommonFormField
-                  v-model="editBedsCount"
-                  label="Количество спальных мест"
-                  placeholder="1"
-                  digits-only
-                  :error="getFieldError('beds')"
-                  no-margin
-                  @update:model-value="clearFieldError('beds')"
-                />
                 <CommonFormField
                   v-model="editRoomSize"
                   class="room-edit__pricing-size"
@@ -1372,9 +1377,6 @@ watch(activeEditTab, (tab) => {
                     <span class="room-edit__unit">м²</span>
                   </template>
                 </CommonFormField>
-              </div>
-
-              <div class="room-edit__pricing-row room-edit__pricing-row--single">
                 <CommonFormField
                   v-model="editMaxAdults"
                   label="Максимальное число взрослых *"

@@ -1,6 +1,18 @@
 <script setup lang="ts">
 const { isOpen, isSubmitting, options, close, confirm } = useConfirmModal()
 
+const confirmButtonClass = computed(() => {
+  if (options.value?.confirmTone === 'danger' || options.value?.confirmLabel === 'Удалить') {
+    return 'confirm-modal__btn--danger'
+  }
+
+  if (options.value?.confirmTone === 'success' || options.value?.confirmLabel === 'Подтвердить') {
+    return 'confirm-modal__btn--success'
+  }
+
+  return 'confirm-modal__btn--primary'
+})
+
 useBodyScrollLock(isOpen)
 
 function handleBackdropClick(event: MouseEvent) {
@@ -66,9 +78,7 @@ function handleKeydown(event: KeyboardEvent) {
             <button
               type="button"
               class="confirm-modal__btn"
-              :class="options.confirmLabel === 'Удалить'
-                ? 'confirm-modal__btn--danger'
-                : 'confirm-modal__btn--primary'"
+              :class="confirmButtonClass"
               :disabled="isSubmitting"
               :aria-busy="isSubmitting"
               @click="confirm"
@@ -200,14 +210,15 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .confirm-modal__btn--secondary {
-  border: 1px solid var(--wh-field-border-active);
-  background: var(--wh-white);
-  color: var(--wh-gray-900);
+  border: 1px solid #f0b4b4;
+  background: #fdecec;
+  color: #c45454;
 }
 
 .confirm-modal__btn--secondary:hover:not(:disabled) {
-  border-color: var(--wh-gray-900);
-  background: var(--wh-gray-100);
+  border-color: #e08a8a;
+  background: #f8d6d6;
+  color: #b23c3c;
 }
 
 .confirm-modal__btn--primary {
@@ -230,6 +241,17 @@ function handleKeydown(event: KeyboardEvent) {
 .confirm-modal__btn--danger:hover:not(:disabled) {
   border-color: #c82333;
   background: #c82333;
+}
+
+.confirm-modal__btn--success {
+  border: 1px solid var(--wh-green);
+  background: var(--wh-green);
+  color: var(--wh-white);
+}
+
+.confirm-modal__btn--success:hover:not(:disabled) {
+  border-color: var(--wh-green);
+  background: var(--wh-green);
 }
 
 .confirm-modal-enter-active,
