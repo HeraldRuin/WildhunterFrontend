@@ -3473,7 +3473,7 @@ function scrollDraftIntoView(draftId: string) {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(100%, 1200px);
+  width: min(100%, 1560px);
   max-height: min(90vh, 860px);
   padding: 28px 28px 24px;
   overflow: hidden;
@@ -3722,6 +3722,13 @@ function scrollDraftIntoView(draftId: string) {
 
 .add-services-modal__columns.add-services-modal__form-row {
   margin-top: 0;
+  margin-right: -16px;
+  margin-left: -16px;
+  padding: 8px 16px;
+  background: var(--wh-gray-450);
+  color: var(--wh-gray-900);
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .add-services-modal__form-row--trophy {
