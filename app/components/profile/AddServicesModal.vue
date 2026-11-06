@@ -12,6 +12,7 @@ import type {
   BookingServicesItems,
 } from '~/types/api'
 import type { SelectFieldOption } from '~/components/common/SelectField.vue'
+import { formatRemainingTimer } from '~/utils/bookingHistory'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 
 interface PreparationDraft {
@@ -144,6 +145,24 @@ const servicesLockedByTimer = computed(() => {
   }
 
   return servicesNow.value >= until
+})
+
+const servicesManageTimerLabel = computed(() => {
+  if (isBaseAdmin.value || !booking.value?.isMasterHunter || servicesLockedByTimer.value) {
+    return ''
+  }
+
+  const raw = booking.value?.servicesEditableUntil || servicesEditableUntil.value
+  if (!raw) {
+    return ''
+  }
+
+  const until = Date.parse(raw)
+  if (Number.isNaN(until) || servicesNow.value >= until) {
+    return ''
+  }
+
+  return formatRemainingTimer(raw, servicesNow.value) || ''
 })
 
 watch(isOpen, (open) => {
@@ -2419,11 +2438,18 @@ function scrollDraftIntoView(draftId: string) {
 
           <div
             class="add-services-modal__header"
-            :class="{ 'add-services-modal__header--with-lock': servicesLockedByTimer }"
+            :class="{
+              'add-services-modal__header--with-lock': servicesLockedByTimer,
+              'add-services-modal__header--with-timer': Boolean(servicesManageTimerLabel),
+            }"
           >
             <h2 id="add-services-modal-title" class="add-services-modal__title">
               Добавить услуги для брони №{{ booking.number }}
             </h2>
+            <p v-if="servicesManageTimerLabel" class="add-services-modal__timer">
+              Возможность управлять услугами закончится через
+              <span class="add-services-modal__timer-value">{{ servicesManageTimerLabel }}</span>
+            </p>
             <p v-if="servicesLockedByTimer" class="add-services-modal__locked">
               Изменять услуги уже нельзя: до заезда осталось меньше времени, чем задано таймером базы.
             </p>
@@ -3582,6 +3608,24 @@ function scrollDraftIntoView(draftId: string) {
   padding-right: 132px;
 }
 
+.add-services-modal__header--with-timer {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  padding-right: 132px;
+}
+
+.add-services-modal__timer {
+  margin: 0;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--wh-orange-500);
+}
+
+.add-services-modal__timer-value {
+  font-variant-numeric: tabular-nums;
+}
+
 .add-services-modal__header--with-lock .add-services-modal__title {
   flex: 0 1 auto;
   max-width: 100%;
@@ -4158,6 +4202,14 @@ function scrollDraftIntoView(draftId: string) {
     display: block;
     padding-right: 0;
     text-align: left;
+  }
+
+  .add-services-modal__header--with-timer {
+    padding-right: 0;
+  }
+
+  .add-services-modal__timer {
+    margin-bottom: 8px;
   }
 
   .add-services-modal__title {
