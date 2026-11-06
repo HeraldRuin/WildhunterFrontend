@@ -613,6 +613,8 @@ export interface BookingServicesData {
   preliminary_total: number
   booking_type: 'hotel' | 'animal' | 'hotel_animal'
   allowed_types: BookingServiceType[]
+  can_change?: boolean
+  services_editable_until?: string | null
   catalogs: BookingServicesCatalogs
   items: BookingServicesItems
 }
@@ -740,6 +742,8 @@ export interface BookingHistoryHotelDto {
   collection_timer_hours?: number | null
   paid_timer_hours?: number | null
   bed_timer_hours?: number | null
+  services_timer_hours?: number | null
+  check_in_time?: string | null
 }
 
 export interface BookingHistoryItemDto {
@@ -809,6 +813,7 @@ export interface BookingHistoryItemDto {
     base_total: number
     total: number
   } | null
+  services_editable_until?: string | null
   available_actions: BookingHistoryActionDto[]
 }
 

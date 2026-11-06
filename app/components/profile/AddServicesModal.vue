@@ -119,6 +119,54 @@ useBodyScrollLock(isOpen)
 
 const allowedTypeSet = computed(() => new Set(services.value?.allowed_types ?? []))
 const servicesClosed = computed(() => booking.value?.status.code === 'completed')
+const servicesEditableUntil = ref<string | null>(null)
+const serverCanChange = ref<boolean | null>(null)
+const servicesNow = ref(Date.now())
+let servicesLockTimer: ReturnType<typeof setInterval> | undefined
+
+const servicesLockedByTimer = computed(() => {
+  if (isBaseAdmin.value || !booking.value?.isMasterHunter) {
+    return false
+  }
+
+  if (serverCanChange.value === false) {
+    return true
+  }
+
+  const raw = booking.value?.servicesEditableUntil || servicesEditableUntil.value
+  if (!raw) {
+    return false
+  }
+
+  const until = Date.parse(raw)
+  if (Number.isNaN(until)) {
+    return false
+  }
+
+  return servicesNow.value >= until
+})
+
+watch(isOpen, (open) => {
+  if (servicesLockTimer) {
+    clearInterval(servicesLockTimer)
+    servicesLockTimer = undefined
+  }
+
+  if (!open) {
+    return
+  }
+
+  servicesNow.value = Date.now()
+  servicesLockTimer = setInterval(() => {
+    servicesNow.value = Date.now()
+  }, 1000)
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  if (servicesLockTimer) {
+    clearInterval(servicesLockTimer)
+  }
+})
 const items = computed(() => ({
   ...EMPTY_ITEMS,
   ...services.value?.items,
@@ -206,7 +254,7 @@ function isAllowed(type: BookingServiceType): boolean {
 }
 
 function canAddServiceType(_type: BookingServiceType): boolean {
-  return !servicesClosed.value
+  return !servicesClosed.value && !servicesLockedByTimer.value
 }
 
 const blockPageCount = ref<Record<ServiceBlockId, number>>({
@@ -382,7 +430,7 @@ function hasOpenDraft(id: ServiceBlockId): boolean {
 }
 
 function canDeleteService(_list: DeletableServiceList, _serviceId: number): boolean {
-  return !servicesClosed.value
+  return !servicesClosed.value && !servicesLockedByTimer.value
 }
 
 function isBlockCollapsed(id: ServiceBlockId): boolean {
@@ -412,10 +460,22 @@ function expandBlock(id: ServiceBlockId) {
   collapsedBlocks.value = next
 }
 
+function applyServicesAccess(data: { can_change?: boolean, services_editable_until?: string | null }) {
+  if (typeof data.can_change === 'boolean') {
+    serverCanChange.value = data.can_change
+  }
+
+  if (data.services_editable_until) {
+    servicesEditableUntil.value = data.services_editable_until
+  }
+}
+
 function resetServices() {
   loadRequestId += 1
   isLoading.value = false
   loadError.value = ''
+  serverCanChange.value = null
+  servicesEditableUntil.value = booking.value?.servicesEditableUntil ?? null
   services.value = null
   preparationDrafts.value = []
   foodDrafts.value = []
@@ -2196,10 +2256,13 @@ async function refreshServices(code: string) {
     }
 
     savedFoodCounts.value = {}
+    applyServicesAccess(response.data)
     services.value = {
       ...services.value,
       items: response.data.items,
       preliminary_total: response.data.preliminary_total,
+      can_change: response.data.can_change,
+      services_editable_until: response.data.services_editable_until,
     }
   }
   catch {
@@ -2241,6 +2304,7 @@ async function loadServices(code: string) {
     }
 
     services.value = response.data
+    applyServicesAccess(response.data)
     await loadHotelAdditionals()
     loadError.value = ''
   }
@@ -2364,6 +2428,10 @@ function scrollDraftIntoView(draftId: string) {
               {{ preliminaryTotalLabel }}
             </p>
           </div>
+
+          <p v-if="servicesLockedByTimer" class="add-services-modal__locked">
+            Изменять услуги уже нельзя: до заезда осталось меньше времени, чем задано таймером базы.
+          </p>
 
           <div ref="servicesBodyRef" class="add-services-modal__body">
             <div v-if="isLoading" class="add-services-modal__loading">
@@ -3501,6 +3569,14 @@ function scrollDraftIntoView(draftId: string) {
   gap: 16px;
   margin-bottom: 24px;
   min-height: 36px;
+}
+
+.add-services-modal__locked {
+  margin: -8px 0 16px;
+  font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--wh-field-error, #dc2626);
 }
 
 .add-services-modal__title {

@@ -135,6 +135,7 @@ export interface BookingHistoryItem {
   paymentAction?: string
   cancelReason?: string
   actions: BookingAction[]
+  servicesEditableUntil?: string
   isMasterHunter?: boolean
   isInvitation?: boolean
   invitationAccepted?: boolean

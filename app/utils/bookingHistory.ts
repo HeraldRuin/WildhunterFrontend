@@ -425,7 +425,7 @@ export function mapBookingHistoryItem(
   now = Date.now(),
 ): BookingHistoryItem {
   const type = mapType(item.type)
-  const { actions, paymentAction } = mapActions(
+  const { actions: mappedActions, paymentAction } = mapActions(
     item.available_actions || [],
     item.status,
     Boolean(item.is_invited && item.invitation_accepted),
@@ -435,6 +435,11 @@ export function mapBookingHistoryItem(
     isSameCalendarDay(item.details.end_date, now),
     isSameCalendarDay(item.details.start_date, now),
   )
+  const servicesEditableUntil = item.services_editable_until || undefined
+  const servicesUntilMs = servicesEditableUntil ? Date.parse(servicesEditableUntil) : Number.NaN
+  const actions = item.is_master_hunter && Number.isFinite(servicesUntilMs) && now >= servicesUntilMs
+    ? mappedActions.filter(action => action.id !== 'add_services')
+    : mappedActions
   const details = item.details
   const rooms = details.rooms || []
 
@@ -527,6 +532,7 @@ export function mapBookingHistoryItem(
     paymentAction,
     cancelReason: prepaymentIncompleteCancelReason(item),
     actions,
+    servicesEditableUntil,
     isMasterHunter: Boolean(item.is_master_hunter),
     isInvitation: Boolean(item.is_invited),
     invitationAccepted: Boolean(item.invitation_accepted),
