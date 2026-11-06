@@ -1,7 +1,7 @@
 import type { ApiErrorResponse, ApiSuccessResponse } from '~/types/api'
 import { useApiClient } from './client'
 
-export type TimerSettingsType = 'collection' | 'beds' | 'prepayment'
+export type TimerSettingsType = 'collection' | 'beds' | 'prepayment' | 'services'
 
 export interface TimerSettingsData {
   type?: TimerSettingsType | string
