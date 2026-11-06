@@ -28,7 +28,9 @@ let refreshAfterLoad = false
 useBodyScrollLock(isOpen)
 
 const showMyCosts = computed(() => !calculation.value?.is_baseAdmin)
+const showServiceCount = computed(() => showMyCosts.value)
 const columnCount = computed(() => (showMyCosts.value ? 3 : 2))
+const baseColumnCount = computed(() => columnCount.value + (showServiceCount.value ? 1 : 0))
 
 const BASE_SUMMARY_NAMES = new Set(['Внесена предоплата', 'Остаток базе'])
 const HUNTER_PERSONAL_TOTAL_NAME = 'Итог охотникам'
@@ -235,6 +237,14 @@ function lineName(name: string) {
 function isBoldLine(name: string) {
   return BOLD_LINE_NAMES.has(name)
 }
+
+function serviceCountLabel(count: number | null | undefined) {
+  if (count == null || count <= 0) {
+    return ''
+  }
+
+  return String(count)
+}
 </script>
 
 <template>
@@ -271,19 +281,21 @@ function isBoldLine(name: string) {
                 <thead>
                   <tr class="calculation-modal__section calculation-modal__block-head">
                     <th class="calculation-modal__block-title">Расходы по базе</th>
+                    <th v-if="showServiceCount" class="calculation-modal__count">Кол-во услуг</th>
                     <th>Коллективные расходы</th>
                     <th v-if="showMyCosts">Мои личные расходы</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr class="calculation-modal__gap" aria-hidden="true">
-                    <td :colspan="columnCount"></td>
+                    <td :colspan="baseColumnCount"></td>
                   </tr>
                   <tr
                     v-if="baseAdminBlocks.baseServices.length"
                     class="calculation-modal__section"
                   >
                     <td>Услуги проживания на базе</td>
+                    <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td></td>
                     <td v-if="showMyCosts"></td>
                   </tr>
@@ -292,6 +304,7 @@ function isBoldLine(name: string) {
                     :key="`base-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
+                    <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                     <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
@@ -299,6 +312,7 @@ function isBoldLine(name: string) {
                   <template v-if="calculation.additional_services_show && baseAdminBlocks.baseExtras.length">
                     <tr class="calculation-modal__section">
                       <td>Дополнительные услуги базы</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count"></td>
                       <td></td>
                       <td v-if="showMyCosts"></td>
                     </tr>
@@ -307,6 +321,7 @@ function isBoldLine(name: string) {
                       :key="`base-extra-${lineKey(item, index)}`"
                     >
                       <td>{{ item.name }}</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item.count) }}</td>
                       <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                       <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                     </tr>
@@ -315,6 +330,7 @@ function isBoldLine(name: string) {
                   <template v-if="baseAdminBlocks.basePrepayment.length">
                     <tr class="calculation-modal__section">
                       <td>Предоплата</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count"></td>
                       <td></td>
                       <td v-if="showMyCosts"></td>
                     </tr>
@@ -323,6 +339,7 @@ function isBoldLine(name: string) {
                       :key="`base-prepay-${lineKey(item, index)}`"
                     >
                       <td>{{ lineName(item.name) }}</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count"></td>
                       <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                       <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                     </tr>
@@ -330,6 +347,7 @@ function isBoldLine(name: string) {
 
                   <tr class="calculation-modal__section">
                     <td>Итого по расходам базы</td>
+                    <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td></td>
                     <td v-if="showMyCosts"></td>
                   </tr>
@@ -338,6 +356,7 @@ function isBoldLine(name: string) {
                     :key="`base-remainder-${lineKey(item, index)}`"
                   >
                     <td class="calculation-modal__total">{{ lineName(item.name) }}</td>
+                    <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td class="calculation-modal__regular">{{ formatHotelPriceLabel(item.total_cost) }}</td>
                     <td v-if="showMyCosts" class="calculation-modal__owe">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
@@ -681,6 +700,17 @@ function isBoldLine(name: string) {
 .calculation-modal__table th:nth-child(4) {
   width: 22%;
   white-space: nowrap;
+}
+
+.calculation-modal__table th.calculation-modal__count,
+.calculation-modal__table td.calculation-modal__count {
+  width: 132px;
+  min-width: 132px;
+  white-space: nowrap;
+}
+
+.calculation-modal__table td.calculation-modal__count {
+  text-align: center;
 }
 
 .calculation-modal__table td:nth-child(2),
