@@ -100,6 +100,7 @@ const savingPreparationKey = ref<number | null>(null)
 const savingFoodKey = ref<number | null>(null)
 const savedFoodCounts = ref<Record<number, number>>({})
 const savingAdditionalKey = ref<number | null>(null)
+const dismissedAdditionalStock = ref<Record<number, string>>({})
 const savingSpendingKey = ref<number | null>(null)
 const savingTrophyKey = ref<number | null>(null)
 const savingPenaltyKey = ref<number | null>(null)
@@ -499,6 +500,7 @@ function resetServices() {
   preparationDrafts.value = []
   foodDrafts.value = []
   additionalDrafts.value = []
+  dismissedAdditionalStock.value = {}
   spendingDrafts.value = []
   trophyDrafts.value = []
   penaltyDrafts.value = []
@@ -1595,6 +1597,9 @@ function startAdditionalEdit(item: BookingServiceAdditionalItem) {
 
 function removeAdditionalDraft(key: number) {
   additionalDrafts.value = additionalDrafts.value.filter(row => row.key !== key)
+  const next = { ...dismissedAdditionalStock.value }
+  delete next[key]
+  dismissedAdditionalStock.value = next
 }
 
 function cancelAdditionalDraft(key: number) {
@@ -1719,6 +1724,22 @@ function additionalMatchingItems(additionalId: string, exceptServiceId?: number)
 function additionalRequestedCount(row: AdditionalDraft): number {
   const count = Number(row.count)
   return Number.isInteger(count) && count > 0 ? count : 0
+}
+
+function additionalStockWarningToken(row: AdditionalDraft): string {
+  return `${row.additionalId}:${Number(row.count)}`
+}
+
+function showAdditionalStockWarning(row: AdditionalDraft): boolean {
+  return additionalStockExhausted(row)
+    && dismissedAdditionalStock.value[row.key] !== additionalStockWarningToken(row)
+}
+
+function dismissAdditionalStockWarning(row: AdditionalDraft) {
+  dismissedAdditionalStock.value = {
+    ...dismissedAdditionalStock.value,
+    [row.key]: additionalStockWarningToken(row),
+  }
 }
 
 function additionalStockExhausted(row: AdditionalDraft): boolean {
@@ -2296,6 +2317,7 @@ async function loadServices(code: string) {
   preparationDrafts.value = []
   foodDrafts.value = []
   additionalDrafts.value = []
+  dismissedAdditionalStock.value = {}
   spendingDrafts.value = []
   trophyDrafts.value = []
   penaltyDrafts.value = []
@@ -3314,10 +3336,20 @@ function scrollDraftIntoView(draftId: string) {
                     />
                   </div>
                   <p
-                    v-if="additionalStockExhausted(entry.draft)"
+                    v-if="showAdditionalStockWarning(entry.draft)"
                     class="add-services-modal__stock-empty"
                   >
-                    Недостаточное количество данной услуги на базе
+                    <span>Недостаточное количество данной услуги на базе</span>
+                    <button
+                      type="button"
+                      class="add-services-modal__stock-empty-close"
+                      aria-label="Закрыть уведомление"
+                      @click="dismissAdditionalStockWarning(entry.draft)"
+                    >
+                      <svg viewBox="0 0 12 12" aria-hidden="true">
+                        <path d="M2.2 2.2 9.8 9.8M9.8 2.2 2.2 9.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                      </svg>
+                    </button>
                   </p>
                   <template v-else>
                     <div class="add-services-modal__field add-services-modal__field--hunter">
@@ -3357,7 +3389,7 @@ function scrollDraftIntoView(draftId: string) {
                   </template>
                   <div class="add-services-modal__form-actions">
                     <button
-                      v-if="!additionalStockExhausted(entry.draft)"
+                      v-if="!showAdditionalStockWarning(entry.draft)"
                       type="button"
                       class="add-services-modal__save"
                       :disabled="!canSaveAdditionalDraft(entry.draft)"
@@ -3974,7 +4006,11 @@ function scrollDraftIntoView(draftId: string) {
 }
 
 .add-services-modal__stock-empty {
+  display: flex;
   grid-column: 2 / 6;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin: 0;
   align-self: center;
   text-align: center;
@@ -3982,6 +4018,30 @@ function scrollDraftIntoView(draftId: string) {
   font-size: 0.88rem;
   font-weight: 600;
   line-height: 1.3;
+}
+
+.add-services-modal__stock-empty-close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #dc3545;
+  cursor: pointer;
+}
+
+.add-services-modal__stock-empty-close svg {
+  width: 12px;
+  height: 12px;
+}
+
+.add-services-modal__stock-empty-close:hover {
+  background: rgba(220, 53, 69, 0.1);
 }
 
 .add-services-modal__form-row--additional .add-services-modal__field--count {
