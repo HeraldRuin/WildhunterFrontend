@@ -369,19 +369,21 @@ function serviceCountLabel(count: number | null | undefined) {
                 <thead>
                   <tr class="calculation-modal__section calculation-modal__block-head">
                     <th class="calculation-modal__block-title">Расходы по охоте</th>
+                    <th v-if="showServiceCount" class="calculation-modal__count">Кол-во услуг</th>
                     <th>Коллективные расходы</th>
                     <th v-if="showMyCosts">Мои личные расходы</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr class="calculation-modal__gap" aria-hidden="true">
-                    <td :colspan="columnCount"></td>
+                    <td :colspan="baseColumnCount"></td>
                   </tr>
                   <tr
                     v-if="baseAdminBlocks.huntServices.length"
                     class="calculation-modal__section"
                   >
                     <td>Проведение охоты</td>
+                    <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td></td>
                     <td v-if="showMyCosts"></td>
                   </tr>
@@ -390,6 +392,7 @@ function serviceCountLabel(count: number | null | undefined) {
                     :key="`hunt-${lineKey(item, index)}`"
                   >
                     <td>{{ item.name }}</td>
+                    <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                     <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
@@ -397,6 +400,7 @@ function serviceCountLabel(count: number | null | undefined) {
                   <template v-if="calculation.additional_services_show && baseAdminBlocks.huntExtras.length">
                     <tr class="calculation-modal__section">
                       <td>Дополнительные расходы охоты</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count"></td>
                       <td></td>
                       <td v-if="showMyCosts"></td>
                     </tr>
@@ -405,6 +409,7 @@ function serviceCountLabel(count: number | null | undefined) {
                       :key="`hunt-extra-${lineKey(item, index)}`"
                     >
                       <td>{{ item.name }}</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item.count) }}</td>
                       <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                       <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                     </tr>
@@ -413,6 +418,7 @@ function serviceCountLabel(count: number | null | undefined) {
                   <template v-if="calculation.trophy_show">
                     <tr class="calculation-modal__section">
                       <td>Трофеи</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count"></td>
                       <td></td>
                       <td v-if="showMyCosts"></td>
                     </tr>
@@ -421,6 +427,7 @@ function serviceCountLabel(count: number | null | undefined) {
                       :key="`hunt-trophy-${lineKey(item, index)}`"
                     >
                       <td>{{ item.name }}</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item.count) }}</td>
                       <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                       <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                     </tr>
@@ -429,6 +436,7 @@ function serviceCountLabel(count: number | null | undefined) {
                   <template v-if="calculation.penalties_show">
                     <tr class="calculation-modal__section">
                       <td>Штрафы</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count"></td>
                       <td></td>
                       <td v-if="showMyCosts"></td>
                     </tr>
@@ -437,6 +445,7 @@ function serviceCountLabel(count: number | null | undefined) {
                       :key="`hunt-penalty-${lineKey(item, index)}`"
                     >
                       <td>{{ item.name }}</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item.count) }}</td>
                       <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                       <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                     </tr>
@@ -448,17 +457,20 @@ function serviceCountLabel(count: number | null | undefined) {
                     :class="{ 'calculation-modal__total': isBoldLine(item.name) }"
                   >
                     <td>{{ lineName(item.name) }}</td>
+                    <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td>{{ formatHotelPriceLabel(item.total_cost) }}</td>
                     <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
 
                   <tr class="calculation-modal__section">
                     <td>Итого по охоте</td>
+                    <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td></td>
                     <td v-if="showMyCosts"></td>
                   </tr>
                   <tr>
                     <td class="calculation-modal__total">Итого оплата по охоте</td>
+                    <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td class="calculation-modal__regular">{{ formatHotelPriceLabel(baseAdminBlocks.huntPayment) }}</td>
                     <td v-if="showMyCosts" class="calculation-modal__owe">{{ formatHotelPriceLabel(baseAdminBlocks.huntPaymentMy) }}</td>
                   </tr>
