@@ -80,6 +80,26 @@ onMounted(() => {
   }
 })
 
+const staySchedule = computed(() => {
+  if (showHotelPlaceholder.value) {
+    return []
+  }
+
+  const items: { label: string, value: string }[] = []
+  const checkIn = displayHotel.value.check_in_time?.trim()
+  const checkOut = displayHotel.value.check_out_time?.trim()
+
+  if (checkIn) {
+    items.push({ label: 'Время регистрации', value: checkIn })
+  }
+
+  if (checkOut) {
+    items.push({ label: 'Время выезда', value: checkOut })
+  }
+
+  return items
+})
+
 const pageTitle = computed(() => `${displayHotel.value.title} — WH`)
 
 const breadcrumbs = computed(() => {
@@ -435,6 +455,19 @@ function handleRetryHotelLoad() {
 
           <div class="hotel-page__title-row">
             <h1 class="hotel-page__title">{{ displayHotel.title }}</h1>
+            <div
+              v-if="staySchedule.length"
+              class="hotel-page__stay-times"
+            >
+              <p
+                v-for="item in staySchedule"
+                :key="item.label"
+                class="hotel-page__stay-time"
+              >
+                <span class="hotel-page__stay-time-label">{{ item.label }}</span>
+                <span class="hotel-page__stay-time-value">{{ item.value }}</span>
+              </p>
+            </div>
             <button
               v-if="!isBaseAdmin"
               type="button"
@@ -778,6 +811,38 @@ function handleRetryHotelLoad() {
   letter-spacing: -0.05em;
   color: var(--wh-gray-900);
   text-transform: uppercase;
+}
+
+.hotel-page__stay-times {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 20px;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--wh-gray-200);
+  border-radius: 8px;
+  background: var(--wh-white);
+}
+
+.hotel-page__stay-time {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 130%;
+  letter-spacing: -0.03em;
+}
+
+.hotel-page__stay-time-label {
+  color: var(--wh-orange-500);
+}
+
+.hotel-page__stay-time-value {
+  font-weight: 600;
+  color: var(--wh-gray-900);
 }
 
 .hotel-page__map-link {

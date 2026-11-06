@@ -388,8 +388,8 @@ export function normalizeHotelDetail(raw: unknown, params: HotelSlugParams): Hot
     terms: parseTerms(data.terms),
     animals: parseAnimals(data.animals),
     related,
-    check_in_time: data.check_in_time ? String(data.check_in_time) : '14:00',
-    check_out_time: data.check_out_time ? String(data.check_out_time) : '12:00',
+    check_in_time: data.check_in_time ? String(data.check_in_time) : undefined,
+    check_out_time: data.check_out_time ? String(data.check_out_time) : undefined,
   }
 }
 
