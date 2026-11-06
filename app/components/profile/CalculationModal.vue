@@ -72,6 +72,33 @@ function extraServiceLines(data: BookingCalculatingData) {
   ]
 }
 
+function groupServiceLines(lines: BookingCalculationLine[]) {
+  const grouped: BookingCalculationLine[] = []
+  const indexByName = new Map<string, number>()
+
+  for (const line of lines) {
+    const key = line.name.trim()
+    const existingIndex = indexByName.get(key)
+
+    if (existingIndex == null) {
+      indexByName.set(key, grouped.length)
+      grouped.push({ ...line })
+      continue
+    }
+
+    const existing = grouped[existingIndex]
+    if (!existing) {
+      continue
+    }
+
+    existing.total_cost += line.total_cost ?? 0
+    existing.my_cost += line.my_cost ?? 0
+    existing.count = (existing.count ?? 0) + (line.count ?? 0)
+  }
+
+  return grouped
+}
+
 function sumLineCost(lines: BookingCalculationLine[], field: 'total_cost' | 'my_cost' | 'due_to_me') {
   return lines.reduce((sum, line) => sum + (line[field] ?? 0), 0)
 }
@@ -85,8 +112,8 @@ const baseAdminBlocks = computed(() => {
   const items = data.items ?? []
   const summary = data.all_items ?? []
   const extras = extraServiceLines(data)
-  const baseExtras = extras.filter(isBasePlace)
-  const huntExtras = extras.filter(line => !isBasePlace(line))
+  const baseExtras = groupServiceLines(extras.filter(isBasePlace))
+  const huntExtras = groupServiceLines(extras.filter(line => !isBasePlace(line)))
   const huntServices = items.filter(item => !isAccommodationLine(item.name))
   const trophies = data.trophy_show ? data.trophies ?? [] : []
   const penalties = data.penalties_show ? data.penalties ?? [] : []
