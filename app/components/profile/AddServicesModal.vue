@@ -2417,10 +2417,16 @@ function scrollDraftIntoView(draftId: string) {
         <div class="add-services-modal__card">
           <CommonModalCloseButton @click="close" />
 
-          <div class="add-services-modal__header">
+          <div
+            class="add-services-modal__header"
+            :class="{ 'add-services-modal__header--with-lock': servicesLockedByTimer }"
+          >
             <h2 id="add-services-modal-title" class="add-services-modal__title">
               Добавить услуги для брони №{{ booking.number }}
             </h2>
+            <p v-if="servicesLockedByTimer" class="add-services-modal__locked">
+              Изменять услуги уже нельзя: до заезда осталось меньше времени, чем задано таймером базы.
+            </p>
             <p v-if="isBaseAdmin" class="add-services-modal__estimate">
               Предварительная смета за услуги всего:
             </p>
@@ -2428,10 +2434,6 @@ function scrollDraftIntoView(draftId: string) {
               {{ preliminaryTotalLabel }}
             </p>
           </div>
-
-          <p v-if="servicesLockedByTimer" class="add-services-modal__locked">
-            Изменять услуги уже нельзя: до заезда осталось меньше времени, чем задано таймером базы.
-          </p>
 
           <div ref="servicesBodyRef" class="add-services-modal__body">
             <div v-if="isLoading" class="add-services-modal__loading">
@@ -3571,12 +3573,32 @@ function scrollDraftIntoView(draftId: string) {
   min-height: 36px;
 }
 
+.add-services-modal__header--with-lock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  column-gap: 20px;
+  row-gap: 4px;
+  padding-right: 132px;
+}
+
+.add-services-modal__header--with-lock .add-services-modal__title {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
 .add-services-modal__locked {
   margin: -8px 0 16px;
   font-family: 'Inter', 'Manrope', system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.4;
   color: var(--wh-field-error, #dc2626);
+}
+
+.add-services-modal__header--with-lock .add-services-modal__locked {
+  flex: 1 1 16rem;
+  min-width: min(100%, 16rem);
+  margin: 0;
 }
 
 .add-services-modal__title {
