@@ -87,12 +87,6 @@ const ADD_SERVICES_ACTION: BookingAction = {
   variant: 'success',
 }
 
-const COMPLETE_EVENT_ACTION: BookingAction = {
-  id: 'complete',
-  label: 'Завершить событие',
-  variant: 'success',
-}
-
 function withMarkPaidFirst(actions: BookingAction[]): BookingAction[] {
   const markPaid = actions.filter(action => action.id === 'mark_paid')
   if (markPaid.length === 0) {
@@ -196,18 +190,15 @@ function mapType(type: string): BookingType {
   return 'hotel'
 }
 
-function isLastEventDay(endDate: string | null | undefined, now: number) {
-  const checkout = endDate ? parseBirthdayDate(endDate) : null
-  if (!checkout) return false
-
-  const lastDay = new Date(checkout)
-  lastDay.setDate(lastDay.getDate() - 1)
+function isSameCalendarDay(value: string | null | undefined, now: number) {
+  const date = value ? parseBirthdayDate(value) : null
+  if (!date) return false
 
   const today = new Date(now)
 
-  return lastDay.getFullYear() === today.getFullYear()
-    && lastDay.getMonth() === today.getMonth()
-    && lastDay.getDate() === today.getDate()
+  return date.getFullYear() === today.getFullYear()
+    && date.getMonth() === today.getMonth()
+    && date.getDate() === today.getDate()
 }
 
 function mapActions(
@@ -217,7 +208,8 @@ function mapActions(
   isHunter = false,
   isMasterHunter = false,
   type: BookingType = 'hotel',
-  _lastEventDay = false,
+  checkoutToday = false,
+  checkInToday = false,
 ): {
   actions: BookingAction[]
   paymentAction?: string
@@ -239,11 +231,13 @@ function mapActions(
       continue
     }
 
-    // Временно для тестов: кнопка видна сразу, когда бэкенд отдал complete (статус paid),
-    // без ожидания последнего дня мероприятия.
-    // if (action.code === 'complete' && !_lastEventDay) {
-    //   continue
-    // }
+    if (action.code === 'add_services' && !isHunter && !checkInToday) {
+      continue
+    }
+
+    if (action.code === 'complete' && !checkoutToday) {
+      continue
+    }
 
     mapped.push({
       id: ACTION_ID_MAP[action.code],
@@ -294,19 +288,10 @@ function mapActions(
   if (
     status === 'paid'
     && (!isHunter || isMasterHunter)
+    && (isHunter || checkInToday)
     && !mapped.some(action => action.id === 'add_services')
   ) {
     mapped.push({ ...ADD_SERVICES_ACTION })
-  }
-
-  // Временно для тестов: кнопка есть сразу при статусе paid,
-  // даже если API не прислал complete до дня выезда.
-  if (
-    status === 'paid'
-    && !isHunter
-    && !mapped.some(action => action.id === 'complete')
-  ) {
-    mapped.unshift({ ...COMPLETE_EVENT_ACTION })
   }
 
   if (isHunter && status === 'finish_bed_collection') {
@@ -447,7 +432,8 @@ export function mapBookingHistoryItem(
     Boolean(fallback?.isHunter),
     Boolean(item.is_master_hunter),
     type,
-    isLastEventDay(item.details.end_date, now),
+    isSameCalendarDay(item.details.end_date, now),
+    isSameCalendarDay(item.details.start_date, now),
   )
   const details = item.details
   const rooms = details.rooms || []
