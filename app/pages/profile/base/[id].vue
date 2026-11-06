@@ -3,6 +3,7 @@ import type { HotelManageUpdatePayload, ManagedHotelDetail, ManagedHotelExtraPri
 import type { HotelRoomAttribute, HotelRoomAttributeTerm, HuntingMethod, SearchLocation } from '~/types/api'
 import { formatHotelPrice, getHotelPath } from '~/utils/hotel'
 import { DEFAULT_MAP_CENTER } from '~/utils/map'
+import { geocodeRegionCandidates, pickLocationByRegionCandidates, pickNearestLocation } from '~/utils/regionLocation'
 import { extractMediaIdFromUrl, shouldShowOfferImage } from '~/utils/image'
 
 definePageMeta({
@@ -92,8 +93,9 @@ const isLocationDropdownOpen = ref(false)
 const locations = ref<SearchLocation[]>([])
 const locationsLoading = ref(false)
 const locationsError = ref('')
-const locationMapRef = ref<{ searchByName: (query: string) => Promise<boolean> } | null>(null)
+const locationMapRef = ref<{ searchByName: (query: string) => Promise<string[] | null> } | null>(null)
 let locationsLoaded = false
+let locationsRequest: Promise<void> | null = null
 
 type PolicyItem = {
   id: number
@@ -662,10 +664,78 @@ function onMapZoomUpdate(value: number) {
   editMapZoom.value = String(Math.round(value))
 }
 
+function currentMapPoint() {
+  const lat = Number(editMapLat.value.replace(',', '.'))
+  const lng = Number(editMapLng.value.replace(',', '.'))
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null
+  }
+
+  return { lat, lng }
+}
+
+function applyRegionCandidates(candidates: string[], point?: { lat: number, lng: number } | null) {
+  const byName = pickLocationByRegionCandidates(candidates, locations.value)
+
+  if (byName) {
+    selectLocation(byName)
+    return
+  }
+
+  const coords = point ?? currentMapPoint()
+
+  if (!coords) {
+    return
+  }
+
+  const nearest = pickNearestLocation(coords.lat, coords.lng, locations.value)
+
+  if (nearest) {
+    selectLocation(nearest)
+  }
+}
+
+async function syncLocationFromAddress() {
+  const query = editAddress.value.trim()
+  const lat = Number(editMapLat.value.replace(',', '.'))
+  const lng = Number(editMapLng.value.replace(',', '.'))
+  const request = query || (
+    Number.isFinite(lat) && Number.isFinite(lng)
+      ? [lat, lng] as [number, number]
+      : ''
+  )
+
+  if (!request) {
+    return
+  }
+
+  await loadLocations()
+
+  try {
+    const config = useRuntimeConfig()
+    const found = await geocodeRegionCandidates(
+      String(config.public.yandexMapsApiKey || ''),
+      request,
+    )
+
+    if (found) {
+      applyRegionCandidates(found.candidates, found)
+    }
+  }
+  catch {
+  }
+}
+
 function onMapAddress(value: string) {
   if (value) {
     editAddress.value = value
   }
+}
+
+async function onMapRegions(candidates: string[]) {
+  await loadLocations()
+  applyRegionCandidates(candidates)
 }
 
 async function searchMapByName() {
@@ -676,11 +746,15 @@ async function searchMapByName() {
     return
   }
 
-  const found = await locationMapRef.value?.searchByName(query)
+  const regions = await locationMapRef.value?.searchByName(query)
 
-  if (!found) {
+  if (!regions) {
     mapSearchError.value = 'Ничего не найдено'
+    return
   }
+
+  await loadLocations()
+  applyRegionCandidates(regions)
 }
 
 function onMapSearchKeydown(event: KeyboardEvent) {
@@ -698,30 +772,39 @@ function clearMapSearch() {
 }
 
 async function loadLocations() {
-  if (locationsLoaded || locationsLoading.value) {
+  if (locationsLoaded) {
     return
+  }
+
+  if (locationsRequest) {
+    return locationsRequest
   }
 
   locationsLoading.value = true
   locationsError.value = ''
 
-  try {
-    locations.value = await locationApi.getLocationItems()
-    locationsLoaded = true
+  locationsRequest = (async () => {
+    try {
+      locations.value = await locationApi.getLocationItems()
+      locationsLoaded = true
 
-    if (editLocationId.value && !editLocationQuery.value) {
-      const match = locations.value.find(item => item.id === editLocationId.value)
-      if (match) {
-        editLocationQuery.value = match.name
+      if (editLocationId.value && !editLocationQuery.value) {
+        const match = locations.value.find(item => item.id === editLocationId.value)
+        if (match) {
+          editLocationQuery.value = match.name
+        }
       }
     }
-  }
-  catch {
-    locationsError.value = 'Не удалось загрузить локации'
-  }
-  finally {
-    locationsLoading.value = false
-  }
+    catch {
+      locationsError.value = 'Не удалось загрузить локации'
+    }
+    finally {
+      locationsLoading.value = false
+      locationsRequest = null
+    }
+  })()
+
+  return locationsRequest
 }
 
 function attributeGroupTitle(group: HotelRoomAttribute) {
@@ -1161,6 +1244,7 @@ async function saveHotel() {
   isSaving.value = true
 
   try {
+    await syncLocationFromAddress()
     await uploadPendingMainPhoto()
     await uploadPendingGalleryItems()
 
@@ -1767,6 +1851,7 @@ watch(activeEditTab, (tab) => {
                       @update:lng="onMapLngUpdate"
                       @update:zoom="onMapZoomUpdate"
                       @address="onMapAddress"
+                      @regions="onMapRegions"
                     />
 
                     <div class="base-edit__geo-fields">

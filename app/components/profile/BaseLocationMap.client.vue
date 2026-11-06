@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { DEFAULT_MAP_CENTER } from '~/utils/map'
+import { collectRegionCandidates } from '~/utils/regionLocation'
 import {
   loadYandexMaps21,
   type YmapsApi,
   type YmapsCoords,
   type YmapsEvent,
+  type YmapsGeoObject,
   type YmapsMap,
 } from '~/utils/yandexMaps21'
 
@@ -23,6 +25,7 @@ const emit = defineEmits<{
   'update:lng': [value: number]
   'update:zoom': [value: number]
   address: [value: string]
+  regions: [value: string[]]
 }>()
 
 const mapEl = ref<HTMLElement | null>(null)
@@ -88,6 +91,22 @@ function emitCoords(lat: number, lng: number, zoom: number) {
   emit('update:zoom', zoom)
 }
 
+function emitGeocodeDetails(geoObject: YmapsGeoObject) {
+  const address = geoObject.getAddressLine()
+
+  if (address) {
+    emit('address', address)
+  }
+
+  const regions = collectRegionCandidates(geoObject)
+
+  if (regions.length) {
+    emit('regions', regions)
+  }
+
+  return regions
+}
+
 async function reverseGeocode(coords: YmapsCoords) {
   if (!ymapsApi) {
     return
@@ -96,10 +115,9 @@ async function reverseGeocode(coords: YmapsCoords) {
   try {
     const result = await ymapsApi.geocode(coords, { results: 1 })
     const geoObject = result.geoObjects.get(0)
-    const address = geoObject?.getAddressLine()
 
-    if (address) {
-      emit('address', address)
+    if (geoObject) {
+      emitGeocodeDetails(geoObject)
     }
   }
   catch {
@@ -110,7 +128,7 @@ async function searchByName(query: string) {
   const value = query.trim()
 
   if (!value || !ymapsApi || !map) {
-    return false
+    return null
   }
 
   try {
@@ -118,7 +136,7 @@ async function searchByName(query: string) {
     const geoObject = result.geoObjects.get(0)
 
     if (!geoObject) {
-      return false
+      return null
     }
 
     const coords = geoObject.geometry.getCoordinates()
@@ -131,15 +149,10 @@ async function searchByName(query: string) {
 
     emitCoords(coords[0], coords[1], zoom)
 
-    const address = geoObject.getAddressLine()
-    if (address) {
-      emit('address', address)
-    }
-
-    return true
+    return emitGeocodeDetails(geoObject)
   }
   catch {
-    return false
+    return null
   }
 }
 

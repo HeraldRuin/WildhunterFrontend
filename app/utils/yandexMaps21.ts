@@ -44,6 +44,11 @@ export interface YmapsGeoObject {
     getCoordinates: () => YmapsCoords
   }
   getAddressLine: () => string
+  getAdministrativeAreas?: () => string[]
+  getLocalities?: () => string[]
+  properties?: {
+    get: (key: string) => unknown
+  }
 }
 
 export interface YmapsGeocodeResult {
