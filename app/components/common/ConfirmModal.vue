@@ -2,12 +2,15 @@
 const { isOpen, isSubmitting, options, close, confirm } = useConfirmModal()
 
 const confirmButtonClass = computed(() => {
-  if (options.value?.confirmTone === 'danger' || options.value?.confirmLabel === 'Удалить') {
-    return 'confirm-modal__btn--danger'
+  const tone = options.value?.confirmTone
+  const label = options.value?.confirmLabel
+
+  if (tone === 'success' || (tone !== 'danger' && label === 'Подтвердить')) {
+    return 'confirm-modal__btn--success'
   }
 
-  if (options.value?.confirmTone === 'success' || options.value?.confirmLabel === 'Подтвердить') {
-    return 'confirm-modal__btn--success'
+  if (tone === 'danger' || label === 'Удалить') {
+    return 'confirm-modal__btn--danger'
   }
 
   return 'confirm-modal__btn--primary'

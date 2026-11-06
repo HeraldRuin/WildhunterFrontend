@@ -2033,6 +2033,7 @@ function requestFoodRowDeletion(foodItems: BookingServiceFoodItem[]) {
   openConfirmModal({
     title: 'Вы уверены, что хотите удалить питание?',
     confirmLabel: 'Удалить',
+    confirmTone: 'success',
     onConfirm: () => deleteFoodItems(serviceIds),
   })
 }
@@ -2045,6 +2046,7 @@ function requestServiceDeletion(serviceId: number, title: string, list: Deletabl
   openConfirmModal({
     title,
     confirmLabel: 'Удалить',
+    confirmTone: 'success',
     onConfirm: () => deleteBookingService(serviceId, list),
   })
 }
