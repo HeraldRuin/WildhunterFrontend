@@ -1370,6 +1370,10 @@ function cancelSpendingDraft(key: number) {
   removeSpendingDraft(key)
 }
 
+function onSpendingPriceInput(row: SpendingDraft, event: Event) {
+  row.price = keepFoodCountDigits(event)
+}
+
 function parseSpendingPrice(value: string): number | null {
   const raw = value.trim().replace(/\s/g, '').replace(',', '.')
   if (!raw) {
@@ -3401,11 +3405,15 @@ function scrollDraftIntoView(draftId: string) {
                   </div>
                   <label class="add-services-modal__field add-services-modal__field--count">
                     <input
-                      v-model="entry.draft.price"
                       class="add-services-modal__control"
                       type="text"
-                      inputmode="decimal"
+                      inputmode="numeric"
+                      autocomplete="off"
                       placeholder="Внесенная сумма"
+                      :value="entry.draft.price"
+                      @keydown="onFoodCountKeydown"
+                      @beforeinput="onFoodCountBeforeInput"
+                      @input="onSpendingPriceInput(entry.draft, $event)"
                     >
                   </label>
                   <label class="add-services-modal__field add-services-modal__field--comment">
