@@ -32,6 +32,7 @@ const showServiceCount = computed(() => showMyCosts.value)
 const showCollectiveCosts = computed(() =>
   Boolean(calculation.value?.is_baseAdmin) || Boolean(booking.value?.isMasterHunter),
 )
+const personalServicesOnly = computed(() => showMyCosts.value && !showCollectiveCosts.value)
 const baseColumnCount = computed(() => {
   let count = 1
 
@@ -94,9 +95,20 @@ function groupServiceLines(lines: BookingCalculationLine[]) {
     existing.total_cost += line.total_cost ?? 0
     existing.my_cost += line.my_cost ?? 0
     existing.count = (existing.count ?? 0) + (line.count ?? 0)
+    if (line.my_count != null || existing.my_count != null) {
+      existing.my_count = (existing.my_count ?? 0) + (line.my_count ?? 0)
+    }
   }
 
   return grouped
+}
+
+function hunterLines(lines: BookingCalculationLine[]) {
+  if (!personalServicesOnly.value) {
+    return lines
+  }
+
+  return lines.filter(line => (line.my_cost ?? 0) > 0)
 }
 
 function sumLineCost(lines: BookingCalculationLine[], field: 'total_cost' | 'my_cost' | 'due_to_me') {
@@ -115,8 +127,8 @@ const baseAdminBlocks = computed(() => {
   const baseExtras = groupServiceLines(extras.filter(isBasePlace))
   const huntExtras = groupServiceLines(extras.filter(line => !isBasePlace(line)))
   const huntServices = items.filter(item => !isAccommodationLine(item.name))
-  const trophies = data.trophy_show ? data.trophies ?? [] : []
-  const penalties = data.penalties_show ? data.penalties ?? [] : []
+  const trophies = data.trophy_show ? hunterLines(data.trophies ?? []) : []
+  const penalties = data.penalties_show ? hunterLines(data.penalties ?? []) : []
   const huntLines = [...huntServices, ...huntExtras, ...trophies, ...penalties]
   const baseRemainder = summary.filter(item => item.name === 'Остаток базе')
   const spendings = data.spendings ?? []
@@ -125,11 +137,13 @@ const baseAdminBlocks = computed(() => {
 
   return {
     baseServices: items.filter(item => isAccommodationLine(item.name)),
-    baseExtras,
+    baseExtras: hunterLines(baseExtras),
     basePrepayment: summary.filter(item => item.name === 'Внесена предоплата'),
     baseRemainder,
     huntServices,
-    huntExtras,
+    huntExtras: hunterLines(huntExtras),
+    trophies,
+    penalties,
     huntSummary: summary.filter(item => !BASE_SUMMARY_NAMES.has(item.name) && item.name !== HUNTER_PERSONAL_TOTAL_NAME),
     huntPayment: sumLineCost(huntLines, 'total_cost'),
     huntPaymentMy,
@@ -284,7 +298,9 @@ function isBoldLine(name: string) {
   return BOLD_LINE_NAMES.has(name)
 }
 
-function serviceCountLabel(count: number | null | undefined) {
+function serviceCountLabel(line: BookingCalculationLine) {
+  const count = personalServicesOnly.value ? (line.my_count ?? line.count) : line.count
+
   if (count == null || count <= 0) {
     return ''
   }
@@ -367,7 +383,7 @@ function serviceCountLabel(count: number | null | undefined) {
                       :key="`base-extra-${lineKey(item, index)}`"
                     >
                       <td>{{ item.name }}</td>
-                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item.count) }}</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item) }}</td>
                       <td v-if="showCollectiveCosts">{{ formatHotelPriceLabel(item.total_cost) }}</td>
                       <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                     </tr>
@@ -455,13 +471,13 @@ function serviceCountLabel(count: number | null | undefined) {
                       :key="`hunt-extra-${lineKey(item, index)}`"
                     >
                       <td>{{ item.name }}</td>
-                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item.count) }}</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item) }}</td>
                       <td v-if="showCollectiveCosts">{{ formatHotelPriceLabel(item.total_cost) }}</td>
                       <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                     </tr>
                   </template>
 
-                  <template v-if="calculation.trophy_show">
+                  <template v-if="baseAdminBlocks.trophies.length">
                     <tr class="calculation-modal__section">
                       <td>Трофеи</td>
                       <td v-if="showServiceCount" class="calculation-modal__count"></td>
@@ -469,17 +485,17 @@ function serviceCountLabel(count: number | null | undefined) {
                       <td v-if="showMyCosts"></td>
                     </tr>
                     <tr
-                      v-for="(item, index) in calculation.trophies"
+                      v-for="(item, index) in baseAdminBlocks.trophies"
                       :key="`hunt-trophy-${lineKey(item, index)}`"
                     >
                       <td>{{ item.name }}</td>
-                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item.count) }}</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item) }}</td>
                       <td v-if="showCollectiveCosts">{{ formatHotelPriceLabel(item.total_cost) }}</td>
                       <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                     </tr>
                   </template>
 
-                  <template v-if="calculation.penalties_show">
+                  <template v-if="baseAdminBlocks.penalties.length">
                     <tr class="calculation-modal__section">
                       <td>Штрафы</td>
                       <td v-if="showServiceCount" class="calculation-modal__count"></td>
@@ -487,11 +503,11 @@ function serviceCountLabel(count: number | null | undefined) {
                       <td v-if="showMyCosts"></td>
                     </tr>
                     <tr
-                      v-for="(item, index) in calculation.penalties"
+                      v-for="(item, index) in baseAdminBlocks.penalties"
                       :key="`hunt-penalty-${lineKey(item, index)}`"
                     >
                       <td>{{ item.name }}</td>
-                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item.count) }}</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountLabel(item) }}</td>
                       <td v-if="showCollectiveCosts">{{ formatHotelPriceLabel(item.total_cost) }}</td>
                       <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                     </tr>

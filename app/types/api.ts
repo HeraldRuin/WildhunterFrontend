@@ -394,6 +394,7 @@ export interface BookingCalculationLine {
   total_cost: number
   my_cost: number
   count?: number | null
+  my_count?: number | null
   has_tooltip?: boolean
   due_to_me?: number
   place?: string | null
