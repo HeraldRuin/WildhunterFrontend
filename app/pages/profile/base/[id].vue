@@ -1414,15 +1414,44 @@ watch(activeEditTab, (tab) => {
           </button>
         </nav>
 
-        <CommonSaveButton
-          type="button"
-          class="base-edit__nav-save"
-          :loading="isSaving"
-          :disabled="isLoading"
-          @click="saveHotel"
-        >
-          Сохранить
-        </CommonSaveButton>
+        <div class="base-edit__nav-tools">
+          <button
+            v-if="activeEditTab === 'content' && activeContentTab === 'policy'"
+            type="button"
+            class="base-edit__policy-add base-edit__policy-add--nav"
+            @click="addPolicyItem"
+          >
+            Добавить элемент
+          </button>
+
+          <button
+            v-else-if="activeEditTab === 'places' && activePlacesTab === 'surrounding'"
+            type="button"
+            class="base-edit__policy-add base-edit__policy-add--nav"
+            @click="addSurroundingItem"
+          >
+            Добавить элемент
+          </button>
+
+          <button
+            v-else-if="activeEditTab === 'pricing' && editEnableExtraPrice"
+            type="button"
+            class="base-edit__policy-add base-edit__policy-add--nav"
+            @click="addExtraPriceItem"
+          >
+            Добавить элемент
+          </button>
+
+          <CommonSaveButton
+            type="button"
+            class="base-edit__nav-save"
+            :loading="isSaving"
+            :disabled="isLoading"
+            @click="saveHotel"
+          >
+            Сохранить
+          </CommonSaveButton>
+        </div>
       </div>
 
       <div class="base-edit__panel-area">
@@ -2218,86 +2247,6 @@ watch(activeEditTab, (tab) => {
               />
             </div>
             </div>
-
-          <div
-            v-if="(activeEditTab === 'content' && activeContentTab === 'policy') || (activeEditTab === 'places' && activePlacesTab === 'surrounding') || (activeEditTab === 'pricing' && editEnableExtraPrice)"
-            class="base-edit__actions"
-          >
-            <button
-              v-if="activeEditTab === 'content' && activeContentTab === 'policy'"
-              type="button"
-              class="base-edit__policy-add"
-              @click="addPolicyItem"
-            >
-              <svg
-                class="base-edit__gallery-btn-icon"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
-                <path
-                  d="M12 8v8M8 12h8"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                />
-              </svg>
-              Добавить элемент
-            </button>
-
-            <button
-              v-else-if="activeEditTab === 'places' && activePlacesTab === 'surrounding'"
-              type="button"
-              class="base-edit__policy-add"
-              @click="addSurroundingItem"
-            >
-              <svg
-                class="base-edit__gallery-btn-icon"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
-                <path
-                  d="M12 8v8M8 12h8"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                />
-              </svg>
-              Добавить элемент
-            </button>
-
-            <button
-              v-else
-              type="button"
-              class="base-edit__policy-add"
-              @click="addExtraPriceItem"
-            >
-              <svg
-                class="base-edit__gallery-btn-icon"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
-                <path
-                  d="M12 8v8M8 12h8"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                />
-              </svg>
-              Добавить элемент
-            </button>
-          </div>
           </div>
         </div>
       </div>
@@ -2397,15 +2346,6 @@ watch(activeEditTab, (tab) => {
   overscroll-behavior: contain;
 }
 
-.base-edit__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 16px;
-  flex-shrink: 0;
-  margin-top: 24px;
-}
-
 .base-edit__nav-row {
   display: flex;
   flex-wrap: wrap;
@@ -2428,9 +2368,16 @@ watch(activeEditTab, (tab) => {
   flex: 1 1 auto;
 }
 
-.base-edit__nav-save {
+.base-edit__nav-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   flex-shrink: 0;
   margin-left: auto;
+}
+
+.base-edit__nav-save {
+  flex-shrink: 0;
 }
 
 button.base-edit__nav-save {
@@ -3127,6 +3074,33 @@ button.base-edit__nav-save:hover:not(:disabled) {
 
 .base-edit__policy-add:hover {
   opacity: 0.92;
+}
+
+.base-edit__policy-add--nav {
+  box-sizing: border-box;
+  width: 288px;
+  min-width: 288px;
+  padding: 14px 28px;
+  border: none;
+  border-radius: var(--wh-radius-lg);
+  background: var(--wh-orange-500);
+  color: var(--wh-white);
+  font-family: revert;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: normal;
+}
+
+.base-edit__policy-add--nav:hover {
+  opacity: 1;
+  background: var(--wh-orange-600);
+}
+
+@media (max-width: 640px) {
+  .base-edit__policy-add--nav {
+    width: 346px;
+    min-width: 346px;
+  }
 }
 
 .base-edit__form-row {
