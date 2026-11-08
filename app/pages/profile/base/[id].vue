@@ -3096,13 +3096,6 @@ button.base-edit__nav-save:hover:not(:disabled) {
   background: var(--wh-orange-600);
 }
 
-@media (max-width: 640px) {
-  .base-edit__policy-add--nav {
-    width: 346px;
-    min-width: 346px;
-  }
-}
-
 .base-edit__form-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -3615,6 +3608,22 @@ button.base-edit__nav-save:hover:not(:disabled) {
 
   .base-edit__nav {
     gap: 16px 20px;
+  }
+
+  .base-edit__nav-tools {
+    flex-direction: column;
+    align-items: stretch;
+    flex: 1 1 100%;
+    width: 100%;
+    margin-left: 0;
+    gap: 8px;
+  }
+
+  .base-edit__policy-add--nav,
+  button.base-edit__nav-save {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .base-edit__form-row {
