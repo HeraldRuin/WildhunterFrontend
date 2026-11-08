@@ -60,7 +60,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 <template>
   <div class="locations-page">
     <SearchHero
-      background-image="/images/communutu2-bg.jpg"
+      background-image="/images/communutu2-bg.webp"
       background-alt="Охотничий лес"
       hide-search
     />

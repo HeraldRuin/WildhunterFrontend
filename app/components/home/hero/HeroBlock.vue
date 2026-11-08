@@ -9,11 +9,16 @@ const emit = defineEmits<{
   search: [payload: Record<string, string>]
 }>()
 
-const bgImage = '/images/headBlock.jpg'
+const heroImage = '/images/headBlock.webp'
 
-const bgStyle = computed(() => ({
-  backgroundImage: `linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(17, 24, 39, 0.18) 100%), url(${bgImage})`,
-}))
+useHead({
+  link: [{
+    rel: 'preload',
+    as: 'image',
+    href: heroImage,
+    fetchpriority: 'high',
+  }],
+})
 
 function handleSearch(payload: Record<string, string>) {
   emit('search', payload)
@@ -21,7 +26,18 @@ function handleSearch(payload: Record<string, string>) {
 </script>
 
 <template>
-  <section class="hero-block" :style="bgStyle">
+  <section class="hero-block">
+    <img
+      class="hero-block__bg"
+      src="/images/headBlock.webp"
+      srcset="/images/headBlock-960.webp 960w, /images/headBlock.webp 1920w"
+      sizes="100vw"
+      alt=""
+      width="1920"
+      height="1080"
+      fetchpriority="high"
+      decoding="async"
+    >
     <div class="hero-block__inner">
       <HomeHeroHeader />
     </div>
@@ -37,10 +53,26 @@ function handleSearch(payload: Record<string, string>) {
   position: relative;
   width: 100%;
   height: 810px;
-  background-size: 100% 100%;
-  background-position: center;
-  background-repeat: no-repeat;
   color: var(--wh-white);
+}
+
+.hero-block__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.hero-block::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(17, 24, 39, 0.18) 100%);
+  pointer-events: none;
 }
 
 .hero-block__inner {

@@ -19,9 +19,11 @@ const logoHeight = computed(() => {
 
 <template>
   <img
-    src="/images/logo.png"
+    src="/images/logo.webp"
     :alt="alt"
     class="app-logo"
+    :width="width ?? size"
+    :height="height ?? (width != null ? Math.round(width * 207 / 288) : size)"
     :style="{ width: logoWidth, height: logoHeight }"
   >
 </template>

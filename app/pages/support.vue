@@ -182,7 +182,7 @@ async function handleSubmit() {
   min-height: 520px;
   background:
     linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(17, 24, 39, 0.18) 100%),
-    url('/images/headBlock.jpg') center / 100% 100% no-repeat;
+    url('/images/headBlock.webp') center / 100% 100% no-repeat;
   color: var(--wh-white);
 }
 
