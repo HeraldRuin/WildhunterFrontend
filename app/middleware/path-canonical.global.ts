@@ -16,6 +16,10 @@ export default defineNuxtRouteMiddleware((to) => {
     return
   }
 
+  if (bare === '/api' || bare.startsWith('/api/')) {
+    return
+  }
+
   const normalized = LEGACY_HOME_PATHS.has(bare) || bare === '/'
     ? '/'
     : `${bare}/`
