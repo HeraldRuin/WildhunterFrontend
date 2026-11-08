@@ -408,7 +408,7 @@ function serviceCountLabel(line: BookingCalculationLine) {
                   </template>
 
                   <tr class="calculation-modal__section">
-                    <td>Итого по расходам базы</td>
+                    <td>Итого по расходам на базе</td>
                     <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td v-if="showCollectiveCosts"></td>
                     <td v-if="showMyCosts"></td>
