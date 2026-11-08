@@ -6,12 +6,16 @@ const { isAuthenticated } = useAuth()
 const route = useRoute()
 const menuRef = ref<HTMLElement | null>(null)
 const isMenuOpen = ref(false)
+const isUsefulOpen = ref(false)
 const hoveredKey = ref<string | null>(null)
 const isLogoNavigating = ref(false)
 
 const menuItems = [
   { label: 'Для охотников', to: '/hunters' },
   { label: 'Для охотохозяйств', to: '/hunting-farms' },
+]
+
+const usefulItems = [
   { label: 'Блог', to: '/blog' },
 ]
 
@@ -29,12 +33,29 @@ function onLogoClick() {
 
 function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value
+  if (!isMenuOpen.value) {
+    isUsefulOpen.value = false
+  }
+}
+
+function toggleUseful() {
+  isUsefulOpen.value = !isUsefulOpen.value
 }
 
 function closeMenu() {
   isMenuOpen.value = false
+  isUsefulOpen.value = false
   hoveredKey.value = null
 }
+
+async function openUsefulItem(to: string) {
+  closeMenu()
+  await navigateTo(to)
+}
+
+watch(() => route.fullPath, () => {
+  closeMenu()
+})
 
 function handleDocumentClick(event: MouseEvent) {
   if (!menuRef.value?.contains(event.target as Node)) {
@@ -81,10 +102,54 @@ onUnmounted(() => {
         :key="item.to"
         :to="item.to"
         class="hero-header__menu hero-header__menu--desktop"
-        :class="{ 'hero-header__menu--blog': item.to === '/blog' }"
+        @click="closeMenu"
       >
         {{ item.label }}
       </NuxtLink>
+
+      <div
+        class="hero-header__useful hero-header__menu--desktop"
+        :class="{ 'hero-header__useful--open': isUsefulOpen }"
+      >
+        <button
+          type="button"
+          class="hero-header__menu hero-header__useful-trigger"
+          :aria-expanded="isUsefulOpen"
+          aria-haspopup="menu"
+          @click.stop="toggleUseful"
+        >
+          Полезное
+          <svg
+            class="hero-header__useful-chevron"
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            aria-hidden="true"
+          >
+            <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+
+        <ul
+          v-if="isUsefulOpen"
+          class="hero-header__useful-list"
+          role="menu"
+          @mouseleave="hoveredKey = null"
+        >
+          <li v-for="item in usefulItems" :key="item.to">
+            <NuxtLink
+              :to="item.to"
+              class="wh-menu-item hero-header__dropdown-item"
+              :class="{ 'wh-menu-item--hovered': hoveredKey === item.to }"
+              role="menuitem"
+              @mouseenter="hoveredKey = item.to"
+              @click.prevent="openUsefulItem(item.to)"
+            >
+              {{ item.label }}
+            </NuxtLink>
+          </li>
+        </ul>
+      </div>
     </div>
 
     <NuxtLink
@@ -142,6 +207,45 @@ onUnmounted(() => {
         >
           {{ item.label }}
         </NuxtLink>
+      </li>
+      <li>
+        <button
+          type="button"
+          class="wh-menu-item hero-header__dropdown-item hero-header__useful-mobile"
+          :class="{ 'wh-menu-item--hovered': hoveredKey === 'useful' }"
+          :aria-expanded="isUsefulOpen"
+          @mouseenter="hoveredKey = 'useful'"
+          @click.stop="toggleUseful"
+        >
+          Полезное
+          <svg
+            class="hero-header__useful-chevron"
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            aria-hidden="true"
+          >
+            <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <ul
+          v-if="isUsefulOpen"
+          class="hero-header__nested-list"
+          role="menu"
+        >
+          <li v-for="item in usefulItems" :key="item.to">
+            <NuxtLink
+              :to="item.to"
+              class="wh-menu-item hero-header__dropdown-item hero-header__dropdown-item--nested"
+              :class="{ 'wh-menu-item--hovered': hoveredKey === item.to }"
+              role="menuitem"
+              @mouseenter="hoveredKey = item.to"
+              @click.prevent="openUsefulItem(item.to)"
+            >
+              {{ item.label }}
+            </NuxtLink>
+          </li>
+        </ul>
       </li>
     </ul>
   </header>
@@ -248,12 +352,74 @@ onUnmounted(() => {
   border: none;
   background: transparent;
   color: var(--wh-black-text);
+  font: inherit;
   font-size: 18px;
   font-weight: 500;
   line-height: 18px;
   letter-spacing: -0.9px;
   text-decoration: none;
   cursor: pointer;
+}
+
+.hero-header__useful {
+  position: relative;
+  display: inline-flex;
+}
+
+.hero-header__useful-trigger {
+  gap: 6px;
+}
+
+.hero-header__useful-chevron {
+  display: block;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.hero-header__useful--open .hero-header__useful-chevron,
+.hero-header__useful-mobile[aria-expanded='true'] .hero-header__useful-chevron {
+  transform: rotate(180deg);
+}
+
+.hero-header__useful--open .hero-header__menu::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.hero-header__useful-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  margin: 0;
+  padding: 6px 8px;
+  list-style: none;
+  border: 1px solid var(--wh-gray);
+  border-radius: 14px;
+  background: var(--wh-white);
+  box-shadow: var(--wh-shadow);
+  color: var(--wh-black-text);
+}
+
+.hero-header__useful-list li,
+.hero-header__nested-list li {
+  list-style: none;
+}
+
+.hero-header__useful-mobile {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-header__nested-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0 0 0 12px;
+  list-style: none;
 }
 
 .hero-header__menu::after {
@@ -275,12 +441,6 @@ onUnmounted(() => {
 .hero-header__menu:hover::after {
   opacity: 1;
   transform: scaleX(1);
-}
-
-@media (max-width: 1280px) {
-  .hero-header__menu--blog {
-    display: none;
-  }
 }
 
 .hero-header__logo {
@@ -419,10 +579,6 @@ onUnmounted(() => {
 
   .hero-header__menu {
     padding: 0 0 4px;
-  }
-
-  .hero-header__menu--blog {
-    display: none;
   }
 
   .hero-header__right {
