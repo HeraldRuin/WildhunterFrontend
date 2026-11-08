@@ -17,6 +17,8 @@ const menuItems = [
 
 const usefulItems = [
   { label: 'Блог', to: '/blog/' },
+  { label: 'Базы', to: '/bases/' },
+  { label: 'Регионы', to: '/locations/' },
 ]
 
 const showNavMenu = computed(() => menuItems.length > 0)
