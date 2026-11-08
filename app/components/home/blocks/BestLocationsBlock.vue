@@ -70,7 +70,7 @@ function scrollBy(direction: 'prev' | 'next') {
       </div>
 
       <div class="best-locations__action">
-        <NuxtLink to="/locations" class="btn btn--primary best-locations__button">
+        <NuxtLink to="/locations/" class="btn btn--primary best-locations__button">
           Смотреть все
         </NuxtLink>
       </div>

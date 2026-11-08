@@ -421,7 +421,7 @@ watch(isOpen, (open) => {
               <span>
                 Мною прочитаны и принимаются
                 <NuxtLink
-                  to="/terms"
+                  to="/terms/"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="register-modal__terms-link"
@@ -430,7 +430,7 @@ watch(isOpen, (open) => {
                 </NuxtLink>
                 и
                 <NuxtLink
-                  to="/politika_konfidencialnosti"
+                  to="/politika_konfidencialnosti/"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="register-modal__terms-link"

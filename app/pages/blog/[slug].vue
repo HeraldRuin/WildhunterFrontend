@@ -22,7 +22,7 @@ const pageTitle = post.pageTitle || post.title
 
 const breadcrumbs: BreadcrumbItem[] = [
   { label: 'Главная', to: '/' },
-  { label: 'Блог', to: '/blog' },
+  { label: 'Блог', to: '/blog/' },
   { label: pageTitle },
 ]
 
@@ -58,7 +58,7 @@ async function handleSearch(payload: Record<string, string>) {
 
   try {
     await navigateTo({
-      path: '/bases',
+      path: '/bases/',
       query: payload,
     })
   }

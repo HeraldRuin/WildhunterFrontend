@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'home',
-  path: '/support',
+  path: '/support/',
 })
 
 useHead({

@@ -105,7 +105,7 @@ const pageTitle = computed(() => `${displayHotel.value.title} — WH`)
 const breadcrumbs = computed(() => {
   const items: BreadcrumbItem[] = [
     { label: 'Главная', to: '/' },
-    { label: 'Базы', to: '/bases' },
+    { label: 'Базы', to: '/bases/' },
   ]
 
   const location = displayHotel.value.location
@@ -160,7 +160,7 @@ const mapLinkTo = computed(() => {
   }
 
   return {
-    path: '/bases/map',
+    path: '/bases/map/',
     query: hotelId ? { hotel: String(hotelId) } : undefined,
   }
 })
@@ -430,7 +430,7 @@ async function handleFavoriteClick() {
 }
 
 function handleBook() {
-  void navigateTo(`${getHotelPath(hotelParams.value.locationSlug, hotelParams.value.hotelSlug)}confirmation`)
+  void navigateTo(`${getHotelPath(hotelParams.value.locationSlug, hotelParams.value.hotelSlug)}confirmation/`)
 }
 
 function handleRetryHotelLoad() {

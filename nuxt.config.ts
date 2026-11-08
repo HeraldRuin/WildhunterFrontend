@@ -6,6 +6,13 @@ const uploadsOrigin = apiUrl.origin
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  experimental: {
+    defaults: {
+      nuxtLink: {
+        trailingSlash: 'append',
+      },
+    },
+  },
   css: ['~/assets/css/main.css'],
   postcss: {
     plugins: {
@@ -98,17 +105,31 @@ export default defineNuxtConfig({
   },
   hooks: {
     'pages:extend'(pages) {
-      const applyTrailingSlash = (items: Array<{ path?: string, children?: Array<{ path?: string, children?: unknown[] }> }>) => {
+      type PageWithPath = {
+        path?: string
+        alias?: string | string[]
+        children?: PageWithPath[]
+      }
+
+      const withSlash = (path: string) => {
+        if (!path || path === '/' || path.endsWith('/')) {
+          return path
+        }
+
+        return `${path}/`
+      }
+
+      const applyTrailingSlash = (items: PageWithPath[]) => {
         for (const page of items) {
-          if (
-            page.path === '/profile'
-            || page.path?.startsWith('/profile/')
-            || page.path === '/rooms'
-            || page.path?.startsWith('/rooms/')
-          ) {
-            if (!page.path.endsWith('/')) {
-              page.path = `${page.path}/`
-            }
+          if (page.path) {
+            page.path = withSlash(page.path)
+          }
+
+          if (typeof page.alias === 'string') {
+            page.alias = withSlash(page.alias)
+          }
+          else if (Array.isArray(page.alias)) {
+            page.alias = page.alias.map(alias => withSlash(alias))
           }
 
           if (page.children?.length) {

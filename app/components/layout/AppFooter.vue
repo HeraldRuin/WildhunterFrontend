@@ -2,35 +2,35 @@
 const columns = [
   {
     title: 'Охотникам',
-    to: '/hunters',
+    to: '/hunters/',
     links: [
-      // { label: 'Вопрос - ответ', to: '/faq' },
-      // { label: 'Служба поддержки', to: '/support' },
+      // { label: 'Вопрос - ответ', to: '/faq/' },
+      // { label: 'Служба поддержки', to: '/support/' },
     ],
   },
   {
     title: 'Охотохозяйствам',
-    to: '/hunting-farms',
+    to: '/hunting-farms/',
     links: [
-      // { label: 'Вопрос - ответ', to: '/faq' },
-      // { label: 'Служба поддержки', to: '/support' },
+      // { label: 'Вопрос - ответ', to: '/faq/' },
+      // { label: 'Служба поддержки', to: '/support/' },
     ],
   },
   {
     title: 'Блог',
-    to: '/blog',
+    to: '/blog/',
     links: [
-      // { label: 'Вопрос - ответ', to: '/faq' },
-      // { label: 'Служба поддержки', to: '/support' },
+      // { label: 'Вопрос - ответ', to: '/faq/' },
+      // { label: 'Служба поддержки', to: '/support/' },
     ],
   },
 ]
 
 const legalLinks = [
-  { label: 'Политика конфиденциальности', to: '/politika_konfidencialnosti' },
-  { label: 'Согласие на обработку персональных данных', to: '/personal-data' },
-  { label: 'Правила и условия', to: '/terms' },
-  { label: 'Оферта', to: '/offer' },
+  { label: 'Политика конфиденциальности', to: '/politika_konfidencialnosti/' },
+  { label: 'Согласие на обработку персональных данных', to: '/personal-data/' },
+  { label: 'Правила и условия', to: '/terms/' },
+  { label: 'Оферта', to: '/offer/' },
 ]
 
 </script>

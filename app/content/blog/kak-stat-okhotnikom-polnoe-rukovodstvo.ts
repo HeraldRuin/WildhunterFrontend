@@ -235,7 +235,7 @@ export const kakStatOkhotnikomPolnoeRukovodstvoContent = `
     </p>
     <p>
       Портал охотника Wild Hunter можно использовать для поиска организаторов охоты в России:
-      <a href="/bases">https://wild-hunter.ru/</a>.
+      <a href="/bases/">https://wild-hunter.ru/</a>.
       Через такой портал охотника проще сравнивать предложения, смотреть направления и понимать,
       какие варианты подходят новичку.
     </p>
@@ -424,7 +424,7 @@ export const kakStatOkhotnikomPolnoeRukovodstvoContent = `
   </li>
   <li>
     Портал охотника Wild Hunter:
-    <a href="/bases">https://wild-hunter.ru/</a>
+    <a href="/bases/">https://wild-hunter.ru/</a>
   </li>
 </ul>
 <p>

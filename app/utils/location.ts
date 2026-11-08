@@ -1,13 +1,13 @@
 export function getLocationPath(slug: string | null | undefined) {
   const safeSlug = String(slug || '').trim()
 
-  return safeSlug ? `/locations/${safeSlug}` : '/locations'
+  return safeSlug ? `/locations/${safeSlug}/` : '/locations/'
 }
 
 export function getLocationMapPath(slug: string | null | undefined) {
   const safeSlug = String(slug || '').trim()
 
-  return safeSlug ? `/locations/${safeSlug}/map` : '/locations'
+  return safeSlug ? `/locations/${safeSlug}/map/` : '/locations/'
 }
 
 export function formatLocationInPrepositional(name: string) {

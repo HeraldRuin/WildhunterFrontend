@@ -7,7 +7,7 @@ defineProps<{
 </script>
 
 <template>
-  <NuxtLink :to="`/${item.object_model}/${item.id}`" class="card">
+  <NuxtLink :to="`/${item.object_model}/${item.id}/`" class="card">
     <img
       :src="item.image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800'"
       :alt="item.title"

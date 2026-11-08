@@ -61,7 +61,7 @@ const confirmationPath = computed(() => {
     return '/'
   }
 
-  return `/hotel/${location}/${slug}/confirmation`
+  return `/hotel/${location}/${slug}/confirmation/`
 })
 
 const availableRooms = ref<HotelRoomOption[]>([])

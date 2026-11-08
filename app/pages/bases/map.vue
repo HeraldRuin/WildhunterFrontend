@@ -23,7 +23,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
   { label: 'Главная', to: '/' },
   {
     label: 'Базы',
-    to: '/bases',
+    to: '/bases/',
   },
   { label: 'Карта' },
 ])
@@ -171,8 +171,8 @@ async function handleSearch(payload: Record<string, string>) {
 
   try {
     setParams(payload)
-    if (route.path !== '/bases/map') {
-      await navigateTo('/bases/map')
+    if (route.path !== '/bases/map' && route.path !== '/bases/map/') {
+      await navigateTo('/bases/map/')
     }
     await loadMapHotels()
   }

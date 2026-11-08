@@ -3,7 +3,7 @@ import type { BreadcrumbItem } from '~/types/breadcrumb'
 
 definePageMeta({
   layout: 'home',
-  path: '/hunters',
+  path: '/hunters/',
 })
 
 const { open: openRegisterModal } = useRegisterModal()
@@ -35,7 +35,7 @@ async function handleSearch(payload: Record<string, string>) {
 
   try {
     await navigateTo({
-      path: '/bases',
+      path: '/bases/',
       query: payload,
     })
   }

@@ -11,12 +11,12 @@ const hoveredKey = ref<string | null>(null)
 const isLogoNavigating = ref(false)
 
 const menuItems = [
-  { label: 'Для охотников', to: '/hunters' },
-  { label: 'Для охотохозяйств', to: '/hunting-farms' },
+  { label: 'Для охотников', to: '/hunters/' },
+  { label: 'Для охотохозяйств', to: '/hunting-farms/' },
 ]
 
 const usefulItems = [
-  { label: 'Блог', to: '/blog' },
+  { label: 'Блог', to: '/blog/' },
 ]
 
 const showNavMenu = computed(() => menuItems.length > 0)

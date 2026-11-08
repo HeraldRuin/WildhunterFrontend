@@ -97,7 +97,7 @@ function toggleItem(id: number) {
               на вопросы
             </span>
           </p>
-          <NuxtLink to="/support" class="btn btn--primary faq-block__cta-btn">
+          <NuxtLink to="/support/" class="btn btn--primary faq-block__cta-btn">
             Поддержка
           </NuxtLink>
         </div>

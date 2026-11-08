@@ -65,7 +65,7 @@ async function handleSearch(payload: Record<string, string>) {
 
   try {
     setParams(payload)
-    await navigateTo('/bases')
+    await navigateTo('/bases/')
   }
   catch {
     isSearching.value = false

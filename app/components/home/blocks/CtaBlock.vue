@@ -5,7 +5,7 @@
         <h2>Готовы к новому приключению?</h2>
         <p>Забронируйте охотничью базу уже сегодня.</p>
       </div>
-      <NuxtLink to="/bases" class="btn btn--primary">
+      <NuxtLink to="/bases/" class="btn btn--primary">
         Смотреть базы
       </NuxtLink>
     </div>

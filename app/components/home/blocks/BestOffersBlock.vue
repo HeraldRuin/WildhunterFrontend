@@ -68,7 +68,7 @@ function prefetchBasesPage() {
 
       <div class="best-offers__action">
         <NuxtLink
-          to="/bases"
+          to="/bases/"
           prefetch
           class="btn btn--primary best-offers__button"
           @mouseenter="prefetchBasesPage"

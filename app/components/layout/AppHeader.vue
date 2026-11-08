@@ -4,9 +4,9 @@ const { open: openLoginModal } = useLoginModal()
 const { isAuthenticated } = useAuth()
 
 const navItems = [
-  { label: 'Базы', to: '/bases' },
-  { label: 'Области', to: '/locations' },
-  { label: 'О нас', to: '/about' },
+  { label: 'Базы', to: '/bases/' },
+  { label: 'Области', to: '/locations/' },
+  { label: 'О нас', to: '/about/' },
 ]
 </script>
 

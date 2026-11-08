@@ -306,7 +306,7 @@ useHead(() => {
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
   { label: 'Главная', to: '/' },
-  { label: 'Локации', to: '/locations' },
+  { label: 'Локации', to: '/locations/' },
   { label: locationName.value || 'Область' },
 ])
 
@@ -458,7 +458,7 @@ function handleFiltersReset() {
 
             <!-- <NuxtLink
               v-if="countReady"
-              to="/locations"
+              to="/locations/"
               class="location-page__toolbar-link location-page__locations-label"
             >
               Все локации

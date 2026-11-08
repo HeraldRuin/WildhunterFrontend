@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'home',
-  alias: '/politika_konfidencialnosti',
+  alias: '/politika_konfidencialnosti/',
 })
 
 useHead({

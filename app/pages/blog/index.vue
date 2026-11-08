@@ -4,7 +4,7 @@ import { blogPosts } from '~/utils/blog-posts'
 
 definePageMeta({
   layout: 'home',
-  path: '/blog',
+  path: '/blog/',
 })
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -34,7 +34,7 @@ async function handleSearch(payload: Record<string, string>) {
 
   try {
     await navigateTo({
-      path: '/bases',
+      path: '/bases/',
       query: payload,
     })
   }
@@ -87,7 +87,7 @@ async function handleSearch(payload: Record<string, string>) {
             >
             <NuxtLink
               class="blog-card__button"
-              :to="`/blog/${post.slug}`"
+              :to="`/blog/${post.slug}/`"
             >
               Прочитать статью
             </NuxtLink>

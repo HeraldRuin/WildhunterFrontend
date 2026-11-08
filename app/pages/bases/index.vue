@@ -402,8 +402,8 @@ async function handleSearch(payload: Record<string, string>) {
 
   try {
     setParams(payload)
-    if (route.fullPath !== '/bases') {
-      await navigateTo('/bases')
+    if (route.fullPath !== '/bases' && route.fullPath !== '/bases/') {
+      await navigateTo('/bases/')
     }
     await refresh()
   }
@@ -434,7 +434,7 @@ function handlePageChange(page: number) {
   }
 
   void navigateTo({
-    path: '/bases',
+    path: '/bases/',
     query: {
       ...route.query,
       page: page > 1 ? String(page) : undefined,
@@ -614,7 +614,7 @@ function handleMapOpen(id: number) {
           </span>
           <NuxtLink
             v-else
-            to="/bases/map"
+            to="/bases/map/"
             class="bases-page__toolbar-link bases-page__map-link"
           >
             Показать на карте
