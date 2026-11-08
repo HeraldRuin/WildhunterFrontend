@@ -141,7 +141,16 @@ const baseAdminBlocks = computed(() => {
   const baseRemainder = summary.filter(item => item.name === 'Остаток базе')
   const spendings = data.spendings ?? []
   const personalTotal = summary.find(item => item.name === HUNTER_PERSONAL_TOTAL_NAME) ?? null
+  const huntPayment = sumLineCost(huntLines, 'total_cost')
   const huntPaymentMy = sumLineCost(huntLines, 'my_cost')
+  const displayedBaseExtras = data.additional_services_show ? hunterLines(baseExtras) : []
+  const baseExpenseLines = [
+    ...items.filter(item => isAccommodationLine(item.name)),
+    ...displayedBaseExtras,
+  ]
+  const basePrepaymentLines = summary.filter(item => item.name === 'Внесена предоплата')
+  const basePayment = sumLineCost(baseExpenseLines, 'total_cost') - sumLineCost(basePrepaymentLines, 'total_cost')
+  const basePaymentMy = sumLineCost(baseExpenseLines, 'my_cost') - sumLineCost(basePrepaymentLines, 'my_cost')
   const baseMyServices = data.additional_services_show ? sumLineCost(baseExtras, 'my_service_cost') : 0
   const huntMyServices = (data.additional_services_show ? sumLineCost(huntExtras, 'my_service_cost') : 0)
     + (data.trophy_show ? sumLineCost(trophies, 'my_service_cost') : 0)
@@ -150,18 +159,21 @@ const baseAdminBlocks = computed(() => {
   return {
     baseServices: items.filter(item => isAccommodationLine(item.name)),
     baseExtras: hunterLines(baseExtras),
-    basePrepayment: summary.filter(item => item.name === 'Внесена предоплата'),
+    basePrepayment: basePrepaymentLines,
+    basePayment,
+    basePaymentMy,
     baseRemainder,
     huntServices,
     huntExtras: hunterLines(huntExtras),
     trophies,
     penalties,
     huntSummary: summary.filter(item => !BASE_SUMMARY_NAMES.has(item.name) && item.name !== HUNTER_PERSONAL_TOTAL_NAME),
-    huntPayment: sumLineCost(huntLines, 'total_cost'),
+    huntPayment,
     huntPaymentMy,
     baseMyServices,
     huntMyServices,
-    personalGrand: (baseRemainder[0]?.my_cost ?? 0) + huntPaymentMy,
+    personalGrand: basePaymentMy + huntPaymentMy,
+    grandPayment: basePayment + huntPayment,
     spendings,
     dueToMeTotal: spendings.some(item => item.due_to_me != null) || personalTotal?.due_to_me != null
       ? personalTotal?.due_to_me ?? sumLineCost(spendings, 'due_to_me')
@@ -459,9 +471,9 @@ function serviceCountLabel(line: BookingCalculationLine) {
                   >
                     <td class="calculation-modal__total">{{ lineName(item.name) }}</td>
                     <td v-if="showServiceCount" class="calculation-modal__count"></td>
-                    <td v-if="showCollectiveCosts" class="calculation-modal__regular">{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                    <td v-if="showCollectiveCosts" class="calculation-modal__regular">{{ formatHotelPriceLabel(baseAdminBlocks.basePayment) }}</td>
                     <td v-if="showMyServices" class="calculation-modal__regular">{{ myServiceLabel(item) }}</td>
-                    <td v-if="showMyCosts" class="calculation-modal__owe">{{ formatHotelPriceLabel(item.my_cost) }}</td>
+                    <td v-if="showMyCosts" class="calculation-modal__owe">{{ formatHotelPriceLabel(baseAdminBlocks.basePaymentMy) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -606,7 +618,7 @@ function serviceCountLabel(line: BookingCalculationLine) {
                 <tbody>
                   <tr class="calculation-modal__section calculation-modal__total calculation-modal__plain">
                     <td class="calculation-modal__block-title">Всего базе</td>
-                    <td v-if="showCollectiveCosts" class="calculation-modal__block-title calculation-modal__grand">{{ baseAdminBlocks.total == null ? '' : formatHotelPriceLabel(baseAdminBlocks.total) }}</td>
+                    <td v-if="showCollectiveCosts" class="calculation-modal__block-title calculation-modal__grand">{{ formatHotelPriceLabel(baseAdminBlocks.grandPayment) }}</td>
                     <td v-if="showMyServices" class="calculation-modal__block-title calculation-modal__grand">{{ formatHotelPriceLabel(baseAdminBlocks.baseMyServices + baseAdminBlocks.huntMyServices) }}</td>
                     <td v-if="showMyCosts" class="calculation-modal__owe calculation-modal__grand">{{ formatHotelPriceLabel(baseAdminBlocks.personalGrand) }}</td>
                   </tr>
