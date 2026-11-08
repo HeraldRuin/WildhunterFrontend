@@ -308,6 +308,16 @@ function lineName(name: string) {
   return name
 }
 
+function huntServiceName(name: string) {
+  const animal = booking.value?.hunt?.animal?.trim()
+
+  if (name.trim() === 'Организация охоты' && animal) {
+    return `${name.trim()} (${animal})`
+  }
+
+  return name
+}
+
 function isBoldLine(name: string) {
   return BOLD_LINE_NAMES.has(name)
 }
@@ -486,7 +496,7 @@ function serviceCountLabel(line: BookingCalculationLine) {
                     v-for="(item, index) in baseAdminBlocks.huntServices"
                     :key="`hunt-${lineKey(item, index)}`"
                   >
-                    <td>{{ item.name }}</td>
+                    <td>{{ huntServiceName(item.name) }}</td>
                     <td v-if="showServiceCount" class="calculation-modal__count"></td>
                     <td v-if="showCollectiveCosts">{{ formatHotelPriceLabel(item.total_cost) }}</td>
                     <td v-if="showMyServices">{{ myServiceLabel(item) }}</td>
