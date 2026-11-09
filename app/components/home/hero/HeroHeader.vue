@@ -128,7 +128,7 @@ onUnmounted(() => {
             viewBox="0 0 12 12"
             aria-hidden="true"
           >
-            <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
 
@@ -227,7 +227,7 @@ onUnmounted(() => {
             viewBox="0 0 12 12"
             aria-hidden="true"
           >
-            <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
         <ul
@@ -375,6 +375,9 @@ onUnmounted(() => {
 .hero-header__useful-chevron {
   display: block;
   flex-shrink: 0;
+  position: relative;
+  top: 2px;
+  color: var(--wh-orange-500);
   transition: transform 0.2s ease;
 }
 
