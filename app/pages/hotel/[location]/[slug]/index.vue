@@ -101,7 +101,7 @@ const staySchedule = computed(() => {
   return items
 })
 
-const pageTitle = computed(() => `${displayHotel.value.title} — WH`)
+const pageTitle = computed(() => displayHotel.value.title)
 
 const breadcrumbs = computed(() => {
   const items: BreadcrumbItem[] = [
@@ -125,7 +125,6 @@ const breadcrumbs = computed(() => {
 })
 
 useHead(() => ({
-  titleTemplate: '%s',
   title: pageTitle.value,
   meta: [
     {

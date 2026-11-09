@@ -312,10 +312,7 @@ useHead(() => {
   const heading = locationHuntingH1.value || locationName.value || 'Область'
 
   return {
-    titleTemplate: '%s',
-    title: locationName.value
-      ? `${locationName.value} — WH`
-      : 'Область — WH',
+    title: heading,
     meta: [
       {
         name: 'description',

@@ -37,9 +37,11 @@ function onBodyClick(event: MouseEvent) {
   }
 }
 
+const hasBrandedSeoTitle = Boolean(post.seoTitle?.includes('| wild-hunter.ru'))
+
 useHead({
-  titleTemplate: '%s',
-  title: post.seoTitle || pageTitle,
+  title: hasBrandedSeoTitle ? post.seoTitle : pageTitle,
+  ...(hasBrandedSeoTitle ? { titleTemplate: '%s' } : {}),
   meta: [
     {
       name: 'description',

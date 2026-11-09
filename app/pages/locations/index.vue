@@ -8,17 +8,6 @@ definePageMeta({
   key: (route) => route.path,
 })
 
-useHead({
-  titleTemplate: '%s',
-  title: 'Все локации — WH',
-  meta: [
-    {
-      name: 'description',
-      content: descriptionFromHeading('Все локации'),
-    },
-  ],
-})
-
 const { location: locationApi } = useApi()
 
 function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {
@@ -57,6 +46,18 @@ const { data: locations, pending } = useAsyncData(
 )
 
 const totalCount = computed(() => locations.value.length)
+
+const pageHeading = computed(() => `Всего локаций: ${totalCount.value}`)
+
+useHead(() => ({
+  title: (!pending.value || totalCount.value) ? pageHeading.value : 'Все локации',
+  meta: [
+    {
+      name: 'description',
+      content: descriptionFromHeading('Все локации'),
+    },
+  ],
+}))
 
 const breadcrumbs: BreadcrumbItem[] = [
   { label: 'Главная', to: '/' },

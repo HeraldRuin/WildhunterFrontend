@@ -4,8 +4,7 @@ definePageMeta({
 })
 
 useHead({
-  titleTemplate: '%s',
-  title: 'Оферта',
+  title: 'Правила бронирования и отмены для охотников на платформе «Wild Hunter»',
   meta: [
     {
       name: 'description',

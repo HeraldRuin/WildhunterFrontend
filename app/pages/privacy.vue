@@ -5,7 +5,6 @@ definePageMeta({
 })
 
 useHead({
-  titleTemplate: '%s',
   title: 'Политика конфиденциальности',
   meta: [
     {

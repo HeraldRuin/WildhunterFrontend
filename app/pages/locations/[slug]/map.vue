@@ -112,19 +112,6 @@ const locationName = computed(() => {
   return fetchedLocationName.value || ''
 })
 
-useHead(() => ({
-  titleTemplate: '%s',
-  title: locationName.value
-    ? `${locationName.value} — карта — WH`
-    : 'Базы на карте — WH',
-  meta: [
-    {
-      name: 'description',
-      content: descriptionFromHeading(locationName.value ? `${locationName.value} — карта` : 'Базы на карте'),
-    },
-  ],
-}))
-
 const hotels = computed<MapHotelItem[]>(() => {
   const items = locationHotels.value
     .map(offerToMapHotel)
@@ -145,6 +132,20 @@ const heroTitle = computed(() => {
 
   return locationName.value || 'Область'
 })
+
+const mapHeading = computed(() => (
+  hotels.value.length ? `Базы на карте: ${hotels.value.length}` : 'Базы на карте'
+))
+
+useHead(() => ({
+  title: mapHeading.value,
+  meta: [
+    {
+      name: 'description',
+      content: descriptionFromHeading(locationName.value ? `${locationName.value} — карта` : 'Базы на карте'),
+    },
+  ],
+}))
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   const name = locationName.value || 'Область'
