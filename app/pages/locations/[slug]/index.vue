@@ -262,6 +262,9 @@ const locationHuntingH1BySlug: Record<string, string> = {
   'belgorodskaia-oblast': 'Охота в Белгородской области',
   'kaluzskaia-oblast': 'Охота в Калужской области',
   'respublika-kareliia': 'Охота в Республике Карелия',
+  'kamcatskii-krai': 'Охота в Камчатском крае',
+  'altaiskii-krai': 'Охота в Алтайском крае',
+  'respublika-altai': 'Охота в Республике Алтай',
 }
 
 const locationHuntingH1 = computed(() => {
@@ -275,12 +278,21 @@ const locationHuntingH1 = computed(() => {
   }
 
   const name = locationName.value.trim()
-  if (!/область$/i.test(name)) {
-    return ''
+
+  if (/ая\s+область$/i.test(name)) {
+    const region = formatLocationInPrepositional(name)
+    return region ? `Охота в ${region}` : ''
   }
 
-  const region = formatLocationInPrepositional(name)
-  return region ? `Охота в ${region}` : ''
+  if (/ий\s+край$/i.test(name)) {
+    return `Охота в ${name.replace(/ий\s+край$/i, 'ом крае')}`
+  }
+
+  if (/^республика\s+/i.test(name)) {
+    return `Охота в ${name.replace(/^республика/i, 'Республике')}`
+  }
+
+  return ''
 })
 
 useHead(() => {
