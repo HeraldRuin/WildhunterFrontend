@@ -3,6 +3,7 @@ import type { HotelSearchBody, OfferItem } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { mapHotelOfferToItem } from '~/api/hotels'
 import { parseDisplayDateToApiDate } from '~/utils/date'
+import { descriptionFromHeading } from '~/utils/metaDescription'
 import { offerToMapHotel, type MapHotelItem } from '~/utils/map'
 
 definePageMeta({
@@ -13,6 +14,12 @@ definePageMeta({
 useHead({
   titleTemplate: '%s',
   title: 'Базы на карте — WH',
+  meta: [
+    {
+      name: 'description',
+      content: descriptionFromHeading('Базы на карте'),
+    },
+  ],
 })
 
 const route = useRoute()

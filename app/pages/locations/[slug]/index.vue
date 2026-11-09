@@ -3,6 +3,7 @@ import { locationSeoBySlug } from '~/content/location-seo'
 import type { HotelSearchBody, LocationItem, OfferItem, SearchLocation } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { formatApiDate, getDefaultStayCheckIn, getDefaultStayCheckOut } from '~/utils/date'
+import { descriptionFromHeading } from '~/utils/metaDescription'
 import { formatLocationInPrepositional, getLocationMapPath } from '~/utils/location'
 import {
   countOffersByReviewRating,
@@ -296,11 +297,19 @@ useHead(() => {
     }
   }
 
+  const heading = locationHuntingH1.value || locationName.value || 'Область'
+
   return {
     titleTemplate: '%s',
     title: locationName.value
       ? `${locationName.value} — WH`
       : 'Область — WH',
+    meta: [
+      {
+        name: 'description',
+        content: descriptionFromHeading(heading),
+      },
+    ],
   }
 })
 

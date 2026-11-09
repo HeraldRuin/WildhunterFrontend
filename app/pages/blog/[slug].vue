@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { getBlogPost } from '~/utils/blog-posts'
+import { descriptionFromHeading } from '~/utils/metaDescription'
 
 definePageMeta({
   layout: 'home',
@@ -42,7 +43,7 @@ useHead({
   meta: [
     {
       name: 'description',
-      content: post.description || pageTitle,
+      content: post.description || descriptionFromHeading(post.seoTitle || pageTitle),
     },
   ],
 })

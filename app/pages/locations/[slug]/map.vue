@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { LocationItem, OfferItem } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
+import { descriptionFromHeading } from '~/utils/metaDescription'
 import { getLocationPath } from '~/utils/location'
 import { offerToMapHotel, type MapHotelItem } from '~/utils/map'
 
@@ -116,6 +117,12 @@ useHead(() => ({
   title: locationName.value
     ? `${locationName.value} — карта — WH`
     : 'Базы на карте — WH',
+  meta: [
+    {
+      name: 'description',
+      content: descriptionFromHeading(locationName.value ? `${locationName.value} — карта` : 'Базы на карте'),
+    },
+  ],
 }))
 
 const hotels = computed<MapHotelItem[]>(() => {

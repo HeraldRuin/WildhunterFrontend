@@ -8,6 +8,7 @@ import { normalizeRichTextHtml } from '~/utils/html'
 import { createMockHotelDetail, getHotelPath } from '~/utils/hotel'
 import { getLocationMapPath, getLocationPath } from '~/utils/location'
 import type { BasesMapMarker } from '~/utils/map'
+import { descriptionFromHeading } from '~/utils/metaDescription'
 import { formatReviewsCount } from '~/utils/pluralize'
 import HotelBookingSection from '~/components/hotel/HotelBookingSection.vue'
 
@@ -123,10 +124,16 @@ const breadcrumbs = computed(() => {
   return items
 })
 
-useHead({
+useHead(() => ({
   titleTemplate: '%s',
-  title: pageTitle,
-})
+  title: pageTitle.value,
+  meta: [
+    {
+      name: 'description',
+      content: descriptionFromHeading(displayHotel.value.title),
+    },
+  ],
+}))
 
 const ratingValue = computed(() => {
   const score = displayHotel.value.review_score?.score_total

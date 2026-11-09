@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { LocationItem } from '~/types/api'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
+import { descriptionFromHeading } from '~/utils/metaDescription'
 
 definePageMeta({
   layout: 'home',
@@ -10,6 +11,12 @@ definePageMeta({
 useHead({
   titleTemplate: '%s',
   title: 'Все локации — WH',
+  meta: [
+    {
+      name: 'description',
+      content: descriptionFromHeading('Все локации'),
+    },
+  ],
 })
 
 const { location: locationApi } = useApi()

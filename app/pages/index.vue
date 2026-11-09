@@ -3,8 +3,9 @@ definePageMeta({
   layout: 'home',
 })
 
-useHead({
+useSeoMeta({
   title: 'Организуйте охоту с понятными расходами для каждого',
+  description: 'Каталог охотничьих баз: выбор региона, дат и зверя с понятным расчётом расходов на каждого участника.',
 })
 
 const { reviews, location, hotels } = useApi()
