@@ -1076,14 +1076,17 @@ onMounted(() => {
 }
 
 .rooms-availability__note {
-  flex: 0 1 auto;
-  max-width: calc(50% - 1px);
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   color: var(--wh-gray-900);
   font-size: 11px;
   font-weight: 500;
   line-height: 1.2;
   text-align: left;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .rooms-availability__note--checkout {
