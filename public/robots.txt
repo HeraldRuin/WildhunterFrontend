@@ -5,3 +5,5 @@ User-Agent: Yandex
 Clean-param: utm_source&utm_medium&utm_campaign&utm_content&utm_term
 Clean-param: openstat&from&gclid&yclid
 Clean-param: location&animal&dates&checkIn&checkOut&guests&hotel
+
+Sitemap: https://wild-hunter.ru/sitemap.xml
