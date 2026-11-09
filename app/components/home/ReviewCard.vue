@@ -69,7 +69,7 @@ onUnmounted(() => {
   <article class="review-card">
     <div class="review-card__header">
       <div class="review-card__avatar">
-        <img v-if="item.avatar" :src="item.avatar" :alt="item.name" loading="lazy">
+        <CommonDeferredImage v-if="item.avatar" :src="item.avatar" :alt="item.name" />
       </div>
       <div class="review-card__meta">
         <h3 class="review-card__name">{{ item.name }}</h3>

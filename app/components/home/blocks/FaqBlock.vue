@@ -72,14 +72,14 @@ function toggleItem(id: number) {
               >
                 {{ item.answer }}
               </span>
-              <img
+              <CommonDeferredImage
                 :src="openId === item.id ? faqIconMinus : faqIconPlus"
                 :alt="openId === item.id ? 'Свернуть' : 'Развернуть'"
                 width="40"
                 height="40"
                 class="faq-block__icon"
                 aria-hidden="true"
-              >
+              />
             </button>
           </div>
         </div>

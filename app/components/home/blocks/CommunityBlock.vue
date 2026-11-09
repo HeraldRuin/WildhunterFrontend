@@ -94,14 +94,12 @@ async function handleSubmit() {
     }"
   >
     <div v-if="!plain" class="community-block__media" aria-hidden="true">
-      <img
+      <CommonDeferredImage
         :src="variant === 'centered' ? '/images/communutu2-bg.webp' : '/images/community-bg.webp'"
         :alt="variant === 'centered' ? 'Охотничий лес' : 'Олень в поле'"
         :width="variant === 'centered' ? 1400 : 1920"
         :height="variant === 'centered' ? 933 : 1280"
-        loading="lazy"
-        decoding="async"
-      >
+      />
     </div>
 
     <div class="community-block__inner">

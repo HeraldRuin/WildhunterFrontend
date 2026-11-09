@@ -35,10 +35,6 @@ const { data: offerItems } = useAsyncData(
   },
 )
 
-onMounted(() => {
-  void preloadRouteComponents('/bases')
-})
-
 const { data: reviewItems } = useAsyncData(
   'home-reviews',
   () =>

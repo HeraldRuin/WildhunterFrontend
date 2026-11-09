@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { fileURLToPath } from 'node:url'
+
 const apiBase = process.env.NUXT_PUBLIC_API_BASE || 'http://109.172.31.240/api'
 const apiUrl = new URL(apiBase)
 const uploadsOrigin = apiUrl.origin
@@ -10,6 +12,10 @@ export default defineNuxtConfig({
     defaults: {
       nuxtLink: {
         trailingSlash: 'append',
+        prefetchOn: {
+          visibility: false,
+          interaction: true,
+        },
       },
     },
   },
@@ -138,34 +144,17 @@ export default defineNuxtConfig({
     '/icons/**': { headers: { 'cache-control': 'public, max-age=31536000' } },
   },
 
+  nitro: {
+    serverAssets: [{
+      baseName: 'critical-css',
+      dir: fileURLToPath(new URL('./app/assets/css', import.meta.url)),
+    }],
+  },
+
   vite: {
     build: {
       assetsInlineLimit: 4096,
-      rolldownOptions: {
-        output: {
-          codeSplitting: {
-            minSize: 80_000,
-            groups: [
-              { name: 'vendor', test: /node_modules[\\/]/ },
-            ],
-          },
-        },
-      },
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (!id.includes('node_modules')) {
-              return
-            }
-
-            if (id.includes('leaflet')) {
-              return 'leaflet'
-            }
-
-            return 'vendor'
-          },
-        },
-      },
+      cssCodeSplit: true,
     },
   },
 })

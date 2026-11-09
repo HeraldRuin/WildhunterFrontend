@@ -10,7 +10,7 @@ defineProps<{
 
 <template>
   <NuxtLink :to="getLocationPath(item.slug)" class="location-card">
-    <img :src="item.image" :alt="item.title" loading="lazy" decoding="async">
+    <CommonDeferredImage :src="item.image" :alt="item.title" />
     <div class="location-card__overlay">
       <h3 class="location-card__title">{{ item.title }}</h3>
       <p class="location-card__count">{{ formatBasesCount(item.bases_count) }}</p>

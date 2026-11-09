@@ -9,13 +9,14 @@ const emit = defineEmits<{
   search: [payload: Record<string, string>]
 }>()
 
-const heroImage = '/images/headBlock.webp'
+const heroSrcset = '/images/headBlock-960.webp 960w, /images/headBlock-1440.webp 1440w, /images/headBlock.webp 1920w'
 
 useHead({
   link: [{
     rel: 'preload',
     as: 'image',
-    href: heroImage,
+    imagesrcset: heroSrcset,
+    imagesizes: '100vw',
     fetchpriority: 'high',
   }],
 })
@@ -29,8 +30,8 @@ function handleSearch(payload: Record<string, string>) {
   <section class="hero-block">
     <img
       class="hero-block__bg"
-      src="/images/headBlock.webp"
-      srcset="/images/headBlock-960.webp 960w, /images/headBlock.webp 1920w"
+      src="/images/headBlock-1440.webp"
+      :srcset="heroSrcset"
       sizes="100vw"
       alt=""
       width="1920"

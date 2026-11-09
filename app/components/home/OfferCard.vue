@@ -306,7 +306,7 @@ async function handleFavoriteClick(event: MouseEvent) {
     @focus="prefetchTargetPage"
   >
     <div class="offer-card__media">
-      <img v-if="showImage" :src="item.image" :alt="item.title" loading="lazy" decoding="async">
+      <CommonDeferredImage v-if="showImage" :src="item.image" :alt="item.title" />
       <div v-else-if="showCustomPlaceholder" class="offer-card__placeholder" aria-hidden="true">
         <span>Фото отсутствует</span>
       </div>
