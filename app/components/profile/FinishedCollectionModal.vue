@@ -268,6 +268,7 @@ function requestHunterDeletion(hunterId: number) {
   openConfirmModal({
     title: 'Вы уверены, что хотите удалить охотника?',
     confirmLabel: 'Удалить',
+    confirmTone: 'success',
     onConfirm: () => removeHunter(hunterId),
   })
 }
