@@ -678,6 +678,7 @@ function requestCollectionFinish() {
   openConfirmModal({
     title: 'Завершить сбор? Минимальное число охотников уже собрано.',
     confirmLabel: 'Завершить сбор',
+    confirmTone: 'success',
     onConfirm: finishCollection,
     onCancel: () => {
       setTimeout(reopen, 200)
