@@ -20,7 +20,14 @@ const { unreadCount } = useInboxNotifications()
 const bookingsNavPath = '/profile/bookings/'
 
 function hasBookingsAlert(item: NavItem) {
-  return item.to === bookingsNavPath && unreadCount.value > 0
+  const path = route.path.length > 1 && route.path.endsWith('/')
+    ? route.path.slice(0, -1)
+    : route.path
+  const onBookings = path === '/profile/bookings' || path.startsWith('/profile/bookings/')
+
+  return item.to === bookingsNavPath
+    && !onBookings
+    && unreadCount.value > 0
 }
 const { hotels: hotelsApi } = useApi()
 const baseTitle = useState('auth-user-base-title', () => '')
