@@ -676,7 +676,7 @@ function requestCollectionFinish() {
 
   hide()
   openConfirmModal({
-    title: 'Завершить сбор? Минимальное число охотников уже собрано.',
+    title: 'Минимальное число охотников уже собрано. Завершить сбор?',
     confirmLabel: 'Завершить сбор',
     confirmTone: 'success',
     onConfirm: finishCollection,
