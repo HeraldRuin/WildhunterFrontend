@@ -691,6 +691,7 @@ function requestHunterInvitation(hunter: UserSearchItem) {
   openConfirmModal({
     title: `Пригласить охотника ${hunterName(hunter)}?`,
     confirmLabel: 'Пригласить',
+    confirmTone: 'success',
     onConfirm: () => inviteHunter(hunter),
     onCancel: () => {
       setTimeout(reopen, 200)
@@ -759,6 +760,7 @@ function requestInviteAll() {
       ? `Пригласить охотника ${hunterName(hunters[0]!)}?`
       : `Пригласить всех выбранных охотников (${hunters.length})?`,
     confirmLabel: 'Пригласить',
+    confirmTone: 'success',
     onConfirm: inviteAllHunters,
     onCancel: () => {
       setTimeout(reopen, 200)
