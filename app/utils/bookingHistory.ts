@@ -339,16 +339,8 @@ function prepaymentIncompleteCancelReason(item: BookingHistoryItemDto): string |
 }
 
 function collectionNeededCount(item: BookingHistoryItemDto): number {
-  const hunting = Number(item.details?.total_hunting)
-
-  if (
-    (item.type === 'animal' || item.type === 'hotel_animal')
-    && Number.isFinite(hunting)
-    && hunting > 0
-  ) {
-    return hunting
-  }
-
+  // Знаменатель «Собрано» — число людей из брони. details.total_hunting
+  // после сбора становится текущим составом и сжимается, если охотника удалили.
   return item.collection.total_needed || 0
 }
 
