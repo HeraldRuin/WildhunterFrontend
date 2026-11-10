@@ -69,6 +69,7 @@ interface PenaltyDraft {
 
 interface ExtraHuntDraft {
   key: number
+  serviceId?: number
   animalId: string
   hunterIds: string[]
 }
@@ -274,11 +275,16 @@ const extraHuntRowEntries = computed(() => {
   const entries: Array<{ key: string, item?: BookingServiceExtraHuntItem, draft?: ExtraHuntDraft }> = []
 
   for (const item of items.value.extra_hunts ?? []) {
-    entries.push({ key: `extra-hunt-${item.id}`, item })
+    const draft = extraHuntDrafts.value.find(row => row.serviceId === item.id)
+    entries.push(draft
+      ? { key: `extra-hunt-edit-${item.id}`, draft }
+      : { key: `extra-hunt-${item.id}`, item })
   }
 
   for (const draft of extraHuntDrafts.value) {
-    entries.push({ key: `extra-hunt-draft-${draft.key}`, draft })
+    if (draft.serviceId == null) {
+      entries.push({ key: `extra-hunt-draft-${draft.key}`, draft })
+    }
   }
 
   return entries
@@ -1437,7 +1443,27 @@ function addExtraHuntDraft() {
   scrollDraftIntoView(`extra-hunt-${key}`)
 }
 
+function startExtraHuntEdit(item: BookingServiceExtraHuntItem) {
+  if (!canAddServiceType('extra_hunt') || hasOpenDraft('extraHunt')) {
+    return
+  }
+
+  expandBlock('extraHunt')
+  const key = ++extraHuntDraftKey
+  extraHuntDrafts.value.push({
+    key,
+    serviceId: item.id,
+    animalId: item.animal_id != null ? String(item.animal_id) : '',
+    hunterIds: hunterIdsFromItem(item.hunter_ids, item.hunter_name),
+  })
+  scrollDraftIntoView(`extra-hunt-${key}`)
+}
+
 function cancelExtraHuntDraft(key: number) {
+  if (savingExtraHuntKey.value === key) {
+    return
+  }
+
   extraHuntDrafts.value = extraHuntDrafts.value.filter(draft => draft.key !== key)
 }
 
@@ -1484,13 +1510,16 @@ async function saveExtraHuntDraft(row: ExtraHuntDraft) {
   savingExtraHuntKey.value = row.key
 
   try {
-    const response = await bookings.storeExtraHunt(code, {
+    const body = {
       animal_id: animalId,
       hunter_ids: hunterIds,
-    })
+    }
+    const response = row.serviceId
+      ? await bookings.updateExtraHunt(code, row.serviceId, body)
+      : await bookings.storeExtraHunt(code, body)
 
     if (!response.success || !response.data) {
-      notifications.error(response.message || 'Не удалось добавить дополнительную охоту', notifyOptions)
+      notifications.error(response.message || savedServiceError(row.serviceId, 'Не удалось добавить дополнительную охоту'), notifyOptions)
       return
     }
 
@@ -1503,8 +1532,8 @@ async function saveExtraHuntDraft(row: ExtraHuntDraft) {
       hunter_name: response.data.hunter_name || hunterIds.map(id => hunterNameById(id)).filter(Boolean).join(', '),
       price: response.data.price,
     })
-    cancelExtraHuntDraft(row.key)
-    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
+    extraHuntDrafts.value = extraHuntDrafts.value.filter(draft => draft.key !== row.key)
+    notifications.success(savedServiceMessage(row.serviceId, response.message), notifyOptions)
   }
   catch (error) {
     const err = error as {
@@ -1515,7 +1544,7 @@ async function saveExtraHuntDraft(row: ExtraHuntDraft) {
     const dataMessage = err.data && typeof err.data === 'object' ? err.data.message : undefined
     const status = err.status || err.statusCode
     notifications.error(
-      dataMessage || (status ? `Ошибка ${status}` : 'Не удалось добавить дополнительную охоту'),
+      dataMessage || (status ? `Ошибка ${status}` : savedServiceError(row.serviceId, 'Не удалось добавить дополнительную охоту')),
       notifyOptions,
     )
   }
@@ -2836,6 +2865,18 @@ function scrollDraftIntoView(draftId: string) {
                     <span class="add-services-modal__value">{{ formatServicePrice(entry.item.price) }}</span>
                   </div>
                   <div class="add-services-modal__form-actions">
+                    <button
+                      v-if="canAddServiceType('extra_hunt')"
+                      type="button"
+                      class="add-services-modal__edit"
+                      aria-label="Редактировать дополнительную охоту"
+                      :disabled="hasOpenDraft('extraHunt') || deletingServiceId !== null"
+                      @click="startExtraHuntEdit(entry.item)"
+                    >
+                      <svg class="add-services-modal__edit-icon" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M11.2 1.9a1.5 1.5 0 0 1 2.1 2.1L5.4 12.1 2.4 13l.9-3.1 7.9-8Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                      </svg>
+                    </button>
                     <button
                       v-if="canDeleteService('extra_hunts', entry.item.id)"
                       type="button"

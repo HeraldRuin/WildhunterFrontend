@@ -238,6 +238,20 @@ export function useBookingsApi() {
     )
   }
 
+  function updateExtraHunt(
+    code: string,
+    serviceId: number,
+    body: { animal_id: number, hunter_ids: number[] },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServiceExtraHuntItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/extra-hunts/${serviceId}`,
+      {
+        method: 'PUT',
+        body,
+      },
+    )
+  }
+
   function storeTrophy(
     code: string,
     body: { animal_id: number, trophy_id: number, type: string, count: number, hunter_ids: number[] },
@@ -477,6 +491,7 @@ export function useBookingsApi() {
     services,
     calculating,
     storeExtraHunt,
+    updateExtraHunt,
     storeTrophy,
     storePenalty,
     storePreparation,
