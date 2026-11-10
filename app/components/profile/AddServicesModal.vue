@@ -1475,8 +1475,17 @@ async function saveExtraHuntDraft(row: ExtraHuntDraft) {
     notifications.success(response.message || 'Услуга добавлена', notifyOptions)
   }
   catch (error) {
-    const data = (error as { data?: { message?: string } }).data
-    notifications.error(data?.message || 'Не удалось добавить дополнительную охоту', notifyOptions)
+    const err = error as {
+      data?: { message?: string } | string
+      status?: number
+      statusCode?: number
+    }
+    const dataMessage = err.data && typeof err.data === 'object' ? err.data.message : undefined
+    const status = err.status || err.statusCode
+    notifications.error(
+      dataMessage || (status ? `Ошибка ${status}` : 'Не удалось добавить дополнительную охоту'),
+      notifyOptions,
+    )
   }
   finally {
     savingExtraHuntKey.value = null
