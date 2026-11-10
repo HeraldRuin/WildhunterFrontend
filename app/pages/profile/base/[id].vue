@@ -40,7 +40,7 @@ const editTabs: { id: BaseHotelEditTab, label: string }[] = [
 
 const contentSubTabs: { id: ContentSubTab, label: string }[] = [
   { id: 'content', label: 'Информация' },
-  { id: 'policy', label: 'Условие' },
+  { id: 'policy', label: 'Особые условия базы' },
 ]
 
 const placesSubTabs: { id: PlacesSubTab, label: string }[] = [
@@ -3085,10 +3085,10 @@ button.base-edit__nav-save:hover:not(:disabled) {
   border-radius: var(--wh-radius-lg);
   background: var(--wh-orange-500);
   color: var(--wh-white);
-  font-family: revert;
+  font-family: inherit;
   font-size: 0.95rem;
   font-weight: 700;
-  line-height: normal;
+  line-height: inherit;
 }
 
 .base-edit__policy-add--nav:hover {

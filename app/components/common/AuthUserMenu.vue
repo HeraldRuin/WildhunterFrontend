@@ -66,6 +66,14 @@ const displayName = computed(() => {
   return fullName || user.value.email
 })
 
+const nameLink = computed(() => {
+  if (isBaseAdmin.value || baseTitle.value) {
+    return '/profile/base/'
+  }
+
+  return '/profile/'
+})
+
 const route = useRoute()
 
 const allNavItems = [
@@ -157,7 +165,7 @@ onUnmounted(() => {
         :class="{ 'auth-user-menu__trigger--open': isOpen }"
       >
         <NuxtLink
-          to="/profile/"
+          :to="nameLink"
           class="auth-user-menu__content"
           @click="closeMenu"
         >
