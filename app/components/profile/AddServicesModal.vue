@@ -2675,7 +2675,10 @@ function scrollDraftIntoView(draftId: string) {
         @keydown="handleKeydown"
       >
         <div class="add-services-modal__card">
-          <CommonModalCloseButton @click="close" />
+          <div class="add-services-modal__toolbar">
+            <span class="add-services-modal__history">История</span>
+            <CommonModalCloseButton @click="close" />
+          </div>
 
           <div
             class="add-services-modal__header"
@@ -3988,6 +3991,36 @@ function scrollDraftIntoView(draftId: string) {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
+.add-services-modal__toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-services-modal__toolbar :deep(.modal-close-button) {
+  position: static;
+}
+
+.add-services-modal__history {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 1px solid var(--wh-green);
+  border-radius: 8px;
+  background: var(--wh-green);
+  color: var(--wh-white);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .add-services-modal__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(120px, 1fr);
@@ -3995,6 +4028,7 @@ function scrollDraftIntoView(draftId: string) {
   gap: 16px;
   margin-bottom: 24px;
   min-height: 36px;
+  padding-right: 220px;
 }
 
 .add-services-modal__header--with-lock {
@@ -4003,12 +4037,12 @@ function scrollDraftIntoView(draftId: string) {
   align-items: flex-start;
   column-gap: 20px;
   row-gap: 4px;
-  padding-right: 132px;
+  padding-right: 220px;
 }
 
 .add-services-modal__header--with-timer {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  padding-right: 132px;
+  padding-right: 220px;
 }
 
 .add-services-modal__timer {
@@ -4652,7 +4686,7 @@ function scrollDraftIntoView(draftId: string) {
 
   .add-services-modal__title {
     margin-bottom: 8px;
-    padding-right: 108px;
+    padding-right: 220px;
   }
 
   .add-services-modal__estimate,
