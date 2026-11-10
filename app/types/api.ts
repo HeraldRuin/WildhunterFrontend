@@ -415,6 +415,7 @@ export interface BookingCalculatingData {
   addetionals?: BookingCalculationLine[]
   spendings_show?: boolean
   spendings?: BookingCalculationLine[]
+  extra_hunts?: BookingCalculationLine[]
   all_items: BookingCalculationLine[]
   prepaid_total?: number
   base_total?: number
@@ -489,6 +490,7 @@ export type BookingServiceType =
   | 'food'
   | 'addetional'
   | 'spending'
+  | 'extra_hunt'
 
 export type BookingServicesRole = 'baseadmin' | 'hunter'
 
@@ -601,6 +603,15 @@ export interface BookingServiceSpendingItem {
   hunter_name?: string
 }
 
+export interface BookingServiceExtraHuntItem {
+  id: number
+  animal_id: number | null
+  animal_title: string
+  hunter_ids: number[]
+  hunter_name: string
+  price: number
+}
+
 export interface BookingServicesItems {
   trophies: BookingServiceTrophyItem[]
   penalties: BookingServicePenaltyItem[]
@@ -608,6 +619,7 @@ export interface BookingServicesItems {
   foods: BookingServiceFoodItem[]
   additionals: BookingServiceAdditionalItem[]
   spendings: BookingServiceSpendingItem[]
+  extra_hunts: BookingServiceExtraHuntItem[]
 }
 
 export interface BookingServicesData {

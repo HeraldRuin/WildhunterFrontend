@@ -2,6 +2,7 @@
 import type {
   BookingServiceAdditionalCatalog,
   BookingServiceAdditionalItem,
+  BookingServiceExtraHuntItem,
   BookingServiceFoodItem,
   BookingServicePenaltyItem,
   BookingServicePreparationItem,
@@ -11,8 +12,10 @@ import type {
   BookingServicesData,
   BookingServicesItems,
 } from '~/types/api'
+import type { OrganisationAnimal } from '~/api/animals'
 import type { SelectFieldOption } from '~/components/common/SelectField.vue'
 import { formatRemainingTimer } from '~/utils/bookingHistory'
+import { formatApiDate } from '~/utils/date'
 import { formatHotelPriceLabel } from '~/utils/hotel'
 
 interface PreparationDraft {
@@ -63,8 +66,14 @@ interface PenaltyDraft {
   hunterId: string
 }
 
-type DeletableServiceList = 'trophies' | 'penalties' | 'preparations' | 'foods' | 'additionals' | 'spendings'
-type ServiceBlockId = 'trophy' | 'penalty' | 'preparation' | 'food' | 'addetional' | 'spending'
+interface ExtraHuntDraft {
+  key: number
+  animalId: string
+  hunterIds: string[]
+}
+
+type DeletableServiceList = 'trophies' | 'penalties' | 'preparations' | 'foods' | 'additionals' | 'spendings' | 'extra_hunts'
+type ServiceBlockId = 'extraHunt' | 'trophy' | 'penalty' | 'preparation' | 'food' | 'addetional' | 'spending'
 
 const ADD_SERVICES_NOTIFICATION_GROUP = 'add-services'
 
@@ -75,11 +84,12 @@ const EMPTY_ITEMS: BookingServicesItems = {
   foods: [],
   additionals: [],
   spendings: [],
+  extra_hunts: [],
 }
 
 const { isOpen, booking, close } = useAddServicesModal()
 const { open: openConfirmModal } = useConfirmModal()
-const { bookings, services: servicesApi } = useApi()
+const { animals: animalsApi, bookings, services: servicesApi } = useApi()
 const hotelAdditionals = ref<BookingServiceAdditionalCatalog[]>([])
 const notifications = useNotifications()
 const { isBaseAdmin } = useUserRole()
@@ -96,6 +106,8 @@ const additionalDrafts = ref<AdditionalDraft[]>([])
 const spendingDrafts = ref<SpendingDraft[]>([])
 const trophyDrafts = ref<TrophyDraft[]>([])
 const penaltyDrafts = ref<PenaltyDraft[]>([])
+const extraHuntDrafts = ref<ExtraHuntDraft[]>([])
+const organisationAnimals = ref<OrganisationAnimal[]>([])
 const savingPreparationKey = ref<number | null>(null)
 const savingFoodKey = ref<number | null>(null)
 const savedFoodCounts = ref<Record<number, number>>({})
@@ -104,6 +116,7 @@ const dismissedAdditionalStock = ref<Record<number, string>>({})
 const savingSpendingKey = ref<number | null>(null)
 const savingTrophyKey = ref<number | null>(null)
 const savingPenaltyKey = ref<number | null>(null)
+const savingExtraHuntKey = ref<number | null>(null)
 const deletingServiceId = ref<number | null>(null)
 const collapsedBlocks = ref(new Set<ServiceBlockId>())
 const servicesBodyRef = ref<HTMLElement | null>(null)
@@ -116,6 +129,7 @@ let additionalDraftKey = 0
 let spendingDraftKey = 0
 let trophyDraftKey = 0
 let penaltyDraftKey = 0
+let extraHuntDraftKey = 0
 
 useBodyScrollLock(isOpen)
 
@@ -242,6 +256,84 @@ const penaltyAnimalOptions = computed<SelectFieldOption[]>(() =>
     label: animal.title,
   })),
 )
+const extraHuntAnimalOptions = computed<SelectFieldOption[]>(() => {
+  const byId = new Map<string, string>()
+
+  for (const animal of [
+    ...trophyAnimals.value,
+    ...penaltyAnimals.value,
+    ...preparationAnimals.value,
+  ]) {
+    byId.set(String(animal.id), animal.title)
+  }
+
+  return [...byId.entries()].map(([value, label]) => ({ value, label }))
+})
+const extraHuntRowEntries = computed(() => {
+  const entries: Array<{ key: string, item?: BookingServiceExtraHuntItem, draft?: ExtraHuntDraft }> = []
+
+  for (const item of items.value.extra_hunts ?? []) {
+    entries.push({ key: `extra-hunt-${item.id}`, item })
+  }
+
+  for (const draft of extraHuntDrafts.value) {
+    entries.push({ key: `extra-hunt-draft-${draft.key}`, draft })
+  }
+
+  return entries
+})
+
+function toIsoDay(value: string | null | undefined): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+    return trimmed.slice(0, 10)
+  }
+
+  const dotted = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/)
+  if (!dotted) {
+    return null
+  }
+
+  const day = Number(dotted[1])
+  const month = Number(dotted[2])
+  const yearRaw = Number(dotted[3])
+  const year = dotted[3].length === 2 ? 2000 + yearRaw : yearRaw
+  const date = new Date(year, month - 1, day)
+
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  return formatApiDate(date)
+}
+
+function extraHuntPriceLabel(animalId: string): string {
+  const huntDay = toIsoDay(booking.value?.hunt?.date)
+  if (!animalId || !huntDay) {
+    return ''
+  }
+
+  const animal = organisationAnimals.value.find(item => String(item.id) === animalId)
+  const period = animal?.periods.find((entry) => {
+    const start = toIsoDay(entry.start_date)
+    const end = toIsoDay(entry.end_date)
+    if (!start || !end || entry.price == null) {
+      return false
+    }
+
+    return huntDay >= start && huntDay <= end
+  })
+
+  if (period?.price == null || !Number.isFinite(period.price)) {
+    return ''
+  }
+
+  return formatHotelPriceLabel(period.price)
+}
 
 watch(
   () => booking.value?.code,
@@ -278,6 +370,7 @@ function canAddServiceType(_type: BookingServiceType): boolean {
 }
 
 const blockPageCount = ref<Record<ServiceBlockId, number>>({
+  extraHunt: 1,
   trophy: 1,
   penalty: 1,
   preparation: 1,
@@ -286,6 +379,7 @@ const blockPageCount = ref<Record<ServiceBlockId, number>>({
   spending: 1,
 })
 const blockPageIndex = ref<Record<ServiceBlockId, number>>({
+  extraHunt: 0,
   trophy: 0,
   penalty: 0,
   preparation: 0,
@@ -350,7 +444,7 @@ function scheduleBlockPages(id?: ServiceBlockId) {
   const update = () => {
     const ids: ServiceBlockId[] = id
       ? [id]
-      : ['trophy', 'penalty', 'preparation', 'food', 'addetional', 'spending']
+      : ['extraHunt', 'trophy', 'penalty', 'preparation', 'food', 'addetional', 'spending']
 
     for (const blockId of ids) {
       updateBlockPages(blockId)
@@ -420,6 +514,7 @@ function scrollBlockToPage(id: ServiceBlockId, index: number) {
 }
 
 const blockListRef = {
+  extraHunt: (el: Element | null) => setBlockListRef('extraHunt', el),
   trophy: (el: Element | null) => setBlockListRef('trophy', el),
   penalty: (el: Element | null) => setBlockListRef('penalty', el),
   preparation: (el: Element | null) => setBlockListRef('preparation', el),
@@ -430,6 +525,8 @@ const blockListRef = {
 
 function hasOpenDraft(id: ServiceBlockId): boolean {
   switch (id) {
+    case 'extraHunt':
+      return extraHuntDrafts.value.length > 0
     case 'trophy':
       return trophyDrafts.value.length > 0
     case 'penalty':
@@ -504,6 +601,8 @@ function resetServices() {
   spendingDrafts.value = []
   trophyDrafts.value = []
   penaltyDrafts.value = []
+  extraHuntDrafts.value = []
+  organisationAnimals.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
   savedFoodCounts.value = {}
@@ -511,6 +610,7 @@ function resetServices() {
   savingSpendingKey.value = null
   savingTrophyKey.value = null
   savingPenaltyKey.value = null
+  savingExtraHuntKey.value = null
   deletingServiceId.value = null
   collapsedBlocks.value = new Set()
 }
@@ -1288,6 +1388,99 @@ function addPenaltyDraft() {
     hunterId: '',
   })
   scrollDraftIntoView(`penalty-${key}`)
+}
+
+function addExtraHuntDraft() {
+  if (!canAddServiceType('extra_hunt') || hasOpenDraft('extraHunt')) {
+    return
+  }
+
+  expandBlock('extraHunt')
+  const key = ++extraHuntDraftKey
+  extraHuntDrafts.value.push({
+    key,
+    animalId: '',
+    hunterIds: [],
+  })
+  scrollDraftIntoView(`extra-hunt-${key}`)
+}
+
+function cancelExtraHuntDraft(key: number) {
+  extraHuntDrafts.value = extraHuntDrafts.value.filter(draft => draft.key !== key)
+}
+
+function canSaveExtraHuntDraft(row: ExtraHuntDraft): boolean {
+  return Boolean(
+    row.animalId
+    && row.hunterIds.length
+    && extraHuntPriceLabel(row.animalId),
+  ) && savingExtraHuntKey.value === null
+}
+
+function upsertExtraHuntItem(item: BookingServiceExtraHuntItem) {
+  const current = [...(items.value.extra_hunts ?? [])]
+  const index = current.findIndex(row => row.id === item.id)
+  const previous = index >= 0 ? current[index] : undefined
+  const next = [...current]
+
+  if (index >= 0) {
+    next[index] = item
+  }
+  else {
+    next.push(item)
+  }
+
+  commitServiceItems(
+    { extra_hunts: next },
+    preliminaryPart('extra_hunts', item.price) - preliminaryPart('extra_hunts', previous?.price),
+  )
+}
+
+async function saveExtraHuntDraft(row: ExtraHuntDraft) {
+  if (!canAddServiceType('extra_hunt')) {
+    return
+  }
+
+  const code = booking.value?.code
+  const animalId = Number(row.animalId)
+  const hunterIds = row.hunterIds.map(Number).filter(id => Number.isInteger(id) && id > 0)
+
+  if (!code || !canSaveExtraHuntDraft(row) || !hunterIds.length) {
+    return
+  }
+
+  savingExtraHuntKey.value = row.key
+
+  try {
+    const response = await bookings.storeExtraHunt(code, {
+      animal_id: animalId,
+      hunter_ids: hunterIds,
+    })
+
+    if (!response.success || !response.data) {
+      notifications.error(response.message || 'Не удалось добавить дополнительную охоту', notifyOptions)
+      return
+    }
+
+    const animalTitle = extraHuntAnimalOptions.value.find(option => option.value === row.animalId)?.label ?? ''
+    upsertExtraHuntItem({
+      ...response.data,
+      animal_id: response.data.animal_id ?? animalId,
+      animal_title: response.data.animal_title || animalTitle,
+      hunter_ids: response.data.hunter_ids ?? hunterIds,
+      hunter_name: response.data.hunter_name || hunterIds.map(id => hunterNameById(id)).filter(Boolean).join(', '),
+      price: response.data.price,
+    })
+    cancelExtraHuntDraft(row.key)
+    notifications.success(response.message || 'Услуга добавлена', notifyOptions)
+  }
+  catch (error) {
+    const data = (error as { data?: { message?: string } }).data
+    notifications.error(data?.message || 'Не удалось добавить дополнительную охоту', notifyOptions)
+  }
+  finally {
+    savingExtraHuntKey.value = null
+  }
 }
 
 function startPenaltyEdit(item: BookingServicePenaltyItem) {
@@ -2255,6 +2448,26 @@ async function savePreparationDraft(row: PreparationDraft) {
   }
 }
 
+async function loadOrganisationAnimals() {
+  if (!isBaseAdmin.value) {
+    organisationAnimals.value = []
+    return
+  }
+
+  try {
+    const response = await animalsApi.getOrganisation()
+    if (!response.success || !Array.isArray(response.data)) {
+      organisationAnimals.value = []
+      return
+    }
+
+    organisationAnimals.value = response.data
+  }
+  catch {
+    organisationAnimals.value = []
+  }
+}
+
 async function loadHotelAdditionals() {
   try {
     const response = await servicesApi.getAdditionals()
@@ -2321,6 +2534,8 @@ async function loadServices(code: string) {
   spendingDrafts.value = []
   trophyDrafts.value = []
   penaltyDrafts.value = []
+  extraHuntDrafts.value = []
+  organisationAnimals.value = []
   savingPreparationKey.value = null
   savingFoodKey.value = null
   savedFoodCounts.value = {}
@@ -2328,6 +2543,7 @@ async function loadServices(code: string) {
   savingSpendingKey.value = null
   savingTrophyKey.value = null
   savingPenaltyKey.value = null
+  savingExtraHuntKey.value = null
   deletingServiceId.value = null
   collapsedBlocks.value = new Set()
 
@@ -2346,7 +2562,10 @@ async function loadServices(code: string) {
 
     services.value = response.data
     applyServicesAccess(response.data)
-    await loadHotelAdditionals()
+    await Promise.all([
+      loadHotelAdditionals(),
+      loadOrganisationAnimals(),
+    ])
     loadError.value = ''
   }
   catch (error) {
@@ -2493,6 +2712,153 @@ function scrollDraftIntoView(draftId: string) {
             </div>
 
             <template v-else>
+              <section
+                v-if="isBaseAdmin && isAllowed('extra_hunt')"
+                class="add-services-modal__block-row"
+              >
+                <div
+                  v-if="blockPageCount.extraHunt > 1 && !isBlockCollapsed('extraHunt')"
+                  class="add-services-modal__dots"
+                  role="tablist"
+                  aria-label="Страницы дополнительных охот"
+                >
+                  <button
+                    v-for="page in blockPageCount.extraHunt"
+                    :key="page"
+                    type="button"
+                    class="add-services-modal__dot"
+                    :class="{ 'add-services-modal__dot--active': page - 1 === blockPageIndex.extraHunt }"
+                    :aria-label="`Страница ${page}`"
+                    :aria-current="page - 1 === blockPageIndex.extraHunt ? 'true' : undefined"
+                    @click="scrollBlockToPage('extraHunt', page - 1)"
+                  />
+                </div>
+                <div
+                  class="add-services-modal__block"
+                  :class="{ 'add-services-modal__block--collapsed': isBlockCollapsed('extraHunt') }"
+                >
+                <div class="add-services-modal__block-head">
+                  <h3 class="add-services-modal__block-title">Дополнительные охоты:</h3>
+                  <div class="add-services-modal__block-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__toggle"
+                      :class="{ 'add-services-modal__toggle--open': !isBlockCollapsed('extraHunt') }"
+                      :aria-expanded="!isBlockCollapsed('extraHunt')"
+                      aria-label="Свернуть дополнительные охоты"
+                      @click="toggleBlock('extraHunt')"
+                    >
+                      <svg class="add-services-modal__toggle-icon" viewBox="0 0 12 8" aria-hidden="true">
+                        <path d="M1 2 6 6.5 11 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canAddServiceType('extra_hunt')"
+                      type="button"
+                      class="add-services-modal__add"
+                      aria-label="Добавить дополнительную охоту"
+                      :disabled="hasOpenDraft('extraHunt')"
+                      @click="addExtraHuntDraft"
+                    >+</button>
+                  </div>
+                </div>
+                <div v-show="!isBlockCollapsed('extraHunt')">
+                <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--extra-hunt">
+                  <span>Животное</span>
+                  <span>Кто охотится</span>
+                  <span>Общая сумма</span>
+                  <span></span>
+                </div>
+                <div
+                  class="add-services-modal__block-list"
+                  :ref="blockListRef.extraHunt"
+                  @scroll="onBlockListScroll('extraHunt')"
+                >
+                <template
+                  v-for="entry in extraHuntRowEntries"
+                  :key="entry.key"
+                >
+                <div
+                  v-if="entry.item"
+                  class="add-services-modal__form-row add-services-modal__form-row--extra-hunt"
+                >
+                  <div class="add-services-modal__field add-services-modal__field--animal">
+                    <span class="add-services-modal__value">{{ entry.item.animal_title }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <span class="add-services-modal__value">{{ entry.item.hunter_name }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span class="add-services-modal__value">{{ formatServicePrice(entry.item.price) }}</span>
+                  </div>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      v-if="canDeleteService('extra_hunts', entry.item.id)"
+                      type="button"
+                      class="add-services-modal__delete"
+                      :disabled="deletingServiceId !== null"
+                      @click="requestServiceDeletion(entry.item.id, 'Вы уверены, что хотите удалить дополнительную охоту?', 'extra_hunts')"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+                <div
+                  v-else-if="entry.draft"
+                  class="add-services-modal__form-row add-services-modal__form-row--extra-hunt add-services-modal__form-row--draft"
+                  :data-service-draft="`extra-hunt-${entry.draft.key}`"
+                >
+                  <div class="add-services-modal__field add-services-modal__field--animal">
+                    <CommonSelectField
+                      v-model="entry.draft.animalId"
+                      class="add-services-modal__select"
+                      placeholder="Животное"
+                      filled-hover
+                      no-margin
+                      :options="extraHuntAnimalOptions"
+                    />
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <CommonSelectField
+                      v-model="entry.draft.hunterIds"
+                      class="add-services-modal__select"
+                      placeholder="Кто охотится"
+                      filled-hover
+                      no-margin
+                      multiple
+                      :options="hunterOptions"
+                    />
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--price">
+                    <span v-if="extraHuntPriceLabel(entry.draft.animalId)" class="add-services-modal__value">
+                      {{ extraHuntPriceLabel(entry.draft.animalId) }}
+                    </span>
+                  </div>
+                  <div class="add-services-modal__form-actions">
+                    <button
+                      type="button"
+                      class="add-services-modal__save"
+                      :disabled="!canSaveExtraHuntDraft(entry.draft)"
+                      @click="saveExtraHuntDraft(entry.draft)"
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      class="add-services-modal__cancel"
+                      :disabled="savingExtraHuntKey === entry.draft.key"
+                      @click="cancelExtraHuntDraft(entry.draft.key)"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+                </template>
+                </div>
+                </div>
+                </div>
+              </section>
+
               <section
                 v-if="isAllowed('trophy')"
                 class="add-services-modal__block-row"
@@ -3915,6 +4281,17 @@ function scrollDraftIntoView(draftId: string) {
   font-weight: 700;
 }
 
+.add-services-modal__form-row--extra-hunt {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px 220px;
+}
+
+.add-services-modal__form-row--extra-hunt .add-services-modal__field--animal,
+.add-services-modal__form-row--extra-hunt .add-services-modal__field--hunter,
+.add-services-modal__form-row--extra-hunt .add-services-modal__field--price {
+  width: 100%;
+  justify-self: stretch;
+}
+
 .add-services-modal__form-row--trophy {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 120px 150px 220px;
 }
@@ -3927,6 +4304,7 @@ function scrollDraftIntoView(draftId: string) {
 }
 
 .add-services-modal__form-row--trophy .add-services-modal__form-actions,
+.add-services-modal__form-row--extra-hunt .add-services-modal__form-actions,
 .add-services-modal__form-row--penalty .add-services-modal__form-actions,
 .add-services-modal__form-row--preparation .add-services-modal__form-actions,
 .add-services-modal__form-row--food .add-services-modal__form-actions,
@@ -4321,6 +4699,7 @@ function scrollDraftIntoView(draftId: string) {
     line-height: 1.2;
   }
 
+  .add-services-modal__form-row--draft.add-services-modal__form-row--extra-hunt .add-services-modal__field--animal::before,
   .add-services-modal__form-row--draft.add-services-modal__form-row--trophy .add-services-modal__field--animal::before,
   .add-services-modal__form-row--draft.add-services-modal__form-row--penalty .add-services-modal__field--animal::before,
   .add-services-modal__form-row--draft.add-services-modal__form-row--preparation .add-services-modal__field--animal::before {
@@ -4336,6 +4715,7 @@ function scrollDraftIntoView(draftId: string) {
     content: 'Количество';
   }
 
+  .add-services-modal__form-row--draft.add-services-modal__form-row--extra-hunt .add-services-modal__field--price::before,
   .add-services-modal__form-row--draft.add-services-modal__form-row--trophy .add-services-modal__field--price::before,
   .add-services-modal__form-row--draft.add-services-modal__form-row--penalty .add-services-modal__field--price::before,
   .add-services-modal__form-row--draft.add-services-modal__form-row--preparation .add-services-modal__field--price::before,
@@ -4346,6 +4726,10 @@ function scrollDraftIntoView(draftId: string) {
 
   .add-services-modal__form-row--draft.add-services-modal__form-row--penalty .add-services-modal__field--type::before {
     content: 'Тип штрафа';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--extra-hunt .add-services-modal__field--hunter::before {
+    content: 'Кто охотится';
   }
 
   .add-services-modal__form-row--draft.add-services-modal__form-row--penalty .add-services-modal__field--hunter::before,

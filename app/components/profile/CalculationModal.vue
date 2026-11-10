@@ -135,9 +135,10 @@ const baseAdminBlocks = computed(() => {
   const baseExtras = groupServiceLines(extras.filter(isBasePlace))
   const huntExtras = groupServiceLines(extras.filter(line => !isBasePlace(line)))
   const huntServices = items.filter(item => !isAccommodationLine(item.name))
+  const extraHunts = data.extra_hunts ?? []
   const trophies = data.trophy_show ? hunterLines(data.trophies ?? []) : []
   const penalties = data.penalties_show ? hunterLines(data.penalties ?? []) : []
-  const huntLines = [...huntServices, ...huntExtras, ...trophies, ...penalties]
+  const huntLines = [...huntServices, ...extraHunts, ...huntExtras, ...trophies, ...penalties]
   const baseRemainder = summary.filter(item => item.name === 'Остаток базе')
   const spendings = data.spendings ?? []
   const personalTotal = summary.find(item => item.name === HUNTER_PERSONAL_TOTAL_NAME) ?? null
@@ -160,6 +161,7 @@ const baseAdminBlocks = computed(() => {
     basePaymentMy,
     baseRemainder,
     huntServices,
+    extraHunts,
     huntExtras: hunterLines(huntExtras),
     trophies,
     penalties,
@@ -508,6 +510,26 @@ function serviceCountLabel(line: BookingCalculationLine) {
                     <td v-if="showMyServices" class="calculation-modal__my-services">{{ myServiceCountLabel(item) }}</td>
                     <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
                   </tr>
+
+                  <template v-if="baseAdminBlocks.extraHunts.length">
+                    <tr class="calculation-modal__section">
+                      <td>Дополнительные охоты</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count"></td>
+                      <td v-if="showCollectiveCosts"></td>
+                      <td v-if="showMyServices" class="calculation-modal__my-services"></td>
+                      <td v-if="showMyCosts"></td>
+                    </tr>
+                    <tr
+                      v-for="(item, index) in baseAdminBlocks.extraHunts"
+                      :key="`extra-hunt-${lineKey(item, index)}`"
+                    >
+                      <td>{{ item.name }}</td>
+                      <td v-if="showServiceCount" class="calculation-modal__count"></td>
+                      <td v-if="showCollectiveCosts">{{ formatHotelPriceLabel(item.total_cost) }}</td>
+                      <td v-if="showMyServices" class="calculation-modal__my-services"></td>
+                      <td v-if="showMyCosts">{{ formatHotelPriceLabel(item.my_cost) }}</td>
+                    </tr>
+                  </template>
 
                   <template v-if="calculation.additional_services_show && baseAdminBlocks.huntExtras.length">
                     <tr class="calculation-modal__section">

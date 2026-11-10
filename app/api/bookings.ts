@@ -7,6 +7,7 @@ import type {
   BookingHistoryResponse,
   BookingPlacesResponse,
   BookingServiceAdditionalItem,
+  BookingServiceExtraHuntItem,
   BookingServiceFoodItem,
   BookingServicePenaltyItem,
   BookingServicePreparationItem,
@@ -221,6 +222,19 @@ export function useBookingsApi() {
   function calculating(code: string) {
     return apiFetch<BookingCalculatingResponse>(
       `/bookings/${encodeURIComponent(code)}/calculating`,
+    )
+  }
+
+  function storeExtraHunt(
+    code: string,
+    body: { animal_id: number, hunter_ids: number[] },
+  ) {
+    return apiFetch<ApiSuccessResponse<BookingServiceExtraHuntItem> | ApiErrorResponse>(
+      `/bookings/${encodeURIComponent(code)}/services/extra-hunts`,
+      {
+        method: 'POST',
+        body,
+      },
     )
   }
 
