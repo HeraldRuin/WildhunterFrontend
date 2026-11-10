@@ -231,13 +231,8 @@ function mapActions(
       continue
     }
 
-    if (action.code === 'add_services' && !isHunter && !checkInToday) {
-      continue
-    }
-
-    if (action.code === 'complete' && !checkoutToday) {
-      continue
-    }
+    // Временный тест: «Доп. услуги» и «Завершить событие» показывает API.
+    // «Сегодня» там задаёт APP_TEST_TODAY. Вернуть проверки checkInToday и checkoutToday.
 
     mapped.push({
       id: ACTION_ID_MAP[action.code],
