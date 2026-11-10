@@ -476,6 +476,7 @@ export function useBookingsApi() {
     places,
     services,
     calculating,
+    storeExtraHunt,
     storeTrophy,
     storePenalty,
     storePreparation,
