@@ -90,11 +90,13 @@ type AnimalPreview = {
   title: string
 }
 
+const cardRef = ref<HTMLElement | null>(null)
 const animalsRowRef = ref<HTMLElement | null>(null)
 const animalsLabelRef = ref<HTMLElement | null>(null)
 const packedAnimals = ref<AnimalPreview[] | null>(null)
 let animalsResizeObserver: ResizeObserver | null = null
 let measureCanvas: HTMLCanvasElement | null = null
+let packedWidth = -1
 
 const allAnimals = computed(() => {
   const animals = props.item.animals ?? []
@@ -143,6 +145,15 @@ function measureChipWidth(title: string): number {
   return Math.ceil(textWidth + letterSpacing + 18) + 1
 }
 
+function samePacked(next: AnimalPreview[]) {
+  const current = packedAnimals.value
+  if (!current || current.length !== next.length) {
+    return false
+  }
+
+  return current.every((animal, index) => animal.id === next[index]?.id)
+}
+
 function repackAnimals() {
   const row = animalsRowRef.value
   const label = animalsLabelRef.value
@@ -150,11 +161,12 @@ function repackAnimals() {
 
   if (!row || !animals.length) {
     packedAnimals.value = null
+    packedWidth = -1
     return
   }
 
   const containerWidth = row.clientWidth
-  if (containerWidth <= 0) {
+  if (containerWidth <= 0 || containerWidth === packedWidth) {
     return
   }
 
@@ -172,8 +184,14 @@ function repackAnimals() {
     },
   )
 
-  // Если даже один чип не рассчитался — всё равно показываем самый короткий
-  packedAnimals.value = packed.length ? packed : animals.slice(0, 1)
+  const next = packed.length ? packed : animals.slice(0, 1)
+  packedWidth = containerWidth
+
+  if (samePacked(next)) {
+    return
+  }
+
+  packedAnimals.value = next
 }
 
 function setupAnimalsPacking() {
@@ -181,7 +199,8 @@ function setupAnimalsPacking() {
   animalsResizeObserver = null
 
   const row = animalsRowRef.value
-  if (!row || typeof ResizeObserver === 'undefined') {
+  const target = cardRef.value ?? row
+  if (!row || !target || typeof ResizeObserver === 'undefined') {
     repackAnimals()
     return
   }
@@ -189,12 +208,13 @@ function setupAnimalsPacking() {
   animalsResizeObserver = new ResizeObserver(() => {
     repackAnimals()
   })
-  animalsResizeObserver.observe(row)
+  animalsResizeObserver.observe(target)
   repackAnimals()
 }
 
 watch(previewAnimals, () => {
   packedAnimals.value = null
+  packedWidth = -1
   nextTick(repackAnimals)
 })
 
@@ -298,7 +318,7 @@ async function handleFavoriteClick(event: MouseEvent) {
 </script>
 
 <template>
-  <div class="offer-card">
+  <div ref="cardRef" class="offer-card">
   <NuxtLink
     :to="hotelLink"
     class="offer-card__link"
