@@ -91,13 +91,11 @@ onUnmounted(() => {
         aria-label="Меню"
         @click.stop="toggleMenu"
       >
-        <img
-          src="/icons/material-symbols_menu-rounded.png"
-          alt="Меню"
-          width="34"
-          height="34"
-          aria-hidden="true"
-        >
+        <svg class="hero-header__burger-icon" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+          <rect x="7" y="9" width="20" height="2.4" rx="1.2" fill="currentColor" />
+          <rect x="7" y="15.8" width="20" height="2.4" rx="1.2" fill="currentColor" />
+          <rect x="7" y="22.6" width="20" height="2.4" rx="1.2" fill="currentColor" />
+        </svg>
       </button>
       <NuxtLink
         v-for="item in menuItems"
@@ -336,11 +334,12 @@ onUnmounted(() => {
   padding: 0;
   border: none;
   background: transparent;
+  color: var(--wh-black-text);
   cursor: pointer;
   flex-shrink: 0;
 }
 
-.hero-header__burger img {
+.hero-header__burger-icon {
   display: block;
   width: 34px;
   height: 34px;
