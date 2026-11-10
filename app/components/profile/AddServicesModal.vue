@@ -2958,7 +2958,7 @@ function scrollDraftIntoView(draftId: string) {
                   <span>Животное</span>
                   <span>Тип трофея</span>
                   <span>Кто охотился</span>
-                  <span>Количество</span>
+                  <span class="add-services-modal__column-count">Количество</span>
                   <span>Общая сумма</span>
                   <span></span>
                 </div>
@@ -3318,7 +3318,7 @@ function scrollDraftIntoView(draftId: string) {
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--preparation">
                   <span>Животное</span>
                   <span>Тип разделки</span>
-                  <span>Количество</span>
+                  <span class="add-services-modal__column-count">Количество</span>
                   <span>Цена на животное</span>
                   <span>Общая сумма</span>
                   <span></span>
@@ -4392,6 +4392,22 @@ function scrollDraftIntoView(draftId: string) {
 .add-services-modal__form-row--trophy .add-services-modal__field--price {
   width: 100%;
   justify-self: stretch;
+}
+
+.add-services-modal__form-row--trophy .add-services-modal__column-count,
+.add-services-modal__form-row--preparation .add-services-modal__column-count {
+  text-align: center;
+}
+
+.add-services-modal__form-row--trophy .add-services-modal__field--count .add-services-modal__value,
+.add-services-modal__form-row--preparation .add-services-modal__field--count .add-services-modal__value {
+  justify-content: center;
+  width: 100%;
+}
+
+.add-services-modal__form-row--trophy .add-services-modal__field--count .add-services-modal__control,
+.add-services-modal__form-row--preparation .add-services-modal__field--count .add-services-modal__control {
+  text-align: center;
 }
 
 .add-services-modal__form-row--trophy .add-services-modal__form-actions,
