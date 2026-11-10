@@ -55,6 +55,7 @@ interface TrophyDraft {
   serviceId?: number
   animalId: string
   trophyId: string
+  hunterIds: string[]
   count: number
 }
 
@@ -817,6 +818,31 @@ function hunterNameById(hunterId: number): string {
   return hunterOptions.value.find(option => option.value === String(hunterId))?.label ?? ''
 }
 
+function hunterNamesLabel(hunterIds: number[] | null | undefined, hunterName?: string | null): string {
+  const names = (hunterIds ?? []).map(id => hunterNameById(id)).filter(Boolean)
+  if (names.length) {
+    return names.join(', ')
+  }
+
+  return hunterName?.trim() ?? ''
+}
+
+function hunterIdsFromItem(hunterIds?: number[] | null, hunterName?: string | null): string[] {
+  const ids = (hunterIds ?? []).filter(id => id > 0).map(String)
+  if (ids.length) {
+    return ids
+  }
+
+  return (hunterName ?? '')
+    .split(',')
+    .map(name => name.trim().toLowerCase())
+    .filter(Boolean)
+    .flatMap((name) => {
+      const match = hunterOptions.value.find(option => option.label.trim().toLowerCase() === name)
+      return match ? [match.value] : []
+    })
+}
+
 function hunterIdFromItem(hunterId?: number | null, hunterName?: string | null): string {
   if (hunterId != null && hunterId > 0) {
     return String(hunterId)
@@ -1234,6 +1260,7 @@ function addTrophyDraft() {
     key,
     animalId: '',
     trophyId: '',
+    hunterIds: [],
     count: 1,
   })
   scrollDraftIntoView(`trophy-${key}`)
@@ -1256,6 +1283,7 @@ function startTrophyEdit(item: BookingServiceTrophyItem) {
     serviceId: item.id,
     animalId,
     trophyId: trophy ? String(trophy.id) : '',
+    hunterIds: hunterIdsFromItem(item.hunter_ids, item.hunter_name),
     count: item.count || 1,
   })
   scrollDraftIntoView(`trophy-${key}`)
@@ -1274,7 +1302,7 @@ function cancelTrophyDraft(key: number) {
 }
 
 function canSaveTrophyDraft(row: TrophyDraft): boolean {
-  return Boolean(row.animalId && row.trophyId)
+  return Boolean(row.animalId && row.trophyId && row.hunterIds.length)
     && Number.isInteger(Number(row.count))
     && Number(row.count) >= 1
     && savingTrophyKey.value === null
@@ -1312,9 +1340,10 @@ async function saveTrophyDraft(row: TrophyDraft) {
   const animalId = Number(row.animalId)
   const trophyId = Number(row.trophyId)
   const count = Number(row.count)
+  const hunterIds = row.hunterIds.map(Number).filter(id => Number.isInteger(id) && id > 0)
   const type = trophyTypeById(row.animalId, row.trophyId)
 
-  if (!code || !canSaveTrophyDraft(row) || !type) {
+  if (!code || !canSaveTrophyDraft(row) || !type || !hunterIds.length) {
     return
   }
 
@@ -1326,6 +1355,7 @@ async function saveTrophyDraft(row: TrophyDraft) {
       trophy_id: trophyId,
       type,
       count,
+      hunter_ids: hunterIds,
     }
     const response = row.serviceId
       ? await bookings.updateTrophy(code, row.serviceId, body)
@@ -1343,6 +1373,8 @@ async function saveTrophyDraft(row: TrophyDraft) {
       animal_title: response.data.animal_title || animalTitle,
       type: response.data.type || type,
       count: response.data.count ?? count,
+      hunter_ids: response.data.hunter_ids ?? hunterIds,
+      hunter_name: hunterNamesLabel(response.data.hunter_ids ?? hunterIds, response.data.hunter_name),
     })
     removeTrophyDraft(row.key)
     notifications.success(savedServiceMessage(row.serviceId, response.message), notifyOptions)
@@ -2925,6 +2957,7 @@ function scrollDraftIntoView(draftId: string) {
                 <div class="add-services-modal__columns add-services-modal__form-row add-services-modal__form-row--trophy">
                   <span>Животное</span>
                   <span>Тип трофея</span>
+                  <span>Кто охотился</span>
                   <span>Количество</span>
                   <span>Общая сумма</span>
                   <span></span>
@@ -2947,6 +2980,9 @@ function scrollDraftIntoView(draftId: string) {
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--type">
                     <span class="add-services-modal__value">{{ entry.item.type }}</span>
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <span class="add-services-modal__value">{{ hunterNamesLabel(entry.item.hunter_ids, entry.item.hunter_name) }}</span>
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--count">
                     <span class="add-services-modal__value">{{ entry.item.count }}</span>
@@ -3003,6 +3039,17 @@ function scrollDraftIntoView(draftId: string) {
                       no-margin
                       :disabled="!entry.draft.animalId"
                       :options="trophyTypeOptions(entry.draft.animalId)"
+                    />
+                  </div>
+                  <div class="add-services-modal__field add-services-modal__field--hunter">
+                    <CommonSelectField
+                      v-model="entry.draft.hunterIds"
+                      class="add-services-modal__select"
+                      placeholder="Кто охотился"
+                      filled-hover
+                      no-margin
+                      multiple
+                      :options="hunterOptions"
                     />
                   </div>
                   <label class="add-services-modal__field add-services-modal__field--count">
@@ -4336,10 +4383,11 @@ function scrollDraftIntoView(draftId: string) {
 }
 
 .add-services-modal__form-row--trophy {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 120px 150px 220px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 120px 150px 220px;
 }
 
 .add-services-modal__form-row--trophy .add-services-modal__field--animal,
+.add-services-modal__form-row--trophy .add-services-modal__field--hunter,
 .add-services-modal__form-row--trophy .add-services-modal__field--count,
 .add-services-modal__form-row--trophy .add-services-modal__field--price {
   width: 100%;
@@ -4751,6 +4799,10 @@ function scrollDraftIntoView(draftId: string) {
 
   .add-services-modal__form-row--draft.add-services-modal__form-row--trophy .add-services-modal__field--type::before {
     content: 'Тип трофея';
+  }
+
+  .add-services-modal__form-row--draft.add-services-modal__form-row--trophy .add-services-modal__field--hunter::before {
+    content: 'Кто охотился';
   }
 
   .add-services-modal__form-row--draft.add-services-modal__form-row--trophy .add-services-modal__field--count::before,

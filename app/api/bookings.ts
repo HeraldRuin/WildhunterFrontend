@@ -240,7 +240,7 @@ export function useBookingsApi() {
 
   function storeTrophy(
     code: string,
-    body: { animal_id: number, trophy_id: number, type: string, count: number },
+    body: { animal_id: number, trophy_id: number, type: string, count: number, hunter_ids: number[] },
   ) {
     return apiFetch<ApiSuccessResponse<BookingServiceTrophyItem> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/services/trophies`,
@@ -290,7 +290,7 @@ export function useBookingsApi() {
   function updateTrophy(
     code: string,
     serviceId: number,
-    body: { animal_id: number, trophy_id: number, type: string, count: number },
+    body: { animal_id: number, trophy_id: number, type: string, count: number, hunter_ids: number[] },
   ) {
     return apiFetch<ApiSuccessResponse<BookingServiceTrophyItem> | ApiErrorResponse>(
       `/bookings/${encodeURIComponent(code)}/services/trophies/${serviceId}`,

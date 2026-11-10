@@ -549,6 +549,8 @@ export interface BookingServiceTrophyItem {
   animal_title: string
   type: string
   count: number
+  hunter_ids?: number[] | null
+  hunter_name?: string
   price: number
 }
 
