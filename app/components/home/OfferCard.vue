@@ -84,19 +84,13 @@ const showCustomPlaceholder = computed(() => shouldUseCustomOfferPlaceholder(pro
 const ANIMALS_PREVIEW_LIMIT = 4
 const ANIMALS_GAP_PX = 8
 const ANIMALS_MORE_WIDTH_PX = 16
-
-type AnimalPreview = {
-  id: number
-  title: string
-}
-
-const cardRef = ref<HTMLElement | null>(null)
-const animalsRowRef = ref<HTMLElement | null>(null)
-const animalsLabelRef = ref<HTMLElement | null>(null)
-const packedAnimals = ref<AnimalPreview[] | null>(null)
-let animalsResizeObserver: ResizeObserver | null = null
-let measureCanvas: HTMLCanvasElement | null = null
-let packedWidth = -1
+/** Оценка чипа без canvas: 12px / 500, поля 8+8 и рамка. Запас, чтобы чип не вылезал из строки. */
+const ANIMAL_CHAR_PX = 7.2
+const ANIMAL_CHIP_EXTRA_PX = 20
+/** «Животные для охоты:» и отступ до первого чипа. */
+const ANIMALS_LABEL_WIDTH_PX = 136
+/** Карточка слайдера 360px минус боковые поля тела карточки. */
+const ANIMALS_ROW_WIDTH_PX = 328
 
 const allAnimals = computed(() => {
   const animals = props.item.animals ?? []
@@ -116,119 +110,38 @@ const animalsByLength = computed(() =>
 )
 
 const previewAnimals = computed(() => animalsByLength.value.slice(0, ANIMALS_PREVIEW_LIMIT))
-const displayAnimals = computed(() => packedAnimals.value ?? previewAnimals.value)
-const hasMoreAnimals = computed(() => displayAnimals.value.length < allAnimals.value.length)
 
-function getMeasureCanvas(): HTMLCanvasElement {
-  if (!measureCanvas) {
-    measureCanvas = document.createElement('canvas')
-  }
-  return measureCanvas
+function estimateChipWidth(title: string) {
+  return Math.ceil(title.length * ANIMAL_CHAR_PX + ANIMAL_CHIP_EXTRA_PX)
 }
 
-function measureChipWidth(title: string): number {
-  if (typeof document === 'undefined') {
-    return title.length * 7 + 18
-  }
-
-  const canvas = getMeasureCanvas()
-  const ctx = canvas.getContext('2d')
-  if (!ctx) {
-    return title.length * 7 + 18
-  }
-
-  // Совпадает с .offer-card__animal-item: 12px / 500, letter-spacing -0.02em
-  ctx.font = '500 12px Inter, sans-serif'
-  const textWidth = ctx.measureText(title).width
-  const letterSpacing = title.length * 12 * -0.02
-  // padding 8+8 + border 1+1 + небольшой запас на погрешность шрифта
-  return Math.ceil(textWidth + letterSpacing + 18) + 1
-}
-
-function samePacked(next: AnimalPreview[]) {
-  const current = packedAnimals.value
-  if (!current || current.length !== next.length) {
-    return false
-  }
-
-  return current.every((animal, index) => animal.id === next[index]?.id)
-}
-
-function repackAnimals() {
-  const row = animalsRowRef.value
-  const label = animalsLabelRef.value
+const displayAnimals = computed(() => {
   const animals = previewAnimals.value
-
-  if (!row || !animals.length) {
-    packedAnimals.value = null
-    packedWidth = -1
-    return
+  if (!animals.length) {
+    return animals
   }
-
-  const containerWidth = row.clientWidth
-  if (containerWidth <= 0 || containerWidth === packedWidth) {
-    return
-  }
-
-  const hasHiddenBeyondPreview = allAnimals.value.length > animals.length
 
   const packed = packItemsByWidth(
     animals,
-    animal => measureChipWidth(animal.title),
-    containerWidth,
+    animal => estimateChipWidth(animal.title),
+    ANIMALS_ROW_WIDTH_PX,
     {
       gap: ANIMALS_GAP_PX,
-      firstLineOffset: label?.offsetWidth ?? 0,
+      firstLineOffset: ANIMALS_LABEL_WIDTH_PX,
       ellipsisWidth: ANIMALS_MORE_WIDTH_PX,
-      hasMoreOutside: hasHiddenBeyondPreview,
+      hasMoreOutside: allAnimals.value.length > animals.length,
     },
   )
 
-  const next = packed.length ? packed : animals.slice(0, 1)
-  packedWidth = containerWidth
-
-  if (samePacked(next)) {
-    return
-  }
-
-  packedAnimals.value = next
-}
-
-function setupAnimalsPacking() {
-  animalsResizeObserver?.disconnect()
-  animalsResizeObserver = null
-
-  const row = animalsRowRef.value
-  const target = cardRef.value ?? row
-  if (!row || !target || typeof ResizeObserver === 'undefined') {
-    repackAnimals()
-    return
-  }
-
-  animalsResizeObserver = new ResizeObserver(() => {
-    repackAnimals()
-  })
-  animalsResizeObserver.observe(target)
-  repackAnimals()
-}
-
-watch(previewAnimals, () => {
-  packedAnimals.value = null
-  packedWidth = -1
-  nextTick(repackAnimals)
+  return packed.length ? packed : animals.slice(0, 1)
 })
+
+const hasMoreAnimals = computed(() => displayAnimals.value.length < allAnimals.value.length)
 
 onMounted(() => {
   if (!isBaseAdmin.value && !isLoaded.value) {
     loadFavorites()
   }
-
-  nextTick(setupAnimalsPacking)
-})
-
-onBeforeUnmount(() => {
-  animalsResizeObserver?.disconnect()
-  animalsResizeObserver = null
 })
 
 function formatPrice(value: number) {
@@ -318,7 +231,7 @@ async function handleFavoriteClick(event: MouseEvent) {
 </script>
 
 <template>
-  <div ref="cardRef" class="offer-card">
+  <div class="offer-card">
   <NuxtLink
     :to="hotelLink"
     class="offer-card__link"
@@ -349,13 +262,9 @@ async function handleFavoriteClick(event: MouseEvent) {
         <h3 class="offer-card__title">{{ item.title }}</h3>
         <p v-if="item.price > 0" class="offer-card__price">{{ formatPrice(item.price) }} ₽/сутки</p>
       </div>
-      <div
-        ref="animalsRowRef"
-        class="offer-card__animals"
-      >
+      <div class="offer-card__animals">
         <span
           v-if="allAnimals.length"
-          ref="animalsLabelRef"
           class="offer-card__animals-label"
         >Животные для охоты:</span>
         <ul
@@ -618,12 +527,14 @@ async function handleFavoriteClick(event: MouseEvent) {
 }
 
 .offer-card__animals-label {
+  flex-shrink: 0;
   font-family: "Inter", sans-serif;
   font-size: 12px;
   font-weight: 600;
   line-height: 130%;
   letter-spacing: -0.05em;
   color: var(--wh-orange-500);
+  white-space: nowrap;
 }
 
 .offer-card__animals-list {
