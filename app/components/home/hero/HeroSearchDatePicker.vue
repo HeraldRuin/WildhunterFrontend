@@ -360,6 +360,7 @@ function goToNextYear() {
             class="hero-search-calendar__cell"
             :class="{
               'hero-search-calendar__cell--outside': !day.isCurrentMonth,
+              'hero-search-calendar__cell--blocked-min': isBlockedMinDate(day.date),
               [`hero-search-calendar__cell--${getDayState(day.date)}`]:
                 getDayState(day.date) !== 'default' && getDayState(day.date) !== 'selected',
             }"
@@ -582,18 +583,23 @@ function goToNextYear() {
   cursor: not-allowed;
 }
 
+.hero-search-calendar__cell--blocked-min {
+  cursor: not-allowed;
+}
+
 .hero-search-calendar__day--blocked-min,
 .hero-search-calendar__day--blocked-min:disabled {
   color: var(--wh-black-text);
   font-weight: 500;
-  cursor: default;
+  cursor: not-allowed;
+  pointer-events: none;
   background: transparent;
 }
 
 .hero-search-calendar__day--blocked-min:hover,
 .hero-search-calendar__day--blocked-min:disabled:hover {
   background: transparent;
-  cursor: default;
+  cursor: not-allowed;
 }
 
 .hero-search-calendar__day--unavailable,
