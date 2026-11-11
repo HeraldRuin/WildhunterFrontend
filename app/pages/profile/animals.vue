@@ -61,6 +61,10 @@ const isListBusy = computed(() =>
   busyAnimalId.value != null || isAdding.value || isSavingAll.value,
 )
 
+const visibleAnimals = computed(() =>
+  animals.value.filter(animal => !isAnimalUnavailable(animal)),
+)
+
 function isIndividualHunt(animal: AnimalRow) {
   return animal.hunt_type?.code === 'individual'
 }
@@ -265,13 +269,13 @@ async function saveAnimal(animal: AnimalRow) {
 }
 
 async function saveAllAnimals() {
-  if (isLoading.value || isListBusy.value || !animals.value.length) {
+  if (isLoading.value || isListBusy.value || !visibleAnimals.value.length) {
     return
   }
 
   const payloadItems: { id: number, hunters_count: number, max_hunters_count: number }[] = []
 
-  for (const animal of animals.value) {
+  for (const animal of visibleAnimals.value) {
     const huntersCount = parseHuntersCount(animal.huntersCountInput)
     const maxHuntersCount = parseHuntersCount(animal.maxHuntersCountInput)
 
@@ -540,7 +544,7 @@ onBeforeUnmount(() => {
       />
 
       <button
-        v-if="!isLoading && !loadError && animals.length"
+        v-if="!isLoading && !loadError && visibleAnimals.length"
         type="button"
         class="animals-manage__btn animals-manage__btn--save animals-manage__btn--save-all"
         :disabled="isListBusy"
@@ -566,10 +570,10 @@ onBeforeUnmount(() => {
       <div class="animals-manage__shell">
         <div
           class="animals-manage__dots"
-          :class="{ 'animals-manage__dots--hidden': !(animals.length && listPageCount > 1) }"
+          :class="{ 'animals-manage__dots--hidden': !(visibleAnimals.length && listPageCount > 1) }"
           role="tablist"
           aria-label="Страницы списка животных"
-          :aria-hidden="!(animals.length && listPageCount > 1)"
+          :aria-hidden="!(visibleAnimals.length && listPageCount > 1)"
         >
           <button
             v-for="page in listPageCount"
@@ -579,13 +583,13 @@ onBeforeUnmount(() => {
             :class="{ 'animals-manage__dot--active': page - 1 === listPageIndex }"
             :aria-label="`Страница ${page}`"
             :aria-current="page - 1 === listPageIndex ? 'true' : undefined"
-            :tabindex="animals.length && listPageCount > 1 ? 0 : -1"
+            :tabindex="visibleAnimals.length && listPageCount > 1 ? 0 : -1"
             @click="scrollListToPage(page - 1)"
           />
         </div>
 
         <section class="animals-manage__panel">
-          <p v-if="!animals.length" class="animals-manage__empty">
+          <p v-if="!visibleAnimals.length" class="animals-manage__empty">
             Нет животных
           </p>
 
@@ -609,20 +613,11 @@ onBeforeUnmount(() => {
 
               <ul class="animals-manage__list">
                 <li
-                  v-for="animal in animals"
+                  v-for="animal in visibleAnimals"
                   :key="animal.id"
                   class="animals-manage__row"
-                  :class="{ 'animals-manage__row--unavailable': isAnimalUnavailable(animal) }"
                 >
-                  <span class="animals-manage__col animals-manage__col--name">
-                    <span class="animals-manage__name">{{ animal.title }}</span>
-                    <span
-                      v-if="isAnimalUnavailable(animal)"
-                      class="animals-manage__unavailable"
-                    >
-                      Данное животное пока недоступно для охоты
-                    </span>
-                  </span>
+                  <span class="animals-manage__col animals-manage__col--name">{{ animal.title }}</span>
                   <span class="animals-manage__col animals-manage__col--hunt-type">{{ animal.hunt_type?.title }}</span>
 
                   <div class="animals-manage__col animals-manage__col--hunters">
@@ -943,18 +938,6 @@ onBeforeUnmount(() => {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
-}
-
-.animals-manage__row--unavailable .animals-manage__name,
-.animals-manage__row--unavailable .animals-manage__col--hunt-type {
-  color: rgba(0, 0, 0, 0.4);
-}
-
-.animals-manage__unavailable {
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: #dc2626;
 }
 
 .animals-manage__col--hunt-type,
