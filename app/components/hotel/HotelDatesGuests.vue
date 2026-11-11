@@ -444,6 +444,7 @@ defineExpose({
               v-model:end="checkOut"
               v-model:active-part="activeDatePart"
               :min-date="stayMinDate"
+              block-min-date
               :unavailable-dates="unavailableDates"
               @view-change="onCalendarViewChange"
             />

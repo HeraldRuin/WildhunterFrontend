@@ -15,12 +15,14 @@ const props = withDefaults(defineProps<{
   maxDate?: Date | null
   viewDate?: Date | null
   unavailableDates?: string[]
+  blockMinDate?: boolean
 }>(), {
   mode: 'range',
   minDate: null,
   maxDate: null,
   viewDate: null,
   unavailableDates: () => [],
+  blockMinDate: false,
 })
 
 const emit = defineEmits<{
@@ -174,6 +176,14 @@ function isBeforeMinDate(date: Date) {
   return startOfDay(date).getTime() < startOfDay(props.minDate).getTime()
 }
 
+function isBlockedMinDate(date: Date) {
+  if (!props.blockMinDate || !props.minDate) {
+    return false
+  }
+
+  return isSameDay(startOfDay(date), startOfDay(props.minDate))
+}
+
 function isUnavailableNight(date: Date) {
   return unavailableDateSet.value.has(formatApiDate(date))
 }
@@ -203,6 +213,10 @@ function isSelectingCheckout(date: Date) {
 
 function isDateDisabled(date: Date) {
   const normalized = startOfDay(date)
+
+  if (isBlockedMinDate(normalized)) {
+    return true
+  }
 
   if (props.minDate && normalized.getTime() < startOfDay(props.minDate).getTime()) {
     return true
@@ -363,8 +377,9 @@ function goToNextYear() {
                   && !isSingle
                   && !isDateDisabled(day.date),
                 'hero-search-calendar__day--unavailable':
-                  isUnavailableNight(day.date) && !isBeforeMinDate(day.date),
-                'hero-search-calendar__day--disabled': isDateDisabled(day.date),
+                  isUnavailableNight(day.date) && !isBeforeMinDate(day.date) && !isBlockedMinDate(day.date),
+                'hero-search-calendar__day--blocked-min': isBlockedMinDate(day.date),
+                'hero-search-calendar__day--disabled': isDateDisabled(day.date) && !isBlockedMinDate(day.date),
               }"
               :disabled="isDateDisabled(day.date)"
               @click="selectDate(day.date)"
@@ -565,6 +580,20 @@ function goToNextYear() {
 .hero-search-calendar__day:disabled:hover {
   background: transparent;
   cursor: not-allowed;
+}
+
+.hero-search-calendar__day--blocked-min,
+.hero-search-calendar__day--blocked-min:disabled {
+  color: var(--wh-black-text);
+  font-weight: 500;
+  cursor: default;
+  background: transparent;
+}
+
+.hero-search-calendar__day--blocked-min:hover,
+.hero-search-calendar__day--blocked-min:disabled:hover {
+  background: transparent;
+  cursor: default;
 }
 
 .hero-search-calendar__day--unavailable,

@@ -758,6 +758,7 @@ onUnmounted(() => {
           v-model:end="checkOut"
           v-model:active-part="activeDatePart"
           :min-date="stayMinDate"
+          block-min-date
         />
       </div>
     </div>
@@ -966,8 +967,7 @@ onUnmounted(() => {
   font-weight: 400;
   line-height: 1.2;
   letter-spacing: -0.05em;
-  color: #1c211c;
-  opacity: 0.4;
+  color: #6b6e6b;
 }
 
 .hero-search__control {
