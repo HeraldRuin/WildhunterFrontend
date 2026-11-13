@@ -10,6 +10,7 @@ import type {
   BookingPlacesMap,
 } from '~/types/api'
 import type { BookingHistoryItem } from '~/types/booking'
+import { formatRemainingTimer } from '~/utils/bookingHistory'
 
 const props = defineProps<{
   booking: BookingHistoryItem | null
@@ -26,6 +27,8 @@ const notifications = useNotifications()
 const notifyOptions = { group: BED_SELECTION_NOTIFICATION_GROUP }
 
 const isOpen = computed(() => Boolean(props.booking))
+const timerNow = ref(Date.now())
+let timerInterval: ReturnType<typeof setInterval> | undefined
 const eventStatusCode = ref<string | null>(null)
 const isAllPlacesAssigned = ref(false)
 const bookingStatusCode = computed(() => {
@@ -39,6 +42,18 @@ const bookingStatusCode = computed(() => {
   return fromEvent || fromBooking
 })
 const canSelectBeds = computed(() => bookingStatusCode.value === 'bed_collection')
+const bedTimerLabel = computed(() => {
+  if (!canSelectBeds.value) {
+    return ''
+  }
+
+  const endAt = props.booking?.status.timerEndAt
+  if (endAt) {
+    return formatRemainingTimer(endAt, timerNow.value) || '00 мин 00 сек'
+  }
+
+  return props.booking?.status.timer || ''
+})
 const canChoosePlace = computed(() =>
   canSelectBeds.value
   && !isAllPlacesAssigned.value
@@ -55,6 +70,28 @@ let placesRevision = 0
 
 useBodyScrollLock(isOpen)
 
+watch(isOpen, (open) => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = undefined
+  }
+
+  if (!open) {
+    return
+  }
+
+  timerNow.value = Date.now()
+  timerInterval = setInterval(() => {
+    timerNow.value = Date.now()
+  }, 1000)
+}, { immediate: true })
+
+onUnmounted(() => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+  }
+})
+
 interface PlaceRow {
   key: string
   roomId: number
@@ -68,13 +105,15 @@ interface PlaceRow {
 interface RoomSection {
   key: string
   nameLabel: string
+  stayLabel: string
   places: PlaceRow[]
 }
 
 const rooms = computed<RoomSection[]>(() =>
-  placeRooms.value.flatMap((room) => {
+  placeRooms.value.flatMap((room, roomTypeIndex) => {
     const roomsCount = Math.max(1, room.booking_number || 1)
     const placesPerRoom = Math.max(0, room.number || 0)
+    const stayLabel = roomStayLabel(room, roomTypeIndex, roomsCount)
 
     return Array.from({ length: roomsCount }, (_, index) => {
       const roomIndex = index + 1
@@ -82,6 +121,7 @@ const rooms = computed<RoomSection[]>(() =>
       return {
         key: `${room.room_id}-${roomIndex}`,
         nameLabel: roomName(room, roomIndex, roomsCount),
+        stayLabel,
         places: Array.from({ length: placesPerRoom }, (_, placeIndex) => {
           const placeNumber = placeIndex + 1
           const assignment = getPlaceAssignment(
@@ -315,6 +355,61 @@ function roomName(room: BookingPlaceRoom, roomIndex: number, roomsCount: number)
   return roomsCount > 1 ? `${title} №${roomIndex}` : title
 }
 
+function nightsLabel(count: number) {
+  const mod10 = count % 10
+  const mod100 = count % 100
+
+  if (mod10 === 1 && mod100 !== 11) {
+    return `${count} сутки`
+  }
+
+  return `${count} суток`
+}
+
+function accommodationRoomFor(placeRoom: BookingPlaceRoom, placeIndex: number) {
+  const list = props.booking?.accommodation?.rooms
+  if (!list?.length) {
+    return undefined
+  }
+
+  const title = (placeRoom.title || '').trim()
+  const byTitle = list.filter(room => room.name.trim() === title)
+
+  if (byTitle.length === 1) {
+    return byTitle[0]
+  }
+
+  if (byTitle.length > 1) {
+    const occurrence = placeRooms.value
+      .slice(0, placeIndex)
+      .filter(room => (room.title || '').trim() === title)
+      .length
+
+    return byTitle[occurrence] ?? byTitle[0]
+  }
+
+  return list[placeIndex]
+}
+
+function roomStayLabel(placeRoom: BookingPlaceRoom, placeIndex: number, roomsCount: number) {
+  const detail = accommodationRoomFor(placeRoom, placeIndex)
+  const nights = props.booking?.accommodation?.nights ?? 0
+  if (!detail || nights <= 0) {
+    return ''
+  }
+
+  const quantity = Math.max(roomsCount, detail.quantity || 1, 1)
+  const amount = detail.priceTotal != null
+    ? detail.priceTotal / quantity
+    : detail.pricePerDay
+
+  if (!Number.isFinite(amount)) {
+    return ''
+  }
+
+  return `${formatHotelPriceLabel(amount)} / ${nightsLabel(nights)}`
+}
+
 function nestedRecord(
   source: Record<string, unknown> | undefined,
   key: number,
@@ -384,6 +479,9 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
             <h2 id="bed-selection-modal-title" class="bed-selection-modal__title">
               {{ canSelectBeds ? 'Выбор койко-места' : 'Места распределены' }}
             </h2>
+            <p v-if="bedTimerLabel" class="bed-selection-modal__timer">
+              {{ bedTimerLabel }}
+            </p>
             <CommonModalCloseButton @click="close" />
           </header>
 
@@ -403,7 +501,10 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
                 class="bed-selection-modal__room"
               >
                 <h3 class="bed-selection-modal__room-type">
-                  {{ room.nameLabel }}
+                  <span>{{ room.nameLabel }}</span>
+                  <span v-if="room.stayLabel" class="bed-selection-modal__room-stay">
+                    {{ room.stayLabel }}
+                  </span>
                 </h3>
 
                 <div class="bed-selection-modal__places">
@@ -502,7 +603,23 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
 
 .bed-selection-modal__header {
   position: relative;
-  padding: 18px 48px 18px 16px;
+  display: flex;
+  align-items: center;
+  min-height: 72px;
+  padding: 18px 132px 18px 16px;
+}
+
+.bed-selection-modal__timer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  color: #1d3557;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
 }
 
 .bed-selection-modal__title {
@@ -535,11 +652,22 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
 }
 
 .bed-selection-modal__room-type {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   margin: 0 0 12px;
   color: #1d3557;
   font-size: 1.2rem;
   font-weight: 500;
   text-align: center;
+}
+
+.bed-selection-modal__room-stay {
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .bed-selection-modal__places {
@@ -618,6 +746,19 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
 @media (--wh-tablet) {
   .bed-selection-modal {
     padding: 8px;
+  }
+
+  .bed-selection-modal__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 0;
+    padding: 16px 120px 12px 16px;
+  }
+
+  .bed-selection-modal__timer {
+    position: static;
+    transform: none;
   }
 
   .bed-selection-modal__place {

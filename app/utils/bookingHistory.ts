@@ -382,6 +382,7 @@ function buildStatus(item: BookingHistoryItemDto, now: number) {
     if (status === 'bed_collection') {
       result.subStatus = 'Предоплата собрана'
       result.collectionStatus = 'Сбор завершен'
+      result.timerEndAt = collection.beds_end_at || undefined
       result.timerHours = item.hotel?.bed_timer_hours || undefined
       result.timer = collection.beds_end_at
         ? formatRemainingTimer(collection.beds_end_at, now) || '00 мин 00 сек'
