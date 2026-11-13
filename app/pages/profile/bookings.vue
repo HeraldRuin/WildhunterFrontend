@@ -1087,6 +1087,7 @@ function handleBookingAction({ booking, action }: { booking: BookingHistoryItem,
     openConfirmModal({
       title: 'Вы уверены, что хотите принять приглашение?',
       confirmLabel: 'Принять',
+      confirmTone: 'success',
       onConfirm: () => acceptInvitation(booking),
     })
     return
