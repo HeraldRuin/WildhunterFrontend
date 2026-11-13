@@ -472,30 +472,6 @@ onBeforeUnmount(() => {
                       </div>
                       <div>
                         Забронировано номеров: {{ bookedRoomsCount(item.accommodation) }}
-                        <template
-                          v-for="(room, roomIndex) in item.accommodation.rooms"
-                          :key="`room-booked-${item.id}-${roomIndex}`"
-                        >
-                          <template
-                            v-if="
-                              !showCustomer
-                              && !hasAccommodationTotals(item.accommodation)
-                              && room.pricePerPerson != null
-                            "
-                          >
-                            <br>
-                            На человека = {{ formatHotelPriceLabel(room.pricePerPerson) }}
-                          </template>
-                        </template>
-                        <template
-                          v-if="
-                            !showCustomer
-                            && item.accommodation.totalPerPerson != null
-                          "
-                        >
-                          <br>
-                          На человека = {{ formatHotelPriceLabel(item.accommodation.totalPerPerson) }}
-                        </template>
                         <template v-if="showCustomer && item.accommodation.total != null">
                           <br>
                           Общая сумма = {{ formatHotelPriceLabel(item.accommodation.total) }}
