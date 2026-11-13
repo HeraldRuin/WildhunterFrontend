@@ -614,7 +614,7 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
   top: 50%;
   left: 50%;
   margin: 0;
-  color: #1d3557;
+  color: var(--wh-orange-500);
   font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.2;
@@ -665,6 +665,7 @@ function placeStatus(assignment: BookingPlaceAssignment | null) {
 }
 
 .bed-selection-modal__room-stay {
+  color: var(--wh-orange-500);
   font-size: 1rem;
   font-weight: 600;
   white-space: nowrap;
