@@ -34,12 +34,12 @@ function isFinishedBooking(status?: string) {
   return status === 'paid' || status === 'completed'
 }
 
-function eventDateText(booking: BookingHistoryItem) {
-  const parts: string[] = []
+function huntDateText(booking: BookingHistoryItem) {
+  return booking.hunt?.date ? `Дата охоты: ${booking.hunt.date}` : ''
+}
 
-  if (booking.hunt?.date) {
-    parts.push(`Дата охоты: ${booking.hunt.date}`)
-  }
+function stayDateText(booking: BookingHistoryItem) {
+  const parts: string[] = []
 
   if (booking.accommodation?.checkIn) {
     parts.push(`Заезд: ${booking.accommodation.checkIn}`)
@@ -49,7 +49,7 @@ function eventDateText(booking: BookingHistoryItem) {
     parts.push(`Выезд: ${booking.accommodation.checkOut}`)
   }
 
-  return parts.join(' · ') || 'Дата события не указана'
+  return parts.join(' · ')
 }
 
 const { bookings: bookingsApi, user: userApi } = useApi()
@@ -348,7 +348,9 @@ function handleKeydown(event: KeyboardEvent) {
 
           <div class="finished-collection-modal__success">
             <template v-if="isFinishedBooking(booking.status.code)">
-              {{ eventDateText(booking) }}
+              <span v-if="huntDateText(booking)">{{ huntDateText(booking) }}</span>
+              <span v-if="stayDateText(booking)">{{ stayDateText(booking) }}</span>
+              <span v-if="!huntDateText(booking) && !stayDateText(booking)">Дата события не указана</span>
             </template>
             <template v-else>
               Сбор завершен
@@ -537,6 +539,9 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 .finished-collection-modal__success {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
   margin-bottom: 20px;
   padding: 14px 18px;
   border: 1px solid #bfe3c8;
