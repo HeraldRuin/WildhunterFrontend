@@ -93,7 +93,6 @@ const animalAvailabilityStay = ref<{
   checkOut: number
 } | null>(null)
 const hasSelectedRooms = ref(false)
-const selectedRoomsCount = ref(0)
 const selectedRoomsCapacity = ref(0)
 const stayAdults = ref(1)
 const selectedAnimalId = ref('')
@@ -176,9 +175,6 @@ const animalsSearchRef = ref<{
 const roomSelectionRef = ref<{
   getSelectedRooms: () => { room_id: number, number: number }[]
 } | null>(null)
-const roomsExceedGuests = computed(() =>
-  hasSelectedRooms.value && selectedRoomsCount.value > stayAdults.value,
-)
 const GUESTS_HUNTERS_MISMATCH_MESSAGE
   = 'Для бронирования охоты в проживании нужно указать то число охотников, которое вы выбрали'
 const guestsHuntersMismatch = computed(() =>
@@ -186,15 +182,13 @@ const guestsHuntersMismatch = computed(() =>
   && Boolean(selectedAnimalId.value)
   && huntHunters.value > stayAdults.value,
 )
-const ROOMS_EXCEED_GUESTS_MESSAGE = 'Количество номеров не может быть больше количества охотников'
 const INSUFFICIENT_CAPACITY_MESSAGE
   = 'Вместимость выбранных номеров меньше количества охотников. Увеличьте число номеров или выберите более вместительный вариант'
 const insufficientRoomCapacity = computed(() =>
   hasSelectedRooms.value && selectedRoomsCapacity.value < stayAdults.value,
 )
 const isBookingBlocked = computed(() =>
-  roomsExceedGuests.value
-  || guestsHuntersMismatch.value
+  guestsHuntersMismatch.value
   || Boolean(insufficientExtraHuntMessage.value),
 )
 const isApiMessageOpen = computed(() => Boolean(apiMessage.value))
@@ -250,7 +244,6 @@ function handleRoomSelectionChange(payload: {
   totalCapacity: number
 }) {
   hasSelectedRooms.value = payload.hasSelectedRooms
-  selectedRoomsCount.value = payload.totalRooms
   selectedRoomsCapacity.value = payload.totalCapacity
 
   if (payload.hasSelectedRooms) {
@@ -494,18 +487,7 @@ function getSelectedRoomsCapacity(rooms: Array<{ room_id: number, number: number
 }
 
 function validateRoomsAgainstGuests(adults: number, rooms: Array<{ room_id: number, number: number }>) {
-  const totalRooms = rooms.reduce((sum, room) => sum + room.number, 0)
-
-  if (totalRooms > adults) {
-    showApiMessage(ROOMS_EXCEED_GUESTS_MESSAGE)
-    return false
-  }
-
-  if (getSelectedRoomsCapacity(rooms) < adults) {
-    return false
-  }
-
-  return true
+  return getSelectedRoomsCapacity(rooms) >= adults
 }
 
 function validateGuestsMatchHunters(adults: number, hunters: number, hasAnimal: boolean) {
@@ -668,7 +650,6 @@ async function handleCheck(payload: { checkIn: string, checkOut: string, adults:
 
   isCheckingAvailability.value = true
   hasSelectedRooms.value = false
-  selectedRoomsCount.value = 0
   selectedRoomsCapacity.value = 0
   resetHunters()
 
@@ -1087,7 +1068,7 @@ onMounted(() => {
             :hotel-id="hotel?.id ?? null"
             :loading="isCheckingAvailability"
             @check="handleCheck"
-            @clear="availableRooms = []; hasCheckedAvailability = false; hasSelectedRooms = false; selectedRoomsCount = 0; selectedRoomsCapacity = 0; resetHunters()"
+            @clear="availableRooms = []; hasCheckedAvailability = false; hasSelectedRooms = false; selectedRoomsCapacity = 0; resetHunters()"
             @dates-change="handleStayDatesChange"
             @adults-change="handleAdultsChange"
           />
@@ -1116,13 +1097,6 @@ onMounted(() => {
             @selection-change="handleRoomSelectionChange"
           />
 
-          <p
-            v-if="roomsExceedGuests"
-            class="hotel-booking-section__rooms-error"
-            role="alert"
-          >
-            {{ ROOMS_EXCEED_GUESTS_MESSAGE }}
-          </p>
         </div>
 
         <div class="hotel-booking-section__animals-block">

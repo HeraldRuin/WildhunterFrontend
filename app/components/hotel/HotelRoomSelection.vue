@@ -112,50 +112,9 @@ watch(
   { immediate: true },
 )
 
-function maxQuantityForRoom(roomId: string, roomMax: number) {
-  const currentQuantity = quantities.value[roomId] ?? 0
-  const otherRoomsTotal = totalSelectedRooms.value - currentQuantity
-  const remaining = Math.max(0, props.adults - otherRoomsTotal)
-
-  return Math.min(roomMax, remaining)
+function isQuantitySelectorDisabled(roomMax: number) {
+  return roomMax <= 0
 }
-
-function isQuantitySelectorDisabled(roomId: string, roomMax: number) {
-  const currentQuantity = quantities.value[roomId] ?? 0
-
-  return currentQuantity === 0 && maxQuantityForRoom(roomId, roomMax) === 0
-}
-
-function clampQuantitiesToAdults() {
-  let overflow = totalSelectedRooms.value - props.adults
-
-  if (overflow <= 0) {
-    return
-  }
-
-  for (const room of [...props.rooms].reverse()) {
-    if (overflow <= 0) {
-      break
-    }
-
-    const currentQuantity = quantities.value[room.id] ?? 0
-
-    if (currentQuantity <= 0) {
-      continue
-    }
-
-    const nextQuantity = Math.max(0, currentQuantity - overflow)
-    overflow -= currentQuantity - nextQuantity
-    quantities.value[room.id] = nextQuantity
-  }
-}
-
-watch(
-  () => props.adults,
-  () => {
-    clampQuantitiesToAdults()
-  },
-)
 
 function openRoomGallery(room: HotelRoomOption) {
   if (!room.gallery.length) {
@@ -197,10 +156,10 @@ function quantityValue(roomId: string) {
 
 function setQuantity(roomId: string, value: string) {
   const room = props.rooms.find(item => item.id === roomId)
-  const maxQuantity = room ? maxQuantityForRoom(roomId, room.maxQuantity) : 0
+  const maxQuantity = room?.maxQuantity ?? 0
   const nextQuantity = Number(value) || 0
 
-  quantities.value[roomId] = Math.min(nextQuantity, maxQuantity)
+  quantities.value[roomId] = Math.min(Math.max(0, nextQuantity), maxQuantity)
 }
 
 function roomTotalPrice(room: HotelRoomOption) {
@@ -319,13 +278,13 @@ defineExpose({
 
           <div
             class="hotel-room-selection__quantity"
-            :class="{ 'hotel-room-selection__quantity--disabled': isQuantitySelectorDisabled(room.id, room.maxQuantity) }"
+            :class="{ 'hotel-room-selection__quantity--disabled': isQuantitySelectorDisabled(room.maxQuantity) }"
           >
             <span class="visually-hidden">Количество: {{ room.title }}</span>
             <CommonSelectField
               :model-value="quantityValue(room.id)"
-              :options="quantityOptions(maxQuantityForRoom(room.id, room.maxQuantity), room.price)"
-              :disabled="isQuantitySelectorDisabled(room.id, room.maxQuantity)"
+              :options="quantityOptions(room.maxQuantity, room.price)"
+              :disabled="isQuantitySelectorDisabled(room.maxQuantity)"
               placeholder="0"
               no-margin
               @update:model-value="setQuantity(room.id, $event)"
