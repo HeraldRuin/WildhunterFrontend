@@ -534,6 +534,9 @@ export function mapBookingHistoryItem(
       isAccepted: invitation.is_accepted,
       prepaymentPaid: Boolean(invitation.prepayment_paid),
       prepaymentPaidStatus: invitation.prepayment_paid_status || undefined,
+      prepaymentAmount: invitation.prepayment_amount == null
+        ? undefined
+        : Number(invitation.prepayment_amount),
       isDeclined: invitationLooksDeclined(invitation),
       action: invitation.action || undefined,
       declinedAt: invitation.declined_at || undefined,

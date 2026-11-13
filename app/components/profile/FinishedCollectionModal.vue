@@ -94,8 +94,37 @@ const sortedInvitations = computed(() => {
   })
 })
 
+function formatPrepaymentAmount(value: number) {
+  return `${new Intl.NumberFormat('ru-RU', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value)} руб.`
+}
+
+function prepaymentAmountValue(invitation: BookingInvitationParticipant) {
+  if (!invitation.prepaymentPaid && invitation.prepaymentPaidStatus !== 'paid') {
+    return null
+  }
+
+  if (typeof invitation.prepaymentAmount === 'number' && Number.isFinite(invitation.prepaymentAmount)) {
+    return invitation.prepaymentAmount
+  }
+
+  const total = props.booking?.payment?.prepaidTotal
+  const accepted = (props.booking?.collectionInvitations ?? [])
+    .filter(item => item.isAccepted)
+    .length
+
+  if (!total || accepted <= 0) return null
+
+  return Math.round((total / accepted) * 100) / 100
+}
+
 function prepaymentStatusLabel(invitation: BookingInvitationParticipant) {
-  if (invitation.prepaymentPaid) return 'Внесена предоплата'
+  if (invitation.prepaymentPaid) {
+    const amount = prepaymentAmountValue(invitation)
+    return amount == null ? 'Внесена предоплата' : `Внесена предоплата: ${formatPrepaymentAmount(amount)}`
+  }
   if (invitation.prepaymentPaidStatus === 'unpaid') return 'Не оплачено'
   return 'Ожидается оплата'
 }

@@ -729,6 +729,7 @@ export interface BookingCollectionInvitationDto {
   is_accepted: boolean
   prepayment_paid?: boolean
   prepayment_paid_status?: string | null
+  prepayment_amount?: number | null
   invitation_status?: string | number | null
   accept_status?: string | number | null
   action?: string | null

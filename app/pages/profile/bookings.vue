@@ -1192,6 +1192,7 @@ async function handleHunterReplaced(
             isAccepted: false,
             prepaymentPaid: false,
             prepaymentPaidStatus: 'pending',
+            prepaymentAmount: undefined,
           }
         : invitation,
     ),
