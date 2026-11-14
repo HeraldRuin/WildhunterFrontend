@@ -34,6 +34,9 @@ const showCollectiveCosts = computed(() =>
 )
 const showMyServices = computed(() => showCollectiveCosts.value && showMyCosts.value)
 const personalServicesOnly = computed(() => showMyCosts.value && !showCollectiveCosts.value)
+const serviceCountHeading = computed(() =>
+  personalServicesOnly.value ? 'Мои услуги' : 'Общее кол-во услуг',
+)
 const baseColumnCount = computed(() => {
   let count = 1
 
@@ -383,7 +386,7 @@ function serviceCountLabel(line: BookingCalculationLine) {
                 <thead>
                   <tr class="calculation-modal__section calculation-modal__block-head">
                     <th class="calculation-modal__block-title">Расходы по базе</th>
-                    <th v-if="showServiceCount" class="calculation-modal__count">Общее кол-во услуг</th>
+                    <th v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountHeading }}</th>
                     <th v-if="showCollectiveCosts">Коллективные расходы</th>
                     <th v-if="showMyServices" class="calculation-modal__my-services">Мои услуги</th>
                     <th v-if="showMyCosts">Мои личные расходы</th>
@@ -480,7 +483,7 @@ function serviceCountLabel(line: BookingCalculationLine) {
                 <thead>
                   <tr class="calculation-modal__section calculation-modal__block-head">
                     <th class="calculation-modal__block-title">Расходы по охоте</th>
-                    <th v-if="showServiceCount" class="calculation-modal__count">Общее кол-во услуг</th>
+                    <th v-if="showServiceCount" class="calculation-modal__count">{{ serviceCountHeading }}</th>
                     <th v-if="showCollectiveCosts">Коллективные расходы</th>
                     <th v-if="showMyServices" class="calculation-modal__my-services">Мои услуги</th>
                     <th v-if="showMyCosts">Мои личные расходы</th>
