@@ -1428,6 +1428,55 @@ function addPenaltyDraft() {
   scrollDraftIntoView(`penalty-${key}`)
 }
 
+function extraHuntTypeCode(animalId: string): 'individual' | 'group' | null {
+  if (!animalId) {
+    return null
+  }
+
+  for (const animal of [
+    ...trophyAnimals.value,
+    ...penaltyAnimals.value,
+    ...preparationAnimals.value,
+  ]) {
+    if (String(animal.id) !== animalId) {
+      continue
+    }
+
+    const code = animal.hunt_type?.code
+    if (code === 'individual' || code === 'group') {
+      return code
+    }
+  }
+
+  return null
+}
+
+function isIndividualExtraHunt(animalId: string): boolean {
+  return extraHuntTypeCode(animalId) === 'individual'
+}
+
+function onExtraHuntAnimalChange(row: ExtraHuntDraft, value: string | string[]) {
+  const animalId = Array.isArray(value) ? (value[0] ?? '') : value
+  row.animalId = animalId
+
+  if (isIndividualExtraHunt(animalId) && row.hunterIds.length > 1) {
+    row.hunterIds = row.hunterIds.slice(0, 1)
+  }
+}
+
+function onExtraHuntHuntersChange(row: ExtraHuntDraft, value: string | string[]) {
+  const ids = (Array.isArray(value) ? value : (value ? [value] : [])).filter(Boolean)
+
+  if (!isIndividualExtraHunt(row.animalId) || ids.length <= 1) {
+    row.hunterIds = ids
+    return
+  }
+
+  const added = ids.find(id => !row.hunterIds.includes(id))
+  const nextId = added ?? ids[0]
+  row.hunterIds = nextId ? [nextId] : []
+}
+
 function addExtraHuntDraft() {
   if (!canAddServiceType('extra_hunt') || hasOpenDraft('extraHunt')) {
     return
@@ -1450,11 +1499,13 @@ function startExtraHuntEdit(item: BookingServiceExtraHuntItem) {
 
   expandBlock('extraHunt')
   const key = ++extraHuntDraftKey
+  const animalId = item.animal_id != null ? String(item.animal_id) : ''
+  const hunterIds = hunterIdsFromItem(item.hunter_ids, item.hunter_name)
   extraHuntDrafts.value.push({
     key,
     serviceId: item.id,
-    animalId: item.animal_id != null ? String(item.animal_id) : '',
-    hunterIds: hunterIdsFromItem(item.hunter_ids, item.hunter_name),
+    animalId,
+    hunterIds: isIndividualExtraHunt(animalId) ? hunterIds.slice(0, 1) : hunterIds,
   })
   scrollDraftIntoView(`extra-hunt-${key}`)
 }
@@ -1501,7 +1552,10 @@ async function saveExtraHuntDraft(row: ExtraHuntDraft) {
 
   const code = booking.value?.code
   const animalId = Number(row.animalId)
-  const hunterIds = row.hunterIds.map(Number).filter(id => Number.isInteger(id) && id > 0)
+  const hunterIds = row.hunterIds
+    .map(Number)
+    .filter(id => Number.isInteger(id) && id > 0)
+    .slice(0, isIndividualExtraHunt(row.animalId) ? 1 : undefined)
 
   if (!code || !canSaveExtraHuntDraft(row) || !hunterIds.length) {
     return
@@ -2895,23 +2949,25 @@ function scrollDraftIntoView(draftId: string) {
                 >
                   <div class="add-services-modal__field add-services-modal__field--animal">
                     <CommonSelectField
-                      v-model="entry.draft.animalId"
+                      :model-value="entry.draft.animalId"
                       class="add-services-modal__select"
                       placeholder="Животное"
                       filled-hover
                       no-margin
                       :options="extraHuntAnimalOptions"
+                      @update:model-value="onExtraHuntAnimalChange(entry.draft, $event)"
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--hunter">
                     <CommonSelectField
-                      v-model="entry.draft.hunterIds"
+                      :model-value="entry.draft.hunterIds"
                       class="add-services-modal__select"
                       placeholder="Кто охотится"
                       filled-hover
                       no-margin
                       multiple
                       :options="hunterOptions"
+                      @update:model-value="onExtraHuntHuntersChange(entry.draft, $event)"
                     />
                   </div>
                   <div class="add-services-modal__field add-services-modal__field--price">

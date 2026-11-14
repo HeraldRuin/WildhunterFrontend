@@ -503,6 +503,7 @@ export interface BookingServiceOption {
 export interface BookingServiceAnimalCatalog {
   id: number
   title: string
+  hunt_type?: HotelAnimalHuntType | null
   price?: number | null
   trophies?: BookingServiceOption[]
   fines?: BookingServiceOption[]
