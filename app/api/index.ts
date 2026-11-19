@@ -1,6 +1,8 @@
 export { useApiClient } from './client'
 export { useConfigApi } from './config'
 export { useHomeApi } from './home'
+export { useBlogsApi } from './blogs'
+export type { BlogCard, BlogListItem } from './blogs'
 export { useAuthApi } from './auth'
 export type {
   LoginPayload,

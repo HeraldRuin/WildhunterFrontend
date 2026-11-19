@@ -3,6 +3,7 @@ import {
   useAuthApi,
   useConfigApi,
   useHomeApi,
+  useBlogsApi,
   useLocationApi,
   useHotelsApi,
   useMediaApi,
@@ -25,6 +26,7 @@ export function useApi() {
   const client = useApiClient()
   const config = useConfigApi()
   const home = useHomeApi()
+  const blogs = useBlogsApi()
   const auth = useAuthApi()
   const search = useSearchApi()
   const location = useLocationApi()
@@ -47,6 +49,7 @@ export function useApi() {
     ...client,
     config,
     home,
+    blogs,
     auth,
     search,
     location,

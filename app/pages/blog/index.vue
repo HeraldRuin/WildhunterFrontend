@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import type { BlogCard } from '~/api/blogs'
 import type { BreadcrumbItem } from '~/types/breadcrumb'
-import { blogPosts } from '~/utils/blog-posts'
 
 definePageMeta({
   layout: 'home',
@@ -21,6 +21,29 @@ useHead({
     },
   ],
 })
+
+const { blogs } = useApi()
+
+function getCachedPageData<T>(key: string, nuxtApp: ReturnType<typeof useNuxtApp>) {
+  return nuxtApp.payload.data[key] as T | undefined
+    ?? nuxtApp.static.data[key] as T | undefined
+}
+
+const { data: blogPosts } = useAsyncData(
+  'blog-posts',
+  async () => {
+    try {
+      return await blogs.getBlogs()
+    }
+    catch {
+      return [] as BlogCard[]
+    }
+  },
+  {
+    default: () => [] as BlogCard[],
+    getCachedData: (key, nuxtApp) => getCachedPageData(key, nuxtApp),
+  },
+)
 
 const isSearching = ref(false)
 
@@ -71,12 +94,13 @@ async function handleSearch(payload: Record<string, string>) {
         <div class="blog-listing__grid">
           <article
             v-for="post in blogPosts"
-            :key="post.slug"
+            :key="post.id"
             class="blog-card"
           >
             <h2 class="blog-card__title">{{ post.title }}</h2>
             <p class="blog-card__date">{{ post.date }}</p>
             <img
+              v-if="post.image"
               class="blog-card__image"
               :src="post.image"
               :alt="post.title"
