@@ -1,17 +1,41 @@
 <script setup lang="ts">
 import type { BreadcrumbItem } from '~/types/breadcrumb'
-import { getBlogPost } from '~/utils/blog-posts'
 import { descriptionFromHeading } from '~/utils/metaDescription'
 
 definePageMeta({
   layout: 'home',
+  key: route => route.path,
 })
 
 const route = useRoute()
-const slug = Array.isArray(route.params.slug) ? route.params.slug[0] : route.params.slug
-const post = getBlogPost(String(slug || ''))
+const slug = computed(() => {
+  const param = route.params.slug
+  return Array.isArray(param) ? String(param[0] || '') : String(param || '')
+})
 
-if (!post) {
+const { blogs } = useApi()
+
+function httpStatus(error: unknown): number {
+  if (!error || typeof error !== 'object') {
+    return 0
+  }
+
+  const record = error as { statusCode?: number, status?: number }
+  return Number(record.statusCode || record.status || 0)
+}
+
+const { data: article, error } = await useAsyncData(
+  () => `blog-article-${slug.value}`,
+  () => {
+    if (!slug.value) {
+      return Promise.resolve(null)
+    }
+
+    return blogs.getBlog(slug.value)
+  },
+)
+
+if (!slug.value || httpStatus(error.value) === 404 || (!error.value && !article.value)) {
   throw createError({
     statusCode: 404,
     statusMessage: 'Страница не найдена',
@@ -19,12 +43,20 @@ if (!post) {
   })
 }
 
-const pageTitle = post.pageTitle || post.title
+if (error.value || !article.value) {
+  throw createError({
+    statusCode: httpStatus(error.value) || 500,
+    statusMessage: 'Не удалось загрузить статью',
+    fatal: true,
+  })
+}
+
+const post = article.value
 
 const breadcrumbs: BreadcrumbItem[] = [
   { label: 'Главная', to: '/' },
   { label: 'Блог', to: '/blog/' },
-  { label: pageTitle },
+  { label: post.title },
 ]
 
 const { open: openRegisterModal } = useRegisterModal()
@@ -37,15 +69,12 @@ function onBodyClick(event: MouseEvent) {
   }
 }
 
-const hasBrandedSeoTitle = Boolean(post.seoTitle?.includes('| wild-hunter.ru'))
-
 useHead({
-  title: hasBrandedSeoTitle ? post.seoTitle : pageTitle,
-  ...(hasBrandedSeoTitle ? { titleTemplate: '%s' } : {}),
+  title: post.title,
   meta: [
     {
       name: 'description',
-      content: post.description || descriptionFromHeading(post.seoTitle || pageTitle),
+      content: post.description || descriptionFromHeading(post.title),
     },
   ],
 })
@@ -90,12 +119,8 @@ async function handleSearch(payload: Record<string, string>) {
           class="blog-article__breadcrumbs"
         />
         <div class="blog-article__content">
-        <template v-if="!post.embeddedHeader">
-          <h1>{{ pageTitle }}</h1>
-          <p class="blog-article__date">{{ post.date }}</p>
-        </template>
         <img
-          v-if="!post.content"
+          v-if="!post.blocks.length && post.image"
           class="blog-article__image"
           :src="post.image"
           :alt="post.title"
@@ -103,11 +128,12 @@ async function handleSearch(payload: Record<string, string>) {
           height="450"
         >
         <div
-          v-if="post.content"
+          v-if="post.blocks.length"
           class="blog-article__body"
-          v-html="post.content"
           @click="onBodyClick"
-        />
+        >
+          <BlogArticleTemplate :blocks="post.blocks" />
+        </div>
         </div>
       </div>
     </div>
@@ -253,6 +279,18 @@ async function handleSearch(payload: Record<string, string>) {
   line-height: 1.4;
   text-align: left;
   color: #111;
+}
+
+.blog-article__body :deep(.blog-article-template:not(.blog-article-template--nested) > .blog-inline-title) {
+  margin: 0 0 16px;
+  font-size: clamp(22px, 3.2vw, 34px);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.blog-article__body :deep(.blog-article-template:not(.blog-article-template--nested) > .blog-inline-date) {
+  margin: 0 0 36px;
+  text-align: center;
 }
 
 .blog-article__body :deep(a) {
@@ -560,26 +598,46 @@ async function handleSearch(payload: Record<string, string>) {
 }
 
 .blog-article__body :deep(.blog-faq__list) {
-  border-top: 1px solid #ddd;
+  counter-reset: blog-faq;
+  border-top: 1px solid rgb(28 33 28 / 20%);
 }
 
 .blog-article__body :deep(.blog-faq details) {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px;
+  align-items: start;
+  column-gap: clamp(16px, 3vw, 48px);
   margin: 0;
-  padding: 0;
+  padding: 22px 0;
   border: 0;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid rgb(28 33 28 / 20%);
   border-radius: 0;
   background: transparent;
 }
 
+.blog-article__body :deep(.blog-faq details:not([open])) {
+  align-items: center;
+}
+
+.blog-article__body :deep(.blog-faq details:not([open]) > :not(summary)) {
+  display: none;
+}
+
 .blog-article__body :deep(.blog-faq summary) {
-  position: relative;
-  display: block;
-  padding: 18px 36px 18px 0;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+  min-width: 0;
+  padding: 0;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.4;
+  color: var(--wh-black-text);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 130%;
+  letter-spacing: -0.05em;
   list-style: none;
 }
 
@@ -587,27 +645,62 @@ async function handleSearch(payload: Record<string, string>) {
   display: none;
 }
 
+.blog-article__body :deep(.blog-faq summary::marker) {
+  content: '';
+}
+
+.blog-article__body :deep(.blog-faq summary::before) {
+  content: counter(blog-faq);
+  counter-increment: blog-faq;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--wh-green);
+  color: var(--wh-white);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 120%;
+  letter-spacing: -0.9px;
+}
+
 .blog-article__body :deep(.blog-faq summary::after) {
   content: '';
   position: absolute;
+  top: 22px;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  background: url('/icons/Property%201=icon%20plus.png') center / contain no-repeat;
+}
+
+.blog-article__body :deep(.blog-faq details:not([open]) summary::after) {
   top: 50%;
-  right: 4px;
-  width: 10px;
-  height: 10px;
-  border-right: 1.5px solid #111;
-  border-bottom: 1.5px solid #111;
-  transform: translateY(-70%) rotate(45deg);
-  transition: transform 0.15s ease;
+  transform: translateY(-50%);
 }
 
 .blog-article__body :deep(.blog-faq details[open] summary::after) {
-  transform: translateY(-20%) rotate(225deg);
+  background-image: url('/icons/line-md_plus.png');
 }
 
-.blog-article__body :deep(.blog-faq details p) {
-  margin: 0 0 18px;
-  padding-right: 36px;
+.blog-article__body :deep(.blog-faq details[open]::details-content),
+.blog-article__body :deep(.blog-faq details[open] > p) {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.blog-article__body :deep(.blog-faq details[open] > p) {
+  margin: 0;
+  padding: 0;
+  color: #000;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 18px;
   font-weight: 400;
+  line-height: 130%;
+  letter-spacing: -0.05em;
 }
 
 .blog-article__body :deep(.blog-join) {
@@ -794,6 +887,36 @@ async function handleSearch(payload: Record<string, string>) {
   .blog-article__body :deep(.blog-join),
   .blog-article__body :deep(.blog-contacts) {
     padding-block: 28px;
+  }
+
+  .blog-article__body :deep(.blog-faq details) {
+    grid-template-columns: minmax(0, 1fr) 40px;
+    align-items: start;
+  }
+
+  .blog-article__body :deep(.blog-faq summary) {
+    grid-column: 1;
+    grid-row: 1;
+    gap: 16px;
+    font-size: 18px;
+  }
+
+  .blog-article__body :deep(.blog-faq summary::after),
+  .blog-article__body :deep(.blog-faq details:not([open]) summary::after) {
+    top: 22px;
+    transform: none;
+  }
+
+  .blog-article__body :deep(.blog-faq details[open]::details-content),
+  .blog-article__body :deep(.blog-faq details[open] > p) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .blog-article__body :deep(.blog-faq details[open] > p) {
+    padding-top: 12px;
+    padding-left: calc(40px + 16px);
+    font-size: 16px;
   }
 }
 </style>

@@ -135,6 +135,12 @@ export default defineNuxtConfig({
     },
   },
   routeRules: {
+    '/blog/okhota-na-los': { redirect: { to: '/blog/okhota-na-losya-sposoby-sekrety-taktika/', statusCode: 301 } },
+    '/blog/okhota-na-los/': { redirect: { to: '/blog/okhota-na-losya-sposoby-sekrety-taktika/', statusCode: 301 } },
+    '/blog/okhota-na-kosulya': { redirect: { to: '/blog/okhota-na-kosulyu-pravila-sposoby-sekrety/', statusCode: 301 } },
+    '/blog/okhota-na-kosulya/': { redirect: { to: '/blog/okhota-na-kosulyu-pravila-sposoby-sekrety/', statusCode: 301 } },
+    '/blog/okhota-na-kaban': { redirect: { to: '/blog/sposoby-okhoty-na-kabana/', statusCode: 301 } },
+    '/blog/okhota-na-kaban/': { redirect: { to: '/blog/sposoby-okhoty-na-kabana/', statusCode: 301 } },
     '/profile': { ssr: false },
     '/profile/**': { ssr: false },
     '/rooms': { ssr: false },

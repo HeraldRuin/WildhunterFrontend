@@ -1,4 +1,7 @@
+import type { BlogFlowBlock } from '~/types/blog-article'
 import { chtoTakoeZagonnayaOkhotaContent } from '~/content/blog/chto-takoe-zagonnaya-okhota'
+import { pravilaOkhotyVRossii2026Blocks } from '~/content/blog/pravila-okhoty-v-rossii-2026'
+import { sposobyOkhotyNaKabanaContent } from '~/content/blog/sposoby-okhoty-na-kabana'
 import { kakPoluchitOkhotnichijBiletContent } from '~/content/blog/kak-poluchit-okhotnichij-bilet'
 import { chtoVzyatNaOkhotuSpisokContent } from '~/content/blog/chto-vzyat-na-okhotu-spisok'
 import { kakoeOruzhieVybratNovichkuContent } from '~/content/blog/kakoe-oruzhie-vybrat-novichku'
@@ -22,11 +25,33 @@ export type BlogPost = {
   date: string
   image: string
   content?: string
-  /** Заголовок и дата уже внутри HTML-контента (не дублировать сверху) */
+  /** Тело статьи блоками. Если есть, выводится шаблоном вместо content. */
+  blocks?: BlogFlowBlock[]
+  /** Заголовок и дата уже внутри контента (не дублировать сверху) */
   embeddedHeader?: boolean
 }
 
 export const blogPosts: BlogPost[] = [
+  {
+    slug: 'pravila-okhoty-v-rossii-2026',
+    title: 'Правила охоты в России в 2026 году: актуальная редакция и ключевые изменения',
+    pageTitle: 'Правила охоты в России в 2026 году: актуальная редакция и ключевые изменения',
+    seoTitle: 'Правила охоты в России 2026 | wild-hunter.ru',
+    description: 'Правила охоты в России в 2026 году ✔️ Главные изменения в законодательстве на 2025–2026 годы ✔️ Региональная специфика',
+    date: '18.11.2026 г.',
+    image: '/images/blog/kak-stat-law.jpg',
+    blocks: pravilaOkhotyVRossii2026Blocks,
+  },
+  {
+    slug: 'sposoby-okhoty-na-kabana',
+    title: 'Охота на дикого кабана: руководство по срокам, правилам и способам в России',
+    pageTitle: 'Охота на дикого кабана: руководство по срокам, правилам и способам в России',
+    seoTitle: 'Охота на кабана — способы | wild-hunter.ru',
+    description: 'Как охотятся на дикого кабана: основные способы ✔️ Сроки и законодательные правила ✔️ Необходимое снаряжение и оружие',
+    date: '17.11.2026 г.',
+    image: '/images/blog/okhota-na-kabana.webp',
+    content: sposobyOkhotyNaKabanaContent,
+  },
   {
     slug: 'kak-poluchit-okhotnichij-bilet',
     title: 'Как получить охотничий билет в 2026 году',
