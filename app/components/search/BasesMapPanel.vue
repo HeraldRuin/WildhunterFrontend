@@ -7,8 +7,10 @@ const props = withDefaults(defineProps<{
   hotels: MapHotelItem[]
   loading?: boolean
   breadcrumbs: BreadcrumbItem[]
+  heading?: string
 }>(), {
   loading: false,
+  heading: '',
 })
 
 const route = useRoute()
@@ -785,7 +787,7 @@ async function searchMeasurePoint() {
                 </form>
 
                 <h1 class="bases-map-page__title">
-                  {{ hotels.length ? `Базы на карте: ${hotels.length}` : 'Базы на карте' }}
+                  {{ heading || (hotels.length ? `Базы на карте: ${hotels.length}` : 'Базы на карте') }}
                 </h1>
 
                 <NuxtLink

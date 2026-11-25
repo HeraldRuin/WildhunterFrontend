@@ -4,6 +4,7 @@ import type { BreadcrumbItem } from '~/types/breadcrumb'
 import { descriptionFromHeading } from '~/utils/metaDescription'
 import { getLocationPath } from '~/utils/location'
 import { offerToMapHotel, type MapHotelItem } from '~/utils/map'
+import { formatBasesCount } from '~/utils/pluralize'
 
 definePageMeta({
   layout: 'home',
@@ -133,9 +134,22 @@ const heroTitle = computed(() => {
   return locationName.value || 'Область'
 })
 
-const mapHeading = computed(() => (
-  hotels.value.length ? `Базы на карте: ${hotels.value.length}` : 'Базы на карте'
+const mapBasesCount = computed(() => (
+  locationHotels.value
+    .map(offerToMapHotel)
+    .filter((item): item is MapHotelItem => item != null)
+    .length
 ))
+
+const mapHeading = computed(() => {
+  const found = `найдено ${formatBasesCount(mapBasesCount.value)}`
+
+  if (!locationName.value) {
+    return found.charAt(0).toUpperCase() + found.slice(1)
+  }
+
+  return `${locationName.value}: ${found}`
+})
 
 useHead(() => ({
   title: mapHeading.value,
@@ -172,6 +186,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
 
     <SearchBasesMapPanel
       :hotels="hotels"
+      :heading="mapHeading"
       :loading="hotelsPending && !locationHotels.length"
       :breadcrumbs="breadcrumbs"
     />
