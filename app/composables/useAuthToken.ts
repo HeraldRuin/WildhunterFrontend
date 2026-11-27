@@ -154,7 +154,8 @@ export function useAuthToken() {
     },
   })
 
-  const isAuthenticated = computed(() => Boolean(token.value || authFlag.value))
+  // Нужен реальный токен: один только wh_auth даёт «залогинен» в UI при 401 на API
+  const isAuthenticated = computed(() => Boolean(token.value))
 
   const authorizationHeader = computed(() => {
     if (!token.value) {

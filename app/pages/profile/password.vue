@@ -11,7 +11,15 @@ useHead({
 
 const { user: userApi } = useApi()
 const notifications = useNotifications()
+const { logout } = useAuth()
+const { open: openLoginModal } = useLoginModal()
 const { loadCurrentPassword, refreshCurrentPassword, setCurrentPassword, readCachedPasswordSync } = useCurrentPassword()
+
+const AUTH_ERROR_CODES = new Set([
+  'auth_token_error',
+  'auth_user_false',
+  'auth_token_mismatch',
+])
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -92,7 +100,10 @@ function getApiErrorPayload(source: unknown) {
   return null
 }
 
-const CURRENT_PASSWORD_ERROR_CODES = ['invalid_current_password'] as const
+const CURRENT_PASSWORD_ERROR_CODES = [
+  'invalid_current_password',
+  'current_password_incorrect',
+] as const
 
 function normalizePasswordFieldErrors(response: NonNullable<ReturnType<typeof getApiErrorPayload>>) {
   const normalized: Record<string, string[]> = {}
@@ -125,11 +136,29 @@ function normalizePasswordFieldErrors(response: NonNullable<ReturnType<typeof ge
   return normalized
 }
 
+async function handleAuthExpired(message?: string) {
+  fieldErrors.value = {}
+  submitError.value = message || 'Сессия истекла. Войдите снова'
+  await logout()
+  openLoginModal()
+}
+
 function applyValidationErrors(data: unknown) {
   const response = getApiErrorPayload(data)
 
   if (!response) {
     return false
+  }
+
+  const errorCode = response.error_code ?? response.code
+
+  if (errorCode && AUTH_ERROR_CODES.has(errorCode)) {
+    void handleAuthExpired(
+      errorCode === 'auth_token_error'
+        ? 'Сессия истекла. Войдите снова'
+        : response.message,
+    )
+    return true
   }
 
   const normalizedErrors = normalizePasswordFieldErrors(response)
@@ -267,6 +296,13 @@ function resolveCurrentPassword() {
 
 async function handleSubmit() {
   if (isSubmitting.value) {
+    return
+  }
+
+  const { authorizationHeader } = useAuthToken()
+
+  if (!authorizationHeader.value) {
+    await handleAuthExpired()
     return
   }
 
