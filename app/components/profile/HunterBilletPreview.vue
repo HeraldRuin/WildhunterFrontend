@@ -77,6 +77,21 @@ const birthdayActivePart = ref<'start' | 'end' | null>('start')
 const issueDateActivePart = ref<'start' | 'end' | null>('start')
 const birthdayFieldRef = ref<HTMLElement | null>(null)
 const issueDateFieldRef = ref<HTMLElement | null>(null)
+const rootRef = ref<HTMLElement | null>(null)
+
+function resetInputsScrollToStart() {
+  const apply = () => {
+    const inputs = rootRef.value?.querySelectorAll<HTMLInputElement>('input')
+    inputs?.forEach((input) => {
+      input.scrollLeft = 0
+    })
+  }
+
+  nextTick(() => {
+    apply()
+    requestAnimationFrame(apply)
+  })
+}
 
 type EditSnapshot = {
   billetNumber: string
@@ -101,10 +116,15 @@ function closeBirthdayCalendar() {
 }
 
 function finishSave() {
+  if (import.meta.client && document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur()
+  }
+
   editSnapshot.value = null
   closeBirthdayCalendar()
   closeIssueDateCalendar()
   isEditing.value = false
+  resetInputsScrollToStart()
 }
 
 function startEditing() {
@@ -141,6 +161,7 @@ function cancelEditing() {
   closeBirthdayCalendar()
   closeIssueDateCalendar()
   isEditing.value = false
+  resetInputsScrollToStart()
 }
 
 function saveEditing() {
@@ -280,7 +301,17 @@ function handleIssueDateDocumentClick(event: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('click', handleIssueDateDocumentClick)
+  resetInputsScrollToStart()
 })
+
+watch(
+  () => props.issuingAuthority,
+  () => {
+    if (!isEditing.value) {
+      resetInputsScrollToStart()
+    }
+  },
+)
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleIssueDateDocumentClick)
@@ -302,6 +333,7 @@ function onNumberModelUpdate(value: string) {
 
 <template>
   <article
+    ref="rootRef"
     class="hunter-billet"
     :class="{ 'hunter-billet--date-open': isBirthdayOpen || isIssueDateOpen }"
     aria-label="Превью охотничьего билета"
@@ -649,6 +681,11 @@ function onNumberModelUpdate(value: string) {
 .hunter-billet__issue-field--locked {
   pointer-events: none;
   user-select: none;
+}
+
+.hunter-billet__system--locked :deep(.form-field__input),
+.hunter-billet__issue-field--locked :deep(.form-field__input) {
+  text-overflow: ellipsis;
 }
 
 .hunter-billet__system-col {

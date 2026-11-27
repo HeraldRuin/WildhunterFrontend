@@ -1076,9 +1076,7 @@ async function saveHunterBillet() {
       const response = await weaponsApi.saveUserWeapon({
         hunter_billet_number: billet.number,
         hunter_billet_issuing_authority: billet.issuingAuthority,
-        hunter_billet_rf_subject: billet.rfSubject,
         hunter_billet_issue_date: issueDateApi,
-        identity_document: identityDocument || undefined,
       })
 
       if (!('success' in response) || !response.success) {
