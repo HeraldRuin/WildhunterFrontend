@@ -354,7 +354,7 @@ function onNumberModelUpdate(value: string) {
               :max-length="2"
               label="Серия"
               :model-value="seriesDigits"
-              placeholder="00"
+              placeholder="GF"
               :disabled="!isEditing"
               :error="numberError"
               @update:model-value="onSeriesModelUpdate"

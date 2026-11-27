@@ -1294,7 +1294,7 @@ const hasNewWeapon = computed(() =>
                     />
                   </div>
                   <CommonFormField
-                    label="Дата"
+                    label="Дата выдачи"
                     placeholder="дд.мм.гггг"
                     no-margin
                     date-only
