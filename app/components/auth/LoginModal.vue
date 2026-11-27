@@ -97,20 +97,6 @@ function switchToForgotPassword() {
   openForgotPasswordModal()
 }
 
-let backdropMouseDownOnOverlay = false
-
-function handleBackdropMouseDown(event: MouseEvent) {
-  backdropMouseDownOnOverlay = event.target === event.currentTarget
-}
-
-function handleBackdropClick(event: MouseEvent) {
-  if (backdropMouseDownOnOverlay && event.target === event.currentTarget) {
-    close()
-  }
-
-  backdropMouseDownOnOverlay = false
-}
-
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     close()
@@ -133,8 +119,6 @@ watch(isOpen, (open) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="login-modal-title"
-        @mousedown="handleBackdropMouseDown"
-        @click="handleBackdropClick"
         @keydown="handleKeydown"
       >
         <div class="login-modal__card">
