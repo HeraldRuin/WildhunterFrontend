@@ -11,6 +11,7 @@ const rememberMe = ref(false)
 const isSubmitting = ref(false)
 const submitError = ref('')
 const fieldErrors = ref<Record<string, string[]>>({})
+const passwordFieldRef = ref<{ syncFromDom?: () => void, applyToDom?: () => void } | null>(null)
 
 function getFieldError(field: string) {
   return fieldErrors.value[field]?.[0]
@@ -47,6 +48,7 @@ function hasFieldErrors(errors: unknown): errors is Record<string, string[]> {
 }
 
 async function handleSubmit() {
+  passwordFieldRef.value?.syncFromDom?.()
   isSubmitting.value = true
   submitError.value = ''
   fieldErrors.value = {}
@@ -78,8 +80,11 @@ async function handleSubmit() {
   }
 }
 
-function togglePasswordVisibility() {
+async function togglePasswordVisibility() {
+  passwordFieldRef.value?.syncFromDom?.()
   showPassword.value = !showPassword.value
+  await nextTick()
+  passwordFieldRef.value?.applyToDom?.()
 }
 
 function switchToRegister() {
@@ -92,10 +97,18 @@ function switchToForgotPassword() {
   openForgotPasswordModal()
 }
 
+let backdropMouseDownOnOverlay = false
+
+function handleBackdropMouseDown(event: MouseEvent) {
+  backdropMouseDownOnOverlay = event.target === event.currentTarget
+}
+
 function handleBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
+  if (backdropMouseDownOnOverlay && event.target === event.currentTarget) {
     close()
   }
+
+  backdropMouseDownOnOverlay = false
 }
 
 function handleKeydown(event: KeyboardEvent) {
@@ -120,6 +133,7 @@ watch(isOpen, (open) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="login-modal-title"
+        @mousedown="handleBackdropMouseDown"
         @click="handleBackdropClick"
         @keydown="handleKeydown"
       >
@@ -142,6 +156,7 @@ watch(isOpen, (open) => {
               placeholder="Адрес Email"
               type="email"
               autocomplete="email"
+              allow-autofill
               required
               no-margin
               :model-value="email"
@@ -152,8 +167,10 @@ watch(isOpen, (open) => {
 
             <CommonFormField
               id="login-password"
+              ref="passwordFieldRef"
               placeholder="Пароль"
               autocomplete="current-password"
+              allow-autofill
               required
               no-margin
               trailing-wide

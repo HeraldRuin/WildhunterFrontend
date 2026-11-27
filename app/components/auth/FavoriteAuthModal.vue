@@ -2,10 +2,18 @@
 const { isOpen, message, close } = useFavoriteAuthModal()
 const { open: openRegisterModal } = useRegisterModal()
 
+let backdropMouseDownOnOverlay = false
+
+function handleBackdropMouseDown(event: MouseEvent) {
+  backdropMouseDownOnOverlay = event.target === event.currentTarget
+}
+
 function handleBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
+  if (backdropMouseDownOnOverlay && event.target === event.currentTarget) {
     close()
   }
+
+  backdropMouseDownOnOverlay = false
 }
 
 function handleKeydown(event: KeyboardEvent) {
@@ -29,6 +37,7 @@ function handleRegister() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="favorite-auth-modal-title"
+        @mousedown="handleBackdropMouseDown"
         @click="handleBackdropClick"
         @keydown="handleKeydown"
       >

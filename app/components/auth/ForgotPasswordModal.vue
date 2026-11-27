@@ -231,10 +231,18 @@ function togglePasswordVisibility() {
   showPassword.value = !showPassword.value
 }
 
+let backdropMouseDownOnOverlay = false
+
+function handleBackdropMouseDown(event: MouseEvent) {
+  backdropMouseDownOnOverlay = event.target === event.currentTarget
+}
+
 function handleBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
+  if (backdropMouseDownOnOverlay && event.target === event.currentTarget) {
     close()
   }
+
+  backdropMouseDownOnOverlay = false
 }
 
 function handleKeydown(event: KeyboardEvent) {
@@ -259,6 +267,7 @@ watch(isOpen, (open) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="forgot-password-modal-title"
+        @mousedown="handleBackdropMouseDown"
         @click="handleBackdropClick"
         @keydown="handleKeydown"
       >
