@@ -21,6 +21,7 @@ import type { ProfileUser } from '~/types/user'
 const { user } = useAuth()
 const { isBaseAdmin } = useUserRole()
 const { profile, pending, error, loadProfile, saveProfile } = useProfile()
+const { hotels: hotelsApi } = useApi()
 const { getAvatarHistory } = useUserApi()
 const notifications = useNotifications()
 
@@ -42,6 +43,11 @@ const birthdayFieldRef = ref<HTMLElement | null>(null)
 const birthdayDate = ref<Date | null>(null)
 const birthdayActivePart = ref<'start' | 'end' | null>('start')
 const profileSnapshot = ref<string | null>(null)
+const managedHotelId = ref<number | null>(null)
+const baseName = ref('')
+const baseNameSnapshot = ref('')
+const sharedBaseTitle = useState('auth-user-base-title', () => '')
+const sharedBaseTitleUserId = useState<number | null>('auth-user-base-title-user', () => null)
 
 type ProfileField =
   | 'user_name'
@@ -53,6 +59,8 @@ type ProfileField =
   | 'birthday'
   | 'bio'
   | 'avatar'
+  | 'base_name'
+  | 'title'
 
 const breadcrumbs = [
   { label: 'Главная', to: '/' },
@@ -86,7 +94,19 @@ function rememberProfileSnapshot(data: ProfileUser | null | undefined) {
   profileSnapshot.value = data ? snapshotProfile(data) : null
 }
 
+const hasBaseNameChanges = computed(() => {
+  if (!isBaseAdmin.value) {
+    return false
+  }
+
+  return baseName.value.trim() !== baseNameSnapshot.value.trim()
+})
+
 const hasProfileChanges = computed(() => {
+  if (hasBaseNameChanges.value) {
+    return true
+  }
+
   if (!profile.value || !profileSnapshot.value) {
     return false
   }
@@ -171,8 +191,13 @@ function handleBirthdayDocumentClick(event: MouseEvent) {
   }
 }
 
+watch(isBaseAdmin, () => {
+  void loadBaseName()
+}, { immediate: true })
+
 onMounted(() => {
   loadProfile()
+  void loadBaseName()
   document.addEventListener('click', handleBirthdayDocumentClick)
 })
 
@@ -189,11 +214,19 @@ function getFieldError(field: ProfileField) {
     return fieldErrors.value.user_name?.[0] || fieldErrors.value.nik?.[0]
   }
 
+  if (field === 'base_name') {
+    return fieldErrors.value.base_name?.[0] || fieldErrors.value.title?.[0]
+  }
+
   return fieldErrors.value[field]?.[0]
 }
 
 function clearFieldError(field: ProfileField) {
-  const keys = field === 'user_name' ? ['user_name', 'nik'] : [field]
+  const keys = field === 'user_name'
+    ? ['user_name', 'nik']
+    : field === 'base_name'
+      ? ['base_name', 'title']
+      : [field]
   let changed = false
   const nextErrors = { ...fieldErrors.value }
 
@@ -212,6 +245,57 @@ function clearFieldError(field: ProfileField) {
 
   fieldErrors.value = nextErrors
   submitError.value = ''
+}
+
+function setBaseName(value: string) {
+  baseName.value = value
+  clearFieldError('base_name')
+}
+
+function syncSharedBaseTitle(title: string) {
+  const userId = user.value?.id ?? null
+  sharedBaseTitle.value = title
+  sharedBaseTitleUserId.value = userId
+}
+
+async function loadBaseName() {
+  if (!isBaseAdmin.value) {
+    managedHotelId.value = null
+    baseName.value = ''
+    baseNameSnapshot.value = ''
+    return
+  }
+
+  try {
+    const response = await hotelsApi.getManage()
+
+    if (!('success' in response) || !response.success) {
+      managedHotelId.value = null
+      baseName.value = ''
+      baseNameSnapshot.value = ''
+      return
+    }
+
+    const hotels = Array.isArray(response.data) ? response.data : []
+    const hotel = hotels.find(item => item.title?.trim()) ?? hotels[0]
+
+    if (!hotel) {
+      managedHotelId.value = null
+      baseName.value = ''
+      baseNameSnapshot.value = ''
+      return
+    }
+
+    const title = String(hotel.title ?? '').trim()
+    managedHotelId.value = Number(hotel.id) || null
+    baseName.value = title
+    baseNameSnapshot.value = title
+    syncSharedBaseTitle(title)
+  } catch {
+    managedHotelId.value = null
+    baseName.value = ''
+    baseNameSnapshot.value = ''
+  }
 }
 
 function getApiErrorPayload(source: unknown) {
@@ -450,8 +534,59 @@ function handleAvatarChange(event: Event) {
   }
 }
 
+async function saveBaseNameIfNeeded() {
+  if (!hasBaseNameChanges.value) {
+    return { ok: true as const }
+  }
+
+  const title = baseName.value.trim()
+
+  if (!title) {
+    fieldErrors.value = {
+      ...fieldErrors.value,
+      base_name: ['Укажите название базы'],
+    }
+    return { ok: false as const }
+  }
+
+  if (!managedHotelId.value) {
+    submitError.value = 'Не удалось определить базу для сохранения названия'
+    return { ok: false as const }
+  }
+
+  const response = await hotelsApi.updateManage(managedHotelId.value, { title })
+
+  if ('success' in response && response.success) {
+    const savedTitle = String(response.data?.title ?? title).trim()
+    baseName.value = savedTitle
+    baseNameSnapshot.value = savedTitle
+    syncSharedBaseTitle(savedTitle)
+    return { ok: true as const }
+  }
+
+  if (!applyValidationErrors(response)) {
+    submitError.value = 'Не удалось сохранить название базы'
+  }
+
+  return { ok: false as const }
+}
+
 async function handleSubmit() {
-  if (!profile.value || isFormLoading.value || isSubmitting.value || !hasProfileChanges.value) {
+  if (isFormLoading.value || isSubmitting.value || !hasProfileChanges.value) {
+    return
+  }
+
+  const shouldSaveProfile = Boolean(
+    profile.value
+    && profileSnapshot.value
+    && (
+      avatarFile.value
+      || selectedAvatarId.value != null
+      || profileSnapshot.value !== snapshotProfile(profile.value)
+    ),
+  )
+
+  if (!shouldSaveProfile && !hasBaseNameChanges.value) {
     return
   }
 
@@ -460,6 +595,17 @@ async function handleSubmit() {
   fieldErrors.value = {}
 
   try {
+    const baseNameResult = await saveBaseNameIfNeeded()
+
+    if (!baseNameResult.ok) {
+      return
+    }
+
+    if (!shouldSaveProfile || !profile.value) {
+      notifications.success('Название базы сохранено')
+      return
+    }
+
     const response = await saveProfile({
       email: profile.value.email,
       first_name: profile.value.first_name,
@@ -551,6 +697,18 @@ async function handleSubmit() {
               :readonly="isFormLoading || isSubmitting"
               :reveal="revealValues"
               @update:model-value="setProfileField('user_name', $event)"
+            />
+
+            <CommonFormField
+              v-if="isBaseAdmin"
+              id="base-name"
+              label="Название базы"
+              placeholder="Название базы"
+              :model-value="baseName"
+              :error="getFieldError('base_name')"
+              :readonly="isFormLoading || isSubmitting"
+              :reveal="revealValues"
+              @update:model-value="setBaseName($event)"
             />
 
             <CommonFormField
