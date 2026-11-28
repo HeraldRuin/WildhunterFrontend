@@ -49,9 +49,11 @@ useHead(() => {
 })
 
 const { public: { chatragWidgetKey, chatragEnabled } } = useRuntimeConfig()
+// runtime env может прийти строкой "false" — она truthy, поэтому сравниваем явно
+const isChatragEnabled = chatragEnabled !== false && chatragEnabled !== 'false'
 
 useHead({
-  script: chatragEnabled && chatragWidgetKey
+  script: isChatragEnabled && chatragWidgetKey
     ? [
         {
           src: 'https://chatrag.ru/embed.js',
